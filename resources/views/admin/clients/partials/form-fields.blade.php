@@ -1,0 +1,138 @@
+@php
+    $clientModel = $client ?? null;
+@endphp
+
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-2 sm:col-span-2">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <x-forms.service-types
+            name="service_types[]"
+            label="Service types"
+            :selected="old('service_types', $clientModel?->service_types ?? [])"
+            class="sm:col-span-2"
+        />
+
+        <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Weed spray</label>
+            <select name="weed_spray" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                <option value="">Select option</option>
+                @foreach ($weedSprayOptions as $weedSprayOption)
+                    <option value="{{ $weedSprayOption }}" @selected(old('weed_spray', $clientModel?->weed_spray) === $weedSprayOption)>{{ $weedSprayOption }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Re-completion days</label>
+            <select name="re_completion_days" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                <option value="">Select re-completion days</option>
+                @foreach ($reCompletionDaysOptions as $reCompletionDaysOption)
+                    <option value="{{ $reCompletionDaysOption }}" @selected(old('re_completion_days', $clientModel?->re_completion_days) === $reCompletionDaysOption)>{{ $reCompletionDaysOption }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Job type</label>
+            <select name="job_type" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                <option value="">Select job type</option>
+                @foreach ($jobTypes as $jobType)
+                    <option value="{{ $jobType }}" @selected(old('job_type', $clientModel?->job_type) === $jobType)>{{ $jobType }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        <x-forms.equipment-type
+            id="client-equipment-type-id"
+            :equipment-types="$equipmentTypes ?? null"
+            :selected="old('equipment_type_id', $clientModel?->equipment_type_id ?? $clientModel?->lead?->equipment_type_id)"
+            class="sm:col-span-2"
+        />
+
+        <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Customer type</label>
+            <select name="customer_type" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                <option value="">Select customer type</option>
+                @foreach ($customerTypes as $customerType)
+                    <option value="{{ $customerType }}" @selected(old('customer_type', $clientModel?->customer_type ?? "Don't Know") === $customerType)>{{ $customerType }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        <div class="sm:col-span-2">
+            <label class="mb-1 block text-sm font-medium text-slate-700">Parking status</label>
+            <select name="parking_status" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                <option value="">Select parking</option>
+                @foreach ($parkingStatuses as $parkingStatus)
+                    <option value="{{ $parkingStatus }}" @selected(old('parking_status', $clientModel?->parking_status) === $parkingStatus)>{{ $parkingStatus }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        <x-forms.safety-types
+            :selected="old('safety_concerns', $clientModel?->safety_concerns ?? [])"
+            :safety-options="$safetyOptions"
+            class="sm:col-span-2"
+        />
+
+        <div id="client-safety-other-wrap" class="hidden sm:col-span-2">
+            <x-ui.input label="Any other (type)" name="safety_other" :value="old('safety_other', $clientModel?->safety_other)" />
+        </div>
+
+        <x-ui.input label="Charges" name="charges" type="number" step="0.01" min="0" :value="old('charges', $clientModel?->charges)" />
+        <x-ui.input label="Mobile number" name="phone" :value="old('phone', $clientModel?->phone)" />
+        <div class="sm:col-span-2">
+            <x-ui.input label="Email" name="email" type="email" :value="old('email', $clientModel?->email)" />
+        </div>
+
+        <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Payment mode</label>
+            <select name="payment_mode" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                <option value="">Select payment mode</option>
+                @foreach ($paymentModes as $paymentMode)
+                    <option value="{{ $paymentMode }}" @selected(old('payment_mode', $clientModel?->payment_mode) === $paymentMode)>{{ $paymentMode }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        <x-ui.input label="Remarks" name="remarks_type" :value="old('remarks_type', $clientModel?->remarks_type)" />
+
+        <div>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Payment status</label>
+            <select name="payment_status" id="client-payment-status" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                <option value="">Select payment status</option>
+                @foreach ($paymentStatuses as $paymentStatus)
+                    <option value="{{ $paymentStatus }}" @selected(old('payment_status', $clientModel?->payment_status) === $paymentStatus)>{{ $paymentStatus }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        <div id="client-payment-reason-wrap" class="hidden sm:col-span-2">
+            <x-ui.input label="Reason (type)" name="payment_status_reason" :value="old('payment_status_reason', $clientModel?->payment_status_reason)" />
+        </div>
+
+        <div class="sm:col-span-2">
+            <label class="mb-1 block text-sm font-medium text-slate-700">Additional site instructions</label>
+            <textarea name="additional_site_instructions" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" rows="2">{{ old('additional_site_instructions', $clientModel?->additional_site_instructions) }}</textarea>
+        </div>
+
+        <x-ui.input label="Pet warning" name="pet_warning" :value="old('pet_warning', $clientModel?->pet_warning)" />
+
+        <div class="sm:col-span-2">
+            <label class="mb-1 block text-sm font-medium text-slate-700">Special remarks</label>
+            <textarea name="special_remarks" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" rows="2">{{ old('special_remarks', $clientModel?->special_remarks) }}</textarea>
+        </div>
+    </div>
+
+    <div class="lg:sticky lg:top-4 lg:self-start">
+        <x-maps.address-picker
+            prefix="customer"
+            address-name="address"
+            address-label="Property address"
+            variant="sidebar"
+            map-height="min(480px, 70vh)"
+            :address-value="old('address', $clientModel?->address)"
+            :latitude-value="old('latitude', $clientModel?->latitude)"
+            :longitude-value="old('longitude', $clientModel?->longitude)"
+        />
+    </div>
+</div>
