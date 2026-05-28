@@ -6,6 +6,7 @@ use App\Helpers\OptimizationHelper;
 use App\Models\EquipmentType;
 use App\Models\SafetyType;
 use App\Models\ServiceType;
+use App\Models\Zone;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\Rule;
@@ -21,6 +22,8 @@ final class MasterCatalog
 
     public const SAFETY_TYPES = 'safety_types';
 
+    public const ZONES = 'zones';
+
     /**
      * @return class-string<Model>
      */
@@ -30,6 +33,7 @@ final class MasterCatalog
             self::SERVICE_TYPES => ServiceType::class,
             self::EQUIPMENT_TYPES => EquipmentType::class,
             self::SAFETY_TYPES => SafetyType::class,
+            self::ZONES => Zone::class,
             default => throw new \InvalidArgumentException("Unknown catalog: {$catalog}"),
         };
     }

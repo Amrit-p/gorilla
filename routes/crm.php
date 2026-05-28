@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\Masters\EquipmentTypeController;
 use App\Http\Controllers\Admin\Masters\SafetyTypeController;
 use App\Http\Controllers\Admin\Masters\ServiceTypeController;
+use App\Http\Controllers\Admin\Masters\ZoneController;
 use App\Http\Controllers\Admin\ClientManagementController;
 use App\Http\Controllers\Admin\JobManagementController;
 use App\Http\Controllers\Admin\LeadManagementController;
@@ -78,6 +79,13 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
         Route::patch('safety-types/{safetyType}', [SafetyTypeController::class, 'update'])->name('safety-types.update');
         Route::patch('safety-types/{safetyType}/status', [SafetyTypeController::class, 'updateStatus'])->name('safety-types.status.update');
         Route::delete('safety-types/{safetyType}', [SafetyTypeController::class, 'destroy'])->name('safety-types.destroy');
+
+        Route::get('zones', [ZoneController::class, 'index'])->name('zones.index');
+        Route::post('zones', [ZoneController::class, 'store'])->name('zones.store');
+        Route::get('zones/{zone}', [ZoneController::class, 'show'])->name('zones.show');
+        Route::patch('zones/{zone}', [ZoneController::class, 'update'])->name('zones.update');
+        Route::patch('zones/{zone}/status', [ZoneController::class, 'updateStatus'])->name('zones.status.update');
+        Route::delete('zones/{zone}', [ZoneController::class, 'destroy'])->name('zones.destroy');
     });
 
     Route::middleware('crm.permission:'.CrmPermissions::MANAGE_LEADS)->group(function (): void {

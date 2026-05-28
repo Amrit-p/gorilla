@@ -67,6 +67,7 @@ trait ManagesMasterCatalog
             MasterCatalog::SERVICE_TYPES => ['serviceType' => 0],
             MasterCatalog::EQUIPMENT_TYPES => ['equipmentType' => 0],
             MasterCatalog::SAFETY_TYPES => ['safetyType' => 0],
+            MasterCatalog::ZONES => ['zone' => 0],
             default => ['record' => 0],
         };
 

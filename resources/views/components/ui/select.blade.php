@@ -19,11 +19,7 @@
             <option value="">{{ $placeholder }}</option>
         @endif
         @foreach ($options as $optionValue => $optionLabel)
-            @php
-                $val = is_int($optionValue) ? $optionLabel : $optionValue;
-                $text = is_int($optionValue) ? $optionLabel : $optionLabel;
-            @endphp
-            <option value="{{ $val }}" @selected((string) old($name, $value) === (string) $val)>{{ $text }}</option>
+            <option value="{{ $optionValue }}" @selected((string) old($name, $value) === (string) $optionValue)>{{ $optionLabel }}</option>
         @endforeach
     </select>
 </div>

@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
             RoleAndPermissionSeeder::class,
             MasterCatalogSeeder::class,
             SettingsSeeder::class,
+            ZoneSeeder::class,
         ]);
     }
 }
