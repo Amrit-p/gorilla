@@ -78,8 +78,10 @@ class ClientRepository
                 'done_by_user_id',
                 'payment_mode',
                 'payment_status',
+                'client_address',
+                'estimated_duration_minutes',
             ])
-            ->with(['doneByUser:id,name'])
+            ->with(['doneByUser:id,name', 'assignedEmployees:id,name', 'client:id,name,customer_unique_id'])
             ->where('client_id', $clientId)
             ->orderByDesc('scheduled_date')
             ->orderByDesc('scheduled_time');

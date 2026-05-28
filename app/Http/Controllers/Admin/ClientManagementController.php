@@ -101,7 +101,7 @@ class ClientManagementController extends Controller
         $jobStats = $this->clientManagementService->jobTabStatistics($client, $filters['job_status']);
 
         return response()->json([
-            'html' => view('admin.clients.partials.jobs-table', compact('jobs', 'client'))->render(),
+            'html' => view('admin.jobs.partials.table', compact('jobs'))->render(),
             'stats' => $jobStats,
         ]);
     }
