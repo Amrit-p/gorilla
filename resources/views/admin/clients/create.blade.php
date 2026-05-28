@@ -27,20 +27,12 @@
 </x-layouts.dashboard>
 
 <script>
-    function toggleClientSafetyOther() {
-        const show = $('.client-safety-checkbox:checked').filter(function () {
-            return $(this).data('safety-option') === 'Any Other';
-        }).length > 0;
-        $('#client-safety-other-wrap').toggleClass('hidden', !show);
-    }
     function toggleClientPaymentReason() {
         $('#client-payment-reason-wrap').toggleClass('hidden', $('#client-payment-status').val() !== 'Pending');
     }
-    $(document).on('change', '.client-safety-checkbox', toggleClientSafetyOther);
     $('#client-payment-status').on('change', function () {
         toggleClientPaymentReason();
         $('[name="payment_status_reason"]').valid();
     });
-    toggleClientSafetyOther();
     toggleClientPaymentReason();
 </script>

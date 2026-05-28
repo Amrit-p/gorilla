@@ -4,10 +4,8 @@ namespace App\Http\Requests\Admin\Concerns;
 
 use App\Enums\ClientCustomerType;
 use App\Enums\ClientPaymentStatus;
-use App\Enums\JobParkingStatus;
 use App\Enums\LeadJobType;
 use App\Support\EquipmentTypes;
-use App\Support\SafetyTypes;
 use App\Enums\LeadPaymentMode;
 use App\Enums\LeadReCompletionDays;
 use App\Enums\LeadWeedSpray;
@@ -31,10 +29,8 @@ trait ValidatesClientIntake
             'weed_spray' => ['required', Rule::in(LeadWeedSpray::values())],
             're_completion_days' => ['required', Rule::in(LeadReCompletionDays::values())],
             'job_type' => ['required', Rule::in(LeadJobType::values())],
-            'safety_concerns' => ['required', 'array', 'min:1'],
-            'safety_concerns.*' => SafetyTypes::itemRules(),
-            'safety_other' => ['nullable', 'string', 'max:120'],
             'charges' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
+            'estimated_time' => ['nullable', 'string', 'max:50'],
             'phone' => ['nullable', 'string', 'max:30'],
             'email' => ['nullable', 'email', 'max:255'],
             'payment_mode' => ['required', Rule::in(LeadPaymentMode::values())],
@@ -46,11 +42,10 @@ trait ValidatesClientIntake
                 'string',
                 'max:255',
             ],
-            'parking_status' => ['nullable', Rule::in(JobParkingStatus::values())],
             'customer_type' => ['required', Rule::in(ClientCustomerType::values())],
             'additional_site_instructions' => ['nullable', 'string', 'max:5000'],
-            'pet_warning' => ['nullable', 'string', 'max:500'],
             'special_remarks' => ['nullable', 'string', 'max:5000'],
+            'zone_id' => ['nullable', 'exists:zones,id'],
         ];
     }
 }

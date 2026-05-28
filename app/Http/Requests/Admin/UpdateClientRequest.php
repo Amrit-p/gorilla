@@ -26,13 +26,4 @@ class UpdateClientRequest extends FormRequest
         ]);
     }
 
-    public function withValidator($validator): void
-    {
-        $validator->after(function ($validator): void {
-            $concerns = $this->input('safety_concerns', []);
-            if (in_array('Any Other', $concerns, true) && blank($this->input('safety_other'))) {
-                $validator->errors()->add('safety_other', 'Please specify the other safety concern.');
-            }
-        });
-    }
 }

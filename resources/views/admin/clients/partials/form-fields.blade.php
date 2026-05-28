@@ -45,7 +45,6 @@
             id="client-equipment-type-id"
             :equipment-types="$equipmentTypes ?? null"
             :selected="old('equipment_type_id', $clientModel?->equipment_type_id ?? $clientModel?->lead?->equipment_type_id)"
-            class="sm:col-span-2"
         />
 
         <div>
@@ -58,31 +57,24 @@
             </select>
         </div>
 
-        <div class="sm:col-span-2">
-            <label class="mb-1 block text-sm font-medium text-slate-700">Parking status</label>
-            <select name="parking_status" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                <option value="">Select parking</option>
-                @foreach ($parkingStatuses as $parkingStatus)
-                    <option value="{{ $parkingStatus }}" @selected(old('parking_status', $clientModel?->parking_status) === $parkingStatus)>{{ $parkingStatus }}</option>
-                @endforeach
-            </select>
-        </div>
-
-        <x-forms.safety-types
-            :selected="old('safety_concerns', $clientModel?->safety_concerns ?? [])"
-            :safety-options="$safetyOptions"
-            class="sm:col-span-2"
-        />
-
-        <div id="client-safety-other-wrap" class="hidden sm:col-span-2">
-            <x-ui.input label="Any other (type)" name="safety_other" :value="old('safety_other', $clientModel?->safety_other)" />
-        </div>
+        @isset($zones)
+            <div class="">
+                <label class="mb-1 block text-sm font-medium text-slate-700">Zone</label>
+                <select name="zone_id" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    <option value="">Select zone</option>
+                    @foreach ($zones as $zone)
+                        <option value="{{ $zone->id }}" @selected((string) old('zone_id', $clientModel?->zone_id) === (string) $zone->id)>
+                            {{ $zone->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+        @endisset
 
         <x-ui.input label="Charges" name="charges" type="number" step="0.01" min="0" :value="old('charges', $clientModel?->charges)" />
+        <x-ui.input label="Estimate time" name="estimated_time" :value="old('estimated_time', $clientModel?->estimated_time)" />
         <x-ui.input label="Mobile number" name="phone" :value="old('phone', $clientModel?->phone)" />
-        <div class="sm:col-span-2">
-            <x-ui.input label="Email" name="email" type="email" :value="old('email', $clientModel?->email)" />
-        </div>
+        <x-ui.input label="Email" name="email" type="email" :value="old('email', $clientModel?->email)" />
 
         <div>
             <label class="mb-1 block text-sm font-medium text-slate-700">Payment mode</label>
@@ -111,14 +103,12 @@
         </div>
 
         <div class="sm:col-span-2">
-            <label class="mb-1 block text-sm font-medium text-slate-700">Additional site instructions</label>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Additional instructions</label>
             <textarea name="additional_site_instructions" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" rows="2">{{ old('additional_site_instructions', $clientModel?->additional_site_instructions) }}</textarea>
         </div>
 
-        <x-ui.input label="Pet warning" name="pet_warning" :value="old('pet_warning', $clientModel?->pet_warning)" />
-
         <div class="sm:col-span-2">
-            <label class="mb-1 block text-sm font-medium text-slate-700">Special remarks</label>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Remarks</label>
             <textarea name="special_remarks" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" rows="2">{{ old('special_remarks', $clientModel?->special_remarks) }}</textarea>
         </div>
     </div>

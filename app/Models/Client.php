@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'safety_concerns',
     'safety_other',
     'charges',
+    'estimated_time',
     'payment_mode',
     'remarks_type',
     'payment_status',
