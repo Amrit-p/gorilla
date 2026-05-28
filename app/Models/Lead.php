@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable([
+    'zone_id',
     'client_name',
     'email',
     'mobile_number',
@@ -50,6 +51,11 @@ class Lead extends Model
             'longitude' => 'decimal:7',
             'lead_date' => 'date',
         ];
+    }
+
+    public function zone(): BelongsTo
+    {
+        return $this->belongsTo(Zone::class);
     }
 
     public function assignedSalesUser(): BelongsTo

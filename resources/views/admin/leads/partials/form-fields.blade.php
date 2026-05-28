@@ -121,6 +121,20 @@
             </div>
         @endisset
 
+        @isset($zones)
+            <div class="sm:col-span-2">
+                <label class="mb-1 block text-sm font-medium text-slate-700">Zone</label>
+                <select name="zone_id" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    <option value="">Select zone</option>
+                    @foreach ($zones as $zone)
+                        <option value="{{ $zone->id }}" @selected((string) old('zone_id', $leadModel?->zone_id) === (string) $zone->id)>
+                            {{ $zone->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+        @endisset
+
         <div class="sm:col-span-2" id="lead-remarks-wrap">
             <label class="mb-1 block text-sm font-medium text-slate-700">Remarks</label>
             <textarea name="remarks" id="lead-remarks" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" rows="3">{{ old('remarks', $leadModel?->remarks) }}</textarea>

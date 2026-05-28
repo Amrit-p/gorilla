@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[Fillable([
     'customer_unique_id',
     'lead_id',
+    'zone_id',
     'equipment_type_id',
     'name',
     'email',
@@ -63,6 +64,11 @@ class Client extends Model
             'longitude' => 'decimal:7',
             'customer_unique_id' => 'integer',
         ];
+    }
+
+    public function zone(): BelongsTo
+    {
+        return $this->belongsTo(Zone::class);
     }
 
     public function lead(): BelongsTo

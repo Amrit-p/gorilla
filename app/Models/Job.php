@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[Fillable([
     'client_id',
     'lead_id',
+    'zone_id',
     'equipment_type_id',
     'client_address',
     'latitude',
@@ -59,6 +60,11 @@ class Job extends Model
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
         ];
+    }
+
+    public function zone(): BelongsTo
+    {
+        return $this->belongsTo(Zone::class);
     }
 
     public function client(): BelongsTo

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\ClientCustomerType;
+use App\Enums\JobWorkflowStatus;
 use App\Enums\LeadPaymentStatus;
 use App\Enums\LeadStatus;
 use App\Models\Client;
@@ -10,6 +11,7 @@ use App\Models\Lead;
 use App\Models\User;
 use App\Notifications\LeadWonNotification;
 use App\Helpers\OptimizationHelper;
+use App\Models\Job;
 use App\Support\CrmRoles;
 use Illuminate\Support\Facades\DB;
 
@@ -47,8 +49,9 @@ class LeadConversionService
             $propertyDetails = trim(($propertyDetails ? $propertyDetails."\n" : '').'Equipment: '.$equipmentLabel);
         }
 
-        return Client::query()->create([
+        $client = Client::query()->create([
             'lead_id' => $lead->id,
+            'zone_id' => $lead->zone_id,
             'equipment_type_id' => $lead->equipment_type_id,
             'name' => $lead->client_name ?: $lead->address,
             'email' => $lead->email,
@@ -74,6 +77,8 @@ class LeadConversionService
             },
             'created_by' => $actor->id,
         ]);
+        $this->createJobFromLead($lead, $client, $actor);
+        return $client;
     }
 
     public function notifyManagers(Lead $lead): void
@@ -132,5 +137,36 @@ class LeadConversionService
     public static function shouldConvert(string $status): bool
     {
         return LeadStatus::convertsToClientValue($status);
+    }
+
+    public function createJobFromLead(Lead $lead, Client $client, User $actor): void
+    {
+        if (empty($lead->service_types)) {
+            return;
+        }
+
+        $job = Job::query()->create([
+            'client_id'              => $client->id,
+            'lead_id'                => $lead->id,           // missing
+            'zone_id'                => $lead->zone_id,
+            'equipment_type_id'      => $lead->equipment_type_id,
+            'client_address'         => $lead->address,      // missing (different name)
+            'latitude'               => $lead->latitude,     // missing
+            'longitude'              => $lead->longitude,    // missing
+            'required_services'      => $lead->service_types, // was 'service_types' (wrong key)
+            'scheduled_date'         => $lead->lead_date,
+            'scheduled_time'         => $lead->lead_time,
+            'payment_mode'           => $lead->payment_mode, // missing
+            'payment_status'         => $lead->payment_status, // missing
+            'status'                 => JobWorkflowStatus::HOLD->value,
+            'created_by'             => $actor->id,
+        ]);
+
+        $this->activityLogService->log(
+            $actor,
+            'job.created_from_lead',
+            'Job created from lead conversion.',
+            ['job_id' => $job->id, 'lead_id' => $lead->id, 'client_id' => $client->id]
+        );
     }
 }

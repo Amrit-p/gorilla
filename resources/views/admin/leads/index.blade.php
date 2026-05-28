@@ -19,7 +19,7 @@
 
         <div id="lead-alert" class="hidden"></div>
 
-        <form id="lead-filters-form" class="grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:grid-cols-4">
+        <form id="lead-filters-form" class="grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:grid-cols-3 lg:grid-cols-5">
             <input type="text" name="search" value="{{ $filters['search'] }}" placeholder="Search leads..." class="rounded-md border border-slate-300 px-3 py-2 text-sm">
             <select name="status" class="rounded-md border border-slate-300 px-3 py-2 text-sm">
                 <option value="">All statuses</option>
@@ -31,6 +31,12 @@
                 <option value="">All assignees</option>
                 @foreach ($salesUsers as $salesUser)
                     <option value="{{ $salesUser->id }}" @selected($filters['assigned_sales_user_id'] == $salesUser->id)>{{ $salesUser->name }}</option>
+                @endforeach
+            </select>
+            <select name="zone_id" class="rounded-md border border-slate-300 px-3 py-2 text-sm">
+                <option value="">All zones</option>
+                @foreach ($zones as $zone)
+                    <option value="{{ $zone->id }}" @selected($filters['zone_id'] == $zone->id)>{{ $zone->name }}</option>
                 @endforeach
             </select>
             <button type="submit" class="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-50">Apply Filters</button>
@@ -190,5 +196,53 @@
             event.preventDefault();
             refreshLeads($(this).attr('href'));
         });
+
+        // Action dropdown
+        let $openLeadMenu = null;
+
+        function closeLeadMenu() {
+            if ($openLeadMenu) {
+                $openLeadMenu.addClass('hidden').css({ position: '', top: '', left: '', zIndex: '' });
+                $openLeadMenu = null;
+            }
+        }
+
+        $(document).on('click', '.lead-actions-btn', function (e) {
+            e.stopPropagation();
+            const $btn = $(this);
+            const $menu = $btn.siblings('.lead-actions-menu');
+
+            if ($openLeadMenu && $openLeadMenu.is($menu)) {
+                closeLeadMenu();
+                return;
+            }
+
+            closeLeadMenu();
+
+            // Render off-screen first to measure actual dimensions
+            $menu.css({ position: 'fixed', top: '-9999px', left: '-9999px', zIndex: 9999 }).removeClass('hidden');
+
+            const menuH = $menu.outerHeight();
+            const menuW = $menu.outerWidth();
+            const rect  = $btn[0].getBoundingClientRect();
+            const vw    = window.innerWidth;
+            const vh    = window.innerHeight;
+
+            let top  = rect.bottom + 4;
+            let left = rect.right - menuW;
+
+            if (top + menuH > vh - 8) top = rect.top - menuH - 4;
+            if (top < 8) top = 8;
+            if (left < 8) left = 8;
+            if (left + menuW > vw - 8) left = vw - menuW - 8;
+
+            $menu.css({ top: top + 'px', left: left + 'px' });
+            $openLeadMenu = $menu;
+        });
+
+        $(document).on('click', function () { closeLeadMenu(); });
+        $(document).on('click', '.lead-actions-menu a, .lead-actions-menu button', function () { closeLeadMenu(); });
+        $(window).on('scroll', closeLeadMenu);
+        $('#leads-table-container').on('scroll', closeLeadMenu);
     </script>
 </x-layouts.dashboard>

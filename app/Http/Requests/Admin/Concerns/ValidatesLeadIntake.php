@@ -8,6 +8,7 @@ use App\Enums\LeadPaymentStatus;
 use App\Enums\LeadReCompletionDays;
 use App\Enums\LeadWeedSpray;
 use App\Models\User;
+use App\Models\Zone;
 use App\Support\CrmRoles;
 use App\Support\EquipmentTypes;
 use App\Support\ServiceTypes;
@@ -21,6 +22,7 @@ trait ValidatesLeadIntake
     protected function intakeRules(): array
     {
         return [
+            'zone_id' => ['nullable', 'integer', Rule::exists(Zone::class, 'id')->where('is_active', true)],
             'client_name' => ['required', 'string', 'max:120'],
             'address' => ['required', 'string', 'max:255'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],

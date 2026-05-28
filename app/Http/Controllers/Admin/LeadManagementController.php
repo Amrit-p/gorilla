@@ -29,6 +29,7 @@ class LeadManagementController extends Controller
             'search' => $request->string('search')->toString(),
             'status' => $request->string('status')->toString(),
             'assigned_sales_user_id' => $request->string('assigned_sales_user_id')->toString(),
+            'zone_id' => $request->string('zone_id')->toString(),
         ];
 
         $leads = $this->leadManagementService->paginatedLeads(

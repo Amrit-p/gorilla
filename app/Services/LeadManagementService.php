@@ -10,6 +10,7 @@ use App\Models\EquipmentType;
 use App\Models\Lead;
 use App\Models\LeadNote;
 use App\Models\User;
+use App\Models\Zone;
 use App\Repositories\LeadRepository;
 use App\Support\CrmRoles;
 use App\Support\EquipmentTypes;
@@ -54,6 +55,7 @@ class LeadManagementService
             'paymentModes' => \App\Enums\LeadPaymentMode::values(),
             'paymentStatuses' => LeadPaymentStatus::values(),
             'googleMapsKey' => GoogleMapsSettings::apiKey(),
+            'zones' => Zone::query()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(['id', 'name']),
         ];
     }
 

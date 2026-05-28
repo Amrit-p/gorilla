@@ -17,6 +17,7 @@ class LeadRepository
         $query = Lead::query()
             ->select([
                 'id',
+                'zone_id',
                 'client_name',
                 'email',
                 'mobile_number',
@@ -37,6 +38,7 @@ class LeadRepository
                 'assignedSalesUser:id,name',
                 'equipmentType:id,name,color_code',
                 'client:id,lead_id',
+                'zone:id,name',
             ])
             ->latest();
 

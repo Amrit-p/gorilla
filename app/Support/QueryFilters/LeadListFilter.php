@@ -33,6 +33,10 @@ final class LeadListFilter
             $query->where('assigned_sales_user_id', $filters['assigned_sales_user_id']);
         }
 
+        if (! empty($filters['zone_id'])) {
+            $query->where('zone_id', $filters['zone_id']);
+        }
+
         return $query;
     }
 }
