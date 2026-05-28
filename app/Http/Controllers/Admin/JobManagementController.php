@@ -33,6 +33,7 @@ class JobManagementController extends Controller
             'list_scope' => $request->string('list_scope')->toString(),
             'status' => $request->string('status')->toString(),
             'priority' => $request->string('priority')->toString(),
+            'zone_id' => $request->string('zone_id')->toString(),
         ];
 
         $jobs = $this->jobManagementService->paginatedJobs(

@@ -55,6 +55,8 @@
         </form>
     </x-ui.modal>
 
+    @include('admin.partials.dropdown-script')
+
     <script>
         function showJobAlert(message, isError = false) {
             const baseClass = isError
@@ -134,5 +136,7 @@
                 error: function () { showJobAlert('Failed to delete job.', true); }
             });
         });
+
+        crmDropdown('.job-actions-btn', '.job-actions-menu');
     </script>
 </x-layouts.dashboard>

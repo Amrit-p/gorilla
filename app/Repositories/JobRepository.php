@@ -20,6 +20,7 @@ class JobRepository
             ->select([
                 'id',
                 'client_id',
+                'zone_id',
                 'client_address',
                 'scheduled_date',
                 'scheduled_time',
@@ -35,6 +36,7 @@ class JobRepository
             ])
             ->with([
                 'client:id,name,address,customer_unique_id',
+                'zone:id,name',
                 'assignedEmployees:id,name,efficiency',
                 'doneByUser:id,name',
             ])

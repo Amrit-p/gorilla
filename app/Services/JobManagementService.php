@@ -9,6 +9,7 @@ use App\Jobs\GeocodeJobAddressJob;
 use App\Models\Client;
 use App\Models\Job;
 use App\Models\User;
+use App\Models\Zone;
 use App\Notifications\JobAssignedNotification;
 use App\Notifications\JobStatusChangedNotification;
 use App\Repositories\JobRepository;
@@ -74,6 +75,7 @@ class JobManagementService
             'paymentModes' => \App\Enums\JobOperationalPaymentMode::values(),
             'paymentStatuses' => JobOperationalPaymentStatus::values(),
             'equipmentTypes' => EquipmentTypes::selectOptions(),
+            'zones' => Zone::query()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(['id', 'name']),
             'workflowStatuses' => JobWorkflowStatus::values(),
             'listScopes' => [
                 'today' => 'Today',

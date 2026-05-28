@@ -45,6 +45,10 @@ final class JobListFilter
             $query->where('priority', $filters['priority']);
         }
 
+        if (! empty($filters['zone_id'])) {
+            $query->where('zone_id', $filters['zone_id']);
+        }
+
         return $query;
     }
 }
