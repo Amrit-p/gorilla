@@ -8,6 +8,7 @@ use App\Enums\JobParkingStatus;
 use App\Jobs\GeocodeClientAddressJob;
 use App\Models\Client;
 use App\Models\User;
+use App\Models\Zone;
 use App\Repositories\ClientRepository;
 use App\Support\EquipmentTypes;
 use App\Support\SafetyTypes;
@@ -67,6 +68,7 @@ class ClientManagementService
             'customerTypes' => ClientCustomerType::values(),
             'parkingStatuses' => JobParkingStatus::values(),
             'equipmentTypes' => EquipmentTypes::selectOptions(),
+            'zones' => Zone::active()->ordered()->get(['id', 'name']),
             'clientTypes' => ['Regular', 'On-Call', 'New'],
             'jobStatuses' => ['Pending', 'Assigned', 'En Route', 'On Site', 'Completed', 'Cancelled'],
         ];

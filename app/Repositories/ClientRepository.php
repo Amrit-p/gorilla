@@ -21,6 +21,7 @@ class ClientRepository
                 'id',
                 'customer_unique_id',
                 'lead_id',
+                'zone_id',
                 'name',
                 'email',
                 'phone',
@@ -38,6 +39,7 @@ class ClientRepository
             ->with([
                 'creator:id,name',
                 'lead:id,client_name,status',
+                'zone:id,name',
             ])
             ->withCount('jobs')
             ->latest();

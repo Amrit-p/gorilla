@@ -23,6 +23,8 @@
         </div>
     </div>
 
+    @include('admin.partials.dropdown-script')
+
     <script>
         function showClientAlert(message, isError = false) {
             const baseClass = isError
@@ -39,6 +41,8 @@
 
         $('#client-filter-form').on('submit', function (e) { e.preventDefault(); refreshClients(); });
         $(document).on('click', '#clients-table-container .pagination a', function (e) { e.preventDefault(); refreshClients($(this).attr('href')); });
+
+        crmDropdown('.client-actions-btn', '.client-actions-menu');
 
         $(document).on('click', '.delete-client', function () {
             const id = $(this).data('id');

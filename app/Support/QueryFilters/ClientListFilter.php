@@ -22,7 +22,7 @@ final class ClientListFilter
             });
         }
 
-        foreach (['job_type', 'customer_type', 'parking_status', 'payment_status', 'client_type'] as $column) {
+        foreach (['zone_id', 'job_type', 'customer_type', 'parking_status', 'payment_status', 'client_type'] as $column) {
             if (! empty($filters[$column])) {
                 $query->where($column, $filters[$column]);
             }
