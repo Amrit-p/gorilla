@@ -37,6 +37,10 @@ final class LeadListFilter
             $query->where('zone_id', $filters['zone_id']);
         }
 
+        if (! empty($filters['recurrence_id'])) {
+            $query->where('recurrence_id', $filters['recurrence_id']);
+        }
+
         return $query;
     }
 }

@@ -58,11 +58,11 @@
         </div>
 
         <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">Re-completion days</label>
-            <select name="re_completion_days" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                <option value="">Select re-completion days</option>
-                @foreach ($reCompletionDaysOptions as $reCompletionDaysOption)
-                    <option value="{{ $reCompletionDaysOption }}" @selected(old('re_completion_days', $leadModel?->re_completion_days) === $reCompletionDaysOption)>{{ $reCompletionDaysOption }}</option>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Recurrence</label>
+            <select name="recurrence_id" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" required>
+                <option value="">Select recurrence</option>
+                @foreach ($recurrences as $recurrence)
+                    <option value="{{ $recurrence->id }}" @selected((string) old('recurrence_id', $leadModel?->recurrence_id) === (string) $recurrence->id)>{{ $recurrence->name }}</option>
                 @endforeach
             </select>
         </div>

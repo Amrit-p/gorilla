@@ -1,4 +1,4 @@
-<x-ui.table :headers="['Lead', 'Contact', 'Job & Payment', 'Zone', 'Status', 'Assigned', '']">
+<x-ui.table :headers="['Lead', 'Contact', 'Job & Payment', 'Recurrence', 'Zone', 'Status', 'Assigned', '']">
     @forelse ($leads as $lead)
         <tr class="divide-x divide-slate-100 transition-colors hover:bg-slate-50/70">
 
@@ -59,6 +59,11 @@
                         <span class="rounded-md bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500">{{ $lead->payment_status }}</span>
                     @endif
                 </div>
+            </td>
+
+            {{-- Recurrence --}}
+            <td class="whitespace-nowrap px-4 py-4">
+                <span class="text-sm text-slate-600">{{ $lead->recurrence?->name ?? '—' }}</span>
             </td>
 
             {{-- Zone --}}
@@ -150,7 +155,7 @@
         </tr>
     @empty
         <tr>
-            <td colspan="7" class="px-4 py-10 text-center text-sm text-slate-400">No leads found.</td>
+            <td colspan="8" class="px-4 py-10 text-center text-sm text-slate-400">No leads found.</td>
         </tr>
     @endforelse
 </x-ui.table>

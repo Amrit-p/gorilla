@@ -25,6 +25,7 @@ class LeadRepository
                 'address',
                 'service_types',
                 'equipment_type_id',
+                'recurrence_id',
                 'job_type',
                 'charges',
                 'payment_mode',
@@ -40,6 +41,7 @@ class LeadRepository
                 'equipmentType:id,name,color_code',
                 'client:id,lead_id',
                 'zone:id,name',
+                'recurrence:id,name',
             ])
             ->latest();
 
@@ -56,6 +58,7 @@ class LeadRepository
                 'equipmentType:id,name,color_code',
                 'client:id,lead_id',
                 'zone:id,name',
+                'recurrence:id,name',
             ])
             ->latest();
 

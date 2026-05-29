@@ -28,7 +28,7 @@ class LeadsExport extends SpreadsheetExport
         'P' => ['header' => 'Lead Time',          'width' => 11],
         'Q' => ['header' => 'Converted At',       'width' => 18],
         'R' => ['header' => 'Weed Spray',         'width' => 12],
-        'S' => ['header' => 'Re-completion Days', 'width' => 18],
+        'S' => ['header' => 'Recurrence',          'width' => 18],
         'T' => ['header' => 'Remarks',            'width' => 30],
         'U' => ['header' => 'Property Details',   'width' => 28],
         'V' => ['header' => 'Latitude',           'width' => 14],
@@ -67,7 +67,7 @@ class LeadsExport extends SpreadsheetExport
             $sheet->setCellValue('P' . $row, $lead->lead_time ?? '');
             $sheet->setCellValue('Q' . $row, $lead->converted_at?->format('d/m/Y H:i') ?? '');
             $sheet->setCellValue('R' . $row, $lead->weed_spray ?? '');
-            $sheet->setCellValue('S' . $row, $lead->re_completion_days !== null ? (int) $lead->re_completion_days : '');
+            $sheet->setCellValue('S' . $row, $lead->recurrence?->name ?? '');
             $sheet->setCellValue('T' . $row, $lead->remarks ?? '');
             $sheet->setCellValue('U' . $row, $lead->property_details ?? '');
             $sheet->setCellValue('V' . $row, $lead->latitude !== null ? (float) $lead->latitude : '');
@@ -76,7 +76,7 @@ class LeadsExport extends SpreadsheetExport
 
             $sheet->getStyle('J' . $row)->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED2);
 
-            $this->applyRowStyle($sheet, $row, $i % 2 === 1, ['A', 'J', 'O', 'P', 'Q', 'R', 'S', 'V', 'W', 'X']);
+            $this->applyRowStyle($sheet, $row, $i % 2 === 1, ['A', 'J', 'O', 'P', 'Q', 'R', 'V', 'W', 'X']);
             $row++;
         }
 

@@ -14,20 +14,21 @@
         <colgroup>
             <col style="width:2%">  {{-- # --}}
             <col style="width:8%">  {{-- Client Name --}}
-            <col style="width:7%">  {{-- Email --}}
+            <col style="width:6%">  {{-- Email --}}
             <col style="width:5%">  {{-- Mobile --}}
-            <col style="width:9%">  {{-- Address --}}
+            <col style="width:8%">  {{-- Address --}}
             <col style="width:5%">  {{-- Zone --}}
-            <col style="width:9%">  {{-- Service Types --}}
-            <col style="width:6%">  {{-- Equipment --}}
+            <col style="width:8%">  {{-- Service Types --}}
+            <col style="width:5%">  {{-- Equipment --}}
+            <col style="width:5%">  {{-- Recurrence --}}
             <col style="width:5%">  {{-- Job Type --}}
             <col style="width:5%">  {{-- Charges --}}
             <col style="width:5%">  {{-- Payment Mode --}}
             <col style="width:5%">  {{-- Payment Status --}}
             <col style="width:6%">  {{-- Status --}}
-            <col style="width:7%">  {{-- Assigned To --}}
+            <col style="width:6%">  {{-- Assigned To --}}
             <col style="width:5%">  {{-- Lead Date --}}
-            <col style="width:6%">  {{-- Converted At --}}
+            <col style="width:5%">  {{-- Converted At --}}
             <col style="width:5%">  {{-- Created At --}}
         </colgroup>
         <thead>
@@ -40,6 +41,7 @@
                 <th>Zone</th>
                 <th>Service Types</th>
                 <th>Equipment</th>
+                <th>Recurrence</th>
                 <th>Job Type</th>
                 <th class="right">Charges</th>
                 <th>Payment Mode</th>
@@ -62,6 +64,7 @@
                     <td>{{ $lead->zone?->name ?? '—' }}</td>
                     <td>{{ is_array($lead->service_types) ? implode(', ', $lead->service_types) : '—' }}</td>
                     <td>{{ $lead->equipmentType?->name ?? '—' }}</td>
+                    <td>{{ $lead->recurrence?->name ?? '—' }}</td>
                     <td>{{ $lead->job_type ?? '—' }}</td>
                     <td class="right">{{ $lead->charges !== null ? '$' . number_format((float) $lead->charges, 2) : '—' }}</td>
                     <td>{{ $lead->payment_mode ?? '—' }}</td>
@@ -81,7 +84,7 @@
                     <td class="center">{{ $lead->created_at?->format('d/m/Y') ?? '—' }}</td>
                 </tr>
             @empty
-                <tr><td colspan="17" class="no-records">No leads found.</td></tr>
+                <tr><td colspan="18" class="no-records">No leads found.</td></tr>
             @endforelse
         </tbody>
     </table>

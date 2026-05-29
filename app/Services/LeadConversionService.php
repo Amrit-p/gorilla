@@ -59,7 +59,6 @@ class LeadConversionService
             'address' => $lead->address,
             'service_types' => $lead->service_types ?? [],
             'weed_spray' => $lead->weed_spray,
-            're_completion_days' => $lead->re_completion_days,
             'job_type' => $lead->job_type,
             'charges' => $lead->charges,
             'payment_mode' => $lead->payment_mode,

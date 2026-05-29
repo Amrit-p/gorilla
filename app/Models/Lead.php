@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Recurrence;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,7 +19,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'service_types',
     'weed_spray',
     'equipment_type_id',
-    're_completion_days',
+    'recurrence_id',
     'job_type',
     'charges',
     'payment_mode',
@@ -66,6 +67,11 @@ class Lead extends Model
     public function equipmentType(): BelongsTo
     {
         return $this->belongsTo(EquipmentType::class);
+    }
+
+    public function recurrence(): BelongsTo
+    {
+        return $this->belongsTo(Recurrence::class);
     }
 
     public function client(): HasOne

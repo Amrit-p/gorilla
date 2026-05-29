@@ -5,8 +5,8 @@ namespace App\Http\Requests\Admin\Concerns;
 use App\Enums\LeadJobType;
 use App\Enums\LeadPaymentMode;
 use App\Enums\LeadPaymentStatus;
-use App\Enums\LeadReCompletionDays;
 use App\Enums\LeadWeedSpray;
+use App\Models\Recurrence;
 use App\Models\User;
 use App\Models\Zone;
 use App\Support\CrmRoles;
@@ -33,7 +33,7 @@ trait ValidatesLeadIntake
             'service_types.*' => ServiceTypes::itemRules(),
             'weed_spray' => ['required', Rule::in(LeadWeedSpray::values())],
             'equipment_type_id' => EquipmentTypes::idRules(),
-            're_completion_days' => ['required', Rule::in(LeadReCompletionDays::values())],
+            'recurrence_id' => ['required', 'integer', Rule::exists(Recurrence::class, 'id')->where('is_active', true)],
             'job_type' => ['required', Rule::in(LeadJobType::values())],
             'charges' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'mobile_number' => ['nullable', 'string', 'max:30'],

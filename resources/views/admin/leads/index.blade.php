@@ -29,6 +29,7 @@
             :statuses="$statuses"
             :salesUsers="$salesUsers"
             :zones="$zones"
+            :recurrences="$recurrences"
             :resetRoute="route('admin.leads.index')"
         />
 

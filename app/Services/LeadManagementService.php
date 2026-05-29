@@ -9,6 +9,7 @@ use App\Jobs\GeocodeLeadAddressJob;
 use App\Models\EquipmentType;
 use App\Models\Lead;
 use App\Models\LeadNote;
+use App\Models\Recurrence;
 use App\Models\User;
 use App\Models\Zone;
 use App\Repositories\LeadRepository;
@@ -56,7 +57,7 @@ class LeadManagementService
             'serviceTypes' => ServiceTypes::all(),
             'weedSprayOptions' => \App\Enums\LeadWeedSpray::values(),
             'equipmentTypes' => EquipmentTypes::selectOptions(),
-            'reCompletionDaysOptions' => \App\Enums\LeadReCompletionDays::values(),
+            'recurrences' => Recurrence::query()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(['id', 'name']),
             'jobTypes' => \App\Enums\LeadJobType::values(),
             'paymentModes' => \App\Enums\LeadPaymentMode::values(),
             'paymentStatuses' => LeadPaymentStatus::values(),
@@ -152,7 +153,7 @@ class LeadManagementService
             'service_types',
             'weed_spray',
             'equipment_type_id',
-            're_completion_days',
+            'recurrence_id',
             'job_type',
             'charges',
             'payment_mode',
@@ -179,7 +180,7 @@ class LeadManagementService
             implode(', ', array_slice(ServiceTypes::all(), 0, 2)) ?: 'Mulching',
             \App\Enums\LeadWeedSpray::NO->value,
             (string) ($equipmentId ?? ''),
-            \App\Enums\LeadReCompletionDays::DAYS_14->value,
+            (string) (Recurrence::query()->where('is_active', true)->value('id') ?? ''),
             \App\Enums\LeadJobType::REGULAR->value,
             '75.00',
             \App\Enums\LeadPaymentMode::CASH->value,
@@ -231,7 +232,7 @@ class LeadManagementService
                 'service_types' => $this->resolveImportServiceTypes($mapped),
                 'weed_spray' => $mapped['weed_spray'] ?? null,
                 'equipment_type_id' => is_numeric($mapped['equipment_type_id'] ?? null) ? (int) $mapped['equipment_type_id'] : null,
-                're_completion_days' => $mapped['re_completion_days'] ?? null,
+                'recurrence_id' => is_numeric($mapped['recurrence_id'] ?? null) ? (int) $mapped['recurrence_id'] : null,
                 'job_type' => $mapped['job_type'] ?? null,
                 'charges' => $mapped['charges'] ?? null,
                 'payment_mode' => $mapped['payment_mode'] ?? null,

@@ -33,6 +33,7 @@ class LeadManagementController extends Controller
             'status' => $request->string('status')->toString(),
             'assigned_sales_user_id' => $request->string('assigned_sales_user_id')->toString(),
             'zone_id' => $request->string('zone_id')->toString(),
+            'recurrence_id' => $request->string('recurrence_id')->toString(),
         ];
 
         $leads = $this->leadManagementService->paginatedLeads(
