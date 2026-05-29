@@ -26,7 +26,7 @@ class ClientsExport extends SpreadsheetExport
         'N' => ['header' => 'Customer Type',        'width' => 16],
         'O' => ['header' => 'Client Type',          'width' => 13],
         'P' => ['header' => 'Weed Spray',           'width' => 12],
-        'Q' => ['header' => 'Re-completion Days',   'width' => 18],
+        'Q' => ['header' => 'Recurrence',           'width' => 18],
         'R' => ['header' => 'Property Details',     'width' => 28],
         'S' => ['header' => 'Special Remarks',      'width' => 28],
         'T' => ['header' => 'Notes',                'width' => 30],
@@ -64,7 +64,7 @@ class ClientsExport extends SpreadsheetExport
             $sheet->setCellValue('N' . $row, $client->customer_type ?? '');
             $sheet->setCellValue('O' . $row, $client->client_type ?? '');
             $sheet->setCellValue('P' . $row, $client->weed_spray ?? '');
-            $sheet->setCellValue('Q' . $row, $client->re_completion_days !== null ? (int) $client->re_completion_days : '');
+            $sheet->setCellValue('Q' . $row, $client->recurrence?->name ?? '');
             $sheet->setCellValue('R' . $row, $client->property_details ?? '');
             $sheet->setCellValue('S' . $row, $client->special_remarks ?? '');
             $sheet->setCellValue('T' . $row, $client->notes ?? '');

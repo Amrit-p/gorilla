@@ -28,7 +28,7 @@
             <col style="width:5%">  {{-- Customer Type --}}
             <col style="width:4%">  {{-- Client Type --}}
             <col style="width:4%">  {{-- Weed Spray --}}
-            <col style="width:4%">  {{-- Re-comp. Days --}}
+            <col style="width:4%">  {{-- Recurrence --}}
             <col style="width:5%">  {{-- Property Details --}}
             <col style="width:6%">  {{-- Special Remarks --}}
             <col style="width:4%">  {{-- Created At --}}
@@ -51,7 +51,7 @@
                 <th>Customer Type</th>
                 <th>Client Type</th>
                 <th>Weed Spray</th>
-                <th class="center">Re-comp. Days</th>
+                <th class="center">Recurrence</th>
                 <th>Property Details</th>
                 <th>Special Remarks</th>
                 <th class="center">Created At</th>
@@ -76,7 +76,7 @@
                     <td>{{ $client->customer_type ?? '—' }}</td>
                     <td>{{ $client->client_type ?? '—' }}</td>
                     <td>{{ $client->weed_spray ?? '—' }}</td>
-                    <td class="center">{{ $client->re_completion_days ?? '—' }}</td>
+                    <td class="center">{{ $client->recurrence?->name ?? '—' }}</td>
                     <td>{{ $client->property_details ?? '—' }}</td>
                     <td>{{ $client->special_remarks ?? '—' }}</td>
                     <td class="center">{{ $client->created_at?->format('d/m/Y') ?? '—' }}</td>
