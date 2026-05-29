@@ -4,6 +4,8 @@
 ])
 
 <x-layouts.app :title="$title">
+
+
     <div class="min-h-screen bg-[#f3f5f9]">
         <header class="border-b border-[#2c3344] bg-[#2c3344] lg:hidden">
             <div class="flex items-center justify-between px-4 py-3">
@@ -18,11 +20,22 @@
         </header>
 
         <div class="flex">
-            <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 hidden h-screen w-64 lg:block">
+            <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 hidden h-screen lg:block">
                 @include('components.layouts.partials.sidebar-nav')
             </aside>
 
-            <main class="min-h-screen w-full flex-1 lg:ml-64">
+            {{-- Floating collapse toggle (desktop only) --}}
+            <button id="sidebar-collapse-btn"
+                type="button"
+                class="fixed top-[22px] z-50 hidden h-6 w-6 items-center justify-center rounded-full border border-slate-600 bg-[#3a4358] text-slate-400 shadow-md hover:border-slate-400 hover:text-white lg:flex"
+                style="left: calc(16rem - 12px);"
+                title="Toggle sidebar">
+                <svg id="collapse-icon" class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </button>
+
+            <main id="main-content" class="min-h-screen w-full flex-1">
                 <div class="border-b border-slate-200 bg-white">
                     <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
                         <div class="min-w-[200px]">
@@ -57,27 +70,90 @@
     </div>
 
     <script>
+        // ===== MOBILE MENU =====
         $('#mobile-menu-toggle').on('click', function () {
             $('#sidebar').toggleClass('hidden');
         });
 
-        function syncSidebarAccordion($accordion) {
-            const open = $accordion.attr('data-open') === 'true';
-            const $panel = $accordion.find('.sidebar-accordion-panel').first();
-            const $chevron = $accordion.find('.sidebar-accordion-chevron').first();
-            $panel.toggleClass('hidden', !open);
-            $chevron.toggleClass('rotate-180', open);
+        // ===== SIDEBAR COLLAPSE (DESKTOP) =====
+        // Default to collapsed (null = first visit = collapsed)
+        var stored = localStorage.getItem('sidebarCollapsed');
+        var sidebarCollapsed = stored === null ? true : stored === 'true';
+
+        function applySidebarState() {
+            if (sidebarCollapsed) {
+                $('#sidebar').addClass('sidebar-collapsed');
+                $('#main-content').addClass('sidebar-collapsed');
+                $('#collapse-icon').css('transform', 'rotate(180deg)');
+                $('#sidebar-collapse-btn').css('left', 'calc(4rem - 12px)');
+            } else {
+                $('#sidebar').removeClass('sidebar-collapsed');
+                $('#main-content').removeClass('sidebar-collapsed');
+                $('#collapse-icon').css('transform', '');
+                $('#sidebar-collapse-btn').css('left', 'calc(16rem - 12px)');
+            }
         }
 
-        $('.sidebar-accordion').each(function () {
-            syncSidebarAccordion($(this));
+        // Apply initial state without animation to avoid layout flash
+        applySidebarState();
+        requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+                $('body').removeClass('no-transitions');
+            });
         });
 
-        $(document).on('click', '.sidebar-accordion-trigger', function () {
-            const $accordion = $(this).closest('.sidebar-accordion');
-            const isOpen = $accordion.attr('data-open') === 'true';
-            $accordion.attr('data-open', isOpen ? 'false' : 'true');
-            syncSidebarAccordion($accordion);
+        $('#sidebar-collapse-btn').on('click', function () {
+            clearFlyout();
+            sidebarCollapsed = !sidebarCollapsed;
+            localStorage.setItem('sidebarCollapsed', sidebarCollapsed);
+            applySidebarState();
+        });
+
+        // ===== COLLAPSED SIDEBAR FLYOUT =====
+        var $activeFlyout = null;
+        var flyoutHideTimer = null;
+
+        function clearFlyout() {
+            clearTimeout(flyoutHideTimer);
+            if ($activeFlyout) {
+                $activeFlyout.find('.sidebar-flyout-title').remove();
+                $activeFlyout.removeClass('sidebar-flyout').css({ top: '', display: '' });
+                $activeFlyout = null;
+            }
+        }
+
+        function showFlyout($accordion) {
+            clearTimeout(flyoutHideTimer);
+            var $panel = $accordion.find('.sidebar-accordion-panel');
+            var triggerRect = $accordion.find('.sidebar-accordion-trigger')[0].getBoundingClientRect();
+            var label = $accordion.find('.sidebar-text').first().text().trim();
+
+            if ($activeFlyout && $activeFlyout[0] !== $panel[0]) {
+                clearFlyout();
+            }
+
+            if (!$panel.find('.sidebar-flyout-title').length && label) {
+                $panel.prepend('<div class="sidebar-flyout-title">' + label + '</div>');
+            }
+
+            $panel.css({ top: triggerRect.top + 'px', display: 'block' }).addClass('sidebar-flyout');
+            $activeFlyout = $panel;
+        }
+
+        function scheduleFlyoutHide() {
+            flyoutHideTimer = setTimeout(clearFlyout, 120);
+        }
+
+        $(document).on('mouseenter', '#sidebar.sidebar-collapsed .sidebar-accordion', function () {
+            showFlyout($(this));
+        }).on('mouseleave', '#sidebar.sidebar-collapsed .sidebar-accordion', function () {
+            scheduleFlyoutHide();
+        });
+
+        $(document).on('mouseenter', '.sidebar-flyout', function () {
+            clearTimeout(flyoutHideTimer);
+        }).on('mouseleave', '.sidebar-flyout', function () {
+            scheduleFlyoutHide();
         });
     </script>
 </x-layouts.app>
