@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\LeadsExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ImportLeadsRequest;
 use App\Http\Requests\Admin\StoreLeadRequest;
@@ -9,9 +10,11 @@ use App\Http\Requests\Admin\UpdateLeadRequest;
 use App\Http\Requests\Admin\UpdateLeadStatusRequest;
 use App\Models\Lead;
 use App\Services\LeadManagementService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -172,5 +175,35 @@ class LeadManagementController extends Controller
         $this->authorize('create', Lead::class);
 
         return $this->leadManagementService->downloadImportSampleCsv();
+    }
+
+    public function exportExcel(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', Lead::class);
+
+        $leads = $this->leadManagementService->exportLeads($this->exportFilters($request));
+
+        return (new LeadsExport($leads))->download('leads-' . now()->format('Y-m-d') . '.xlsx');
+    }
+
+    public function exportPdf(Request $request): Response
+    {
+        $this->authorize('viewAny', Lead::class);
+
+        $leads = $this->leadManagementService->exportLeads($this->exportFilters($request));
+
+        return Pdf::loadView('admin.leads.partials.export-pdf', compact('leads'))
+            ->setPaper('a3', 'landscape')
+            ->download('leads-' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    private function exportFilters(Request $request): array
+    {
+        return [
+            'search'                 => $request->string('search')->toString(),
+            'status'                 => $request->string('status')->toString(),
+            'assigned_sales_user_id' => $request->string('assigned_sales_user_id')->toString(),
+            'zone_id'                => $request->string('zone_id')->toString(),
+        ];
     }
 }

@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Models\Lead;
 use App\Support\QueryFilters\LeadListFilter;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 
 class LeadRepository
 {
@@ -45,5 +46,21 @@ class LeadRepository
         $this->leadListFilter->apply($query, $filters);
 
         return $query->paginate($perPage)->withQueryString();
+    }
+
+    public function exportList(array $filters): Collection
+    {
+        $query = Lead::query()
+            ->with([
+                'assignedSalesUser:id,name',
+                'equipmentType:id,name,color_code',
+                'client:id,lead_id',
+                'zone:id,name',
+            ])
+            ->latest();
+
+        $this->leadListFilter->apply($query, $filters);
+
+        return $query->get();
     }
 }

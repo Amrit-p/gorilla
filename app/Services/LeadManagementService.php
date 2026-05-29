@@ -17,6 +17,7 @@ use App\Support\EquipmentTypes;
 use App\Support\GoogleMapsSettings;
 use App\Support\ServiceTypes;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -33,6 +34,11 @@ class LeadManagementService
     public function paginatedLeads(array $filters, int $perPage): LengthAwarePaginator
     {
         return $this->leadRepository->paginatedList($filters, $perPage);
+    }
+
+    public function exportLeads(array $filters): Collection
+    {
+        return $this->leadRepository->exportList($filters);
     }
 
     /**
