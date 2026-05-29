@@ -72,7 +72,7 @@ class JobsExport extends SpreadsheetExport
             $sheet->setCellValue('S'  . $row, $job->doneByUser?->name ?? '');
             $sheet->setCellValue('T'  . $row, $job->assignedEmployees->pluck('name')->join(', '));
             $sheet->setCellValue('U'  . $row, $job->is_recurring ? 'Yes' : 'No');
-            $sheet->setCellValue('V'  . $row, $job->recurrence_pattern ?? '');
+            $sheet->setCellValue('V'  . $row, $job->recurrence?->name ?? '');
             $sheet->setCellValue('W'  . $row, $job->site_instructions ?? '');
             $sheet->setCellValue('X'  . $row, $job->special_remarks ?? '');
             $sheet->setCellValue('Y'  . $row, $job->internal_notes ?? '');

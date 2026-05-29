@@ -1,5 +1,5 @@
 @php
-    $hasActiveFilters = !empty($filters['search']) || !empty($filters['list_scope']) || !empty($filters['status']) || !empty($filters['zone_id']);
+    $hasActiveFilters = !empty($filters['search']) || !empty($filters['list_scope']) || !empty($filters['status']) || !empty($filters['zone_id']) || !empty($filters['recurrence_id']);
     $activeCount = collect($filters)->filter(fn ($v) => $v !== '' && $v !== null)->count();
     $tableContainer = $tableContainer ?? 'jobs-table-container';
 @endphp
@@ -59,7 +59,7 @@
             <input type="hidden" name="client_id" value="{{ $clientId }}">
         @endif
 
-        <div class="grid grid-cols-4 gap-2.5">
+        <div class="grid grid-cols-5 gap-2.5">
 
             <div class="relative col-span-2">
                 <span class="pointer-events-none absolute inset-y-0 left-2.5 flex items-center">
@@ -87,6 +87,13 @@
                 <option value="">Any status</option>
                 @foreach ($workflowStatuses as $workflowStatus)
                     <option value="{{ $workflowStatus }}" @selected(($filters['status'] ?? '') === $workflowStatus)>{{ $workflowStatus }}</option>
+                @endforeach
+            </select>
+
+            <select name="recurrence_id" class="cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
+                <option value="">Any recurrence</option>
+                @foreach ($recurrences as $recurrence)
+                    <option value="{{ $recurrence->id }}" @selected(($filters['recurrence_id'] ?? '') == $recurrence->id)>{{ $recurrence->name }}</option>
                 @endforeach
             </select>
 

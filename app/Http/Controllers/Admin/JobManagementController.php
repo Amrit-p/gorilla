@@ -39,6 +39,7 @@ class JobManagementController extends Controller
             'priority' => $request->string('priority')->toString(),
             'zone_id' => $request->string('zone_id')->toString(),
             'client_id' => $request->string('client_id')->toString(),
+            'recurrence_id' => $request->string('recurrence_id')->toString(),
         ];
 
         $jobs = $this->jobManagementService->paginatedJobs(
@@ -253,12 +254,13 @@ class JobManagementController extends Controller
     private function exportFilters(Request $request): array
     {
         return [
-            'search'     => $request->string('search')->toString(),
-            'list_scope' => $request->string('list_scope')->toString(),
-            'status'     => $request->string('status')->toString(),
-            'priority'   => $request->string('priority')->toString(),
-            'zone_id'    => $request->string('zone_id')->toString(),
-            'client_id'  => $request->string('client_id')->toString(),
+            'search'        => $request->string('search')->toString(),
+            'list_scope'    => $request->string('list_scope')->toString(),
+            'status'        => $request->string('status')->toString(),
+            'priority'      => $request->string('priority')->toString(),
+            'zone_id'       => $request->string('zone_id')->toString(),
+            'client_id'     => $request->string('client_id')->toString(),
+            'recurrence_id' => $request->string('recurrence_id')->toString(),
         ];
     }
 }

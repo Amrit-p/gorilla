@@ -8,6 +8,7 @@ use App\Helpers\OptimizationHelper;
 use App\Jobs\GeocodeJobAddressJob;
 use App\Models\Client;
 use App\Models\Job;
+use App\Models\Recurrence;
 use App\Models\User;
 use App\Models\Zone;
 use App\Notifications\JobAssignedNotification;
@@ -82,6 +83,7 @@ class JobManagementService
             'customerTypes' => \App\Enums\JobCustomerType::values(),
             'paymentModes' => \App\Enums\JobOperationalPaymentMode::values(),
             'paymentStatuses' => JobOperationalPaymentStatus::values(),
+            'recurrences' => Recurrence::query()->orderBy('name')->get(['id', 'name']),
             'equipmentTypes' => EquipmentTypes::selectOptions(),
             'zones' => Zone::query()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(['id', 'name']),
             'workflowStatuses' => JobWorkflowStatus::values(),

@@ -36,7 +36,13 @@
     </div>
 
     <div class="mt-3">
-        <x-ui.input label="Recurrence pattern" name="recurrence_pattern" :value="old('recurrence_pattern', $jobModel?->recurrence_pattern)" />
+        <label class="mb-1 block text-sm font-medium text-slate-700">Recurrence <span class="text-red-500">*</span></label>
+        <select name="recurrence_id" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" required>
+            <option value="">Select recurrence</option>
+            @foreach ($recurrences as $recurrence)
+                <option value="{{ $recurrence->id }}" @selected((string) old('recurrence_id', $jobModel?->recurrence_id) === (string) $recurrence->id)>{{ $recurrence->name }}</option>
+            @endforeach
+        </select>
     </div>
 
     <div class="mt-3">

@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'lead_id',
     'zone_id',
     'equipment_type_id',
+    'recurrence_id',
     'client_address',
     'latitude',
     'longitude',
@@ -22,7 +23,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'consumed_time_minutes',
     'required_services',
     'is_recurring',
-    'recurrence_pattern',
     'route_sequence',
     'priority',
     'status',
@@ -97,5 +97,10 @@ class Job extends Model
         return $this->belongsToMany(User::class, 'job_user_assignments')
             ->withPivot(['assignment_date', 'assignment_status'])
             ->withTimestamps();
+    }
+
+    public function recurrence(): BelongsTo
+    {
+        return $this->belongsTo(Recurrence::class);
     }
 }

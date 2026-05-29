@@ -1,4 +1,4 @@
-<x-ui.table :headers="['Customer / Address', 'Zone', 'Schedule', 'Services', 'Payment', 'Mowers', 'Actions']">
+<x-ui.table :headers="['Customer / Address', 'Zone', 'Schedule', 'Services', 'Recurrence', 'Payment', 'Mowers', 'Actions']">
     @forelse ($jobs as $job)
         <tr class="divide-x divide-slate-100 transition-colors hover:bg-slate-50/70">
 
@@ -46,6 +46,11 @@
                 @if ($job->parking_status)
                     <span class="mt-0.5 inline-block rounded-md bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500">{{ $job->parking_status }}</span>
                 @endif
+            </td>
+
+            {{-- Recurrence --}}
+            <td class="whitespace-nowrap px-4 py-4">
+                <span class="text-sm text-slate-700">{{ $job->recurrence?->name ?? '—' }}</span>
             </td>
 
             {{-- Payment --}}
@@ -118,7 +123,7 @@
         </tr>
     @empty
         <tr>
-            <td colspan="7" class="px-4 py-10 text-center text-sm text-slate-400">No jobs found.</td>
+            <td colspan="8" class="px-4 py-10 text-center text-sm text-slate-400">No jobs found.</td>
         </tr>
     @endforelse
 </x-ui.table>

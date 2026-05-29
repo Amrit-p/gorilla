@@ -53,6 +53,10 @@ final class JobListFilter
             $query->where('client_id', $filters['client_id']);
         }
 
+        if (! empty($filters['recurrence_id'])) {
+            $query->where('recurrence_id', $filters['recurrence_id']);
+        }
+
         return $query;
     }
 }

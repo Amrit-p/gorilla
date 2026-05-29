@@ -33,10 +33,12 @@ class JobRepository
                 'payment_mode',
                 'payment_status',
                 'done_by_user_id',
+                'recurrence_id',
             ])
             ->with([
                 'client:id,name,address,customer_unique_id',
                 'zone:id,name',
+                'recurrence:id,name',
                 'assignedEmployees:id,name,efficiency',
                 'doneByUser:id,name',
             ])

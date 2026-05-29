@@ -13,20 +13,21 @@
     <table style="table-layout:fixed;">
         <colgroup>
             <col style="width:2%">  {{-- # --}}
-            <col style="width:9%">  {{-- Client Name --}}
-            <col style="width:9%">  {{-- Address --}}
+            <col style="width:8%">  {{-- Client Name --}}
+            <col style="width:8%">  {{-- Address --}}
             <col style="width:5%">  {{-- Zone --}}
             <col style="width:6%">  {{-- Scheduled Date --}}
             <col style="width:5%">  {{-- Time --}}
             <col style="width:4%">  {{-- Est. (min) --}}
-            <col style="width:10%"> {{-- Services --}}
+            <col style="width:9%">  {{-- Services --}}
             <col style="width:6%">  {{-- Equipment --}}
+            <col style="width:5%">  {{-- Recurrence --}}
             <col style="width:6%">  {{-- Status --}}
             <col style="width:4%">  {{-- Priority --}}
             <col style="width:6%">  {{-- Payment Mode --}}
             <col style="width:6%">  {{-- Payment Status --}}
             <col style="width:7%">  {{-- Done By --}}
-            <col style="width:9%">  {{-- Assigned Mowers --}}
+            <col style="width:7%">  {{-- Assigned Mowers --}}
             <col style="width:6%">  {{-- Created At --}}
         </colgroup>
         <thead>
@@ -40,6 +41,7 @@
                 <th class="center">Est. (min)</th>
                 <th>Services</th>
                 <th>Equipment</th>
+                <th>Recurrence</th>
                 <th class="center">Status</th>
                 <th class="center">Priority</th>
                 <th>Payment Mode</th>
@@ -66,6 +68,7 @@
                     <td class="center">{{ $job->estimated_duration_minutes ?? '—' }}</td>
                     <td>{{ is_array($job->required_services) ? implode(', ', $job->required_services) : '—' }}</td>
                     <td>{{ $job->equipmentType?->name ?? '—' }}</td>
+                    <td>{{ $job->recurrence?->name ?? '—' }}</td>
                     <td class="center"><span class="badge">{{ $job->status ?? '—' }}</span></td>
                     <td class="center"><span class="badge">{{ $job->priority ?? '—' }}</span></td>
                     <td>{{ $job->payment_mode ?? '—' }}</td>
@@ -75,7 +78,7 @@
                     <td class="center">{{ $job->created_at?->format('d/m/Y') ?? '—' }}</td>
                 </tr>
             @empty
-                <tr><td colspan="16" class="no-records">No jobs found.</td></tr>
+                <tr><td colspan="17" class="no-records">No jobs found.</td></tr>
             @endforelse
         </tbody>
     </table>

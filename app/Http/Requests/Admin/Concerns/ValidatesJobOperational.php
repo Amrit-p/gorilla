@@ -21,6 +21,7 @@ trait ValidatesJobOperational
     {
         return [
             'client_id' => ['required', 'exists:clients,id'],
+            'recurrence_id' => ['required', 'exists:recurrences,id'],
             'equipment_type_id' => EquipmentTypes::idRules(),
             'client_address' => ['required', 'string', 'max:255'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],

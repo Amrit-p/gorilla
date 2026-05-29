@@ -52,6 +52,7 @@ class LeadConversionService
         $client = Client::query()->create([
             'lead_id' => $lead->id,
             'zone_id' => $lead->zone_id,
+            'recurrence_id' => $lead->recurrence_id,
             'equipment_type_id' => $lead->equipment_type_id,
             'name' => $lead->client_name ?: $lead->address,
             'email' => $lead->email,
@@ -146,6 +147,7 @@ class LeadConversionService
 
         $job = Job::query()->create([
             'client_id'              => $client->id,
+            'recurrence_id'          => $lead->recurrence_id,
             'lead_id'                => $lead->id,           // missing
             'zone_id'                => $lead->zone_id,
             'equipment_type_id'      => $lead->equipment_type_id,
