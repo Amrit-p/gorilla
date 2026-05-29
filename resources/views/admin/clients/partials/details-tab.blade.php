@@ -43,8 +43,8 @@
                 <dd class="text-slate-800">{{ $client->weed_spray ?: '—' }}</dd>
             </div>
             <div class="flex justify-between gap-4">
-                <dt class="text-slate-500">Re-completion</dt>
-                <dd class="text-slate-800">{{ $client->re_completion_days ?: '—' }}</dd>
+                <dt class="text-slate-500">Recurrence</dt>
+                <dd class="text-slate-800">{{ $client->recurrence?->name ?? '—' }}</dd>
             </div>
             <div class="flex justify-between gap-4">
                 <dt class="text-slate-500">Job / customer type</dt>

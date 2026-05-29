@@ -36,6 +36,7 @@ class ClientManagementController extends Controller
         $filters = [
             'search' => $request->string('search')->toString(),
             'zone_id' => $request->string('zone_id')->toString(),
+            'recurrence_id' => $request->string('recurrence_id')->toString(),
             'job_type' => $request->string('job_type')->toString(),
             'customer_type' => $request->string('customer_type')->toString(),
             'parking_status' => $request->string('parking_status')->toString(),

@@ -7,6 +7,7 @@ use App\Enums\ClientPaymentStatus;
 use App\Enums\JobParkingStatus;
 use App\Jobs\GeocodeClientAddressJob;
 use App\Models\Client;
+use App\Models\Recurrence;
 use App\Models\User;
 use App\Models\Zone;
 use App\Repositories\ClientRepository;
@@ -70,7 +71,7 @@ class ClientManagementService
         return [
             'serviceTypes' => ServiceTypes::all(),
             'weedSprayOptions' => \App\Enums\LeadWeedSpray::values(),
-            'reCompletionDaysOptions' => \App\Enums\LeadReCompletionDays::values(),
+            'recurrenceOptions' => Recurrence::all(),
             'jobTypes' => \App\Enums\LeadJobType::values(),
             'safetyOptions' => SafetyTypes::all(),
             'paymentModes' => \App\Enums\LeadPaymentMode::values(),

@@ -1,4 +1,4 @@
-<x-ui.table :headers="['Customer', 'Zone', 'Contact', 'Profile', 'Jobs', 'Actions']">
+<x-ui.table :headers="['Customer', 'Recurrence', 'Zone', 'Contact', 'Profile', 'Jobs', 'Actions']">
     @forelse ($clients as $client)
         <tr class="divide-x divide-slate-100 transition-colors hover:bg-slate-50/70">
 
@@ -12,7 +12,11 @@
                     <x-ui.badge type="success" class="mt-1">From lead</x-ui.badge>
                 @endif
             </td>
-
+            
+            {{-- Recurrence --}}
+            <td class="whitespace-nowrap px-4 py-4">
+                <span class="text-sm text-slate-600">{{ $client->recurrence?->name ?? '—' }}</span>
+            </td>
             {{-- Zone --}}
             <td class="whitespace-nowrap px-4 py-4">
                 @if ($client->zone)

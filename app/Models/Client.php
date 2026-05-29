@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'address',
     'service_types',
     'weed_spray',
-    're_completion_days',
+    'recurrence_id',
     'job_type',
     'safety_concerns', // This field is not being stored because it is not currently being used in the application.
     'safety_other', // This field is not being stored because it is not currently being used in the application.
@@ -90,5 +90,10 @@ class Client extends Model
     public function jobs(): HasMany
     {
         return $this->hasMany(Job::class);
+    }
+
+    public function recurrence(): BelongsTo
+    {
+        return $this->belongsTo(Recurrence::class);
     }
 }

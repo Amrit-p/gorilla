@@ -22,11 +22,10 @@
         </div>
 
         <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">Re-completion days</label>
-            <select name="re_completion_days" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                <option value="">Select re-completion days</option>
-                @foreach ($reCompletionDaysOptions as $reCompletionDaysOption)
-                    <option value="{{ $reCompletionDaysOption }}" @selected(old('re_completion_days', $clientModel?->re_completion_days) === $reCompletionDaysOption)>{{ $reCompletionDaysOption }}</option>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Recurrence</label>
+            <select name="recurrence_id" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                @foreach ($recurrenceOptions as $recurrenceOption)
+                    <option value="{{ $recurrenceOption->id }}" @selected(old('recurrence_id', $clientModel?->recurrence_id) === $recurrenceOption->id)>{{ $recurrenceOption->name }}</option>
                 @endforeach
             </select>
         </div>
