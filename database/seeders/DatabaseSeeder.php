@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             MasterCatalogSeeder::class,
             SettingsSeeder::class,
             ZoneSeeder::class,
+            RecurrenceSeeder::class,
         ]);
     }
 }

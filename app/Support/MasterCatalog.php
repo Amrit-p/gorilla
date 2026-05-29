@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Helpers\OptimizationHelper;
 use App\Models\EquipmentType;
+use App\Models\Recurrence;
 use App\Models\SafetyType;
 use App\Models\ServiceType;
 use App\Models\Zone;
@@ -24,6 +25,8 @@ final class MasterCatalog
 
     public const ZONES = 'zones';
 
+    public const RECURRENCES = 'recurrences';
+
     /**
      * @return class-string<Model>
      */
@@ -34,6 +37,7 @@ final class MasterCatalog
             self::EQUIPMENT_TYPES => EquipmentType::class,
             self::SAFETY_TYPES => SafetyType::class,
             self::ZONES => Zone::class,
+            self::RECURRENCES => Recurrence::class,
             default => throw new \InvalidArgumentException("Unknown catalog: {$catalog}"),
         };
     }

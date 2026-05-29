@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\Masters\EquipmentTypeController;
 use App\Http\Controllers\Admin\Masters\SafetyTypeController;
 use App\Http\Controllers\Admin\Masters\ServiceTypeController;
+use App\Http\Controllers\Admin\Masters\RecurrenceController;
 use App\Http\Controllers\Admin\Masters\ZoneController;
 use App\Http\Controllers\Admin\ClientManagementController;
 use App\Http\Controllers\Admin\JobManagementController;
@@ -79,6 +80,13 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
         Route::patch('safety-types/{safetyType}', [SafetyTypeController::class, 'update'])->name('safety-types.update');
         Route::patch('safety-types/{safetyType}/status', [SafetyTypeController::class, 'updateStatus'])->name('safety-types.status.update');
         Route::delete('safety-types/{safetyType}', [SafetyTypeController::class, 'destroy'])->name('safety-types.destroy');
+
+        Route::get('recurrences', [RecurrenceController::class, 'index'])->name('recurrences.index');
+        Route::post('recurrences', [RecurrenceController::class, 'store'])->name('recurrences.store');
+        Route::get('recurrences/{recurrence}', [RecurrenceController::class, 'show'])->name('recurrences.show');
+        Route::patch('recurrences/{recurrence}', [RecurrenceController::class, 'update'])->name('recurrences.update');
+        Route::patch('recurrences/{recurrence}/status', [RecurrenceController::class, 'updateStatus'])->name('recurrences.status.update');
+        Route::delete('recurrences/{recurrence}', [RecurrenceController::class, 'destroy'])->name('recurrences.destroy');
 
         Route::get('zones', [ZoneController::class, 'index'])->name('zones.index');
         Route::post('zones', [ZoneController::class, 'store'])->name('zones.store');
