@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\LeadPaymentStatus;
 use App\Enums\LeadStatus;
 use App\Events\LeadConvertedToClient;
+use App\Imports\LeadsImport;
 use App\Jobs\GeocodeLeadAddressJob;
 use App\Models\EquipmentType;
 use App\Models\Lead;
@@ -22,7 +23,6 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LeadManagementService
 {
@@ -141,143 +141,19 @@ class LeadManagementService
     }
 
     /**
-     * @return array<int, string>
+     * @return array{imported: int, failed: int, failures: list<array{row: int, identifier: string, reason: string}>}
      */
-    public static function importCsvColumns(): array
+    public function importLeads(User $actor, UploadedFile $file): array
     {
-        return [
-            'client_name',
-            'email',
-            'mobile_number',
-            'address',
-            'service_types',
-            'weed_spray',
-            'equipment_type_id',
-            'recurrence_id',
-            'job_type',
-            'charges',
-            'payment_mode',
-            'payment_status',
-            'remarks',
-            'latitude',
-            'longitude',
-            'lead_date',
-            'lead_time',
-            'status',
-            'assigned_sales_user_id',
-        ];
-    }
+        $result = (new LeadsImport($actor, $this, $this->leadConversionService))->import($file);
 
-    public function downloadImportSampleCsv(): StreamedResponse
-    {
-        $headers = self::importCsvColumns();
-        $equipmentId = EquipmentType::query()->where('is_active', true)->value('id');
-        $sampleRow = [
-            'Sample Property',
-            'lead@example.com',
-            '555-0100',
-            '123 Green Street',
-            implode(', ', array_slice(ServiceTypes::all(), 0, 2)) ?: 'Mulching',
-            \App\Enums\LeadWeedSpray::NO->value,
-            (string) ($equipmentId ?? ''),
-            (string) (Recurrence::query()->where('is_active', true)->value('id') ?? ''),
-            \App\Enums\LeadJobType::REGULAR->value,
-            '75.00',
-            \App\Enums\LeadPaymentMode::CASH->value,
-            LeadPaymentStatus::PENDING->value,
-            'Gate code 1234',
-            '',
-            '',
-            now()->toDateString(),
-            '09:00',
-            LeadStatus::NEW->value,
-            '',
-        ];
-
-        return response()->streamDownload(function () use ($headers, $sampleRow): void {
-            $handle = fopen('php://output', 'w');
-            if ($handle === false) {
-                return;
-            }
-            fputcsv($handle, $headers);
-            fputcsv($handle, $sampleRow);
-            fclose($handle);
-        }, 'leads-import-sample.csv', [
-            'Content-Type' => 'text/csv',
-        ]);
-    }
-
-    public function importFromCsv(User $actor, UploadedFile $file): int
-    {
-        $path = $file->getRealPath();
-        $handle = fopen($path, 'r');
-        if ($handle === false) {
-            abort(422, 'Unable to read CSV file.');
-        }
-
-        $header = fgetcsv($handle) ?: [];
-        $imported = 0;
-
-        while (($row = fgetcsv($handle)) !== false) {
-            $mapped = array_combine($header, $row);
-            if (! is_array($mapped) || empty($mapped['address'])) {
-                continue;
-            }
-
-            $lead = $this->createLead($actor, [
-                'client_name' => $mapped['client_name'] ?? null,
-                'email' => $mapped['email'] ?? null,
-                'mobile_number' => $mapped['mobile_number'] ?? null,
-                'address' => $mapped['address'] ?? null,
-                'service_types' => $this->resolveImportServiceTypes($mapped),
-                'weed_spray' => $mapped['weed_spray'] ?? null,
-                'equipment_type_id' => is_numeric($mapped['equipment_type_id'] ?? null) ? (int) $mapped['equipment_type_id'] : null,
-                'recurrence_id' => is_numeric($mapped['recurrence_id'] ?? null) ? (int) $mapped['recurrence_id'] : null,
-                'job_type' => $mapped['job_type'] ?? null,
-                'charges' => $mapped['charges'] ?? null,
-                'payment_mode' => $mapped['payment_mode'] ?? null,
-                'payment_status' => $mapped['payment_status'] ?? LeadPaymentStatus::PENDING->value,
-                'remarks' => $mapped['remarks'] ?? null,
-                'latitude' => $mapped['latitude'] ?? null,
-                'longitude' => $mapped['longitude'] ?? null,
-                'lead_date' => $mapped['lead_date'] ?? null,
-                'lead_time' => $mapped['lead_time'] ?? null,
-                'status' => in_array(($mapped['status'] ?? ''), LeadStatus::values(), true)
-                    ? $mapped['status']
-                    : LeadStatus::NEW->value,
-                'assigned_sales_user_id' => is_numeric($mapped['assigned_sales_user_id'] ?? null)
-                    ? (int) $mapped['assigned_sales_user_id']
-                    : null,
-            ]);
-
-            $imported++;
-        }
-
-        fclose($handle);
-
-        $this->activityLogService->log($actor, 'lead.csv_imported', 'Lead CSV import completed.', [
-            'imported_rows' => $imported,
-            'file' => $file->getClientOriginalName(),
+        $this->activityLogService->log($actor, 'lead.imported', 'Lead file import completed.', [
+            'imported_rows' => $result['imported'],
+            'failed_rows'   => $result['failed'],
+            'file'          => $file->getClientOriginalName(),
         ]);
 
-        return $imported;
-    }
-
-    /**
-     * @param  array<string, mixed>  $mapped
-     * @return array<int, string>
-     */
-    private function resolveImportServiceTypes(array $mapped): array
-    {
-        if (! empty($mapped['service_types'])) {
-            return ServiceTypes::parseCsvCell((string) $mapped['service_types']);
-        }
-
-        if (! empty($mapped['service_type'])) {
-            return ServiceTypes::parseCsvCell((string) $mapped['service_type']);
-        }
-
-        return [];
+        return $result;
     }
 
     /**

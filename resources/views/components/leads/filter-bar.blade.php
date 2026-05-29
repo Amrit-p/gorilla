@@ -41,7 +41,7 @@
                 :pdfHref="route('admin.leads.export.pdf')"
             />
             @can('manage-leads')
-                <button id="open-import-modal" type="button" class="rounded-md border border-slate-300 px-3 py-1.5 text-xs hover:bg-slate-50">Import CSV</button>
+                <button id="open-import-modal" type="button" class="rounded-md border border-slate-300 px-3 py-1.5 text-xs hover:bg-slate-50">Import</button>
                 <a href="{{ route('admin.leads.create') }}" class="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700">Add Lead</a>
             @endcan
         </div>

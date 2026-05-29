@@ -2,15 +2,25 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\LeadJobType;
+use App\Enums\LeadPaymentMode;
+use App\Enums\LeadPaymentStatus;
+use App\Enums\LeadStatus;
+use App\Enums\LeadWeedSpray;
 use App\Exports\LeadsExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ImportLeadsRequest;
 use App\Http\Requests\Admin\StoreLeadRequest;
 use App\Http\Requests\Admin\UpdateLeadRequest;
 use App\Http\Requests\Admin\UpdateLeadStatusRequest;
+use App\Models\EquipmentType;
 use App\Models\Lead;
+use App\Models\Recurrence;
+use App\Models\Zone;
 use App\Services\LeadManagementService;
+use App\Support\ServiceTypes;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -166,16 +176,52 @@ class LeadManagementController extends Controller
     public function import(ImportLeadsRequest $request): JsonResponse
     {
         $this->authorize('create', Lead::class);
-        $count = $this->leadManagementService->importFromCsv($request->user(), $request->file('csv_file'));
+        $result = $this->leadManagementService->importLeads($request->user(), $request->file('import_file'));
 
-        return response()->json(['message' => "Imported {$count} leads successfully."]);
+        $message = "Imported {$result['imported']} lead(s) successfully.";
+        if ($result['failed'] > 0) {
+            $message .= " {$result['failed']} row(s) failed.";
+        }
+
+        return response()->json([
+            'message'  => $message,
+            'imported' => $result['imported'],
+            'failed'   => $result['failed'],
+            'failures' => $result['failures'],
+        ]);
     }
 
     public function downloadImportSample(): StreamedResponse
     {
         $this->authorize('create', Lead::class);
 
-        return $this->leadManagementService->downloadImportSampleCsv();
+        $sample = (object) [
+            'client_name'       => 'Sample Property',
+            'email'             => 'lead@example.com',
+            'mobile_number'     => '555-0100',
+            'address'           => '123 Green Street',
+            'zone'              => (object) ['name' => Zone::query()->where('is_active', true)->value('name') ?? 'Zone A'],
+            'service_types'     => array_slice(ServiceTypes::all(), 0, 2) ?: ['Mulching'],
+            'equipmentType'     => (object) ['name' => EquipmentType::query()->where('is_active', true)->value('name') ?? 'Mower'],
+            'job_type'          => LeadJobType::REGULAR->value,
+            'charges'           => 75.00,
+            'payment_mode'      => LeadPaymentMode::CASH->value,
+            'payment_status'    => LeadPaymentStatus::PENDING->value,
+            'status'            => LeadStatus::NEW->value,
+            'assignedSalesUser' => null,
+            'lead_date'         => now(),
+            'lead_time'         => '09:00',
+            'converted_at'      => null,
+            'weed_spray'        => LeadWeedSpray::NO->value,
+            'recurrence'        => (object) ['name' => Recurrence::query()->where('is_active', true)->value('name') ?? ''],
+            'remarks'           => 'Gate code 1234',
+            'property_details'  => '',
+            'latitude'          => null,
+            'longitude'         => null,
+            'created_at'        => now(),
+        ];
+
+        return (new LeadsExport(EloquentCollection::make([$sample])))->download('leads-import-sample.xlsx');
     }
 
     public function exportExcel(Request $request): StreamedResponse

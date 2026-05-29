@@ -9,7 +9,7 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class LeadsExport extends SpreadsheetExport
 {
-    private const COLUMNS = [
+    public const COLUMNS = [
         'A' => ['header' => '#',                 'width' => 6],
         'B' => ['header' => 'Client Name',        'width' => 24],
         'C' => ['header' => 'Email',              'width' => 28],

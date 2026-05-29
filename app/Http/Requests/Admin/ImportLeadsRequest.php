@@ -24,12 +24,12 @@ class ImportLeadsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'csv_file' => [
+            'import_file' => [
                 'required',
                 'file',
-                'mimes:csv,txt',
-                'mimetypes:text/plain,text/csv,application/csv',
-                'max:4096',
+                'mimes:xlsx',
+                'mimetypes:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'max:8192',
             ],
         ];
     }
