@@ -10,7 +10,29 @@
         <p>Generated: {{ now()->format('d M Y, H:i') }} &nbsp;&bull;&nbsp; Total Records: {{ $clients->count() }}</p>
     </div>
 
-    <table>
+    <table style="table-layout:fixed;">
+        <colgroup>
+            <col style="width:2%">  {{-- # --}}
+            <col style="width:3%">  {{-- ID --}}
+            <col style="width:7%">  {{-- Name --}}
+            <col style="width:7%">  {{-- Email --}}
+            <col style="width:5%">  {{-- Phone --}}
+            <col style="width:8%">  {{-- Address --}}
+            <col style="width:5%">  {{-- Zone --}}
+            <col style="width:8%">  {{-- Service Types --}}
+            <col style="width:5%">  {{-- Equipment --}}
+            <col style="width:4%">  {{-- Job Type --}}
+            <col style="width:4%">  {{-- Charges --}}
+            <col style="width:5%">  {{-- Payment Mode --}}
+            <col style="width:5%">  {{-- Payment Status --}}
+            <col style="width:5%">  {{-- Customer Type --}}
+            <col style="width:4%">  {{-- Client Type --}}
+            <col style="width:4%">  {{-- Weed Spray --}}
+            <col style="width:4%">  {{-- Re-comp. Days --}}
+            <col style="width:5%">  {{-- Property Details --}}
+            <col style="width:6%">  {{-- Special Remarks --}}
+            <col style="width:4%">  {{-- Created At --}}
+        </colgroup>
         <thead>
             <tr>
                 <th class="center">#</th>

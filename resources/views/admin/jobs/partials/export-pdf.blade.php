@@ -10,7 +10,25 @@
         <p>Generated: {{ now()->format('d M Y, H:i') }} &nbsp;&bull;&nbsp; Total Records: {{ $jobs->count() }}</p>
     </div>
 
-    <table>
+    <table style="table-layout:fixed;">
+        <colgroup>
+            <col style="width:2%">  {{-- # --}}
+            <col style="width:9%">  {{-- Client Name --}}
+            <col style="width:9%">  {{-- Address --}}
+            <col style="width:5%">  {{-- Zone --}}
+            <col style="width:6%">  {{-- Scheduled Date --}}
+            <col style="width:5%">  {{-- Time --}}
+            <col style="width:4%">  {{-- Est. (min) --}}
+            <col style="width:10%"> {{-- Services --}}
+            <col style="width:6%">  {{-- Equipment --}}
+            <col style="width:6%">  {{-- Status --}}
+            <col style="width:4%">  {{-- Priority --}}
+            <col style="width:6%">  {{-- Payment Mode --}}
+            <col style="width:6%">  {{-- Payment Status --}}
+            <col style="width:7%">  {{-- Done By --}}
+            <col style="width:9%">  {{-- Assigned Mowers --}}
+            <col style="width:6%">  {{-- Created At --}}
+        </colgroup>
         <thead>
             <tr>
                 <th class="center">#</th>
