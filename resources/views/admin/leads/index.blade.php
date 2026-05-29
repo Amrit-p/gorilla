@@ -1,22 +1,5 @@
-<x-layouts.dashboard :title="'Lead Management'">
+<x-layouts.dashboard :title="'Lead Management'" :subtitle="'View, filter, and manage your sales leads in one place.'">
     <div class="space-y-5">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-                <h2 class="text-lg font-semibold text-slate-900">Leads</h2>
-                <p class="text-sm text-slate-600">Manage leads, assignments, notes, status transitions, and CSV import.</p>
-            </div>
-            <div class="flex flex-wrap gap-2">
-                <x-ui.export-dropdown
-                    :excelHref="route('admin.leads.export.excel')"
-                    :pdfHref="route('admin.leads.export.pdf')"
-                />
-
-                @can('manage-leads')
-                    <button id="open-import-modal" type="button" class="rounded-md border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50">Import CSV</button>
-                    <a href="{{ route('admin.leads.create') }}" class="rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700">Add Lead</a>
-                @endcan
-            </div>
-        </div>
 
         @if (session('success'))
             <div class="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{{ session('success') }}</div>

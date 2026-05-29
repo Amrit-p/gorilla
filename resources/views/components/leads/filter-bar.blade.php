@@ -13,27 +13,40 @@
 @endphp
 
 <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-
     {{-- Toggle header --}}
-    <button type="button" id="lead-filter-toggle" class="flex w-full items-center justify-between px-5 py-4 text-left">
-        <div class="flex items-center gap-2">
-            <svg class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/>
-            </svg>
-            <span class="text-sm font-semibold uppercase tracking-wide text-slate-600">Filters</span>
-            @if ($activeCount > 0)
-                <span class="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700">{{ $activeCount }} active</span>
-            @endif
+    <div class="flex items-center">
+        <button type="button" id="lead-filter-toggle" class="flex flex-1 items-center justify-between px-5 py-4 text-left">
+            <div class="flex items-center gap-2">
+                <svg class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/>
+                </svg>
+                <span class="text-sm font-semibold uppercase tracking-wide text-slate-600">Filters</span>
+                @if ($activeCount > 0)
+                    <span class="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700">{{ $activeCount }} active</span>
+                @endif
+            </div>
+            <div class="flex items-center gap-3">
+                @if ($hasActiveFilters)
+                    <a href="{{ $resetRoute }}" class="text-xs text-slate-400 transition-colors hover:text-slate-600" onclick="event.stopPropagation()">Reset all</a>
+                @endif
+                <svg id="lead-filter-chevron" class="h-4 w-4 text-slate-400 transition-transform duration-200 {{ $hasActiveFilters ? 'rotate-180' : '' }}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </div>
+        </button>
+
+        <div class="flex flex-wrap items-center gap-2 border-l border-slate-100 px-4 py-3">
+            <x-ui.export-dropdown
+                :excelHref="route('admin.leads.export.excel')"
+                :pdfHref="route('admin.leads.export.pdf')"
+            />
+
+            @can('manage-leads')
+                <button id="open-import-modal" type="button" class="rounded-md border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50">Import CSV</button>
+                <a href="{{ route('admin.leads.create') }}" class="rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700">Add Lead</a>
+            @endcan
         </div>
-        <div class="flex items-center gap-3">
-            @if ($hasActiveFilters)
-                <a href="{{ $resetRoute }}" class="text-xs text-slate-400 transition-colors hover:text-slate-600" onclick="event.stopPropagation()">Reset all</a>
-            @endif
-            <svg id="lead-filter-chevron" class="h-4 w-4 text-slate-400 transition-transform duration-200 {{ $hasActiveFilters ? 'rotate-180' : '' }}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
-            </svg>
-        </div>
-    </button>
+    </div>
 
     {{-- Collapsible body --}}
     <form id="lead-filters-form" class="{{ $hasActiveFilters ? '' : 'hidden' }} border-t border-slate-100 p-5">

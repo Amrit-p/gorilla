@@ -1,20 +1,6 @@
-<x-layouts.dashboard :title="'Customer Management'">
+<x-layouts.dashboard :title="'Customer Management'" :subtitle="'Search, filter, and manage your customers with detailed profiles and job history.'">
     <div class="space-y-5">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-                <h2 class="text-lg font-semibold text-slate-900">Customers</h2>
-                <p class="text-sm text-slate-600">Search, filter, and open customer profiles with job history and statistics.</p>
-            </div>
-            <div class="flex flex-wrap gap-2">
-                <x-ui.export-dropdown
-                    :excelHref="route('admin.clients.export.excel')"
-                    :pdfHref="route('admin.clients.export.pdf')"
-                />
-                @can('manage-customers')
-                    <a href="{{ route('admin.clients.create') }}" class="rounded-md bg-slate-900 px-3 py-2 text-sm text-white">Add Customer</a>
-                @endcan
-            </div>
-        </div>
+
 
         @if (session('success'))
             <div class="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{{ session('success') }}</div>
