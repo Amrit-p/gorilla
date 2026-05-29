@@ -7,6 +7,7 @@ use App\Models\Job;
 use App\Support\QueryFilters\ClientListFilter;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 
 class ClientRepository
 {
@@ -47,6 +48,20 @@ class ClientRepository
         $this->clientListFilter->apply($query, $filters);
 
         return $query->paginate($perPage)->withQueryString();
+    }
+
+    public function exportList(array $filters): Collection
+    {
+        $query = Client::query()
+            ->with([
+                'zone:id,name',
+                'equipmentType:id,name',
+            ])
+            ->latest();
+
+        $this->clientListFilter->apply($query, $filters);
+
+        return $query->get();
     }
 
     public function findForShow(int $clientId): ?Client

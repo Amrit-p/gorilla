@@ -106,6 +106,8 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
 
     Route::middleware('crm.permission:'.CrmPermissions::MANAGE_CUSTOMERS)->group(function (): void {
         Route::get('/admin/clients', [ClientManagementController::class, 'index'])->name('admin.clients.index');
+        Route::get('/admin/clients/export/excel', [ClientManagementController::class, 'exportExcel'])->name('admin.clients.export.excel');
+        Route::get('/admin/clients/export/pdf', [ClientManagementController::class, 'exportPdf'])->name('admin.clients.export.pdf');
         Route::get('/admin/clients/create', [ClientManagementController::class, 'create'])->name('admin.clients.create');
         Route::post('/admin/clients', [ClientManagementController::class, 'store'])->name('admin.clients.store');
         Route::get('/admin/clients/{client}/edit', [ClientManagementController::class, 'edit'])->name('admin.clients.edit');

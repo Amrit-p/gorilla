@@ -14,6 +14,7 @@ use App\Support\EquipmentTypes;
 use App\Support\SafetyTypes;
 use App\Support\ServiceTypes;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
 
 class ClientManagementService
@@ -27,6 +28,11 @@ class ClientManagementService
     public function paginatedClients(array $filters, int $perPage): LengthAwarePaginator
     {
         return $this->clientRepository->paginatedList($filters, $perPage);
+    }
+
+    public function exportClients(array $filters): Collection
+    {
+        return $this->clientRepository->exportList($filters);
     }
 
     public function findForShow(int $clientId): ?Client

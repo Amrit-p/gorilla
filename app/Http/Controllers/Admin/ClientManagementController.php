@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreClientRequest;
 use App\Http\Requests\Admin\UpdateClientRequest;
+use App\Exports\ClientsExport;
 use App\Models\Client;
 use App\Models\User;
 use App\Enums\JobWorkflowStatus;
@@ -13,10 +14,13 @@ use App\Services\{
     JobManagementService,
 };
 use App\Support\CrmRoles;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ClientManagementController extends Controller
 {
@@ -53,6 +57,40 @@ class ClientManagementController extends Controller
             ['clients' => $clients, 'filters' => $filters],
             $this->clientManagementService->formOptions()
         ));
+    }
+
+    public function exportExcel(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', Client::class);
+
+        $clients = $this->clientManagementService->exportClients($this->exportFilters($request));
+
+        return (new ClientsExport($clients))->download('customers-' . now()->format('Y-m-d') . '.xlsx');
+    }
+
+    public function exportPdf(Request $request): Response
+    {
+        $this->authorize('viewAny', Client::class);
+
+        $clients = $this->clientManagementService->exportClients($this->exportFilters($request));
+
+        return Pdf::loadView('admin.clients.partials.export-pdf', compact('clients'))
+            ->setPaper('a3', 'landscape')
+            ->download('customers-' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    private function exportFilters(Request $request): array
+    {
+        return [
+            'search'         => $request->string('search')->toString(),
+            'zone_id'        => $request->string('zone_id')->toString(),
+            'job_type'       => $request->string('job_type')->toString(),
+            'customer_type'  => $request->string('customer_type')->toString(),
+            'parking_status' => $request->string('parking_status')->toString(),
+            'payment_status' => $request->string('payment_status')->toString(),
+            'client_type'    => $request->string('client_type')->toString(),
+            'from_lead'      => $request->string('from_lead')->toString(),
+        ];
     }
 
     public function create(): View

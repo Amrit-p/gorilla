@@ -5,9 +5,15 @@
                 <h2 class="text-lg font-semibold text-slate-900">Customers</h2>
                 <p class="text-sm text-slate-600">Search, filter, and open customer profiles with job history and statistics.</p>
             </div>
-            @can('manage-customers')
-                <a href="{{ route('admin.clients.create') }}" class="rounded-md bg-slate-900 px-3 py-2 text-sm text-white">Add Customer</a>
-            @endcan
+            <div class="flex flex-wrap gap-2">
+                <x-ui.export-dropdown
+                    :excelHref="route('admin.clients.export.excel')"
+                    :pdfHref="route('admin.clients.export.pdf')"
+                />
+                @can('manage-customers')
+                    <a href="{{ route('admin.clients.create') }}" class="rounded-md bg-slate-900 px-3 py-2 text-sm text-white">Add Customer</a>
+                @endcan
+            </div>
         </div>
 
         @if (session('success'))
@@ -56,5 +62,14 @@
                 error: function () { showClientAlert('Failed to delete customer.', true); }
             });
         });
+
+        // Keep export links in sync with active filters
+        function syncExportLinks() {
+            const params = $('#client-filter-form').serialize();
+            $('#export-excel-link').attr('href', "{{ route('admin.clients.export.excel') }}" + (params ? '?' + params : ''));
+            $('#export-pdf-link').attr('href',   "{{ route('admin.clients.export.pdf') }}"   + (params ? '?' + params : ''));
+        }
+        syncExportLinks();
+        $('#client-filter-form').on('change input', syncExportLinks);
     </script>
 </x-layouts.dashboard>
