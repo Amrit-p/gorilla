@@ -35,12 +35,15 @@ class ClientRepository
                 'charges',
                 'payment_mode',
                 'payment_status',
+                'recurrence_id',
                 'created_at',
             ])
             ->with([
                 'creator:id,name',
                 'lead:id,client_name,status',
                 'zone:id,name',
+                'equipmentType:id,name',
+                'recurrence:id,name',
             ])
             ->withCount('jobs')
             ->latest();
@@ -56,6 +59,7 @@ class ClientRepository
             ->with([
                 'zone:id,name',
                 'equipmentType:id,name',
+                'recurrence:id,name',
             ])
             ->latest();
 

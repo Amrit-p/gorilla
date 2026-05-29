@@ -50,10 +50,6 @@
                 <dt class="text-slate-500">Job / customer type</dt>
                 <dd class="text-slate-800">{{ $client->job_type ?: '—' }} / {{ $client->client_type ?: '—' }}</dd>
             </div>
-            <div>
-                <dt class="text-slate-500">Safety</dt>
-                <dd class="mt-1 text-slate-800">{{ is_array($client->safety_concerns) && $client->safety_concerns !== [] ? implode(', ', $client->safety_concerns) : '—' }}</dd>
-            </div>
         </dl>
     </div>
 
@@ -64,17 +60,9 @@
                 <dt class="text-slate-500">Customer type</dt>
                 <dd class="mt-1 font-medium text-slate-800">{{ $client->customer_type ?: "Don't Know" }}</dd>
             </div>
-            <div>
-                <dt class="text-slate-500">Parking status</dt>
-                <dd class="mt-1 text-slate-800">{{ $client->parking_status ?: '—' }}</dd>
-            </div>
             <div class="sm:col-span-2">
                 <dt class="text-slate-500">Additional site instructions</dt>
                 <dd class="mt-1 whitespace-pre-wrap text-slate-800">{{ $client->additional_site_instructions ?: '—' }}</dd>
-            </div>
-            <div>
-                <dt class="text-slate-500">Pet warning</dt>
-                <dd class="mt-1 text-slate-800">{{ $client->pet_warning ?: '—' }}</dd>
             </div>
             <div>
                 <dt class="text-slate-500">Special remarks</dt>

@@ -91,6 +91,7 @@ class ClientManagementController extends Controller
             'payment_status' => $request->string('payment_status')->toString(),
             'client_type'    => $request->string('client_type')->toString(),
             'from_lead'      => $request->string('from_lead')->toString(),
+            'recurrence_id'   => $request->string('recurrence_id')->toString(),
         ];
     }
 

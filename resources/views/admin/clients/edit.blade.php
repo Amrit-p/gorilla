@@ -11,7 +11,15 @@
             <h2 class="text-lg font-semibold text-slate-900">Edit Customer</h2>
             <p class="text-sm text-slate-600">{{ $client->name }}</p>
         </div>
-
+        @if ($errors->any())
+            <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                <ul class="list-disc pl-5">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
         <form method="POST" action="{{ route('admin.clients.update', $client) }}" novalidate class="js-validate-form grid grid-cols-1 gap-4 rounded-2xl border border-slate-200 bg-white p-6 sm:grid-cols-2" data-validate="client">
             @csrf
             @method('PATCH')
