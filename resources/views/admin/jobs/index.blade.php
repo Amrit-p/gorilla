@@ -5,9 +5,15 @@
                 <h2 class="text-lg font-semibold text-slate-900">Jobs</h2>
                 <p class="text-sm text-slate-600">Track workflow, assign mowers, and filter by Today / Upcoming / Done / Hold.</p>
             </div>
-            @can('manage-job-records')
-                <a href="{{ route('admin.jobs.create') }}" class="rounded-md bg-slate-900 px-3 py-2 text-sm text-white">Create Job</a>
-            @endcan
+            <div class="flex flex-wrap gap-2">
+                <x-ui.export-dropdown
+                    :excelHref="route('admin.jobs.export.excel')"
+                    :pdfHref="route('admin.jobs.export.pdf')"
+                />
+                @can('manage-job-records')
+                    <a href="{{ route('admin.jobs.create') }}" class="rounded-md bg-slate-900 px-3 py-2 text-sm text-white">Create Job</a>
+                @endcan
+            </div>
         </div>
 
         @if (session('success'))
@@ -25,5 +31,15 @@
     @include('admin.partials.job-modals')
     @include('admin.partials.dropdown-script')
     @include('admin.partials.job-actions-script')
+
+    <script>
+        function syncJobExportLinks() {
+            const params = $('#job-filter-form').serialize();
+            $('#export-excel-link').attr('href', "{{ route('admin.jobs.export.excel') }}" + (params ? '?' + params : ''));
+            $('#export-pdf-link').attr('href',   "{{ route('admin.jobs.export.pdf') }}"   + (params ? '?' + params : ''));
+        }
+        syncJobExportLinks();
+        $('#job-filter-form').on('change input', syncJobExportLinks);
+    </script>
 
 </x-layouts.dashboard>

@@ -35,6 +35,14 @@ class JobManagementService
         return $this->jobRepository->paginatedList($filters, $perPage);
     }
 
+    /**
+     * @return Collection<int, Job>
+     */
+    public function exportJobs(array $filters): Collection
+    {
+        return $this->jobRepository->exportList($filters);
+    }
+
     public function findForShow(int $jobId): ?Job
     {
         return $this->jobRepository->findForShow($jobId);

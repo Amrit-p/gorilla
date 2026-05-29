@@ -61,6 +61,28 @@ class JobRepository
     }
 
     /**
+     * @return Collection<int, Job>
+     */
+    public function exportList(array $filters): Collection
+    {
+        $query = Job::query()
+            ->with([
+                'client:id,name,customer_unique_id',
+                'zone:id,name',
+                'equipmentType:id,name',
+                'assignedEmployees:id,name',
+                'doneByUser:id,name',
+                'creator:id,name',
+            ])
+            ->orderByDesc('scheduled_date')
+            ->orderBy('scheduled_time');
+
+        $this->jobListFilter->apply($query, $filters);
+
+        return $query->get();
+    }
+
+    /**
      * @return Collection<int, ActivityLog>
      */
     public function timelineForJob(int $jobId, int $limit = 30): Collection

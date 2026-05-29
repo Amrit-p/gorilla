@@ -136,6 +136,8 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
 
     Route::middleware('crm.any_permission:'.CrmPermissions::MANAGE_JOBS.','.CrmPermissions::ASSIGN_JOBS)->group(function (): void {
         Route::get('/admin/jobs', [JobManagementController::class, 'index'])->name('admin.jobs.index');
+        Route::get('/admin/jobs/export/excel', [JobManagementController::class, 'exportExcel'])->name('admin.jobs.export.excel');
+        Route::get('/admin/jobs/export/pdf', [JobManagementController::class, 'exportPdf'])->name('admin.jobs.export.pdf');
         Route::get('/admin/jobs/{job}', [JobManagementController::class, 'show'])->name('admin.jobs.show');
         Route::get('/admin/maps', [MapRoutingController::class, 'index'])->name('admin.maps.index');
         Route::get('/admin/maps/jobs', [MapRoutingController::class, 'jobs'])->name('admin.maps.jobs');

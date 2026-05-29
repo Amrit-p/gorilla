@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\JobWorkflowStatus;
+use App\Exports\JobsExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AssignJobRequest;
 use App\Http\Requests\Admin\StoreJobRequest;
@@ -12,10 +13,13 @@ use App\Http\Requests\Admin\UploadJobImagesRequest;
 use App\Models\Job;
 use App\Services\JobImageManagementService;
 use App\Services\JobManagementService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class JobManagementController extends Controller
 {
@@ -224,5 +228,37 @@ class JobManagementController extends Controller
         $this->jobManagementService->deleteJob($request->user(), $job);
 
         return response()->json(['message' => 'Job deleted successfully.']);
+    }
+
+    public function exportExcel(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', Job::class);
+
+        $jobs = $this->jobManagementService->exportJobs($this->exportFilters($request));
+
+        return (new JobsExport($jobs))->download('jobs-' . now()->format('Y-m-d') . '.xlsx');
+    }
+
+    public function exportPdf(Request $request): Response
+    {
+        $this->authorize('viewAny', Job::class);
+
+        $jobs = $this->jobManagementService->exportJobs($this->exportFilters($request));
+
+        return Pdf::loadView('admin.jobs.partials.export-pdf', compact('jobs'))
+            ->setPaper('a3', 'landscape')
+            ->download('jobs-' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    private function exportFilters(Request $request): array
+    {
+        return [
+            'search'     => $request->string('search')->toString(),
+            'list_scope' => $request->string('list_scope')->toString(),
+            'status'     => $request->string('status')->toString(),
+            'priority'   => $request->string('priority')->toString(),
+            'zone_id'    => $request->string('zone_id')->toString(),
+            'client_id'  => $request->string('client_id')->toString(),
+        ];
     }
 }
