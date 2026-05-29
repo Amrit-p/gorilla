@@ -10,7 +10,7 @@
             <div class="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{{ session('success') }}</div>
         @endif
 
-        <div id="job-alert" class="hidden"></div>
+        @include('admin.partials.job-alert')
 
         <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -145,14 +145,9 @@
         </div>
     </div>
 
-    <script>
-        function showJobAlert(message, isError) {
-            const baseClass = isError
-                ? 'rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700'
-                : 'rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700';
-            $('#job-alert').removeClass('hidden').attr('class', baseClass).text(message);
-        }
+    @include('admin.partials.job-actions-script')
 
+    <script>
         $('.job-quick-status').on('click', function () {
             const id = $(this).data('id');
             const status = $(this).data('status');

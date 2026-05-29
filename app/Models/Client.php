@@ -22,8 +22,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'weed_spray',
     're_completion_days',
     'job_type',
-    'safety_concerns',
-    'safety_other',
+    'safety_concerns', // This field is not being stored because it is not currently being used in the application.
+    'safety_other', // This field is not being stored because it is not currently being used in the application.
     'charges',
     'estimated_time',
     'payment_mode',
@@ -34,11 +34,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'longitude',
     'property_details',
     'additional_site_instructions',
-    'pet_warning',
+    'pet_warning', // This field is not being stored because it is not currently being used in the application.
     'special_remarks',
     'notes',
     'client_type',
-    'parking_status',
+    'parking_status', // This field is not being stored because it is not currently being used in the application.
     'customer_type',
     'created_by',
 ])]

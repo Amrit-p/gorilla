@@ -62,7 +62,9 @@ class ClientRepository
             ])
             ->find($clientId);
     }
-
+    /**
+     * @deprecated This method is no longer used and will be removed in a future release. use JobRepository::paginatedList instead.
+     */
     public function paginatedJobsForClient(int $clientId, array $filters, int $perPage = 10): LengthAwarePaginator
     {
         $query = Job::query()

@@ -6,7 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreClientRequest;
 use App\Http\Requests\Admin\UpdateClientRequest;
 use App\Models\Client;
-use App\Services\ClientManagementService;
+use App\Models\User;
+use App\Enums\JobWorkflowStatus;
+use App\Services\{
+    ClientManagementService,
+    JobManagementService,
+};
+use App\Support\CrmRoles;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,7 +21,8 @@ use Illuminate\View\View;
 class ClientManagementController extends Controller
 {
     public function __construct(
-        private readonly ClientManagementService $clientManagementService
+        private readonly ClientManagementService $clientManagementService,
+        private readonly JobManagementService $jobManagementService
     ) {}
 
     public function index(Request $request): View|JsonResponse
@@ -73,13 +80,31 @@ class ClientManagementController extends Controller
         $statistics = $this->clientManagementService->customerStatistics($client);
         $activeTab = $request->string('tab')->toString() ?: 'details';
 
+        $employees = User::query()
+            ->role(CrmRoles::MOWER)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'efficiency']);
+
+        $jobs_filters =  [
+            'search' => $request->string('search')->toString(),
+            'list_scope' => $request->string('list_scope')->toString(),
+            'status' => $request->string('status')->toString(),
+            'priority' => $request->string('priority')->toString(),
+            'zone_id' => $request->string('zone_id')->toString(),
+            'client_id' => $request->string('client_id')->toString(),
+        ];
         return view('admin.clients.show', array_merge(
             [
+                'filters' => $jobs_filters,
                 'client' => $client,
                 'statistics' => $statistics,
                 'activeTab' => in_array($activeTab, ['details', 'jobs'], true) ? $activeTab : 'details',
+                'employees' => $employees,
+                'workflowStatuses' => JobWorkflowStatus::values(),
             ],
-            $this->clientManagementService->formOptions()
+            $this->clientManagementService->formOptions(),
+            $this->jobManagementService->formOptions($client->id)
         ));
     }
 
@@ -105,7 +130,7 @@ class ClientManagementController extends Controller
             'stats' => $jobStats,
         ]);
     }
-
+    
     public function edit(Client $client): View
     {
         $this->authorize('update', $client);

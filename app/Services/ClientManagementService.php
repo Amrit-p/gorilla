@@ -42,6 +42,10 @@ class ClientManagementService
         return $this->clientStatisticsService->forClient($client);
     }
 
+    /**
+     * @deprecated This method is no longer used and will be removed in a future release. use JobManagementService::paginatedJobs instead.
+     * @return LengthAwarePaginator
+     */
     public function paginatedCustomerJobs(Client $client, array $filters, int $perPage): LengthAwarePaginator
     {
         return $this->clientRepository->paginatedJobsForClient($client->id, $filters, $perPage);

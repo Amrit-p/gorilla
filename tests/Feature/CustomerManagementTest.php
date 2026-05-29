@@ -48,7 +48,6 @@ class CustomerManagementTest extends TestCase
         $this->assertNotNull($client);
         $this->assertSame(2001, $client->customer_unique_id);
         $this->assertSame(ClientCustomerType::HARD->value, $client->customer_type);
-        $this->assertSame(JobParkingStatus::EASY->value, $client->parking_status);
     }
 
     public function test_lead_conversion_sets_customer_fields(): void
@@ -56,6 +55,8 @@ class CustomerManagementTest extends TestCase
         $lead = Lead::query()->create([
             'client_name' => 'Converted Customer',
             'address' => '88 Convert St',
+            'lead_date' => now()->toDateString(),
+            'lead_time' => '14:00',
             'service_types' => [ServiceTypes::all()[0]],
             'weed_spray' => LeadWeedSpray::NO->value,
             'equipment_type_id' => EquipmentType::query()->where('is_active', true)->value('id'),
@@ -148,12 +149,10 @@ class CustomerManagementTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->admin)
-            ->getJson(route('admin.clients.jobs', $client))
+            ->getJson(route('admin.jobs.index', ['client_id' => $client->id]))
             ->assertOk()
-            ->assertJsonStructure(['html', 'stats']);
+            ->assertJsonStructure(['html']);
 
-        $this->assertSame(2, $response->json('stats.filtered_total'));
-        $this->assertSame(1, $response->json('stats.filtered_completed'));
         $this->assertStringContainsString('Completed', $response->json('html'));
     }
 

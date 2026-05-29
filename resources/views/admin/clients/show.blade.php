@@ -10,6 +10,8 @@
             <div class="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{{ session('success') }}</div>
         @endif
 
+        @include('admin.partials.job-alert')
+
         <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
                 <h2 class="text-lg font-semibold text-slate-900">{{ $client->name }}</h2>
@@ -57,20 +59,13 @@
                 </div>
 
                 <div id="customer-tab-jobs" class="{{ $activeTab === 'jobs' ? '' : 'hidden' }}">
-                    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-                        <div id="customer-jobs-stats" class="flex gap-4 text-sm text-slate-600"></div>
-                        <form id="customer-jobs-filter" class="flex flex-wrap gap-2">
-                            <input type="text" name="job_search" placeholder="Search jobs..." class="rounded-md border border-slate-300 px-3 py-1.5 text-sm">
-                            <select name="job_status" class="rounded-md border border-slate-300 px-3 py-1.5 text-sm">
-                                <option value="">All statuses</option>
-                                @foreach ($jobStatuses as $jobStatus)
-                                    <option value="{{ $jobStatus }}">{{ $jobStatus }}</option>
-                                @endforeach
-                            </select>
-                            <button type="submit" class="rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50">Filter</button>
-                        </form>
+                    <div class="mb-4">
+                        @include('admin.jobs.partials.filter-bar', [
+                            'filters' => $filters,
+                            'clientId' => $client->id,
+                        ])
                     </div>
-                    <div id="customer-jobs-table">
+                    <div id="jobs-table-container">
                         <p class="text-sm text-slate-500">Loading jobs...</p>
                     </div>
                 </div>
@@ -78,32 +73,17 @@
         </div>
     </div>
 
+    @include('admin.partials.job-modals')
+    @include('admin.partials.dropdown-script')
+    @include('admin.partials.job-actions-script')
+
     <script>
-        const customerJobsUrl = "{{ route('admin.clients.jobs', $client) }}";
-        let jobsTabLoaded = {{ $activeTab === 'jobs' ? 'true' : 'false' }};
-
-        function loadCustomerJobs(url) {
-            const params = $('#customer-jobs-filter').length ? $('#customer-jobs-filter').serialize() : '';
-            $.get(url || customerJobsUrl, params, function (res) {
-                $('#customer-jobs-table').html(res.html);
-                if (res.stats) {
-                    $('#customer-jobs-stats').html(
-                        '<span><strong>' + res.stats.filtered_total + '</strong> shown</span>' +
-                        '<span><strong>' + res.stats.filtered_completed + '</strong> completed</span>'
-                    );
-                }
-                jobsTabLoaded = true;
-            });
-        }
-
         function switchCustomerTab(tab) {
             $('.customer-tab').removeClass('border-b-2 border-emerald-600 text-emerald-700').addClass('text-slate-600');
             $('.customer-tab[data-tab="' + tab + '"]').addClass('border-b-2 border-emerald-600 text-emerald-700').removeClass('text-slate-600');
             $('#customer-tab-details, #customer-tab-jobs').addClass('hidden');
             $('#customer-tab-' + tab).removeClass('hidden');
-            if (tab === 'jobs' && !jobsTabLoaded) {
-                loadCustomerJobs();
-            }
+            if (tab === 'jobs') loadJobs();
             const u = new URL(window.location.href);
             u.searchParams.set('tab', tab);
             window.history.replaceState({}, '', u);
@@ -113,18 +93,8 @@
             switchCustomerTab($(this).data('tab'));
         });
 
-        $('#customer-jobs-filter').on('submit', function (e) {
-            e.preventDefault();
-            loadCustomerJobs();
-        });
-
-        $(document).on('click', '#customer-jobs-table .pagination a', function (e) {
-            e.preventDefault();
-            loadCustomerJobs($(this).attr('href'));
-        });
-
         @if ($activeTab === 'jobs')
-            loadCustomerJobs();
+            loadJobs();
         @endif
     </script>
 </x-layouts.dashboard>
