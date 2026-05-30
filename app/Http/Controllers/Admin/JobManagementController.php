@@ -242,6 +242,22 @@ class JobManagementController extends Controller
             ->download('jobs-' . now()->format('Y-m-d') . '.pdf');
     }
 
+    public function reorder(Request $request): JsonResponse
+    {
+        $this->authorize('manage-job-records');
+
+        $ids = $request->validate([
+            'ordered_ids'   => ['required', 'array', 'min:1'],
+            'ordered_ids.*' => ['required', 'integer', 'exists:service_jobs,id'],
+        ])['ordered_ids'];
+
+        foreach ($ids as $position => $id) {
+            Job::query()->where('id', $id)->update(['numeric_priority' => $position + 1]);
+        }
+
+        return response()->json(['message' => 'Order saved.']);
+    }
+
     private function exportFilters(Request $request): array
     {
         return [

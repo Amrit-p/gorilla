@@ -40,6 +40,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'special_remarks',
     'internal_notes',
     'created_by',
+    'numeric_priority',
 ])]
 class Job extends Model
 {
@@ -59,6 +60,7 @@ class Job extends Model
             'after_images' => 'array',
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
+            'numeric_priority' => 'integer',
         ];
     }
 

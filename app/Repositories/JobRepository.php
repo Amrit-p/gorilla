@@ -16,7 +16,7 @@ class JobRepository
 
     public function paginatedList(array $filters, int $perPage = 15): LengthAwarePaginator
     {
-        $query = Job::query()
+        $query = $this->baseListQuery($filters)
             ->select([
                 'id',
                 'client_id',
@@ -28,6 +28,7 @@ class JobRepository
                 'required_services',
                 'status',
                 'priority',
+                'numeric_priority',
                 'parking_status',
                 'customer_type',
                 'payment_mode',
@@ -41,11 +42,7 @@ class JobRepository
                 'recurrence:id,name',
                 'assignedEmployees:id,name,efficiency',
                 'doneByUser:id,name',
-            ])
-            ->orderByDesc('scheduled_date')
-            ->orderBy('scheduled_time');
-
-        $this->jobListFilter->apply($query, $filters);
+            ]);
 
         return $query->paginate($perPage)->withQueryString();
     }
@@ -67,21 +64,32 @@ class JobRepository
      */
     public function exportList(array $filters): Collection
     {
-        $query = Job::query()
+        return $this->baseListQuery($filters)
             ->with([
                 'client:id,name,customer_unique_id',
                 'zone:id,name',
+                'recurrence:id,name',
                 'equipmentType:id,name',
                 'assignedEmployees:id,name',
                 'doneByUser:id,name',
                 'creator:id,name',
             ])
+            ->get();
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Builder<Job>
+     */
+    private function baseListQuery(array $filters): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = Job::query()
+            ->orderByRaw('ISNULL(numeric_priority) ASC, numeric_priority ASC')
             ->orderByDesc('scheduled_date')
             ->orderBy('scheduled_time');
 
         $this->jobListFilter->apply($query, $filters);
 
-        return $query->get();
+        return $query;
     }
 
     /**
