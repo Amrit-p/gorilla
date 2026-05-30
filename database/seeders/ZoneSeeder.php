@@ -13,13 +13,12 @@ class ZoneSeeder extends Seeder
      */
     public function run(): void
     {
-        $zones = collect(range(1, 8))->map(fn (int $i) => [
-            'name'       => "Zone {$i}",
-            'is_active'  => true,
-            'sort_order' => $i,
-        ]);
- 
-        Zone::insert($zones->all());
+        foreach (range(1, 8) as $i) {
+            Zone::firstOrCreate(
+                ['name' => "Zone {$i}"],
+                ['is_active' => true, 'sort_order' => $i],
+            );
+        }
 
     }
 }

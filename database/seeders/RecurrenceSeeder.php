@@ -9,19 +9,13 @@ class RecurrenceSeeder extends Seeder
 {
     public function run(): void
     {
-        $recurrences = collect([
-            'One-Time',
-            'Daily',
-            'Weekly',
-            'Bi-Weekly',
-            'Monthly',
-            'Quarterly',
-        ])->values()->map(fn (string $name, int $i) => [
-            'name'       => $name,
-            'is_active'  => true,
-            'sort_order' => $i + 1,
-        ]);
+        $names = ['One-Time', 'Daily', 'Weekly', 'Bi-Weekly', 'Monthly', 'Quarterly'];
 
-        Recurrence::insert($recurrences->all());
+        foreach ($names as $i => $name) {
+            Recurrence::firstOrCreate(
+                ['name' => $name],
+                ['is_active' => true, 'sort_order' => $i + 1],
+            );
+        }
     }
 }
