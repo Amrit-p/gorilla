@@ -52,41 +52,7 @@
         </form>
     </x-ui.modal>
 
-    <x-ui.modal id="lead-import-modal" title="Import Leads">
-        <form id="lead-import-form" enctype="multipart/form-data" class="space-y-4">
-            @csrf
-            <a
-                href="{{ route('admin.leads.import.sample') }}"
-                class="inline-flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-100"
-            >
-                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"/>
-                </svg>
-                Download sample Excel
-            </a>
-            <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700">File (Excel)</label>
-                <input type="file" name="import_file" accept=".xlsx" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" required>
-            </div>
-            <div id="import-progress" class="hidden space-y-1">
-                <div class="flex justify-between text-xs text-slate-500">
-                    <span id="import-progress-label">Uploading…</span>
-                    <span id="import-progress-pct">0%</span>
-                </div>
-                <div class="h-2 w-full overflow-hidden rounded-full bg-slate-200">
-                    <div id="import-progress-bar" class="h-2 rounded-full bg-emerald-500 transition-all duration-200" style="width:0%"></div>
-                </div>
-            </div>
-            <div id="import-result" class="hidden space-y-2">
-                <div id="import-result-success" class="hidden rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700"></div>
-                <div id="import-result-partial" class="hidden space-y-2">
-                    <p id="import-failures-summary" class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-700"></p>
-                    <ul id="import-failures-list" class="max-h-48 overflow-y-auto rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800 space-y-1 list-disc list-inside"></ul>
-                </div>
-            </div>
-            <x-ui.button type="submit">Import</x-ui.button>
-        </form>
-    </x-ui.modal>
+    <x-leads.import-modal />
 
     @include('admin.partials.dropdown-script')
 
@@ -111,13 +77,6 @@
         $('#lead-filters-form').on('submit', function (event) {
             event.preventDefault();
             refreshLeads();
-        });
-
-        $('#open-import-modal').on('click', function () {
-            $('#lead-import-form')[0].reset();
-            $('#import-result').addClass('hidden');
-            $('#import-progress').addClass('hidden');
-            openModal('lead-import-modal');
         });
 
         $(document).on('click', '.status-lead', function () {
@@ -171,66 +130,6 @@
                 headers: { 'Accept': 'application/json' },
                 success: function (res) { showLeadAlert(res.message); refreshLeads(); },
                 error: function (xhr) { showLeadAlert(Object.values(xhr.responseJSON?.errors || {})[0]?.[0] || 'Failed to delete lead.', true); }
-            });
-        });
-
-        $('#lead-import-form').on('submit', function (event) {
-            event.preventDefault();
-            const $form = $(this);
-            const $btn  = $form.find('[type="submit"]');
-
-            $('#import-progress-bar').css('width', '0%');
-            $('#import-progress-pct').text('0%');
-            $('#import-progress-label').text('Uploading…');
-            $('#import-progress').removeClass('hidden');
-            $('#import-result').addClass('hidden');
-            $btn.prop('disabled', true);
-
-            $.ajax({
-                url: "{{ route('admin.leads.import') }}",
-                method: 'POST',
-                data: new FormData($form[0]),
-                processData: false,
-                contentType: false,
-                headers: { 'Accept': 'application/json' },
-                xhr: function () {
-                    const xhr = new XMLHttpRequest();
-                    xhr.upload.addEventListener('progress', function (e) {
-                        if (!e.lengthComputable) return;
-                        const pct = Math.round((e.loaded / e.total) * 100);
-                        $('#import-progress-bar').css('width', pct + '%');
-                        $('#import-progress-pct').text(pct + '%');
-                        if (pct === 100) $('#import-progress-label').text('Processing…');
-                    });
-                    return xhr;
-                },
-                success: function (res) {
-                    $('#import-progress').addClass('hidden');
-                    $btn.prop('disabled', false);
-                    $form[0].reset();
-                    refreshLeads();
-
-                    $('#import-result-success').addClass('hidden');
-                    $('#import-result-partial').addClass('hidden');
-
-                    if (res.failures && res.failures.length > 0) {
-                        const items = res.failures.map(f =>
-                            `<li><strong>Row ${f.row} (${$('<span>').text(f.identifier).html()}):</strong> ${$('<span>').text(f.reason).html()}</li>`
-                        ).join('');
-                        $('#import-failures-summary').text(res.imported + ' imported successfully, ' + res.failed + ' failed:');
-                        $('#import-failures-list').html(items);
-                        $('#import-result-partial').removeClass('hidden');
-                    } else {
-                        $('#import-result-success').text(res.message).removeClass('hidden');
-                    }
-
-                    $('#import-result').removeClass('hidden');
-                },
-                error: function (xhr) {
-                    $('#import-progress').addClass('hidden');
-                    $btn.prop('disabled', false);
-                    showLeadAlert(Object.values(xhr.responseJSON?.errors || {})[0]?.[0] || 'Import failed.', true);
-                }
             });
         });
 
