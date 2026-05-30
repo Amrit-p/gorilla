@@ -1,14 +1,33 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Exports;
 
+use App\Enums\LeadEquipmentType;
+use App\Enums\LeadJobType;
+use App\Enums\LeadPaymentMode;
+use App\Enums\LeadPaymentStatus;
+use App\Enums\LeadServiceType;
+use App\Enums\LeadStatus;
+use App\Enums\LeadWeedSpray;
+use App\Models\EquipmentType;
+use App\Exports\Concerns\HasDataValidation;
 use Illuminate\Database\Eloquent\Collection;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
+use PhpOffice\PhpSpreadsheet\Shared\Date as SpreadsheetDate;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class LeadsExport extends SpreadsheetExport
 {
+    use HasDataValidation;
+
+    private const DATA_FIRST_ROW = 5;
+    private const DATA_LAST_ROW  = 5000;
+
     public const COLUMNS = [
         'A' => ['header' => '#',                 'width' => 6],
         'B' => ['header' => 'Client Name',        'width' => 24],
@@ -44,9 +63,26 @@ class LeadsExport extends SpreadsheetExport
     protected function getSheetName(): string  { return 'Leads'; }
     protected function getRecordCount(): int   { return $this->leads->count(); }
 
+    // -------------------------------------------------------------------------
+    // Post-build hook: metadata + validations
+    // -------------------------------------------------------------------------
+
+    protected function afterBuild(Spreadsheet $spreadsheet): void
+    {
+
+        $leadsSheet = $spreadsheet->getSheetByName($this->getSheetName());
+        if ($leadsSheet !== null) {
+            $this->applyValidations($leadsSheet);
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Row rendering
+    // -------------------------------------------------------------------------
+
     protected function renderData(Worksheet $sheet): void
     {
-        $row = 5;
+        $row = self::DATA_FIRST_ROW;
 
         foreach ($this->leads as $i => $lead) {
             $sheet->setCellValue('A' . $row, $i + 1);
@@ -84,5 +120,135 @@ class LeadsExport extends SpreadsheetExport
             $this->applyOutlineBorder($sheet, $row - 1);
             $sheet->getStyle('E5:E' . ($row - 1))->getAlignment()->setWrapText(true);
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Validation orchestration — all values sourced from their enums
+    // -------------------------------------------------------------------------
+
+    private function applyValidations(Worksheet $sheet): void
+    {
+        $first = self::DATA_FIRST_ROW;
+        $last  = self::DATA_LAST_ROW;
+
+        // B: Client Name — required, 1–255 chars
+        $this->addTextValidation($sheet, "B{$first}:B{$last}",
+            min: 1, max: 255,
+            errorTitle: 'Invalid Client Name',
+            error: 'Client name is required and must not exceed 255 characters.',
+        );
+
+        // C: Email — optional, basic format check
+        $this->addEmailValidation($sheet, "C{$first}:C{$last}");
+
+        // D: Mobile — optional, max 20 chars
+        $this->addTextValidation($sheet, "D{$first}:D{$last}",
+            min: 0, max: 20,
+            errorTitle: 'Invalid Mobile',
+            error: 'Mobile number must not exceed 20 characters.',
+        );
+
+        // G: Service Types — multi-value field (comma-separated); STYLE_WARNING
+        //    allows users to type "Mulching, Cut and leave" without being blocked.
+        $serviceTypes = LeadServiceType::values();
+        $this->addDropdownValidation($sheet, "G{$first}:G{$last}",
+            options: $serviceTypes,
+            errorTitle: 'Invalid Service Type',
+            error: 'Please select a valid service type from the list.',
+            prompt: 'Select one or type multiple comma-separated values. Options: ' . implode(', ', $serviceTypes),
+            errorStyle: DataValidation::STYLE_WARNING,
+        );
+
+        // H: Equipment Type — single value
+        $equipmentTypes = EquipmentType::all()->pluck('name')->toArray();
+        $this->addDropdownValidation($sheet, "H{$first}:H{$last}",
+            options: $equipmentTypes,
+            errorTitle: 'Invalid Equipment Type',
+            error: 'Please select a valid equipment type from the dropdown list.',
+            prompt: 'Select an equipment type. Options: ' . implode(', ', $equipmentTypes),
+        );
+
+        // I: Job Type — single value
+        $jobTypes = LeadJobType::values();
+        $this->addDropdownValidation($sheet, "I{$first}:I{$last}",
+            options: $jobTypes,
+            errorTitle: 'Invalid Job Type',
+            error: 'Please select a valid job type from the dropdown list.',
+            prompt: 'Select a job type. Options: ' . implode(', ', $jobTypes),
+        );
+
+        // J: Charges — decimal >= 0
+        $this->addNumericValidation($sheet, "J{$first}:J{$last}",
+            type: DataValidation::TYPE_DECIMAL,
+            operator: DataValidation::OPERATOR_GREATERTHANOREQUAL,
+            formula1: '0',
+            errorTitle: 'Invalid Charges',
+            error: 'Charges must be a number greater than or equal to 0.',
+        );
+
+        // K: Payment Mode
+        $paymentModes = LeadPaymentMode::values();
+        $this->addDropdownValidation($sheet, "K{$first}:K{$last}",
+            options: $paymentModes,
+            errorTitle: 'Invalid Payment Mode',
+            error: 'Please select a valid payment mode from the dropdown list.',
+            prompt: 'Select a payment mode. Options: ' . implode(', ', $paymentModes),
+        );
+
+        // L: Payment Status
+        $paymentStatuses = LeadPaymentStatus::values();
+        $this->addDropdownValidation($sheet, "L{$first}:L{$last}",
+            options: $paymentStatuses,
+            errorTitle: 'Invalid Payment Status',
+            error: 'Please select a valid payment status from the dropdown list.',
+            prompt: 'Select a payment status. Options: ' . implode(', ', $paymentStatuses),
+        );
+
+        // M: Status
+        $leadStatuses = LeadStatus::values();
+        $this->addDropdownValidation($sheet, "M{$first}:M{$last}",
+            options: $leadStatuses,
+            errorTitle: 'Invalid Status',
+            error: 'Please select a value from the dropdown list.',
+            prompt: 'Select a lead status. Options: ' . implode(', ', $leadStatuses),
+        );
+
+        // O: Lead Date — between 01/01/2020 and 31/12/2050
+        $this->addDateValidation($sheet, "O{$first}:O{$last}",
+            from: SpreadsheetDate::PHPToExcel(new \DateTime('2020-01-01')),
+            to:   SpreadsheetDate::PHPToExcel(new \DateTime('2050-12-31')),
+            errorTitle: 'Invalid Lead Date',
+            error: 'Lead Date must be between 01/01/2020 and 31/12/2050.',
+            prompt: 'Enter a date in DD/MM/YYYY format.',
+        );
+
+        // R: Weed Spray
+        $weedSprayOptions = LeadWeedSpray::values();
+        $this->addDropdownValidation($sheet, "R{$first}:R{$last}",
+            options: $weedSprayOptions,
+            errorTitle: 'Invalid Weed Spray',
+            error: 'Please select a valid weed spray option from the dropdown list.',
+            prompt: 'Select a weed spray option. Options: ' . implode(', ', $weedSprayOptions),
+        );
+
+        // V: Latitude — decimal between -90 and 90
+        $this->addNumericValidation($sheet, "V{$first}:V{$last}",
+            type: DataValidation::TYPE_DECIMAL,
+            operator: DataValidation::OPERATOR_BETWEEN,
+            formula1: '-90',
+            formula2: '90',
+            errorTitle: 'Invalid Latitude',
+            error: 'Latitude must be a decimal number between -90 and 90.',
+        );
+
+        // W: Longitude — decimal between -180 and 180
+        $this->addNumericValidation($sheet, "W{$first}:W{$last}",
+            type: DataValidation::TYPE_DECIMAL,
+            operator: DataValidation::OPERATOR_BETWEEN,
+            formula1: '-180',
+            formula2: '180',
+            errorTitle: 'Invalid Longitude',
+            error: 'Longitude must be a decimal number between -180 and 180.',
+        );
     }
 }
