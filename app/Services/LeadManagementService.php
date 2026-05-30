@@ -148,9 +148,10 @@ class LeadManagementService
         $result = (new LeadsImport($actor, $this, $this->leadConversionService))->import($file);
 
         $this->activityLogService->log($actor, 'lead.imported', 'Lead file import completed.', [
-            'imported_rows' => $result['imported'],
-            'failed_rows'   => $result['failed'],
-            'file'          => $file->getClientOriginalName(),
+            'imported_rows'   => $result['imported'],
+            'failed_rows'     => $result['failed'],
+            'duplicated_rows' => $result['duplicated'],
+            'file'            => $file->getClientOriginalName(),
         ]);
 
         return $result;

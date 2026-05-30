@@ -176,18 +176,29 @@ class LeadManagementController extends Controller
     public function import(ImportLeadsRequest $request): JsonResponse
     {
         $this->authorize('create', Lead::class);
-        $result = $this->leadManagementService->importLeads($request->user(), $request->file('import_file'));
+
+        try {
+            $result = $this->leadManagementService->importLeads($request->user(), $request->file('import_file'));
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
 
         $message = "Imported {$result['imported']} lead(s) successfully.";
         if ($result['failed'] > 0) {
             $message .= " {$result['failed']} row(s) failed.";
         }
-
+        if ($result['duplicated'] > 0) {
+            $message .= " {$result['duplicated']} row(s) skipped as duplicates.";
+        }
+        
         return response()->json([
-            'message'  => $message,
-            'imported' => $result['imported'],
-            'failed'   => $result['failed'],
-            'failures' => $result['failures'],
+            'message'       => $message,
+            'imported'      => $result['imported'],
+            'imported_rows' => $result['imported_rows'],
+            'failed'        => $result['failed'],
+            'failures'      => $result['failures'],
+            'duplicated'    => $result['duplicated'],
+            'duplicates'    => $result['duplicates'],
         ]);
     }
 

@@ -2,48 +2,74 @@
 
 namespace Database\Seeders;
 
+use App\Enums\LeadJobType;
+use App\Enums\LeadPaymentMode;
+use App\Enums\LeadPaymentStatus;
+use App\Enums\LeadServiceType;
 use App\Enums\LeadStatus;
+use App\Enums\LeadWeedSpray;
 use App\Models\Lead;
 use App\Models\User;
+use Faker\Factory as Faker;
 use Illuminate\Database\Seeder;
 
 class LeadSeeder extends Seeder
 {
+    private const COUNT = 20;
+
+    // Realistic QLD bounding box for coordinates
+    private const LAT_MIN = -28.5;
+    private const LAT_MAX = -27.0;
+    private const LNG_MIN = 152.5;
+    private const LNG_MAX = 153.5;
+
+    private const QLD_SUBURBS = [
+        'Sunnybank', 'Mount Gravatt', 'Capalaba', 'Aspley', 'Indooroopilly',
+        'Redland Bay', 'Ipswich', 'Springfield', 'Logan', 'Carindale',
+        'Paddington', 'Wynnum', 'Kenmore', 'Robina', 'Ferny Grove',
+        'Wavell Heights', 'Mansfield', 'Chapel Hill', 'Mitchelton', 'Eight Mile Plains',
+    ];
+
     public function run(): void
     {
         $adminId = User::where('email', 'admin@mowingcrm.test')->value('id');
+        $faker   = Faker::create('en_AU');
 
-        $rows = [
-            ['zone_id' => 1, 'client_name' => 'James Wilson',     'email' => 'james.wilson@email.com',     'mobile_number' => '0412 345 678', 'address' => '12 Maple Street, Sunnybank QLD 4109',       'service_types' => ['Mulching'],                         'weed_spray' => 'Yes',  'equipment_type_id' => 1, 'recurrence_id' => 3, 'job_type' => 'Recurring',  'charges' => 120.00, 'payment_mode' => 'Cash',          'payment_status' => 'Paid',    'remarks' => 'Gate code 1234. Dog on property.',          'latitude' => -27.5832, 'longitude' => 153.0445, 'lead_date' => '2026-01-05', 'lead_time' => '09:00'],
-            ['zone_id' => 2, 'client_name' => 'Sarah Thompson',    'email' => 'sarah.thompson@email.com',    'mobile_number' => '0423 456 789', 'address' => '34 Oak Avenue, Mount Gravatt QLD 4122',     'service_types' => ['Side Shoot'],                       'weed_spray' => 'No',   'equipment_type_id' => 2, 'recurrence_id' => 4, 'job_type' => 'Recurring',  'charges' => 95.00,  'payment_mode' => 'Bank Transfer', 'payment_status' => 'Paid',    'remarks' => 'Prefers morning visits.',                   'latitude' => -27.5469, 'longitude' => 153.0702, 'lead_date' => '2026-01-08', 'lead_time' => '08:30'],
-            ['zone_id' => 3, 'client_name' => 'Michael Brown',     'email' => 'michael.brown@email.com',     'mobile_number' => '0434 567 890', 'address' => '56 Pine Road, Capalaba QLD 4157',          'service_types' => ['Cut & Leave'],                      'weed_spray' => 'Yes',  'equipment_type_id' => 3, 'recurrence_id' => 5, 'job_type' => 'Recurring',  'charges' => 80.00,  'payment_mode' => 'Card',          'payment_status' => 'Paid',    'remarks' => 'Access via side gate.',                     'latitude' => -27.5186, 'longitude' => 153.1871, 'lead_date' => '2026-01-10', 'lead_time' => '10:00'],
-            ['zone_id' => 4, 'client_name' => 'Emma Davis',        'email' => 'emma.davis@email.com',        'mobile_number' => '0445 678 901', 'address' => '78 Cedar Lane, Aspley QLD 4034',           'service_types' => ['Mulching', 'Side Shoot'],           'weed_spray' => 'Yes',  'equipment_type_id' => 1, 'recurrence_id' => 3, 'job_type' => 'Recurring',  'charges' => 165.00, 'payment_mode' => 'Cash',          'payment_status' => 'Paid',    'remarks' => 'Two cats, keep gate closed.',               'latitude' => -27.3691, 'longitude' => 153.0234, 'lead_date' => '2026-01-12', 'lead_time' => '07:30'],
-            ['zone_id' => 5, 'client_name' => 'Robert Johnson',    'email' => 'robert.johnson@email.com',    'mobile_number' => '0456 789 012', 'address' => '90 Elm Close, Indooroopilly QLD 4068',     'service_types' => ['Cut & Away Side Shoot'],            'weed_spray' => 'No',   'equipment_type_id' => 4, 'recurrence_id' => 5, 'job_type' => 'Recurring',  'charges' => 200.00, 'payment_mode' => 'Bank Transfer', 'payment_status' => 'Paid',    'remarks' => 'Large property, 3 acres.',                  'latitude' => -27.5097, 'longitude' => 152.9765, 'lead_date' => '2026-01-14', 'lead_time' => '08:00'],
-            ['zone_id' => 6, 'client_name' => 'Jessica Martinez',  'email' => 'jessica.martinez@email.com',  'mobile_number' => '0467 890 123', 'address' => '15 Gum Tree Drive, Redland Bay QLD 4165',  'service_types' => ['Mulching'],                         'weed_spray' => 'Yes',  'equipment_type_id' => 2, 'recurrence_id' => 4, 'job_type' => 'Recurring',  'charges' => 110.00, 'payment_mode' => 'Cash',          'payment_status' => 'Pending', 'remarks' => 'Pays end of month.',                        'latitude' => -27.6161, 'longitude' => 153.3076, 'lead_date' => '2026-01-15', 'lead_time' => '09:30'],
-            ['zone_id' => 7, 'client_name' => 'David Lee',         'email' => 'david.lee@email.com',         'mobile_number' => '0478 901 234', 'address' => '27 Wattle Court, Ipswich QLD 4305',        'service_types' => ['Side Shoot'],                       'weed_spray' => 'No',   'equipment_type_id' => 3, 'recurrence_id' => 3, 'job_type' => 'Recurring',  'charges' => 90.00,  'payment_mode' => 'Card',          'payment_status' => 'Paid',    'remarks' => 'No special instructions.',                  'latitude' => -27.6168, 'longitude' => 152.7597, 'lead_date' => '2026-01-17', 'lead_time' => '11:00'],
-            ['zone_id' => 8, 'client_name' => 'Olivia Taylor',     'email' => 'olivia.taylor@email.com',     'mobile_number' => '0489 012 345', 'address' => '43 Banksia Way, Springfield QLD 4300',     'service_types' => ['Cut & Leave'],                      'weed_spray' => 'Yes',  'equipment_type_id' => 1, 'recurrence_id' => 5, 'job_type' => 'Recurring',  'charges' => 85.00,  'payment_mode' => 'Bank Transfer', 'payment_status' => 'Paid',    'remarks' => 'Call before arriving.',                     'latitude' => -27.6672, 'longitude' => 152.9051, 'lead_date' => '2026-01-19', 'lead_time' => '08:00'],
-            ['zone_id' => 1, 'client_name' => 'Daniel Anderson',   'email' => 'daniel.anderson@email.com',   'mobile_number' => '0490 123 456', 'address' => '61 Grevillea Place, Logan QLD 4114',       'service_types' => ['Mulching'],                         'weed_spray' => 'Yes',  'equipment_type_id' => 2, 'recurrence_id' => 4, 'job_type' => 'Recurring',  'charges' => 130.00, 'payment_mode' => 'Cash',          'payment_status' => 'Paid',    'remarks' => 'Corner block, two street frontages.',       'latitude' => -27.6389, 'longitude' => 153.1093, 'lead_date' => '2026-01-21', 'lead_time' => '09:00'],
-            ['zone_id' => 2, 'client_name' => 'Sophia Thomas',     'email' => 'sophia.thomas@email.com',     'mobile_number' => '0401 234 567', 'address' => '82 Bottlebrush Street, Carindale QLD 4152','service_types' => ['Side Shoot', 'Cut & Leave'],        'weed_spray' => 'No',   'equipment_type_id' => 3, 'recurrence_id' => 3, 'job_type' => 'Recurring',  'charges' => 145.00, 'payment_mode' => 'Card',          'payment_status' => 'Paid',    'remarks' => 'Elderly resident, be considerate.',         'latitude' => -27.5253, 'longitude' => 153.0921, 'lead_date' => '2026-01-23', 'lead_time' => '10:30'],
-            ['zone_id' => 3, 'client_name' => 'Matthew Harris',    'email' => 'matthew.harris@email.com',    'mobile_number' => '0412 345 679', 'address' => '19 Jacaranda Ave, Paddington QLD 4064',    'service_types' => ['Mulching'],                         'weed_spray' => 'Yes',  'equipment_type_id' => 1, 'recurrence_id' => 5, 'job_type' => 'Recurring',  'charges' => 100.00, 'payment_mode' => 'Bank Transfer', 'payment_status' => 'Paid',    'remarks' => 'Renovating front yard, avoid west side.',   'latitude' => -27.4625, 'longitude' => 152.9852, 'lead_date' => '2026-01-25', 'lead_time' => '07:00'],
-            ['zone_id' => 4, 'client_name' => 'Isabella Clark',    'email' => 'isabella.clark@email.com',    'mobile_number' => '0423 456 780', 'address' => '38 Acacia Road, Wynnum QLD 4178',          'service_types' => ['Cut & Away Side Shoot'],            'weed_spray' => 'No',   'equipment_type_id' => 2, 'recurrence_id' => 3, 'job_type' => 'Recurring',  'charges' => 175.00, 'payment_mode' => 'Cash',          'payment_status' => 'Pending', 'remarks' => 'Coastal property, salt-resistant lawn.',    'latitude' => -27.4581, 'longitude' => 153.1687, 'lead_date' => '2026-01-27', 'lead_time' => '09:00'],
-            ['zone_id' => 5, 'client_name' => 'Joshua White',      'email' => 'joshua.white@email.com',      'mobile_number' => '0434 567 891', 'address' => '54 Melaleuca Drive, Kenmore QLD 4069',     'service_types' => ['Mulching', 'Side Shoot'],           'weed_spray' => 'Yes',  'equipment_type_id' => 3, 'recurrence_id' => 4, 'job_type' => 'Recurring',  'charges' => 160.00, 'payment_mode' => 'Card',          'payment_status' => 'Paid',    'remarks' => 'Has a pool fence, mind clearance.',         'latitude' => -27.5043, 'longitude' => 152.9392, 'lead_date' => '2026-01-29', 'lead_time' => '08:30'],
-            ['zone_id' => 6, 'client_name' => 'Charlotte Lewis',   'email' => 'charlotte.lewis@email.com',   'mobile_number' => '0445 678 902', 'address' => '71 Hakea Court, Robina QLD 4226',          'service_types' => ['Cut & Leave'],                      'weed_spray' => 'No',   'equipment_type_id' => 1, 'recurrence_id' => 5, 'job_type' => 'Recurring',  'charges' => 90.00,  'payment_mode' => 'Bank Transfer', 'payment_status' => 'Paid',    'remarks' => 'Gold Coast client, long drive.',            'latitude' => -28.0881, 'longitude' => 153.3863, 'lead_date' => '2026-02-01', 'lead_time' => '07:30'],
-            ['zone_id' => 7, 'client_name' => 'Andrew Walker',     'email' => 'andrew.walker@email.com',     'mobile_number' => '0456 789 013', 'address' => '88 Eucalyptus Way, Ferny Grove QLD 4055',  'service_types' => ['Mulching'],                         'weed_spray' => 'Yes',  'equipment_type_id' => 2, 'recurrence_id' => 3, 'job_type' => 'Recurring',  'charges' => 115.00, 'payment_mode' => 'Cash',          'payment_status' => 'Paid',    'remarks' => 'Difficult slope on north side.',            'latitude' => -27.4217, 'longitude' => 152.9334, 'lead_date' => '2026-02-03', 'lead_time' => '09:00'],
-            ['zone_id' => 8, 'client_name' => 'Ava Hall',          'email' => 'ava.hall@email.com',          'mobile_number' => '0467 890 124', 'address' => '23 Casuarina Street, Wavell Heights QLD 4012','service_types' => ['Side Shoot'],                      'weed_spray' => 'No',   'equipment_type_id' => 3, 'recurrence_id' => 4, 'job_type' => 'Recurring',  'charges' => 95.00,  'payment_mode' => 'Card',          'payment_status' => 'Paid',    'remarks' => 'New client, first impressions matter.',     'latitude' => -27.3874, 'longitude' => 153.0518, 'lead_date' => '2026-02-05', 'lead_time' => '10:00'],
-            ['zone_id' => 1, 'client_name' => 'Ryan Allen',        'email' => 'ryan.allen@email.com',        'mobile_number' => '0478 901 235', 'address' => '47 Paperbark Lane, Mansfield QLD 4122',    'service_types' => ['Cut & Away Side Shoot'],            'weed_spray' => 'Yes',  'equipment_type_id' => 4, 'recurrence_id' => 5, 'job_type' => 'Recurring',  'charges' => 220.00, 'payment_mode' => 'Bank Transfer', 'payment_status' => 'Paid',    'remarks' => 'Vacant property, landlord pays.',           'latitude' => -27.5318, 'longitude' => 153.0885, 'lead_date' => '2026-02-07', 'lead_time' => '08:00'],
-            ['zone_id' => 2, 'client_name' => 'Mia Young',         'email' => 'mia.young@email.com',         'mobile_number' => '0489 012 346', 'address' => '65 Stringybark Road, Chapel Hill QLD 4069','service_types' => ['Mulching'],                         'weed_spray' => 'No',   'equipment_type_id' => 2, 'recurrence_id' => 3, 'job_type' => 'Recurring',  'charges' => 105.00, 'payment_mode' => 'Cash',          'payment_status' => 'Pending', 'remarks' => 'Prefers afternoon slots.',                  'latitude' => -27.4938, 'longitude' => 152.9518, 'lead_date' => '2026-02-09', 'lead_time' => '14:00'],
-            ['zone_id' => 3, 'client_name' => 'Nathan King',       'email' => 'nathan.king@email.com',       'mobile_number' => '0490 123 457', 'address' => '92 Ironbark Drive, Mitchelton QLD 4053',   'service_types' => ['Side Shoot', 'Mulching'],           'weed_spray' => 'Yes',  'equipment_type_id' => 1, 'recurrence_id' => 4, 'job_type' => 'Recurring',  'charges' => 140.00, 'payment_mode' => 'Card',          'payment_status' => 'Paid',    'remarks' => 'Has a veggie garden, be careful near it.',  'latitude' => -27.4253, 'longitude' => 152.9847, 'lead_date' => '2026-02-11', 'lead_time' => '09:30'],
-            ['zone_id' => 4, 'client_name' => 'Grace Scott',       'email' => 'grace.scott@email.com',       'mobile_number' => '0401 234 568', 'address' => '14 Corymbia Close, Eight Mile Plains QLD 4113','service_types' => ['Cut & Leave'],                   'weed_spray' => 'No',   'equipment_type_id' => 1, 'recurrence_id' => 5, 'job_type' => 'Recurring',  'charges' => 88.00,  'payment_mode' => 'Bank Transfer', 'payment_status' => 'Paid',    'remarks' => 'Kids play area in backyard, tidy up well.', 'latitude' => -27.5851, 'longitude' => 153.0953, 'lead_date' => '2026-02-13', 'lead_time' => '08:00'],
-        ];
+        for ($i = 0; $i < self::COUNT; $i++) {
+            $status   = $faker->randomElement(LeadStatus::values());
+            $converts = LeadStatus::tryFrom($status)?->convertsToClient() ?? false;
 
-        foreach ($rows as $data) {
-            Lead::create(array_merge($data, [
-                'status' => LeadStatus::WON->value,
-                'is_locked' => true,
-                'queued_for_scheduling' => false,
-                'converted_at' => now(),
+            // Converted leads need a past lead_date so converted_at can follow it.
+            $leadDate = $converts
+                ? $faker->dateTimeBetween('2025-01-01', 'now')
+                : $faker->dateTimeBetween('2025-01-01', '2026-12-31');
+
+            Lead::create([
+                'zone_id'                => $faker->numberBetween(1, 8),
+                'client_name'            => $faker->name(),
+                'email'                  => $faker->safeEmail(),
+                'mobile_number'          => '04' . $faker->numerify('## ### ###'),
+                'address'                => $faker->streetAddress() . ', ' . $faker->randomElement(self::QLD_SUBURBS) . ' QLD ' . $faker->numberBetween(4000, 4999),
+                'service_types'          => $faker->randomElements(LeadServiceType::values(), $faker->numberBetween(1, 2)),
+                'weed_spray'             => $faker->randomElement(LeadWeedSpray::values()),
+                'equipment_type_id'      => $faker->numberBetween(1, 3),
+                'recurrence_id'          => $faker->numberBetween(1, 5),
+                'job_type'               => $faker->randomElement(LeadJobType::values()),
+                'charges'                => $faker->randomFloat(2, 80, 350),
+                'payment_mode'           => $faker->randomElement(LeadPaymentMode::values()),
+                'payment_status'         => $faker->randomElement(LeadPaymentStatus::values()),
+                'remarks'                => $faker->optional(0.6)->sentence(),
+                'property_details'       => $faker->optional(0.4)->sentence(),
+                'latitude'               => $faker->randomFloat(6, self::LAT_MIN, self::LAT_MAX),
+                'longitude'              => $faker->randomFloat(6, self::LNG_MIN, self::LNG_MAX),
+                'lead_date'              => $leadDate->format('Y-m-d'),
+                'lead_time'              => sprintf('%02d:%02d', $faker->numberBetween(7, 16), $faker->randomElement([0, 30])),
+                'status'                 => $status,
+                'is_locked'              => $converts,
+                'queued_for_scheduling'  => $converts ? false : $faker->boolean(20),
+                'converted_at'           => $converts ? $faker->dateTimeBetween($leadDate, 'now') : null,
                 'assigned_sales_user_id' => $adminId,
-            ]));
+            ]);
         }
     }
 }

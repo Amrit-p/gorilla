@@ -65,8 +65,12 @@ abstract class SpreadsheetExport
         $this->applyColumnWidths($sheet);
         $sheet->freezePane('E5');
 
+        $this->afterBuild($spreadsheet);
+
         return $spreadsheet;
     }
+
+    protected function afterBuild(Spreadsheet $spreadsheet): void {}
 
     private function renderTitleBlock(Worksheet $sheet): void
     {
