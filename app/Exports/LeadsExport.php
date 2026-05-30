@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace App\Exports;
 
-use App\Enums\LeadEquipmentType;
 use App\Enums\LeadJobType;
 use App\Enums\LeadPaymentMode;
 use App\Enums\LeadPaymentStatus;
-use App\Enums\LeadServiceType;
 use App\Enums\LeadStatus;
 use App\Enums\LeadWeedSpray;
 use App\Models\EquipmentType;
@@ -99,7 +97,12 @@ class LeadsExport extends SpreadsheetExport
             $sheet->setCellValue('L' . $row, $lead->payment_status ?? '');
             $sheet->setCellValue('M' . $row, $lead->status ?? '');
             $sheet->setCellValue('N' . $row, $lead->assignedSalesUser?->name ?? 'Unassigned');
-            $sheet->setCellValue('O' . $row, $lead->lead_date?->format('d/m/Y') ?? '');
+            if ($lead->lead_date !== null) {
+                $sheet->setCellValue('O' . $row, SpreadsheetDate::PHPToExcel($lead->lead_date));
+                $sheet->getStyle('O' . $row)->getNumberFormat()->setFormatCode('DD/MM/YYYY');
+            } else {
+                $sheet->setCellValue('O' . $row, '');
+            }
             $sheet->setCellValue('P' . $row, $lead->lead_time ?? '');
             $sheet->setCellValue('Q' . $row, $lead->converted_at?->format('d/m/Y H:i') ?? '');
             $sheet->setCellValue('R' . $row, $lead->weed_spray ?? '');
@@ -146,17 +149,6 @@ class LeadsExport extends SpreadsheetExport
             min: 0, max: 20,
             errorTitle: 'Invalid Mobile',
             error: 'Mobile number must not exceed 20 characters.',
-        );
-
-        // G: Service Types — multi-value field (comma-separated); STYLE_WARNING
-        //    allows users to type "Mulching, Cut and leave" without being blocked.
-        $serviceTypes = LeadServiceType::values();
-        $this->addDropdownValidation($sheet, "G{$first}:G{$last}",
-            options: $serviceTypes,
-            errorTitle: 'Invalid Service Type',
-            error: 'Please select a valid service type from the list.',
-            prompt: 'Select one or type multiple comma-separated values. Options: ' . implode(', ', $serviceTypes),
-            errorStyle: DataValidation::STYLE_WARNING,
         );
 
         // H: Equipment Type — single value
@@ -212,6 +204,9 @@ class LeadsExport extends SpreadsheetExport
             error: 'Please select a value from the dropdown list.',
             prompt: 'Select a lead status. Options: ' . implode(', ', $leadStatuses),
         );
+
+        // O: Lead Date — apply DD/MM/YYYY format to the entire range
+        $sheet->getStyle("O{$first}:O{$last}")->getNumberFormat()->setFormatCode('DD/MM/YYYY');
 
         // O: Lead Date — between 01/01/2020 and 31/12/2050
         $this->addDateValidation($sheet, "O{$first}:O{$last}",

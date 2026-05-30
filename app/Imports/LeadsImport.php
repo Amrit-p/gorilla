@@ -262,9 +262,10 @@ class LeadsImport
         // G: Service Types — warning-style in Excel; validate each comma-separated value
         $rawServiceTypes = data_get($mapped, 'service_types', '');
         if ($rawServiceTypes !== '') {
-            $given   = array_map('trim', explode(',', $rawServiceTypes));
-            $valid   = LeadServiceType::values();
-            $invalid = array_diff($given, $valid);
+            $given      = array_map('trim', explode(',', $rawServiceTypes));
+            $valid      = LeadServiceType::values();
+            $validLower = array_map('strtolower', $valid);
+            $invalid    = array_filter($given, fn ($g) => ! in_array(strtolower($g), $validLower, true));
             if (! empty($invalid)) {
                 $errors[] = 'Invalid service type(s): ' . implode(', ', $invalid) . '. Valid options: ' . implode(', ', $valid) . '.';
             }
@@ -374,9 +375,18 @@ class LeadsImport
                 ->value('id');
         }
 
-        $serviceTypes = ! empty(data_get($mapped, 'service_types', ''))
-            ? ServiceTypes::parseCsvCell(data_get($mapped, 'service_types'))
-            : [];
+        $rawSt = data_get($mapped, 'service_types', '');
+        if (! empty($rawSt)) {
+            $valid      = LeadServiceType::values();
+            $validLower = array_combine(array_map('strtolower', $valid), $valid);
+            $normalized = implode(', ', array_map(
+                fn ($s) => $validLower[strtolower(trim($s))] ?? trim($s),
+                explode(',', $rawSt)
+            ));
+            $serviceTypes = ServiceTypes::parseCsvCell($normalized);
+        } else {
+            $serviceTypes = [];
+        }
 
         $weedSpray = data_get($mapped, 'weed_spray', '');
         $jobType   = data_get($mapped, 'job_type', '');
@@ -449,8 +459,14 @@ class LeadsImport
             }
         }
 
+        if (preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $value)) {
+            $dt = Carbon::createFromFormat('d/m/Y', $value);
+
+            return $dt ? $dt->format('Y-m-d') : null;
+        }
+
         try {
-            return Carbon::parse($value)->format('Y-m-d');
+            return Carbon::createFromFormat('Y-m-d', $value)?->format('Y-m-d');
         } catch (\Throwable) {
             return null;
         }
