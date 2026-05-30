@@ -18,6 +18,9 @@ class DatabaseSeeder extends Seeder
             SettingsSeeder::class,
             ZoneSeeder::class,
             RecurrenceSeeder::class,
+            LeadSeeder::class,
+            ClientSeeder::class,
+            JobSeeder::class,
         ]);
     }
 }

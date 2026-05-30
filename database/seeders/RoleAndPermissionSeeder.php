@@ -29,5 +29,26 @@ class RoleAndPermissionSeeder extends Seeder
         );
 
         $officeManager->syncRoles([CrmRoles::OFFICE_MANAGER]);
+
+        $mowers = [
+            ['name' => 'Jake Morrison', 'email' => 'jake.morrison@mowingcrm.test', 'efficiency' => UserEfficiency::GOOD->value],
+            ['name' => 'Liam Carter',   'email' => 'liam.carter@mowingcrm.test',   'efficiency' => UserEfficiency::AVERAGE->value],
+        ];
+
+        foreach ($mowers as $data) {
+            $mower = User::query()->firstOrCreate(
+                ['email' => $data['email']],
+                [
+                    'name'       => $data['name'],
+                    'phone'      => null,
+                    'efficiency' => $data['efficiency'],
+                    'status'     => UserStatus::ACTIVE->value,
+                    'password'   => Hash::make('Password@123'),
+                    'is_active'  => true,
+                ]
+            );
+
+            $mower->syncRoles([CrmRoles::MOWER]);
+        }
     }
 }
