@@ -6,6 +6,7 @@ enum LeadPaymentStatus: string
 {
     case PENDING = 'Pending';
     case DONE = 'Done';
+    case PARTIAL = 'Partial';
 
     /**
      * @return array<int, string>
