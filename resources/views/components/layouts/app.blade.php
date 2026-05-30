@@ -6,6 +6,16 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @include('components.meta.website-seo')
 
+    {{-- Apply sidebar collapsed state before first paint to prevent layout flash --}}
+    <script>
+        (function () {
+            var c = localStorage.getItem('sidebarCollapsed');
+            if (c === null || c === 'true') {
+                document.documentElement.classList.add('sidebar-init-collapsed');
+            }
+        }());
+    </script>
+
     {{-- Tailwind CSS by CDN (project rule: no npm build pipeline) --}}
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -28,6 +38,11 @@
             #sidebar.sidebar-collapsed { width: 4rem; }
             #main-content       { margin-left: 16rem; }
             #main-content.sidebar-collapsed { margin-left: 4rem; }
+
+            /* Pre-collapse layout applied before first paint — eliminates width flash on refresh */
+            html.sidebar-init-collapsed #sidebar            { width: 4rem; }
+            html.sidebar-init-collapsed #main-content       { margin-left: 4rem; }
+            html.sidebar-init-collapsed #sidebar-collapse-btn { left: calc(4rem - 12px) !important; }
         }
         @media (max-width: 1023px) {
             #sidebar      { width: 16rem !important; }
@@ -128,27 +143,28 @@
             background: transparent;
         }
 
-        /* Hover-based accordion panels */
+        /* Click-based accordion panels */
         .sidebar-accordion-panel {
             max-height: 0;
             overflow: hidden;
             opacity: 0;
             transition: max-height 0.25s ease, opacity 0.15s ease;
         }
-        .sidebar-accordion:hover .sidebar-accordion-panel {
+        .sidebar-accordion.is-open .sidebar-accordion-panel {
             max-height: 300px;
             opacity: 1;
         }
-        .sidebar-accordion:hover .sidebar-accordion-chevron {
+        .sidebar-accordion.is-open .sidebar-accordion-chevron {
             transform: rotate(180deg);
         }
         /* Hide panels in icon-only mode — flyout JS handles hover */
         #sidebar.sidebar-collapsed .sidebar-accordion-panel {
-            display: none !important;
+            display: none;
         }
 
         /* Flyout panel (collapsed sidebar hover) */
         .sidebar-flyout {
+            display: block !important;
             position: fixed !important;
             left: 4.25rem !important;
             max-height: none !important;
