@@ -22,9 +22,12 @@
                         data-address="{{ $client->address }}"
                         data-lat="{{ $client->latitude }}"
                         data-lng="{{ $client->longitude }}"
-                        data-parking="{{ $client->parking_status }}"
+                        data-zone-id="{{ $client->zone_id }}"
+                        data-recurrence-id="{{ $client->recurrence_id }}"
+                        data-payment-mode="{{ $client->payment_mode }}"
+                        data-payment-status="{{ $client->payment_status }}"
+                        data-service-types="{{ json_encode($client->service_types ?? []) }}"
                         data-customer-type="{{ $client->customer_type }}"
-                        data-pet-warning="{{ $client->pet_warning }}"
                         data-site-instructions="{{ $client->additional_site_instructions }}"
                         data-equipment-id="{{ $client->equipment_type_id ?? $client->lead?->equipment_type_id }}"
                         data-equipment-color="{{ $client->equipmentType?->color_code ?? $client->lead?->equipmentType?->color_code ?? '#64748b' }}"
@@ -43,6 +46,30 @@
             :selected="$defaultEquipmentId"
             hint="Prefilled from the customer. Change here if this job needs different equipment — the map marker updates to match."
         />
+
+        @isset($zones)
+            <div>
+                <label class="mb-1 block text-sm font-medium text-slate-700">Zone</label>
+                <select name="zone_id" id="job-zone-id" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    <option value="">Select zone</option>
+                    @foreach ($zones as $zone)
+                        <option value="{{ $zone->id }}" @selected((string) old('zone_id', $jobModel?->zone_id) === (string) $zone->id)>{{ $zone->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+        @endisset
+
+        @isset($recurrences)
+            <div>
+                <label class="mb-1 block text-sm font-medium text-slate-700">Recurrence</label>
+                <select name="recurrence_id" id="job-recurrence-id" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    <option value="">Select recurrence</option>
+                    @foreach ($recurrences as $recurrence)
+                        <option value="{{ $recurrence->id }}" @selected((string) old('recurrence_id', $jobModel?->recurrence_id) === (string) $recurrence->id)>{{ $recurrence->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+        @endisset
 
         <div>
             <label class="mb-1 block text-sm font-medium text-slate-700">Payment mode</label>

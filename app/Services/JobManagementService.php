@@ -65,14 +65,14 @@ class JobManagementService
         $selectedClient = $selectedClientId
             ? Client::query()
                 ->with(['equipmentType:id,name,color_code', 'lead.equipmentType:id,name,color_code'])
-                ->find($selectedClientId, ['id', 'name', 'address', 'latitude', 'longitude', 'parking_status', 'customer_type', 'pet_warning', 'additional_site_instructions', 'equipment_type_id', 'lead_id'])
+                ->find($selectedClientId, ['id', 'name', 'address', 'latitude', 'longitude', 'zone_id', 'recurrence_id', 'payment_mode', 'payment_status', 'service_types', 'parking_status', 'customer_type', 'pet_warning', 'additional_site_instructions', 'equipment_type_id', 'lead_id'])
             : null;
 
         return [
             'clients' => Client::query()
                 ->with(['equipmentType:id,name,color_code', 'lead.equipmentType:id,name,color_code'])
                 ->orderBy('name')
-                ->get(['id', 'name', 'address', 'latitude', 'longitude', 'customer_unique_id', 'parking_status', 'customer_type', 'pet_warning', 'additional_site_instructions', 'equipment_type_id', 'lead_id']),
+                ->get(['id', 'name', 'address', 'latitude', 'longitude', 'customer_unique_id', 'zone_id', 'recurrence_id', 'payment_mode', 'payment_status', 'service_types', 'parking_status', 'customer_type', 'pet_warning', 'additional_site_instructions', 'equipment_type_id', 'lead_id']),
             'employees' => User::query()
                 ->role(CrmRoles::MOWER)
                 ->where('is_active', true)
@@ -257,9 +257,9 @@ class JobManagementService
             'client_address' => $client->address,
             'latitude' => $client->latitude,
             'longitude' => $client->longitude,
-            'parking_status' => $client->parking_status,
+            'zone_id' => $client->zone_id,
+            'recurrence_id' => $client->recurrence_id,
             'customer_type' => $client->customer_type,
-            'pet_warning' => $client->pet_warning,
             'site_instructions' => $client->additional_site_instructions,
             'equipment_type_id' => $equipmentTypeId,
         ];
