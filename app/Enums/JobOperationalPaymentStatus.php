@@ -6,6 +6,7 @@ enum JobOperationalPaymentStatus: string
 {
     case RECEIVED = 'Received';
     case PENDING = 'Pending';
+    case PARTIAL = 'Partial';
 
     /**
      * @return array<int, string>
