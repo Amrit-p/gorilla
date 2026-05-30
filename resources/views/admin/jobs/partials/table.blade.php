@@ -1,6 +1,33 @@
-<x-ui.table :headers="['Customer / Address', 'Zone', 'Schedule', 'Services', 'Recurrence', 'Payment', 'Mowers', 'Actions']">
+@php
+    $canReorder = auth()->user()?->can('manage-job-records');
+    $headers = ['Customer / Address', 'Zone', 'Schedule', 'Services', 'Recurrence', 'Payment', 'Mowers', 'Actions'];
+    if ($canReorder) {
+        array_unshift($headers, '');
+    }
+@endphp
+
+<x-ui.table :headers="$headers">
     @forelse ($jobs as $job)
-        <tr class="divide-x divide-slate-100 transition-colors hover:bg-slate-50/70">
+        <tr class="job-row group divide-x divide-slate-100 transition-colors hover:bg-slate-50/70" data-job-id="{{ $job->id }}">
+
+            @if ($canReorder)
+            {{-- Drag handle --}}
+            <td class="w-8 px-2 py-4">
+                <button type="button" class="drag-handle flex cursor-grab items-center justify-center rounded p-1 text-slate-300 transition-colors hover:bg-slate-100 hover:text-slate-500 active:cursor-grabbing" aria-label="Drag to reorder">
+                    <svg class="h-4 w-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                        <circle cx="5.5" cy="3.5" r="1.25"/>
+                        <circle cx="5.5" cy="8" r="1.25"/>
+                        <circle cx="5.5" cy="12.5" r="1.25"/>
+                        <circle cx="10.5" cy="3.5" r="1.25"/>
+                        <circle cx="10.5" cy="8" r="1.25"/>
+                        <circle cx="10.5" cy="12.5" r="1.25"/>
+                    </svg>
+                </button>
+                <span class="mt-0.5 block text-center text-xs font-medium tabular-nums text-slate-400 opacity-0 transition-opacity group-hover:opacity-100">
+                    {{ $job->numeric_priority ?? '—' }}
+                </span>
+            </td>
+            @endif
 
             {{-- Customer --}}
             <td class="px-4 py-4">
@@ -123,7 +150,7 @@
         </tr>
     @empty
         <tr>
-            <td colspan="8" class="px-4 py-10 text-center text-sm text-slate-400">No jobs found.</td>
+            <td colspan="{{ $canReorder ? 9 : 8 }}" class="px-4 py-10 text-center text-sm text-slate-400">No jobs found.</td>
         </tr>
     @endforelse
 </x-ui.table>
