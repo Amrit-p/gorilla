@@ -26,10 +26,10 @@ class SecurityHeaders
         $csp = implode('; ', [
             "default-src 'self'",
             "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://code.jquery.com https://unpkg.com https://*.googleapis.com https://*.gstatic.com https://*.google.com",
-            "style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com",
+            "style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com https://cdn.jsdelivr.net",
             "img-src 'self' data: https: http: blob: https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.googleusercontent.com https://*.tile.openstreetmap.org https://*.openstreetmap.org",
             "font-src 'self' data: https: https://fonts.gstatic.com",
-            "connect-src 'self' data: blob: https://api.mapbox.com https://*.tiles.mapbox.com https://unpkg.com https://*.tile.openstreetmap.org https://*.googleapis.com https://*.google.com https://*.gstatic.com",
+            "connect-src 'self' data: blob: https://api.mapbox.com https://*.tiles.mapbox.com https://unpkg.com https://cdn.jsdelivr.net https://*.tile.openstreetmap.org https://*.googleapis.com https://*.google.com https://*.gstatic.com",
             "frame-src 'self' https://*.google.com",
             "worker-src blob:",
             "frame-ancestors 'self'",

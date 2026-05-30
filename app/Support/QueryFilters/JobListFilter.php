@@ -21,6 +21,12 @@ final class JobListFilter
                         $clientQuery->where('name', 'like', "%{$search}%")
                             ->orWhere('address', 'like', "%{$search}%")
                             ->orWhere('customer_unique_id', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('assignedEmployees', function (Builder $empQuery) use ($search): void {
+                        $empQuery->where('name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('doneByUser', function (Builder $userQuery) use ($search): void {
+                        $userQuery->where('name', 'like', "%{$search}%");
                     });
             });
         }
@@ -55,6 +61,30 @@ final class JobListFilter
 
         if (! empty($filters['recurrence_id'])) {
             $query->where('recurrence_id', $filters['recurrence_id']);
+        }
+
+        if (! empty($filters['assignment'])) {
+            if ($filters['assignment'] === 'assigned') {
+                $query->whereHas('assignedEmployees');
+            } elseif ($filters['assignment'] === 'unassigned') {
+                $query->whereDoesntHave('assignedEmployees');
+            }
+        }
+
+        if (! empty($filters['payment_mode'])) {
+            $query->where('payment_mode', $filters['payment_mode']);
+        }
+
+        if (! empty($filters['payment_status'])) {
+            $query->where('payment_status', $filters['payment_status']);
+        }
+
+        if (! empty($filters['date_range_start'])) {
+            $query->whereDate('scheduled_date', '>=', $filters['date_range_start']);
+        }
+
+        if (! empty($filters['date_range_end'])) {
+            $query->whereDate('scheduled_date', '<=', $filters['date_range_end']);
         }
 
         return $query;

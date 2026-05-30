@@ -32,16 +32,7 @@ class JobManagementController extends Controller
     {
         $this->authorize('viewAny', Job::class);
 
-        $filters = [
-            'search' => $request->string('search')->toString(),
-            'list_scope' => $request->string('list_scope')->toString(),
-            'status' => $request->string('status')->toString(),
-            'priority' => $request->string('priority')->toString(),
-            'zone_id' => $request->string('zone_id')->toString(),
-            'client_id' => $request->string('client_id')->toString(),
-            'recurrence_id' => $request->string('recurrence_id')->toString(),
-        ];
-
+        $filters = $this->exportFilters($request);
         $jobs = $this->jobManagementService->paginatedJobs(
             $filters,
             (int) config('mowing.default_pagination', 15)
@@ -254,13 +245,18 @@ class JobManagementController extends Controller
     private function exportFilters(Request $request): array
     {
         return [
-            'search'        => $request->string('search')->toString(),
-            'list_scope'    => $request->string('list_scope')->toString(),
-            'status'        => $request->string('status')->toString(),
-            'priority'      => $request->string('priority')->toString(),
-            'zone_id'       => $request->string('zone_id')->toString(),
-            'client_id'     => $request->string('client_id')->toString(),
-            'recurrence_id' => $request->string('recurrence_id')->toString(),
+            'search'         => $request->string('search')->toString(),
+            'list_scope'     => $request->string('list_scope')->toString(),
+            'status'         => $request->string('status')->toString(),
+            'priority'       => $request->string('priority')->toString(),
+            'zone_id'        => $request->string('zone_id')->toString(),
+            'client_id'      => $request->string('client_id')->toString(),
+            'recurrence_id'  => $request->string('recurrence_id')->toString(),
+            'assignment'     => $request->string('assignment')->toString(),
+            'payment_mode'      => $request->string('payment_mode')->toString(),
+            'payment_status'    => $request->string('payment_status')->toString(),
+            'date_range_start'  => $request->input('date_range.start', ''),
+            'date_range_end'    => $request->input('date_range.end', ''),
         ];
     }
 }
