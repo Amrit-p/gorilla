@@ -75,6 +75,19 @@
             $('#sidebar').toggleClass('hidden');
         });
 
+        // ===== ACCORDION (expanded sidebar — click to open/close) =====
+        // Restore open state from data-open attribute (set server-side when route matches)
+        $('.sidebar-accordion').each(function () {
+            if ($(this).data('open') === 'true' || $(this).data('open') === true) {
+                $(this).addClass('is-open');
+            }
+        });
+
+        $(document).on('click', '.sidebar-accordion-trigger', function () {
+            if ($('#sidebar').hasClass('sidebar-collapsed')) return;
+            $(this).closest('.sidebar-accordion').toggleClass('is-open');
+        });
+
         // ===== SIDEBAR COLLAPSE (DESKTOP) =====
         // Default to collapsed (null = first visit = collapsed)
         var stored = localStorage.getItem('sidebarCollapsed');
@@ -94,8 +107,9 @@
             }
         }
 
-        // Apply initial state without animation to avoid layout flash
+        // Apply initial state without animation, then remove the pre-paint init class
         applySidebarState();
+        $('html').removeClass('sidebar-init-collapsed');
         requestAnimationFrame(function () {
             requestAnimationFrame(function () {
                 $('body').removeClass('no-transitions');
