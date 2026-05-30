@@ -22,6 +22,7 @@ trait ValidatesJobOperational
         return [
             'client_id' => ['required', 'exists:clients,id'],
             'recurrence_id' => ['required', 'exists:recurrences,id'],
+            'zone_id' => ['nullable', 'exists:zones,id'],
             'equipment_type_id' => EquipmentTypes::idRules(),
             'client_address' => ['required', 'string', 'max:255'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],
@@ -31,8 +32,8 @@ trait ValidatesJobOperational
             'estimated_duration_minutes' => ['required', 'integer', 'min:15', 'max:1440'],
             'required_services' => ['required', 'array', 'min:1'],
             'required_services.*' => ServiceTypes::itemRules(),
-            'parking_status' => ['required', Rule::in(JobParkingStatus::values())],
-            'customer_type' => ['required', Rule::in(JobCustomerType::values())],
+            'parking_status' => ['nullable', Rule::in(JobParkingStatus::values())],
+            'customer_type' => ['nullable', Rule::in(JobCustomerType::values())],
             'pet_warning' => ['nullable', 'string', 'max:1000'],
             'images' => ['nullable', 'array'],
             'images.*' => ['image', 'max:5120'],

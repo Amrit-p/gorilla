@@ -5,8 +5,8 @@ namespace App\Enums;
 enum JobCustomerType: string
 {
     case EASY = 'Easy';
-    case TOUF = 'touf';
-    case DONT_KNOW = "Don't know";
+    case HARD = 'Hard';
+    case DONT_KNOW = "Don't Know";
 
     /**
      * @return array<int, string>
