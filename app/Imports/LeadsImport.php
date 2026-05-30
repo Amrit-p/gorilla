@@ -103,7 +103,11 @@ class LeadsImport
 
             try {
                 DB::transaction(function () use ($mapped, &$imported): void {
-                    $lead = $this->service->createLead($this->actor, $this->buildLeadData($mapped));
+                    $data = $this->buildLeadData($mapped);
+                    if (LeadStatus::convertsToClientValue(data_get($data, 'status')) && empty(data_get($data, 'lead_date'))) {
+                        throw new \InvalidArgumentException('Lead date is required when converting a lead to client — please provide a lead date.');
+                    }
+                    $lead = $this->service->createLead($this->actor, $data);
 
                     if (LeadStatus::convertsToClientValue($lead->status)) {
                         $this->conversionService->convertLeadToClient($lead, $this->actor);
