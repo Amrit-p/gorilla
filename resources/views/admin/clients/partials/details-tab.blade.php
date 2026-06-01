@@ -18,6 +18,14 @@
                 <dt class="text-slate-500">Payment</dt>
                 <dd class="text-right text-slate-800">{{ $client->payment_mode ?: '—' }} • {{ $client->payment_status ?: '—' }}</dd>
             </div>
+             <div class="flex justify-between gap-4">
+                <dt class="text-slate-500">Accounting level</dt>
+                <dd class="text-slate-800">{{ $client->accountingLevel?->name ?? '—' }}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+                <dt class="text-slate-500">Zone</dt>
+                <dd class="text-slate-800">{{ $client->zone?->name ?? '—' }}</dd>
+            </div>
             <div class="flex justify-between gap-4">
                 <dt class="text-slate-500">Charges</dt>
                 <dd class="text-right text-slate-800">
