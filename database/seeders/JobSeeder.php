@@ -130,6 +130,7 @@ class JobSeeder extends Seeder
                 'special_remarks'            => $client->special_remarks,
                 'internal_notes'             => null,
                 'created_by'                 => $adminId,
+                'charges'                    => rand(50, 150),  
             ]);
 
             DB::table('job_user_assignments')->insert([
