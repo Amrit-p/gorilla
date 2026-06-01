@@ -21,6 +21,7 @@ Production-oriented **Laravel + Blade** CRM for lawn / mowing service businesses
    ```bash
    php artisan migrate
    php artisan db:seed
+   php artisan app:sync-crm-permissions
    ```
 
 3. **Run locally**
