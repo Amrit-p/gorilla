@@ -7,7 +7,6 @@ namespace App\Imports;
 use App\Enums\LeadJobType;
 use App\Enums\LeadPaymentMode;
 use App\Enums\LeadPaymentStatus;
-use App\Enums\LeadServiceType;
 use App\Enums\LeadStatus;
 use App\Enums\LeadWeedSpray;
 use App\Exports\LeadsExport;
@@ -263,7 +262,7 @@ class LeadsImport
         $rawServiceTypes = data_get($mapped, 'service_types', '');
         if ($rawServiceTypes !== '') {
             $given      = array_map('trim', explode(',', $rawServiceTypes));
-            $valid      = LeadServiceType::values();
+            $valid      = ServiceTypes::all();
             $validLower = array_map('strtolower', $valid);
             $invalid    = array_filter($given, fn ($g) => ! in_array(strtolower($g), $validLower, true));
             if (! empty($invalid)) {
@@ -377,7 +376,7 @@ class LeadsImport
 
         $rawSt = data_get($mapped, 'service_types', '');
         if (! empty($rawSt)) {
-            $valid      = LeadServiceType::values();
+            $valid      = ServiceTypes::all();
             $validLower = array_combine(array_map('strtolower', $valid), $valid);
             $normalized = implode(', ', array_map(
                 fn ($s) => $validLower[strtolower(trim($s))] ?? trim($s),

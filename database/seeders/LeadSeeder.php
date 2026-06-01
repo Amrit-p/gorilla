@@ -5,10 +5,10 @@ namespace Database\Seeders;
 use App\Enums\LeadJobType;
 use App\Enums\LeadPaymentMode;
 use App\Enums\LeadPaymentStatus;
-use App\Enums\LeadServiceType;
 use App\Enums\LeadStatus;
 use App\Enums\LeadWeedSpray;
 use App\Models\Lead;
+use App\Models\ServiceType;
 use App\Models\User;
 use Faker\Factory as Faker;
 use Illuminate\Database\Seeder;
@@ -50,7 +50,7 @@ class LeadSeeder extends Seeder
                 'email'                  => $faker->safeEmail(),
                 'mobile_number'          => '04' . $faker->numerify('## ### ###'),
                 'address'                => $faker->streetAddress() . ', ' . $faker->randomElement(self::QLD_SUBURBS) . ' QLD ' . $faker->numberBetween(4000, 4999),
-                'service_types'          => $faker->randomElements(LeadServiceType::values(), $faker->numberBetween(1, 2)),
+                'service_types'          => $faker->randomElements(ServiceType::where('is_active', true)->pluck('name')->all(), $faker->numberBetween(1, 2)),
                 'weed_spray'             => $faker->randomElement(LeadWeedSpray::values()),
                 'equipment_type_id'      => $faker->numberBetween(1, 3),
                 'recurrence_id'          => $faker->numberBetween(1, 5),
