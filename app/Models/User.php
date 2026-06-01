@@ -20,6 +20,7 @@ use Spatie\Permission\Traits\HasRoles;
     'email',
     'phone',
     'efficiency',
+    'incentive_percentage',
     'status',
     'password',
     'is_active',
@@ -60,6 +61,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_active' => 'boolean',
             'user_unique_id' => 'integer',
+            'incentive_percentage' => 'decimal:2',
         ];
     }
 

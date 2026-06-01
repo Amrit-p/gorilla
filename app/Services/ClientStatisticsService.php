@@ -29,7 +29,7 @@ class ClientStatisticsService
             'active_jobs' => (int) ($jobStats->active_jobs ?? 0),
             'cancelled_jobs' => (int) ($jobStats->cancelled_jobs ?? 0),
             'last_job_date' => $jobStats->last_job_date,
-            'lifetime_charges' => (float) ($client->charges ?? 0),
+            'lifetime_charges' => (float) ($client->total_charges ?? 0),
         ];
     }
 

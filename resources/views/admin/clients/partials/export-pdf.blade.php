@@ -73,7 +73,7 @@
                     <td>{{ is_array($client->service_types) ? implode(', ', $client->service_types) : '—' }}</td>
                     <td>{{ $client->equipmentType?->name ?? '—' }}</td>
                     <td>{{ $client->job_type ?? '—' }}</td>
-                    <td class="right">{{ $client->charges !== null ? '$' . number_format((float) $client->charges, 2) : '—' }}</td>
+                    <td class="right">{{ $client->total_charges !== null ? '$' . number_format((float) $client->total_charges, 2) : '—' }}</td>
                     <td>{{ $client->payment_mode ?? '—' }}</td>
                     <td>{{ $client->payment_status ?? '—' }}</td>
                     <td>{{ $client->customer_type ?? '—' }}</td>

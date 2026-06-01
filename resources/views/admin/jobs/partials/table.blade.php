@@ -86,6 +86,9 @@
                 @if ($job->payment_status)
                     <span class="text-xs text-slate-500">{{ $job->payment_status }}</span>
                 @endif
+                @if ($job->charges !== null)
+                    <p class="text-xs font-medium text-emerald-600">${{ number_format($job->charges, 2) }}</p>
+                @endif
             </td>
 
             {{-- Mowers --}}

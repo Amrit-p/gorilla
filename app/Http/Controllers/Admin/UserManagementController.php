@@ -91,6 +91,7 @@ class UserManagementController extends Controller
             'email' => $user->email,
             'phone' => $user->phone,
             'efficiency' => $user->efficiency,
+            'incentive_percentage' => $user->incentive_percentage,
             'status' => $user->status,
             'is_active' => (bool) $user->is_active,
             'role' => $user->roles->pluck('name')->first(),

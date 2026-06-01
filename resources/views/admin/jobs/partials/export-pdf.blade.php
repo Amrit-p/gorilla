@@ -24,11 +24,12 @@
             <col style="width:5%">  {{-- Recurrence --}}
             <col style="width:6%">  {{-- Status --}}
             <col style="width:4%">  {{-- Priority --}}
-            <col style="width:6%">  {{-- Payment Mode --}}
-            <col style="width:6%">  {{-- Payment Status --}}
-            <col style="width:7%">  {{-- Done By --}}
-            <col style="width:7%">  {{-- Assigned Mowers --}}
-            <col style="width:6%">  {{-- Created At --}}
+            <col style="width:5%">  {{-- Payment Mode --}}
+            <col style="width:5%">  {{-- Payment Status --}}
+            <col style="width:4%">  {{-- Charges --}}
+            <col style="width:6%">  {{-- Done By --}}
+            <col style="width:6%">  {{-- Assigned Mowers --}}
+            <col style="width:5%">  {{-- Created At --}}
         </colgroup>
         <thead>
             <tr>
@@ -46,6 +47,7 @@
                 <th class="center">Priority</th>
                 <th>Payment Mode</th>
                 <th>Payment Status</th>
+                <th class="center">Charges ($)</th>
                 <th>Done By</th>
                 <th>Assigned Mowers</th>
                 <th class="center">Created At</th>
@@ -73,12 +75,13 @@
                     <td class="center"><span class="badge">{{ $job->priority ?? '—' }}</span></td>
                     <td>{{ $job->payment_mode ?? '—' }}</td>
                     <td>{{ $job->payment_status ?? '—' }}</td>
+                    <td class="center">{{ $job->charges !== null ? '$' . number_format((float) $job->charges, 2) : '—' }}</td>
                     <td>{{ $job->doneByUser?->name ?? '—' }}</td>
                     <td>{{ $job->assignedEmployees->pluck('name')->join(', ') ?: '—' }}</td>
                     <td class="center">{{ $job->created_at?->format('d/m/Y') ?? '—' }}</td>
                 </tr>
             @empty
-                <tr><td colspan="17" class="no-records">No jobs found.</td></tr>
+                <tr><td colspan="18" class="no-records">No jobs found.</td></tr>
             @endforelse
         </tbody>
     </table>

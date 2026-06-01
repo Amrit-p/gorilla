@@ -1,4 +1,5 @@
 @can('manage-job-records')
+
 <style>
     .sortable-ghost { opacity: 0; }
     .sortable-drag {
@@ -93,6 +94,14 @@
 
 <script>
     crmDropdown('.job-actions-btn', '.job-actions-menu');
+    let filterCallback = @json($filterCallback ?? null);
+    function refreshJobList() {
+        if (filterCallback && typeof window[filterCallback] === 'function') {
+            window[filterCallback]();
+        } else {
+            loadJobs();
+        }
+    }
     function showJobAlert(message, isError = false) {
         const baseClass = isError
             ? 'rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700'
@@ -116,7 +125,7 @@
             method: 'POST',
             data: $(this).serialize(),
             headers: { Accept: 'application/json' },
-            success: function (res) { closeModal('assign-job-modal'); showJobAlert(res.message); loadJobs(); },
+            success: function (res) { closeModal('assign-job-modal'); showJobAlert(res.message); refreshJobList(); },
             error: function (xhr) { showJobAlert(Object.values(xhr.responseJSON?.errors || {})[0]?.[0] || 'Failed to assign.', true); }
         });
     });
@@ -134,7 +143,7 @@
             method: 'POST',
             data: $(this).serialize(),
             headers: { Accept: 'application/json' },
-            success: function (res) { closeModal('status-job-modal'); showJobAlert(res.message); loadJobs(); },
+            success: function (res) { closeModal('status-job-modal'); showJobAlert(res.message); refreshJobList(); },
             error: function (xhr) { showJobAlert(Object.values(xhr.responseJSON?.errors || {})[0]?.[0] || 'Failed to update status.', true); }
         });
     });
@@ -147,7 +156,7 @@
             method: 'POST',
             data: { _token: "{{ csrf_token() }}", _method: 'DELETE' },
             headers: { Accept: 'application/json' },
-            success: function (res) { showJobAlert(res.message); loadJobs(); },
+            success: function (res) { showJobAlert(res.message); refreshJobList(); },
             error: function () { showJobAlert('Failed to delete job.', true); }
         });
     });

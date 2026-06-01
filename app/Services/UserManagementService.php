@@ -41,6 +41,7 @@ class UserManagementService
             'email' => $data['email'],
             'phone' => $data['phone'] ?? null,
             'efficiency' => $data['efficiency'],
+            'incentive_percentage' => $data['incentive_percentage'] ?? null,
             'status' => $status,
             'password' => Hash::make($data['password']),
             'is_active' => $status === UserStatus::ACTIVE->value,
@@ -53,6 +54,7 @@ class UserManagementService
             'user_unique_id' => $user->user_unique_id,
             'target_user_email' => $user->email,
             'role' => $data['role'],
+            'incentive_percentage' => $user->incentive_percentage,
         ]);
 
         return $user;
@@ -62,11 +64,14 @@ class UserManagementService
     {
         $status = (string) $data['status'];
 
+        $previousIncentive = $user->incentive_percentage;
+
         $user->fill([
             'name' => $data['name'],
             'email' => $data['email'],
             'phone' => $data['phone'] ?? null,
             'efficiency' => $data['efficiency'],
+            'incentive_percentage' => $data['incentive_percentage'] ?? null,
             'status' => $status,
             'is_active' => $status === UserStatus::ACTIVE->value,
         ]);
@@ -83,6 +88,8 @@ class UserManagementService
             'user_unique_id' => $user->user_unique_id,
             'target_user_email' => $user->email,
             'role' => $data['role'],
+            'incentive_percentage' => $user->incentive_percentage,
+            'previous_incentive_percentage' => $previousIncentive,
         ]);
 
         return $user;

@@ -1,4 +1,4 @@
-<x-ui.table :headers="['ID', 'Name', 'Email', 'Role', 'Efficiency', 'Status', 'Actions']">
+<x-ui.table :headers="['ID', 'Name', 'Email', 'Role', 'Efficiency', 'Incentive %', 'Status', 'Actions']">
         @forelse ($users as $user)
             <tr>
                 <td class="px-4 py-3 font-mono text-sm text-slate-700">#{{ $user->user_unique_id }}</td>
@@ -10,6 +10,9 @@
                 <td class="px-4 py-3 text-slate-700">{{ $user->roles->pluck('name')->first() ?? 'No role' }}</td>
                 <td class="px-4 py-3">
                     <x-ui.efficiency-badge :efficiency="$user->efficiency ?? 'Average'" />
+                </td>
+                <td class="px-4 py-3 text-slate-700">
+                    {{ $user->incentive_percentage !== null ? $user->incentive_percentage . '%' : '—' }}
                 </td>
                 <td class="px-4 py-3">
                     <x-ui.user-status-badge :status="$user->status ?? ($user->is_active ? 'Active' : 'Inactive')" />
@@ -26,7 +29,7 @@
             </tr>
         @empty
             <tr>
-                <td colspan="7" class="px-4 py-6 text-center text-sm text-slate-500">No users found for selected filters.</td>
+                <td colspan="8" class="px-4 py-6 text-center text-sm text-slate-500">No users found for selected filters.</td>
             </tr>
         @endforelse
 </x-ui.table>

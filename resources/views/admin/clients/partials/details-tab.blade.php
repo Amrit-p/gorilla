@@ -29,8 +29,8 @@
             <div class="flex justify-between gap-4">
                 <dt class="text-slate-500">Charges</dt>
                 <dd class="text-right text-slate-800">
-                    @if ($client->charges !== null)
-                        ${{ number_format((float) $client->charges, 2) }}
+                    @if ($client->total_charges !== null)
+                        ${{ number_format((float) $client->total_charges, 2) }}
                     @else
                         —
                     @endif

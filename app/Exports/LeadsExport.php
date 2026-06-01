@@ -10,6 +10,8 @@ use App\Enums\LeadPaymentStatus;
 use App\Enums\LeadStatus;
 use App\Enums\LeadWeedSpray;
 use App\Models\EquipmentType;
+use App\Models\Recurrence;
+use App\Models\Zone;
 use App\Exports\Concerns\HasDataValidation;
 use Illuminate\Database\Eloquent\Collection;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
@@ -151,6 +153,15 @@ class LeadsExport extends SpreadsheetExport
             error: 'Mobile number must not exceed 20 characters.',
         );
 
+        // F: Zone
+        $zones = Zone::where('is_active', true)->orderBy('sort_order')->pluck('name')->toArray();
+        $this->addDropdownValidation($sheet, "F{$first}:F{$last}",
+            options: $zones,
+            errorTitle: 'Invalid Zone',
+            error: 'Please select a valid zone from the dropdown list.',
+            prompt: 'Select a zone. Options: ' . implode(', ', $zones),
+        );
+
         // H: Equipment Type — single value
         $equipmentTypes = EquipmentType::all()->pluck('name')->toArray();
         $this->addDropdownValidation($sheet, "H{$first}:H{$last}",
@@ -215,6 +226,15 @@ class LeadsExport extends SpreadsheetExport
             errorTitle: 'Invalid Lead Date',
             error: 'Lead Date must be between 01/01/2020 and 31/12/2050.',
             prompt: 'Enter a date in DD/MM/YYYY format.',
+        );
+
+        // S: Recurrence
+        $recurrences = Recurrence::where('is_active', true)->orderBy('sort_order')->pluck('name')->toArray();
+        $this->addDropdownValidation($sheet, "S{$first}:S{$last}",
+            options: $recurrences,
+            errorTitle: 'Invalid Recurrence',
+            error: 'Please select a valid recurrence from the dropdown list.',
+            prompt: 'Select a recurrence. Options: ' . implode(', ', $recurrences),
         );
 
         // R: Weed Spray

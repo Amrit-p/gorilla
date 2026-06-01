@@ -55,6 +55,10 @@ final class JobListFilter
             $query->where('zone_id', $filters['zone_id']);
         }
 
+        if (! empty($filters['done_by_user_id'])) {
+            $query->where('done_by_user_id', $filters['done_by_user_id']);
+        }
+
         if (! empty($filters['client_id'])) {
             $query->where('client_id', $filters['client_id']);
         }

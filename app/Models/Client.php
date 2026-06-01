@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Support\CustomerUniqueIdGenerator;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -96,6 +97,11 @@ class Client extends Model
     public function jobs(): HasMany
     {
         return $this->hasMany(Job::class);
+    }
+
+    protected function getTotalChargesAttribute(): float
+    {
+        return $this->jobs()->sum('charges');
     }
 
     public function recurrence(): BelongsTo

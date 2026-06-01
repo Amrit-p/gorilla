@@ -94,6 +94,10 @@
         <div id="job-payment-reason-wrap" class="hidden">
             <x-ui.input label="Reason if pending" name="payment_pending_reason" :value="old('payment_pending_reason', $jobModel?->payment_pending_reason)" />
         </div>
+
+        <div class="grid grid-cols-2 gap-3">
+            <x-ui.input label="Charges ($)" name="charges" type="number" min="0" step="0.01" :value="old('charges', $jobModel?->charges)" />
+        </div>
     </div>
 
     <div class="lg:order-2 lg:sticky lg:top-4 lg:self-start">

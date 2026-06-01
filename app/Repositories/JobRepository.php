@@ -35,6 +35,8 @@ class JobRepository
                 'payment_status',
                 'done_by_user_id',
                 'recurrence_id',
+                'charges',
+                'incentive_percentage',
             ])
             ->with([
                 'client:id,name,address,customer_unique_id',

@@ -60,7 +60,7 @@ class ClientsExport extends SpreadsheetExport
             $sheet->setCellValue('I' . $row, is_array($client->service_types) ? implode(', ', $client->service_types) : '');
             $sheet->setCellValue('J' . $row, $client->equipmentType?->name ?? '');
             $sheet->setCellValue('K' . $row, $client->job_type ?? '');
-            $sheet->setCellValue('L' . $row, $client->charges !== null ? (float) $client->charges : '');
+            $sheet->setCellValue('L' . $row, $client->total_charges !== null ? (float) $client->total_charges : '');
             $sheet->setCellValue('M' . $row, $client->payment_mode ?? '');
             $sheet->setCellValue('N' . $row, $client->payment_status ?? '');
             $sheet->setCellValue('O' . $row, $client->customer_type ?? '');

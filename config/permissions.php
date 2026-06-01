@@ -18,6 +18,7 @@ return [
         'manage_users',
         'manage_masters',
         'upload_job_images',
+        'view_mower_report',
     ],
 
     'roles' => [
@@ -33,6 +34,7 @@ return [
                 'view_dashboard',
                 'manage_leads',
                 'manage_customers',
+                'view_mower_report',
             ],
         ],
         'mower' => [
@@ -42,6 +44,7 @@ return [
                 'view_dashboard',
                 'manage_jobs',
                 'upload_job_images',
+                'view_mower_report',
             ],
         ],
     ],

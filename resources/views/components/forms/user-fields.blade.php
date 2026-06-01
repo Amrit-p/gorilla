@@ -32,6 +32,16 @@
     :value="$userModel?->efficiency ?? 'Average'"
 />
 
+<x-ui.input
+    label="Incentive Percentage (%)"
+    name="incentive_percentage"
+    type="number"
+    step="0.01"
+    min="0"
+    max="100"
+    :value="$userModel?->incentive_percentage"
+/>
+
 <x-ui.select
     label="Status"
     name="status"

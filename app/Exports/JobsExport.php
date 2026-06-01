@@ -27,21 +27,22 @@ class JobsExport extends SpreadsheetExport
         'P'  => ['header' => 'Pet Warning',         'width' => 12],
         'Q'  => ['header' => 'Payment Mode',        'width' => 14],
         'R'  => ['header' => 'Payment Status',      'width' => 15],
-        'S'  => ['header' => 'Done By',             'width' => 18],
-        'T'  => ['header' => 'Assigned Mowers',     'width' => 24],
-        'U'  => ['header' => 'Recurring',           'width' => 10],
-        'V'  => ['header' => 'Recurrence',          'width' => 14],
-        'W'  => ['header' => 'Site Instructions',   'width' => 28],
-        'X'  => ['header' => 'Special Remarks',     'width' => 28],
-        'Y'  => ['header' => 'Internal Notes',      'width' => 28],
-        'Z'  => ['header' => 'Created By',          'width' => 16],
-        'AA' => ['header' => 'Created At',          'width' => 16],
+        'S'  => ['header' => 'Charges ($)',         'width' => 14],
+        'T'  => ['header' => 'Done By',             'width' => 18],
+        'U'  => ['header' => 'Assigned Mowers',     'width' => 24],
+        'V'  => ['header' => 'Recurring',           'width' => 10],
+        'W'  => ['header' => 'Recurrence',          'width' => 14],
+        'X'  => ['header' => 'Site Instructions',   'width' => 28],
+        'Y'  => ['header' => 'Special Remarks',     'width' => 28],
+        'Z'  => ['header' => 'Internal Notes',      'width' => 28],
+        'AA' => ['header' => 'Created By',          'width' => 16],
+        'AB' => ['header' => 'Created At',          'width' => 16],
     ];
 
     public function __construct(private readonly Collection $jobs) {}
 
     protected function getColumns(): array     { return self::COLUMNS; }
-    protected function getLastColumn(): string  { return 'AA'; }
+    protected function getLastColumn(): string  { return 'AB'; }
     protected function getTitle(): string       { return 'Jobs Report'; }
     protected function getSheetName(): string   { return 'Jobs'; }
     protected function getRecordCount(): int    { return $this->jobs->count(); }
@@ -69,24 +70,25 @@ class JobsExport extends SpreadsheetExport
             $sheet->setCellValue('P'  . $row, $job->pet_warning ?? '');
             $sheet->setCellValue('Q'  . $row, $job->payment_mode ?? '');
             $sheet->setCellValue('R'  . $row, $job->payment_status ?? '');
-            $sheet->setCellValue('S'  . $row, $job->doneByUser?->name ?? '');
-            $sheet->setCellValue('T'  . $row, $job->assignedEmployees->pluck('name')->join(', '));
-            $sheet->setCellValue('U'  . $row, $job->is_recurring ? 'Yes' : 'No');
-            $sheet->setCellValue('V'  . $row, $job->recurrence?->name ?? '');
-            $sheet->setCellValue('W'  . $row, $job->site_instructions ?? '');
-            $sheet->setCellValue('X'  . $row, $job->special_remarks ?? '');
-            $sheet->setCellValue('Y'  . $row, $job->internal_notes ?? '');
-            $sheet->setCellValue('Z'  . $row, $job->creator?->name ?? '');
-            $sheet->setCellValue('AA' . $row, $job->created_at?->format('d/m/Y H:i') ?? '');
+            $sheet->setCellValue('S'  . $row, $job->charges !== null ? (float) $job->charges : '');
+            $sheet->setCellValue('T'  . $row, $job->doneByUser?->name ?? '');
+            $sheet->setCellValue('U'  . $row, $job->assignedEmployees->pluck('name')->join(', '));
+            $sheet->setCellValue('V'  . $row, $job->is_recurring ? 'Yes' : 'No');
+            $sheet->setCellValue('W'  . $row, $job->recurrence?->name ?? '');
+            $sheet->setCellValue('X'  . $row, $job->site_instructions ?? '');
+            $sheet->setCellValue('Y'  . $row, $job->special_remarks ?? '');
+            $sheet->setCellValue('Z'  . $row, $job->internal_notes ?? '');
+            $sheet->setCellValue('AA' . $row, $job->creator?->name ?? '');
+            $sheet->setCellValue('AB' . $row, $job->created_at?->format('d/m/Y H:i') ?? '');
 
-            $this->applyRowStyle($sheet, $row, $i % 2 === 1, ['A', 'F', 'G', 'H', 'I', 'L', 'M', 'P', 'U', 'AA']);
+            $this->applyRowStyle($sheet, $row, $i % 2 === 1, ['A', 'F', 'G', 'H', 'I', 'L', 'M', 'P', 'S', 'V', 'AB']);
             $row++;
         }
 
         if ($this->jobs->isNotEmpty()) {
             $this->applyOutlineBorder($sheet, $row - 1);
             $sheet->getStyle('D5:D' . ($row - 1))->getAlignment()->setWrapText(true);
-            $sheet->getStyle('W5:Y' . ($row - 1))->getAlignment()->setWrapText(true);
+            $sheet->getStyle('X5:Z' . ($row - 1))->getAlignment()->setWrapText(true);
         }
     }
 }

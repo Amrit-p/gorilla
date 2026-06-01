@@ -172,4 +172,23 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
             Route::delete('/jobs/{job}/images/after/{imageId}', [MowerDashboardController::class, 'deleteAfter'])->name('jobs.images.after.destroy');
         });
     });
+
+    Route::middleware('crm.any_permission:'.implode(',', [
+        CrmPermissions::VIEW_MOWER_REPORT,
+    ]))->group(function (): void {
+        Route::prefix('reports')->name('reports.')->group(function (): void {
+            Route::prefix('mower')->name('mower.')->group(function (): void {
+                Route::get('/', [\App\Http\Controllers\Report\MowerReportController::class, 'index'])
+                    ->name('index');
+                Route::get('/report', [\App\Http\Controllers\Report\MowerReportController::class, 'report'])
+                    ->name('report');
+                Route::get('/jobs', [\App\Http\Controllers\Report\MowerReportController::class, 'jobs'])
+                    ->name('jobs');
+                Route::get('/export', [\App\Http\Controllers\Report\MowerReportController::class, 'export'])
+                    ->name('export');
+                Route::get('/export-pdf', [\App\Http\Controllers\Report\MowerReportController::class, 'exportPdf'])
+                    ->name('export-pdf');
+            });
+        });
+    });
 });

@@ -28,6 +28,8 @@ final class CrmPermissions
 
     public const UPLOAD_JOB_IMAGES = 'upload_job_images';
 
+    public const VIEW_MOWER_REPORT = 'view_mower_report';
+
     /**
      * @return array<int, string>
      */
@@ -151,6 +153,11 @@ final class CrmPermissions
     public static function isOfficeManager(?User $user): bool
     {
         return $user?->hasRole(CrmRoles::OFFICE_MANAGER) ?? false;
+    }
+
+    public static function canViewReport(?User $user, string $permission): bool
+    {
+        return $user?->can($permission) ?? false;
     }
 
     /**

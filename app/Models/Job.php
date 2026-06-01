@@ -37,6 +37,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'payment_mode',
     'payment_status',
     'payment_pending_reason',
+    'charges',
+    'incentive_percentage',
     'special_remarks',
     'internal_notes',
     'created_by',
@@ -61,6 +63,8 @@ class Job extends Model
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
             'numeric_priority' => 'integer',
+            'charges' => 'decimal:2',
+            'incentive_percentage' => 'decimal:2',
         ];
     }
 

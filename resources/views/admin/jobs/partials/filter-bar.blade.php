@@ -29,8 +29,8 @@
 
         <div class="flex flex-wrap items-center gap-2 border-l border-slate-100 px-4 py-2.5">
             <x-ui.export-dropdown
-                :excelHref="route('admin.jobs.export.excel')"
-                :pdfHref="route('admin.jobs.export.pdf')"
+                :excelHref="$excelHref ?? route('admin.jobs.export.excel')"
+                :pdfHref="$pdfHref ?? route('admin.jobs.export.pdf')"
             />
             @can('manage-job-records')
                 <a href="{{ route('admin.jobs.create') }}" class="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700">Create Job</a>
@@ -202,7 +202,14 @@
         );
     }
 
+    let jobFilterCallback = @json($filterCallback ?? null);
+
     function loadJobs() {
+        if (jobFilterCallback && typeof window[jobFilterCallback] === 'function') {
+            const data = Object.fromEntries(new FormData(document.getElementById('job-filter-form')).entries());
+            window[jobFilterCallback](data);
+            return;
+        }
         showJobsLoading();
         $.get("{{ route('admin.jobs.index') }}", $('#job-filter-form').serialize(), function (res) {
             $('#{{ $tableContainer }}').html(res.html);

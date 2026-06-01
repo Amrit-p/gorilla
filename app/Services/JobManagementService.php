@@ -188,7 +188,7 @@ class JobManagementService
                 OptimizationHelper::forgetNotificationUnreadCount($employee->id);
             });
         }
-
+        $job->incentive_percentage = User::find((int)$userIds[0])->incentive_percentage ?? 0;
         $this->activityLogService->log($actor, 'job.assigned', 'Mowers assigned to job.', [
             'job_id' => $job->id,
             'employee_ids' => $userIds,

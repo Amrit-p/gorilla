@@ -18,6 +18,7 @@ trait ValidatesUserFields
             'email' => ['required', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
             'efficiency' => ['required', Rule::in(UserEfficiency::values())],
+            'incentive_percentage' => ['nullable', 'numeric', 'between:0,100'],
             'status' => ['required', Rule::in(UserStatus::values())],
             'role' => ['required', 'string'],
         ];
