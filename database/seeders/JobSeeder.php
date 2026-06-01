@@ -130,7 +130,8 @@ class JobSeeder extends Seeder
                 'special_remarks'            => $client->special_remarks,
                 'internal_notes'             => null,
                 'created_by'                 => $adminId,
-                'charges'                    => rand(50, 150),  
+                'charges'                    => rand(50, 150),
+                'incentive_percentage'       => User::find($assignedMowerId)->incentive_percentage,
             ]);
 
             DB::table('job_user_assignments')->insert([

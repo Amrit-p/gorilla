@@ -43,6 +43,7 @@ class RoleAndPermissionSeeder extends Seeder
                     'phone'      => null,
                     'efficiency' => $data['efficiency'],
                     'status'     => UserStatus::ACTIVE->value,
+                    'incentive_percentage' => $data['efficiency'] === UserEfficiency::GOOD->value ? 10 : 5,
                     'password'   => Hash::make('Password@123'),
                     'is_active'  => true,
                 ]
