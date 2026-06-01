@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Helpers\OptimizationHelper;
+use App\Models\AccountingLevel;
 use App\Models\EquipmentType;
 use App\Models\Recurrence;
 use App\Models\SafetyType;
@@ -27,6 +28,8 @@ final class MasterCatalog
 
     public const RECURRENCES = 'recurrences';
 
+    public const ACCOUNTING_LEVELS = 'accounting_levels';
+
     /**
      * @return class-string<Model>
      */
@@ -38,6 +41,7 @@ final class MasterCatalog
             self::SAFETY_TYPES => SafetyType::class,
             self::ZONES => Zone::class,
             self::RECURRENCES => Recurrence::class,
+            self::ACCOUNTING_LEVELS => AccountingLevel::class,
             default => throw new \InvalidArgumentException("Unknown catalog: {$catalog}"),
         };
     }

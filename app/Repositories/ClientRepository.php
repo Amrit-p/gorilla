@@ -23,6 +23,7 @@ class ClientRepository
                 'customer_unique_id',
                 'lead_id',
                 'zone_id',
+                'accounting_level_id',
                 'name',
                 'email',
                 'phone',
@@ -42,6 +43,7 @@ class ClientRepository
                 'creator:id,name',
                 'lead:id,client_name,status',
                 'zone:id,name',
+                'accountingLevel:id,name,description',
                 'equipmentType:id,name',
                 'recurrence:id,name',
             ])
@@ -58,8 +60,11 @@ class ClientRepository
         $query = Client::query()
             ->with([
                 'zone:id,name',
+                'accountingLevel:id,name,description',
                 'equipmentType:id,name',
                 'recurrence:id,name',
+                'lead:id,client_name,status',
+                'creator:id,name',
             ])
             ->latest();
 

@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             MasterCatalogSeeder::class,
             SettingsSeeder::class,
             ZoneSeeder::class,
+            AccountingLevelSeeder::class,
             RecurrenceSeeder::class,
             LeadSeeder::class,
             ClientSeeder::class,

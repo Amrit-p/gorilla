@@ -36,6 +36,7 @@ class ClientManagementController extends Controller
         $filters = [
             'search' => $request->string('search')->toString(),
             'zone_id' => $request->string('zone_id')->toString(),
+            'accounting_level_id' => $request->string('accounting_level_id')->toString(),
             'recurrence_id' => $request->string('recurrence_id')->toString(),
             'job_type' => $request->string('job_type')->toString(),
             'customer_type' => $request->string('customer_type')->toString(),
@@ -83,15 +84,16 @@ class ClientManagementController extends Controller
     private function exportFilters(Request $request): array
     {
         return [
-            'search'         => $request->string('search')->toString(),
-            'zone_id'        => $request->string('zone_id')->toString(),
-            'job_type'       => $request->string('job_type')->toString(),
-            'customer_type'  => $request->string('customer_type')->toString(),
-            'parking_status' => $request->string('parking_status')->toString(),
-            'payment_status' => $request->string('payment_status')->toString(),
-            'client_type'    => $request->string('client_type')->toString(),
-            'from_lead'      => $request->string('from_lead')->toString(),
-            'recurrence_id'   => $request->string('recurrence_id')->toString(),
+            'search'              => $request->string('search')->toString(),
+            'zone_id'             => $request->string('zone_id')->toString(),
+            'accounting_level_id' => $request->string('accounting_level_id')->toString(),
+            'job_type'            => $request->string('job_type')->toString(),
+            'customer_type'       => $request->string('customer_type')->toString(),
+            'parking_status'      => $request->string('parking_status')->toString(),
+            'payment_status'      => $request->string('payment_status')->toString(),
+            'client_type'         => $request->string('client_type')->toString(),
+            'from_lead'           => $request->string('from_lead')->toString(),
+            'recurrence_id'       => $request->string('recurrence_id')->toString(),
         ];
     }
 

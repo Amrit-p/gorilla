@@ -84,6 +84,10 @@ class MasterCatalogService
             $payload['color_code'] = $this->normalizeColorCode((string) ($data['color_code'] ?? '#64748b'));
         }
 
+        if ($catalog === MasterCatalog::ACCOUNTING_LEVELS) {
+            $payload['description'] = trim((string) ($data['description'] ?? ''));
+        }
+
         return $payload;
     }
 

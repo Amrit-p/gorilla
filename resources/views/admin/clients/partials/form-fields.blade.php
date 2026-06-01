@@ -70,6 +70,23 @@
             </div>
         @endisset
 
+        @isset($accountingLevels)
+            <div>
+                <label class="mb-1 block text-sm font-medium text-slate-700">Accounting level</label>
+                <select id="accounting-level-select" name="accounting_level_id" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    <option value="" data-description="">Select accounting level</option>
+                    @foreach ($accountingLevels as $accountingLevel)
+                        <option
+                            value="{{ $accountingLevel->id }}"
+                            data-description="{{ $accountingLevel->description }}"
+                            @selected((string) old('accounting_level_id', $clientModel?->accounting_level_id) === (string) $accountingLevel->id)
+                        >{{ $accountingLevel->name }}</option>
+                    @endforeach
+                </select>
+                <p id="accounting-level-desc" class="mt-1 min-h-[1.25rem] text-xs text-slate-500 italic"></p>
+            </div>
+        @endisset
+
         <x-ui.input label="Charges" name="charges" type="number" step="0.01" min="0" :value="old('charges', $clientModel?->charges)" />
         <x-ui.input label="Estimate time" name="estimated_time" :value="old('estimated_time', $clientModel?->estimated_time)" />
         <x-ui.input label="Mobile number" name="phone" :value="old('phone', $clientModel?->phone)" />
@@ -125,3 +142,21 @@
         />
     </div>
 </div>
+
+@isset($accountingLevels)
+<script>
+    (function () {
+        var select = document.getElementById('accounting-level-select');
+        var desc   = document.getElementById('accounting-level-desc');
+        if (!select || !desc) return;
+
+        function syncDesc() {
+            var opt = select.options[select.selectedIndex];
+            desc.textContent = (opt && opt.dataset.description) ? opt.dataset.description : '';
+        }
+
+        select.addEventListener('change', syncDesc);
+        syncDesc(); // populate on page load (edit form pre-selection)
+    })();
+</script>
+@endisset

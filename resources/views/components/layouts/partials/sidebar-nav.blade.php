@@ -107,6 +107,7 @@
                 <div class="sidebar-accordion-panel mt-0.5 space-y-0.5">
                     <a href="{{ route('admin.users.index') }}" class="{{ $linkClass(['admin.users.index', 'admin.users.show', 'admin.users.create'], true) }}">Users</a>
                     @can('manage-masters')
+                        <a href="{{ route('admin.masters.accounting-levels.index') }}" class="{{ $linkClass(['admin.masters.accounting-levels.*'], true) }}">Accounting levels</a>
                         <a href="{{ route('admin.masters.zones.index') }}" class="{{ $linkClass(['admin.masters.zones.*'], true) }}">Zones</a>
                         <a href="{{ route('admin.masters.recurrences.index') }}" class="{{ $linkClass(['admin.masters.recurrences.*'], true) }}">Recurrences</a>
                         <a href="{{ route('admin.masters.service-types.index') }}" class="{{ $linkClass(['admin.masters.service-types.*'], true) }}">Service types</a>

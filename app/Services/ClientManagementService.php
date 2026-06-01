@@ -9,6 +9,7 @@ use App\Jobs\GeocodeClientAddressJob;
 use App\Models\Client;
 use App\Models\Recurrence;
 use App\Models\User;
+use App\Models\AccountingLevel;
 use App\Models\Zone;
 use App\Repositories\ClientRepository;
 use App\Support\EquipmentTypes;
@@ -80,6 +81,7 @@ class ClientManagementService
             'parkingStatuses' => JobParkingStatus::values(),
             'equipmentTypes' => EquipmentTypes::selectOptions(),
             'zones' => Zone::active()->ordered()->get(['id', 'name']),
+            'accountingLevels' => AccountingLevel::active()->ordered()->get(['id', 'name', 'description']),
             'clientTypes' => ['Regular', 'On-Call', 'New'],
             'jobStatuses' => ['Pending', 'Assigned', 'En Route', 'On Site', 'Completed', 'Cancelled'],
         ];

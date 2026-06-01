@@ -14,23 +14,24 @@
         <colgroup>
             <col style="width:2%">  {{-- # --}}
             <col style="width:3%">  {{-- ID --}}
-            <col style="width:7%">  {{-- Name --}}
-            <col style="width:7%">  {{-- Email --}}
+            <col style="width:6%">  {{-- Name --}}
+            <col style="width:6%">  {{-- Email --}}
             <col style="width:5%">  {{-- Phone --}}
-            <col style="width:8%">  {{-- Address --}}
-            <col style="width:5%">  {{-- Zone --}}
-            <col style="width:8%">  {{-- Service Types --}}
+            <col style="width:7%">  {{-- Address --}}
+            <col style="width:4%">  {{-- Zone --}}
+            <col style="width:5%">  {{-- Accounting Level --}}
+            <col style="width:7%">  {{-- Service Types --}}
             <col style="width:5%">  {{-- Equipment --}}
             <col style="width:4%">  {{-- Job Type --}}
             <col style="width:4%">  {{-- Charges --}}
             <col style="width:5%">  {{-- Payment Mode --}}
             <col style="width:5%">  {{-- Payment Status --}}
-            <col style="width:5%">  {{-- Customer Type --}}
+            <col style="width:4%">  {{-- Customer Type --}}
             <col style="width:4%">  {{-- Client Type --}}
             <col style="width:4%">  {{-- Weed Spray --}}
             <col style="width:4%">  {{-- Recurrence --}}
             <col style="width:5%">  {{-- Property Details --}}
-            <col style="width:6%">  {{-- Special Remarks --}}
+            <col style="width:5%">  {{-- Special Remarks --}}
             <col style="width:4%">  {{-- Created At --}}
         </colgroup>
         <thead>
@@ -42,6 +43,7 @@
                 <th>Phone</th>
                 <th>Address</th>
                 <th>Zone</th>
+                <th>Accounting Level</th>
                 <th>Service Types</th>
                 <th>Equipment</th>
                 <th>Job Type</th>
@@ -67,6 +69,7 @@
                     <td>{{ $client->phone ?? '—' }}</td>
                     <td>{{ $client->address ?? '—' }}</td>
                     <td>{{ $client->zone?->name ?? '—' }}</td>
+                    <td>{{ str_replace("\u{2B50}", '★', $client->accountingLevel?->name ?? '—') }}</td>
                     <td>{{ is_array($client->service_types) ? implode(', ', $client->service_types) : '—' }}</td>
                     <td>{{ $client->equipmentType?->name ?? '—' }}</td>
                     <td>{{ $client->job_type ?? '—' }}</td>
@@ -82,7 +85,7 @@
                     <td class="center">{{ $client->created_at?->format('d/m/Y') ?? '—' }}</td>
                 </tr>
             @empty
-                <tr><td colspan="20" class="no-records">No customers found.</td></tr>
+                <tr><td colspan="21" class="no-records">No customers found.</td></tr>
             @endforelse
         </tbody>
     </table>

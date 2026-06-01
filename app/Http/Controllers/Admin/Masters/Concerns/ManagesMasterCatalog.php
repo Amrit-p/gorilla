@@ -69,6 +69,7 @@ trait ManagesMasterCatalog
             MasterCatalog::SAFETY_TYPES => ['safetyType' => 0],
             MasterCatalog::ZONES => ['zone' => 0],
             MasterCatalog::RECURRENCES => ['recurrence' => 0],
+            MasterCatalog::ACCOUNTING_LEVELS => ['accountingLevel' => 0],
             default => ['record' => 0],
         };
 
