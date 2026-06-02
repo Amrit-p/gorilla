@@ -45,7 +45,7 @@ class MowerRequestReportDTO
             'list_scope' => $this->list_scope,
             'status' => $this->status,
             'priority' => $this->priority,
-            'user_id' => $this->user_id,
+            'done_by_user_id' => $this->user_id,
             'date_range_start' => $this->start_date?->toDateString(),
             'date_range_end' => $this->end_date?->toDateString(),
             'equipment_type_id' => $this->equipment_type_id,
