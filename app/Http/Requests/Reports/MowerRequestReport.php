@@ -98,13 +98,13 @@ class MowerRequestReport extends FormRequest
     {
         $data = $this->validated();
 
-        $userId = (string) $this->user()->hasRole(CrmRoles::MOWER)
+        $userId = $this->user()->hasRole(CrmRoles::MOWER)
             ? $this->user()->id
             : '';
 
         $data['start_date'] = $this->date('date_range.start')?->toDateString();
         $data['end_date']   = $this->date('date_range.end')?->toDateString();
-        $data['user_id']    = $userId;
+        $data['user_id']    = (string) $userId;
 
         $dto = MowerRequestReportDTO::fromArray($data);
 
