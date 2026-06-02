@@ -63,6 +63,10 @@
                         @include('admin.jobs.partials.filter-bar', [
                             'filters' => $filters,
                             'clientId' => $client->id,
+                            'resetUrl' => route('admin.clients.show', [
+                                'client' => $client,
+                                'tab' => 'jobs',
+                            ]),
                         ])
                     </div>
                     <div id="jobs-table-container">

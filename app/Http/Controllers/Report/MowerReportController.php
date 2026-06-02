@@ -60,15 +60,21 @@ class MowerReportController extends Controller
             'date_range'       => ['nullable', 'array'],
             'date_range.start' => ['nullable', 'date', 'date_format:Y-m-d'],
             'date_range.end'   => ['nullable', 'date', 'date_format:Y-m-d'],
+            'equipment_type_id' => ['nullable', 'integer'],
+            'customer_type'    => ['nullable', 'string', 'max:100'],
+            'service_type'     => ['nullable', 'string', 'max:100'],
             'page'             => ['nullable', 'integer', 'min:1'],
         ]);
 
         $filters = [
-            'done_by_user_id'  => $validated['done_by_user_id'],
-            'status'           => $validated['status'] ?? '',
-            'payment_status'   => $validated['payment_status'] ?? '',
-            'date_range_start' => $request->date('date_range.start')?->toDateString() ?? '',
-            'date_range_end'   => $request->date('date_range.end')?->toDateString() ?? '',
+            'done_by_user_id'   => $validated['done_by_user_id'],
+            'status'            => $validated['status'] ?? '',
+            'payment_status'    => $validated['payment_status'] ?? '',
+            'date_range_start'  => $request->date('date_range.start')?->toDateString() ?? '',
+            'date_range_end'    => $request->date('date_range.end')?->toDateString() ?? '',
+            'equipment_type_id' => $validated['equipment_type_id'] ?? '',
+            'customer_type'     => $validated['customer_type'] ?? '',
+            'service_type'      => $validated['service_type'] ?? '',
         ];
 
         $jobs = $this->jobRepository->paginatedList($filters, 15);

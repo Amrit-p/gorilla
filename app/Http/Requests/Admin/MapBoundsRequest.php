@@ -24,7 +24,20 @@ class MapBoundsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'scheduled_date' => ['nullable', 'date'],
+            'scheduled_date'         => ['nullable', 'date'],
+            'date_range'             => ['nullable', 'array'],
+            'date_range.start'       => ['nullable', 'date'],
+            'date_range.end'         => ['nullable', 'date'],
+            'zone_id'          => ['nullable', 'integer'],
+            'status'           => ['nullable', 'string',],
+            'assignment'       => ['nullable', 'in:assigned,unassigned'],
+            'search'           => ['nullable', 'string',],
+            'recurrence_id'    => ['nullable', 'integer'],
+            'payment_mode'     => ['nullable', 'string',],
+            'payment_status'   => ['nullable', 'string',],
+            'equipment_type_id'     => ['nullable', 'integer'],
+            'customer_type'     => ['nullable', 'string',],
+            'service_type'      => ['nullable', 'string',],
         ];
     }
 }

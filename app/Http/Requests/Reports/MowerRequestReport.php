@@ -59,6 +59,18 @@ class MowerRequestReport extends FormRequest
                 'date_format:Y-m-d',
                 'after_or_equal:date_range.start',
             ],
+            'equipment_type_id' => [
+                'nullable',
+                'integer',
+            ],
+            'customer_type' => [
+                'nullable',
+                'string',
+            ],
+            'service_type' => [
+                'nullable',
+                'string',
+            ],
         ];
     }
 
@@ -68,9 +80,10 @@ class MowerRequestReport extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        $excludeFields = ['service_type'];
         $data = [];
 
-        foreach (array_keys($this->rules()) as $field) {
+        foreach (array_diff(array_keys($this->rules()), $excludeFields) as $field) {
             if ($this->has($field) && is_string($value = $this->input($field))) {
                 $data[$field] = mb_strtolower($value, 'UTF-8');
             }

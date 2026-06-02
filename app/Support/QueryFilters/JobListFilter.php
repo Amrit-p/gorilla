@@ -83,6 +83,18 @@ final class JobListFilter
             $query->where('payment_status', $filters['payment_status']);
         }
 
+        if (! empty($filters['equipment_type_id'])) {
+            $query->where('equipment_type_id', $filters['equipment_type_id']);
+        }
+
+        if (! empty($filters['customer_type'])) {
+            $query->where('customer_type', $filters['customer_type']);
+        }
+
+        if (! empty($filters['service_type'])) {
+            $query->whereJsonContains('required_services', $filters['service_type']);
+        }
+
         if (! empty($filters['date_range_start'])) {
             $query->whereDate('scheduled_date', '>=', $filters['date_range_start']);
         }

@@ -38,6 +38,12 @@
                     @endif
                 </a>
                 <p class="mt-0.5 text-xs text-slate-500">{{ $job->client_address ?: '—' }}</p>
+                @if ($job->equipmentType)
+                    <span class="mt-1 inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+                        <span class="h-1.5 w-1.5 shrink-0 rounded-full" style="background-color: {{ $job->equipmentType->color_code ?? '#64748b' }}"></span>
+                        {{ $job->equipmentType->name }}
+                    </span>
+                @endif
             </td>
 
             {{-- Zone --}}

@@ -37,11 +37,13 @@ class JobRepository
                 'recurrence_id',
                 'charges',
                 'incentive_percentage',
+                'equipment_type_id',
             ])
             ->with([
-                'client:id,name,address,customer_unique_id',
+                'client:id,name,address,customer_unique_id,phone,email,customer_type',
                 'zone:id,name',
                 'recurrence:id,name',
+                'equipmentType:id,name,color_code',
                 'assignedEmployees:id,name,efficiency',
                 'doneByUser:id,name',
             ]);
@@ -68,10 +70,10 @@ class JobRepository
     {
         return $this->baseListQuery($filters)
             ->with([
-                'client:id,name,customer_unique_id',
+                'client:id,name,customer_unique_id,address,phone,email,customer_type',
                 'zone:id,name',
                 'recurrence:id,name',
-                'equipmentType:id,name',
+                'equipmentType:id,name,color_code',
                 'assignedEmployees:id,name',
                 'doneByUser:id,name',
                 'creator:id,name',

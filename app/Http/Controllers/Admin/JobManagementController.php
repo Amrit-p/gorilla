@@ -271,6 +271,9 @@ class JobManagementController extends Controller
             'assignment'     => $request->string('assignment')->toString(),
             'payment_mode'      => $request->string('payment_mode')->toString(),
             'payment_status'    => $request->string('payment_status')->toString(),
+            'equipment_type_id' => $request->string('equipment_type_id')->toString(),
+            'customer_type'     => $request->string('customer_type')->toString(),
+            'service_type'      => $request->string('service_type')->toString(),
             'date_range_start'  => $request->input('date_range.start', ''),
             'date_range_end'    => $request->input('date_range.end', ''),
         ];

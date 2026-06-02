@@ -16,6 +16,9 @@ class MowerRequestReportDTO
         public string $user_id = "",
         public Carbon|null $start_date = null,
         public Carbon|null $end_date = null,
+        public ?int $equipment_type_id = null,
+        public ?string $customer_type = null,
+        public ?string $service_type = null,
     ) {
     }
 
@@ -29,6 +32,9 @@ class MowerRequestReportDTO
             user_id: $data['user_id'] ?? '',
             start_date: isset($data['start_date']) ? Carbon::parse($data['start_date']) : null,
             end_date: isset($data['end_date']) ? Carbon::parse($data['end_date']) : null,
+            equipment_type_id: isset($data['equipment_type_id']) ? (int) $data['equipment_type_id'] : null,
+            customer_type: isset($data['customer_type']) ? $data['customer_type'] : null,
+            service_type: isset($data['service_type']) ? $data['service_type'] : null,
         );
     }
 
@@ -42,6 +48,9 @@ class MowerRequestReportDTO
             'user_id' => $this->user_id,
             'date_range_start' => $this->start_date?->toDateString(),
             'date_range_end' => $this->end_date?->toDateString(),
+            'equipment_type_id' => $this->equipment_type_id,
+            'customer_type' => $this->customer_type,
+            'service_type' => $this->service_type,
         ];
     }
 
@@ -83,6 +92,24 @@ class MowerRequestReportDTO
     public function withEndDate(Carbon $end_date): self
     {
         $this->end_date = $end_date;
+        return $this;
+    }
+
+    public function withEquipmentTypeId(int $equipment_type_id): self
+    {
+        $this->equipment_type_id = $equipment_type_id;
+        return $this;
+    }
+    
+    public function withCustomerType(string $customer_type): self
+    {
+        $this->customer_type = $customer_type;
+        return $this;
+    }
+
+    public function withServiceType(string $service_type): self
+    {
+        $this->service_type = $service_type;
         return $this;
     }
 }

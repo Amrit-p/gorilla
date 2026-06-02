@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Enums\JobWorkflowStatus;
 use App\Helpers\OptimizationHelper;
 use App\Models\Job;
 use App\Models\User;
+use App\Support\QueryFilters\JobListFilter;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -13,17 +15,38 @@ class MapRoutingService
 {
     /**
      * Return map-ready jobs with computed coordinates from lead first.
-     * Short-lived cache per date filter — generation bumps when jobs/leads/clients change.
+     * Short-lived cache per filter combination — generation bumps when jobs/leads/clients change.
+     *
+     * @param  array<string, mixed>  $filters
      */
-    public function mapJobs(?string $date = null): Collection
+    public function mapJobs(array $filters = []): Collection
     {
+        $date = $filters['scheduled_date'] ?? null;
         $ttlSeconds = (int) config('mowing.cache.ttl.map_jobs_seconds', 30);
+
+        // Only cache simple single-date queries; filtered queries bypass cache to stay accurate.
+        $hasExtraFilters = ! empty($filters['zone_id'])
+            || ! empty($filters['status'])
+            || ! empty($filters['assignment'])
+            || ! empty($filters['search'])
+            || ! empty($filters['recurrence_id'])
+            || ! empty($filters['payment_mode'])
+            || ! empty($filters['payment_status'])
+            || ! empty($filters['date_range_start'])
+            || ! empty($filters['date_range_end'])
+            || ! empty($filters['equipment_type_id'])
+            || ! empty($filters['customer_type'])
+            || ! empty($filters['service_type']);
+
+        if ($hasExtraFilters) {
+            return $this->buildMapJobsPayload($filters);
+        }
 
         $serialized = Cache::remember(
             OptimizationHelper::mapJobsCacheKey($date),
             $ttlSeconds,
-            function () use ($date): array {
-                return $this->buildMapJobsPayload($date)->all();
+            function () use ($filters): array {
+                return $this->buildMapJobsPayload($filters)->all();
             }
         );
 
@@ -33,24 +56,22 @@ class MapRoutingService
     /**
      * Executes the eager-loaded query used by {@see mapJobs()}.
      *
+     * @param  array<string, mixed>  $filters
      * @return Collection<int, array<string, mixed>>
      */
-    private function buildMapJobsPayload(?string $date): Collection
+    private function buildMapJobsPayload(array $filters): Collection
     {
         $query = Job::query()
             ->with([
-                'client:id,name,address,latitude,longitude,phone,email,equipment_type_id',
+                'client:id,name,address,latitude,longitude,phone,email,equipment_type_id,customer_type',
                 'client.equipmentType:id,name,color_code',
                 'lead:id,client_name,address,latitude,longitude,equipment_type_id,mobile_number,email',
                 'lead.equipmentType:id,name,color_code',
                 'equipmentType:id,name,color_code',
                 'assignedEmployees:id,name',
-            ])
-            ->whereIn('status', [\App\Enums\JobWorkflowStatus::STARTED->value, \App\Enums\JobWorkflowStatus::HOLD->value]);
+            ]);
 
-        if ($date) {
-            $query->whereDate('scheduled_date', $date);
-        }
+        (new JobListFilter)->apply($query, $filters);
 
         return $query->get()->map(function (Job $job): array {
             $lat = $job->latitude ?? $job->client?->latitude ?? $job->lead?->latitude;

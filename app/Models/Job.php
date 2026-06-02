@@ -54,7 +54,6 @@ class Job extends Model
     {
         return [
             'scheduled_date' => 'date',
-            'scheduled_time' => 'datetime:H:i',
             'is_recurring' => 'boolean',
             'required_services' => 'array',
             'attached_images' => 'array',
