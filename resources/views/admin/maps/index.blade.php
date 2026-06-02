@@ -1,37 +1,29 @@
 <x-layouts.dashboard :title="'Map & Routing'">
-    <div class="space-y-4">
 
-        {{-- Filter bar (drives map reload via filterCallback) --}}
-        @include('admin.jobs.partials.filter-bar', [
-            'filters'       => $filters,
-            'filterCallback' => 'reloadMapFromFilter',
-            'resetUrl'       => route('admin.maps.index'),
-            'tableContainer' => 'jobs-map-wrap',
-        ])
+    <div class="grid grid-cols-6 overflow-hidden rounded-xl border border-slate-200" style="height: calc(100vh - 7rem);">
 
-        <div id="map-alert" class="hidden"></div>
+        {{-- Left: Full map --}}
+        <div class="relative col-span-6" id="jobs-map-wrap">
+            <div id="jobs-map" class="h-full w-full bg-slate-100"></div>
 
-        <div class="grid grid-cols-1 gap-4 xl:grid-cols-4">
-            <div class="xl:col-span-3" id="jobs-map-wrap">
-                <div id="jobs-map" class="h-[520px] w-full rounded border border-slate-200 bg-slate-100"></div>
-            </div>
+            {{-- Alert overlay --}}
+            <div id="map-alert" class="absolute bottom-3 left-1/2 z-[1000] hidden -translate-x-1/2"></div>
 
-            <div class="space-y-3 rounded border border-slate-200 bg-white p-3">
-                <h3 class="text-sm font-semibold text-slate-900">Routing Controls</h3>
-                <p class="text-xs text-slate-500">Click markers to select jobs. Marker colour reflects equipment type. Use the filters above to narrow results.</p>
-
-                <button id="refresh-map-btn" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">Refresh Map</button>
-
-                {{-- Equipment-type colour legend (populated by JS) --}}
-                <div id="map-legend" class="space-y-1">
-                    <h4 class="text-xs font-semibold text-slate-700">Equipment Types</h4>
-                    <div id="map-legend-items" class="space-y-1 text-xs text-slate-600"></div>
-                </div>
-            </div>
+            {{-- Filter toggle button --}}
+            <button id="map-filter-toggle-btn"
+                class="absolute right-3 top-3 z-[1000] flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 shadow-sm hover:bg-slate-50">
+                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
+                </svg>
+                <span id="map-filter-toggle-label">Show Filters</span>
+            </button>
         </div>
-    </div>
 
-   
+        {{-- Right: Filters panel (extracted partial) --}}
+        @include('admin.maps.partials.filter-panel')
+
+    </div>
 
     <script src="{{ asset('js/map-job-popup.js') }}?v={{ @filemtime(public_path('js/map-job-popup.js')) ?: 1 }}"></script>
     <script>
@@ -48,12 +40,10 @@
     </script>
 
     @if ($mapConfig['provider'] === 'google')
-        {{-- Google Maps (loader + impl; async API load handled inside the JS) --}}
         @include('components.scripts.google-maps')
         <script src="{{ asset('js/google-jobs-map.js') }}?v={{ @filemtime(public_path('js/google-jobs-map.js')) ?: 1 }}"></script>
         <script>window.crmInitJobsMap(window.crmJobsMapConfig);</script>
     @else
-        {{-- OpenStreetMap / Leaflet (vendored) --}}
         <link rel="stylesheet" href="{{ asset('js/leaflet/leaflet.css') }}">
         <link rel="stylesheet" href="{{ asset('js/leaflet/MarkerCluster.css') }}">
         <link rel="stylesheet" href="{{ asset('js/leaflet/MarkerCluster.Default.css') }}">
@@ -63,7 +53,6 @@
         <script>window.crmInitJobsMap(window.crmJobsMapConfig);</script>
     @endif
 
-    {{-- Common map callbacks — provider-agnostic, delegates to window.crmMapLoad --}}
     <script>
         (function () {
             var currentFilters = {};
@@ -78,12 +67,10 @@
                 window.crmMapLoad(currentFilters);
             });
         })();
-        window.crmMapLoad(getFilters())
+        window.crmMapLoad(getFilters());
     </script>
 
-    {{-- Job action modals --}}
     @include('admin.partials.job-modals')
-    {{-- Job action scripts (assign/status/delete modals + delegation) --}}
     @include('admin.partials.job-actions-script', ['filterCallback' => 'refreshMapInPlace'])
 
 </x-layouts.dashboard>
