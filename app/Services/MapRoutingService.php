@@ -36,7 +36,8 @@ class MapRoutingService
             || ! empty($filters['date_range_end'])
             || ! empty($filters['equipment_type_id'])
             || ! empty($filters['customer_type'])
-            || ! empty($filters['service_type']);
+            || ! empty($filters['service_type'])
+            || ! empty($filters['list_scope']);
 
         if ($hasExtraFilters) {
             return $this->buildMapJobsPayload($filters);
@@ -84,6 +85,7 @@ class MapRoutingService
                 'client_phone' => $job->client?->phone ?? $job->lead?->mobile_number,
                 'client_email' => $job->client?->email ?? $job->lead?->email,
                 'show_url' => route('admin.jobs.show', $job),
+                'edit_url' => route('admin.jobs.edit', $job),
                 'scheduled_date' => optional($job->scheduled_date)->toDateString(),
                 'scheduled_time' => $job->scheduled_time,
                 'status' => $job->status,

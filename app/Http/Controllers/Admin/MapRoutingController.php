@@ -36,7 +36,7 @@ class MapRoutingController extends Controller
 
         $filters = [
             'search'           => $request->input('search', ''),
-            'list_scope'       => '',
+            'list_scope'       => $request->input('list_scope', 'today'),
             'status'           => $request->input('status', ''),
             'zone_id'          => $request->input('zone_id', ''),
             'recurrence_id'    => $request->input('recurrence_id', ''),

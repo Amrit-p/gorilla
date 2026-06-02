@@ -93,6 +93,5 @@ window.crmInitGoogleJobsMap = window.crmInitJobsMap = function (mapConfig) {
 
 
         initMap();
-        window.crmMapLoad({});
     });
 };

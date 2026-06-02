@@ -171,6 +171,7 @@ class JobManagementService
             ];
         }
         $job->assignedEmployees()->sync($syncData);
+        OptimizationHelper::bumpMapCacheGeneration();
 
         if (! $job->done_by_user_id && count($userIds) === 1) {
             $job->done_by_user_id = (int) $userIds[0];

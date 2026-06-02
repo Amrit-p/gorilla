@@ -38,6 +38,7 @@ class MapBoundsRequest extends FormRequest
             'equipment_type_id'     => ['nullable', 'integer'],
             'customer_type'     => ['nullable', 'string',],
             'service_type'      => ['nullable', 'string',],
+            'list_scope'       => ['nullable', 'string',],
         ];
     }
 }

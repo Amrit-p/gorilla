@@ -77,5 +77,4 @@ window.crmInitLeafletJobsMap = window.crmInitJobsMap = function (mapConfig) {
 
 
     initMap();
-    window.crmMapLoad({});
 };

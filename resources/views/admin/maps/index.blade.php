@@ -3,6 +3,7 @@
 
         {{-- Filter bar (drives map reload via filterCallback) --}}
         @include('admin.jobs.partials.filter-bar', [
+            'filters'       => $filters,
             'filterCallback' => 'reloadMapFromFilter',
             'resetUrl'       => route('admin.maps.index'),
             'tableContainer' => 'jobs-map-wrap',
@@ -77,6 +78,7 @@
                 window.crmMapLoad(currentFilters);
             });
         })();
+        window.crmMapLoad(getFilters())
     </script>
 
     {{-- Job action modals --}}
