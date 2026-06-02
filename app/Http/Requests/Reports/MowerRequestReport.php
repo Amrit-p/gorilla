@@ -98,7 +98,7 @@ class MowerRequestReport extends FormRequest
     {
         $data = $this->validated();
 
-        $userId = $this->user()->hasRole(CrmRoles::MOWER)
+        $userId = (string) $this->user()->hasRole(CrmRoles::MOWER)
             ? $this->user()->id
             : '';
 
