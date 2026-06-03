@@ -4,7 +4,6 @@
         || !empty($filters['accounting_level_id'])
         || !empty($filters['job_level_id'])
         || !empty($filters['customer_type'])
-        || !empty($filters['parking_status'])
         || !empty($filters['job_type'])
         || !empty($filters['payment_status'])
         || ($filters['from_lead'] !== '' && $filters['from_lead'] !== null);
@@ -106,14 +105,7 @@
             </select>
 
             {{-- Row 2 --}}
-            <select name="parking_status" class="cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
-                <option value="">All parking</option>
-                @foreach ($parkingStatuses as $parkingStatus)
-                    <option value="{{ $parkingStatus }}" @selected($filters['parking_status'] === $parkingStatus)>{{ $parkingStatus }}</option>
-                @endforeach
-            </select>
-
-            <select name="job_type" class="cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
+<select name="job_type" class="cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
                 <option value="">All job types</option>
                 @foreach ($jobTypes as $jobType)
                     <option value="{{ $jobType }}" @selected($filters['job_type'] === $jobType)>{{ $jobType }}</option>
