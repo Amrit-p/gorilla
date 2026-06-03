@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\Masters\SafetyTypeController;
 use App\Http\Controllers\Admin\Masters\ServiceTypeController;
 use App\Http\Controllers\Admin\Masters\RecurrenceController;
 use App\Http\Controllers\Admin\Masters\AccountingLevelController;
+use App\Http\Controllers\Admin\Masters\JobLevelController;
 use App\Http\Controllers\Admin\Masters\ZoneController;
 use App\Http\Controllers\Admin\ClientManagementController;
 use App\Http\Controllers\Admin\JobManagementController;
@@ -102,6 +103,13 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
         Route::patch('accounting-levels/{accountingLevel}', [AccountingLevelController::class, 'update'])->name('accounting-levels.update');
         Route::patch('accounting-levels/{accountingLevel}/status', [AccountingLevelController::class, 'updateStatus'])->name('accounting-levels.status.update');
         Route::delete('accounting-levels/{accountingLevel}', [AccountingLevelController::class, 'destroy'])->name('accounting-levels.destroy');
+
+        Route::get('job-levels', [JobLevelController::class, 'index'])->name('job-levels.index');
+        Route::post('job-levels', [JobLevelController::class, 'store'])->name('job-levels.store');
+        Route::get('job-levels/{jobLevel}', [JobLevelController::class, 'show'])->name('job-levels.show');
+        Route::patch('job-levels/{jobLevel}', [JobLevelController::class, 'update'])->name('job-levels.update');
+        Route::patch('job-levels/{jobLevel}/status', [JobLevelController::class, 'updateStatus'])->name('job-levels.status.update');
+        Route::delete('job-levels/{jobLevel}', [JobLevelController::class, 'destroy'])->name('job-levels.destroy');
     });
 
     Route::middleware('crm.permission:'.CrmPermissions::MANAGE_LEADS)->group(function (): void {
