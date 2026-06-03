@@ -18,28 +18,29 @@ class ClientsExport extends SpreadsheetExport
         'F' => ['header' => 'Address',              'width' => 32],
         'G' => ['header' => 'Zone',                 'width' => 16],
         'H' => ['header' => 'Accounting Level',     'width' => 18],
-        'I' => ['header' => 'Service Types',        'width' => 26],
-        'J' => ['header' => 'Equipment Type',       'width' => 18],
-        'K' => ['header' => 'Job Type',             'width' => 14],
-        'L' => ['header' => 'Charges ($)',          'width' => 13],
-        'M' => ['header' => 'Payment Mode',         'width' => 15],
-        'N' => ['header' => 'Payment Status',       'width' => 15],
-        'O' => ['header' => 'Customer Type',        'width' => 16],
-        'P' => ['header' => 'Client Type',          'width' => 13],
-        'Q' => ['header' => 'Weed Spray',           'width' => 12],
-        'R' => ['header' => 'Recurrence',           'width' => 18],
-        'S' => ['header' => 'Property Details',     'width' => 28],
-        'T' => ['header' => 'Special Remarks',      'width' => 28],
-        'U' => ['header' => 'Notes',                'width' => 30],
-        'V' => ['header' => 'Latitude',             'width' => 14],
-        'W' => ['header' => 'Longitude',            'width' => 14],
-        'X' => ['header' => 'Created At',           'width' => 18],
+        'I' => ['header' => 'Job Level',            'width' => 16],
+        'J' => ['header' => 'Service Types',        'width' => 26],
+        'K' => ['header' => 'Equipment Type',       'width' => 18],
+        'L' => ['header' => 'Job Type',             'width' => 14],
+        'M' => ['header' => 'Charges ($)',          'width' => 13],
+        'N' => ['header' => 'Payment Mode',         'width' => 15],
+        'O' => ['header' => 'Payment Status',       'width' => 15],
+        'P' => ['header' => 'Customer Type',        'width' => 16],
+        'Q' => ['header' => 'Client Type',          'width' => 13],
+        'R' => ['header' => 'Weed Spray',           'width' => 12],
+        'S' => ['header' => 'Recurrence',           'width' => 18],
+        'T' => ['header' => 'Property Details',     'width' => 28],
+        'U' => ['header' => 'Special Remarks',      'width' => 28],
+        'V' => ['header' => 'Notes',                'width' => 30],
+        'W' => ['header' => 'Latitude',             'width' => 14],
+        'X' => ['header' => 'Longitude',            'width' => 14],
+        'Y' => ['header' => 'Created At',           'width' => 18],
     ];
 
     public function __construct(private readonly Collection $clients) {}
 
     protected function getColumns(): array    { return self::COLUMNS; }
-    protected function getLastColumn(): string { return 'X'; }
+    protected function getLastColumn(): string { return 'Y'; }
     protected function getTitle(): string      { return 'Customers Report'; }
     protected function getSheetName(): string  { return 'Customers'; }
     protected function getRecordCount(): int   { return $this->clients->count(); }
@@ -57,26 +58,27 @@ class ClientsExport extends SpreadsheetExport
             $sheet->setCellValue('F' . $row, $client->address ?? '');
             $sheet->setCellValue('G' . $row, $client->zone?->name ?? '');
             $sheet->setCellValue('H' . $row, $client->accountingLevel?->name ?? '');
-            $sheet->setCellValue('I' . $row, is_array($client->service_types) ? implode(', ', $client->service_types) : '');
-            $sheet->setCellValue('J' . $row, $client->equipmentType?->name ?? '');
-            $sheet->setCellValue('K' . $row, $client->job_type ?? '');
-            $sheet->setCellValue('L' . $row, $client->total_charges !== null ? (float) $client->total_charges : '');
-            $sheet->setCellValue('M' . $row, $client->payment_mode ?? '');
-            $sheet->setCellValue('N' . $row, $client->payment_status ?? '');
-            $sheet->setCellValue('O' . $row, $client->customer_type ?? '');
-            $sheet->setCellValue('P' . $row, $client->client_type ?? '');
-            $sheet->setCellValue('Q' . $row, $client->weed_spray ?? '');
-            $sheet->setCellValue('R' . $row, $client->recurrence?->name ?? '');
-            $sheet->setCellValue('S' . $row, $client->property_details ?? '');
-            $sheet->setCellValue('T' . $row, $client->special_remarks ?? '');
-            $sheet->setCellValue('U' . $row, $client->notes ?? '');
-            $sheet->setCellValue('V' . $row, $client->latitude !== null ? (float) $client->latitude : '');
-            $sheet->setCellValue('W' . $row, $client->longitude !== null ? (float) $client->longitude : '');
-            $sheet->setCellValue('X' . $row, $client->created_at?->format('d/m/Y H:i') ?? '');
+            $sheet->setCellValue('I' . $row, $client->jobLevel?->name ?? '');
+            $sheet->setCellValue('J' . $row, is_array($client->service_types) ? implode(', ', $client->service_types) : '');
+            $sheet->setCellValue('K' . $row, $client->equipmentType?->name ?? '');
+            $sheet->setCellValue('L' . $row, $client->job_type ?? '');
+            $sheet->setCellValue('M' . $row, $client->total_charges !== null ? (float) $client->total_charges : '');
+            $sheet->setCellValue('N' . $row, $client->payment_mode ?? '');
+            $sheet->setCellValue('O' . $row, $client->payment_status ?? '');
+            $sheet->setCellValue('P' . $row, $client->customer_type ?? '');
+            $sheet->setCellValue('Q' . $row, $client->client_type ?? '');
+            $sheet->setCellValue('R' . $row, $client->weed_spray ?? '');
+            $sheet->setCellValue('S' . $row, $client->recurrence?->name ?? '');
+            $sheet->setCellValue('T' . $row, $client->property_details ?? '');
+            $sheet->setCellValue('U' . $row, $client->special_remarks ?? '');
+            $sheet->setCellValue('V' . $row, $client->notes ?? '');
+            $sheet->setCellValue('W' . $row, $client->latitude !== null ? (float) $client->latitude : '');
+            $sheet->setCellValue('X' . $row, $client->longitude !== null ? (float) $client->longitude : '');
+            $sheet->setCellValue('Y' . $row, $client->created_at?->format('d/m/Y H:i') ?? '');
 
-            $sheet->getStyle('L' . $row)->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED2);
+            $sheet->getStyle('M' . $row)->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED2);
 
-            $this->applyRowStyle($sheet, $row, $i % 2 === 1, ['A', 'B', 'K', 'L', 'Q', 'R', 'V', 'W', 'X']);
+            $this->applyRowStyle($sheet, $row, $i % 2 === 1, ['A', 'B', 'L', 'M', 'R', 'S', 'W', 'X', 'Y']);
             $row++;
         }
 

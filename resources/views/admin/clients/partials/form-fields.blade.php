@@ -87,6 +87,23 @@
             </div>
         @endisset
 
+        @isset($jobLevels)
+            <div>
+                <label class="mb-1 block text-sm font-medium text-slate-700">Job level</label>
+                <select id="job-level-select" name="job_level_id" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    <option value="" data-description="">Select job level</option>
+                    @foreach ($jobLevels as $jobLevel)
+                        <option
+                            value="{{ $jobLevel->id }}"
+                            data-description="{{ $jobLevel->description }}"
+                            @selected((string) old('job_level_id', $clientModel?->job_level_id) === (string) $jobLevel->id)
+                        >{{ $jobLevel->name }}</option>
+                    @endforeach
+                </select>
+                <p id="job-level-desc" class="mt-1 min-h-[1.25rem] text-xs text-slate-500 italic"></p>
+            </div>
+        @endisset
+
         <x-ui.input label="Charges" name="charges" type="number" step="0.01" min="0" :value="old('charges', $clientModel?->charges)" />
         <x-ui.input label="Estimate time" name="estimated_time" :value="old('estimated_time', $clientModel?->estimated_time)" />
         <x-ui.input label="Mobile number" name="phone" :value="old('phone', $clientModel?->phone)" />
@@ -102,7 +119,7 @@
             </select>
         </div>
 
-        <x-ui.input label="Remarks" name="remarks_type" :value="old('remarks_type', $clientModel?->remarks_type)" />
+        <input type="hidden" name="remarks_type" value="{{ old('remarks_type', $clientModel?->remarks_type) }}" />
 
         <div>
             <label class="mb-1 block text-sm font-medium text-slate-700">Payment status</label>
@@ -157,6 +174,24 @@
 
         select.addEventListener('change', syncDesc);
         syncDesc(); // populate on page load (edit form pre-selection)
+    })();
+</script>
+@endisset
+
+@isset($jobLevels)
+<script>
+    (function () {
+        var select = document.getElementById('job-level-select');
+        var desc   = document.getElementById('job-level-desc');
+        if (!select || !desc) return;
+
+        function syncDesc() {
+            var opt = select.options[select.selectedIndex];
+            desc.textContent = (opt && opt.dataset.description) ? opt.dataset.description : '';
+        }
+
+        select.addEventListener('change', syncDesc);
+        syncDesc();
     })();
 </script>
 @endisset

@@ -2,6 +2,7 @@
     $hasActiveFilters = !empty($filters['search'])
         || !empty($filters['zone_id'])
         || !empty($filters['accounting_level_id'])
+        || !empty($filters['job_level_id'])
         || !empty($filters['customer_type'])
         || !empty($filters['parking_status'])
         || !empty($filters['job_type'])
@@ -80,6 +81,13 @@
                 <option value="">All accounting levels</option>
                 @foreach ($accountingLevels as $level)
                     <option value="{{ $level->id }}" @selected($filters['accounting_level_id'] == $level->id)>{{ $level->name }}</option>
+                @endforeach
+            </select>
+
+            <select name="job_level_id" class="cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
+                <option value="">All job levels</option>
+                @foreach ($jobLevels as $level)
+                    <option value="{{ $level->id }}" @selected($filters['job_level_id'] == $level->id)>{{ $level->name }}</option>
                 @endforeach
             </select>
 

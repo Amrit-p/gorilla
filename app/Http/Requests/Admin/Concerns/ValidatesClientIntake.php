@@ -47,6 +47,7 @@ trait ValidatesClientIntake
             'special_remarks' => ['nullable', 'string', 'max:5000'],
             'zone_id' => ['nullable', 'exists:zones,id'],
             'accounting_level_id' => ['nullable', 'exists:accounting_levels,id'],
+            'job_level_id' => ['nullable', 'exists:job_levels,id'],
         ];
     }
 }

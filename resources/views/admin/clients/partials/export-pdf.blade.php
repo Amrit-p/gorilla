@@ -20,6 +20,7 @@
             <col style="width:7%">  {{-- Address --}}
             <col style="width:4%">  {{-- Zone --}}
             <col style="width:5%">  {{-- Accounting Level --}}
+            <col style="width:4%">  {{-- Job Level --}}
             <col style="width:7%">  {{-- Service Types --}}
             <col style="width:5%">  {{-- Equipment --}}
             <col style="width:4%">  {{-- Job Type --}}
@@ -44,6 +45,7 @@
                 <th>Address</th>
                 <th>Zone</th>
                 <th>Accounting Level</th>
+                <th>Job Level</th>
                 <th>Service Types</th>
                 <th>Equipment</th>
                 <th>Job Type</th>
@@ -70,6 +72,7 @@
                     <td>{{ $client->address ?? '—' }}</td>
                     <td>{{ $client->zone?->name ?? '—' }}</td>
                     <td>{{ str_replace("\u{2B50}", '★', $client->accountingLevel?->name ?? '—') }}</td>
+                    <td>{{ $client->jobLevel?->name ?? '—' }}</td>
                     <td>{{ is_array($client->service_types) ? implode(', ', $client->service_types) : '—' }}</td>
                     <td>{{ $client->equipmentType?->name ?? '—' }}</td>
                     <td>{{ $client->job_type ?? '—' }}</td>
@@ -85,7 +88,7 @@
                     <td class="center">{{ $client->created_at?->format('d/m/Y') ?? '—' }}</td>
                 </tr>
             @empty
-                <tr><td colspan="21" class="no-records">No customers found.</td></tr>
+                <tr><td colspan="22" class="no-records">No customers found.</td></tr>
             @endforelse
         </tbody>
     </table>

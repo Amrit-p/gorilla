@@ -24,6 +24,7 @@ class ClientRepository
                 'lead_id',
                 'zone_id',
                 'accounting_level_id',
+                'job_level_id',
                 'name',
                 'email',
                 'phone',
@@ -44,6 +45,7 @@ class ClientRepository
                 'lead:id,client_name,status',
                 'zone:id,name',
                 'accountingLevel:id,name,description',
+                'jobLevel:id,name,description',
                 'equipmentType:id,name',
                 'recurrence:id,name',
                 'jobs' => fn ($q) => $q->select(['id', 'client_id', 'scheduled_date', 'status'])->latest('scheduled_date'),
@@ -61,6 +63,7 @@ class ClientRepository
             ->with([
                 'zone:id,name',
                 'accountingLevel:id,name,description',
+                'jobLevel:id,name,description',
                 'equipmentType:id,name',
                 'recurrence:id,name',
                 'lead:id,client_name,status',

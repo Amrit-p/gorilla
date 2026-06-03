@@ -1,4 +1,4 @@
-<x-ui.table :headers="['Customer', 'Recurrence', 'Zone', 'Acct. Level', 'Contact', 'Profile', 'Last Jobs', 'Actions']">
+<x-ui.table :headers="['Customer', 'Recurrence', 'Zone', 'Acct. Level', 'Contact', 'Profile', 'Last Jobs', 'Job Level', 'Actions']">
     @forelse ($clients as $client)
         <tr class="divide-x divide-slate-100 transition-colors hover:bg-slate-50/70">
 
@@ -100,6 +100,11 @@
                 @endif
             </td>
 
+            {{-- Job Level --}}
+            <td class="whitespace-nowrap px-4 py-4">
+                <span class="text-sm text-slate-600" @if(data_get($client, 'jobLevel.description')) title="{{ data_get($client, 'jobLevel.description') }}" @endif>{{ data_get($client, 'jobLevel.name', '—') }}</span>
+            </td>
+
             {{-- Actions --}}
             <td class="whitespace-nowrap px-4 py-4">
                 <div class="relative inline-block">
@@ -138,7 +143,7 @@
         </tr>
     @empty
         <tr>
-            <td colspan="7" class="px-4 py-10 text-center text-sm text-slate-400">No customers found.</td>
+            <td colspan="9" class="px-4 py-10 text-center text-sm text-slate-400">No customers found.</td>
         </tr>
     @endforelse
 </x-ui.table>

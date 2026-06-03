@@ -58,6 +58,10 @@
                 <dt class="text-slate-500">Job / customer type</dt>
                 <dd class="text-slate-800">{{ $client->job_type ?: '—' }} / {{ $client->client_type ?: '—' }}</dd>
             </div>
+            <div class="flex justify-between gap-4">
+                <dt class="text-slate-500">Job level</dt>
+                <dd class="text-slate-800">{{ $client->jobLevel?->name ?? '—' }}</dd>
+            </div>
         </dl>
     </div>
 
