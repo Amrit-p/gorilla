@@ -162,6 +162,7 @@ class LeadConversionService
             'status'                 => JobWorkflowStatus::HOLD->value,
             'created_by'             => $actor->id,
             'estimated_duration_minutes'         => $client->estimated_time,
+            'charges'               => $client->charges, // missing
         ]);
 
         $this->activityLogService->log(
