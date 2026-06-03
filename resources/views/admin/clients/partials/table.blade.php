@@ -1,4 +1,4 @@
-<x-ui.table :headers="['Customer', 'Recurrence', 'Zone', 'Acct. Level', 'Contact', 'Profile', 'Jobs', 'Actions']">
+<x-ui.table :headers="['Customer', 'Recurrence', 'Zone', 'Acct. Level', 'Contact', 'Profile', 'Last Jobs', 'Actions']">
     @forelse ($clients as $client)
         <tr class="divide-x divide-slate-100 transition-colors hover:bg-slate-50/70">
 
@@ -76,9 +76,28 @@
                 </div>
             </td>
 
-            {{-- Jobs --}}
-            <td class="whitespace-nowrap px-4 py-4">
-                <a href="{{ route('admin.clients.show', ['client' => $client, 'tab' => 'jobs']) }}" target="_blank" class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-200">{{ $client->jobs_count ?? 0 }} jobs</a>
+            {{-- Last Jobs --}}
+            <td class="px-4 py-4">
+                @php
+                    $recentJobs = $client->jobs->take(4);
+                    $totalJobs = $client->jobs->count();
+                @endphp
+                @if ($totalJobs === 0)
+                    <span class="text-xs text-slate-400">—</span>
+                @else
+                    <div class="flex flex-wrap gap-1">
+                        @foreach ($recentJobs as $job)
+                            <a href="{{ route('admin.jobs.show', $job) }}" target="_blank" class="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-200 hover:text-slate-800">
+                                {{ $job->scheduled_date?->format('d M y') ?? '—' }}
+                            </a>
+                        @endforeach
+                        @if ($totalJobs > 4)
+                            <a href="{{ route('admin.clients.show', ['client' => $client, 'tab' => 'jobs']) }}" target="_blank" class="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100">
+                                +{{ $totalJobs - 4 }} more
+                            </a>
+                        @endif
+                    </div>
+                @endif
             </td>
 
             {{-- Actions --}}
