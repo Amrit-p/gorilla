@@ -71,6 +71,28 @@ class MowerRequestReport extends FormRequest
                 'nullable',
                 'string',
             ],
+            'zone_id' => [
+                'nullable',
+            ],
+            'recurrence_id' => [
+                'nullable',
+            ],
+            'client_id' => [
+                'nullable',
+            ],
+            'assignment' => [
+                'nullable',
+                'string',
+                'in:assigned,unassigned',
+            ],
+            'payment_mode' => [
+                'nullable',
+                'string',
+            ],
+            'payment_status' => [
+                'nullable',
+                'string',
+            ],
         ];
     }
 

@@ -19,6 +19,12 @@ class MowerRequestReportDTO
         public ?int $equipment_type_id = null,
         public ?string $customer_type = null,
         public ?string $service_type = null,
+        public int|string|null $zone_id = null,
+        public int|string|null $recurrence_id = null,
+        public int|string|null $client_id = null,
+        public ?string $assignment = null,
+        public ?string $payment_mode = null,
+        public ?string $payment_status = null,
     ) {
     }
 
@@ -35,6 +41,12 @@ class MowerRequestReportDTO
             equipment_type_id: isset($data['equipment_type_id']) ? (int) $data['equipment_type_id'] : null,
             customer_type: isset($data['customer_type']) ? $data['customer_type'] : null,
             service_type: isset($data['service_type']) ? $data['service_type'] : null,
+            zone_id: data_get($data, 'zone_id', null),
+            recurrence_id: data_get($data, 'recurrence_id', null),
+            client_id: data_get($data, 'client_id', null),
+            assignment: isset($data['assignment']) ? $data['assignment'] : null,
+            payment_mode: isset($data['payment_mode']) ? $data['payment_mode'] : null,
+            payment_status: isset($data['payment_status']) ? $data['payment_status'] : null,
         );
     }
 
@@ -51,6 +63,12 @@ class MowerRequestReportDTO
             'equipment_type_id' => $this->equipment_type_id,
             'customer_type' => $this->customer_type,
             'service_type' => $this->service_type,
+            'zone_id' => $this->zone_id,
+            'recurrence_id' => $this->recurrence_id,
+            'client_id' => $this->client_id,
+            'assignment' => $this->assignment,
+            'payment_mode' => $this->payment_mode,
+            'payment_status' => $this->payment_status,
         ];
     }
 
@@ -110,6 +128,30 @@ class MowerRequestReportDTO
     public function withServiceType(string $service_type): self
     {
         $this->service_type = $service_type;
+        return $this;
+    }
+
+    public function withClientId(int|string $client_id): self
+    {
+        $this->client_id = $client_id;
+        return $this;
+    }
+
+    public function withAssignment(string $assignment): self
+    {
+        $this->assignment = $assignment;
+        return $this;
+    }
+
+    public function withPaymentMode(string $payment_mode): self
+    {
+        $this->payment_mode = $payment_mode;
+        return $this;
+    }
+
+    public function withPaymentStatus(string $payment_status): self
+    {
+        $this->payment_status = $payment_status;
         return $this;
     }
 }

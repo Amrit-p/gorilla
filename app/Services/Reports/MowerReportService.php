@@ -26,6 +26,7 @@ class MowerReportService implements MowerReportInterface
     {
         $jobSub = Job::query();
         $jobs = $this->jobListFilter->apply($jobSub, $request->toArray())
+            ->whereNotNull('done_by_user_id')
             ->get();
 
         return $jobs
