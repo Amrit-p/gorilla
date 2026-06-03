@@ -54,7 +54,7 @@ class MapRoutingController extends Controller
             'mapConfig'       => GoogleMapsSettings::mapPageConfig(),
             'initialDate'     => now()->toDateString(),
             'filters'         => $filters,
-            ...$this->jobManagementService->formOptions(),
+...$this->jobManagementService->formOptions(),
         ]);
     }
 

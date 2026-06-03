@@ -30,6 +30,7 @@
         window.crmJobsMapConfig = @json(array_merge($mapConfig, [
             'canManageJobs' => auth()->user()->can('manage-job-records'),
         ]));
+        window.crmJobsMapConfig.highlightJob = new URLSearchParams(window.location.search).get('highlight_job');
 
         function showMapAlert(message, isError) {
             var baseClass = isError

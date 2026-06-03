@@ -50,8 +50,9 @@ window.crmInitLeafletJobsMap = window.crmInitJobsMap = function (mapConfig) {
         $.get(mapConfig.jobsUrl, params || {}, function (response) {
             markerLayer.clearLayers();
 
-            var jobs   = response.jobs || [];
-            var bounds = [];
+            var jobs            = response.jobs || [];
+            var bounds          = [];
+            var highlightMarker = null;
 
             jobs.forEach(function (job) {
                 var marker = L.marker([job.lat, job.lng], { icon: coloredDivIcon(job.equipment_color) });
@@ -63,10 +64,18 @@ window.crmInitLeafletJobsMap = window.crmInitJobsMap = function (mapConfig) {
                 );
                 markerLayer.addLayer(marker);
                 bounds.push([job.lat, job.lng]);
+                if (mapConfig.highlightJob && job.id == mapConfig.highlightJob) {
+                    highlightMarker = marker;
+                }
             });
 
             buildLegend(jobs);
-            if (bounds.length && !preserveView) {
+            if (highlightMarker) {
+                mapConfig.highlightJob = null;
+                markerLayer.zoomToShowLayer(highlightMarker, function () {
+                    highlightMarker.openPopup();
+                });
+            } else if (bounds.length && !preserveView) {
                 map.fitBounds(bounds, { padding: [30, 30] });
             }
             showMapAlert('Loaded ' + jobs.length + ' geocoded job' + (jobs.length !== 1 ? 's' : '') + '.');

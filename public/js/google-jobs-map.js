@@ -37,9 +37,10 @@ window.crmInitGoogleJobsMap = window.crmInitJobsMap = function (mapConfig) {
             $.get(mapConfig.jobsUrl, params || {}, function (response) {
                 clearMarkers();
 
-                var jobs   = response.jobs || [];
-                var bounds = new google.maps.LatLngBounds();
-                var routePoints = [];
+                var jobs            = response.jobs || [];
+                var bounds          = new google.maps.LatLngBounds();
+                var routePoints     = [];
+                var highlightData   = null;
 
                 window.crmEnsureGoogleMarkerLibrary().then(function (lib) {
                     jobs.forEach(function (job) {
@@ -73,6 +74,10 @@ window.crmInitGoogleJobsMap = window.crmInitJobsMap = function (mapConfig) {
                         markers.push(marker);
                         bounds.extend(pos);
 
+                        if (mapConfig.highlightJob && job.id == mapConfig.highlightJob) {
+                            highlightData = { marker: marker, job: job };
+                        }
+
                         if (job.route_sequence) {
                             routePoints[job.route_sequence - 1] = pos;
                         } else {
@@ -80,7 +85,16 @@ window.crmInitGoogleJobsMap = window.crmInitJobsMap = function (mapConfig) {
                         }
                     });
 
-                    if (jobs.length > 0) {
+                    if (highlightData) {
+                        mapConfig.highlightJob = null;
+                        map.setCenter({ lat: highlightData.job.lat, lng: highlightData.job.lng });
+                        map.setZoom(15);
+                        var html = typeof window.crmBuildMapJobPopup === 'function'
+                            ? window.crmBuildMapJobPopup(highlightData.job)
+                            : '<strong>Job #' + highlightData.job.id + '</strong>';
+                        infoWindow.setContent(html);
+                        infoWindow.open({ map: map, anchor: highlightData.marker });
+                    } else if (jobs.length > 0) {
                         map.fitBounds(bounds, 40);
                     }
 
