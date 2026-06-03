@@ -65,9 +65,8 @@
             <td class="whitespace-nowrap px-4 py-4">
                 <p class="text-sm text-slate-700">{{ optional($job->scheduled_date)->format('d M Y') ?: '—' }}</p>
                 <p class="text-xs text-slate-500">
-                    {{ $job->scheduled_time ? \Illuminate\Support\Carbon::parse($job->scheduled_time)->format('h:i A') : '' }}
                     @if ($job->estimated_duration_minutes)
-                        &bull; {{ $job->estimated_duration_minutes }} min
+                        {{ $job->estimated_duration_minutes }} min
                     @endif
                 </p>
                 <div class="mt-1"><x-jobs.status-badge :status="$job->status" /></div>
