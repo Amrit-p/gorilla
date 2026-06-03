@@ -208,7 +208,7 @@ class LeadsExport extends SpreadsheetExport
         );
 
         // M: Status
-        $leadStatuses = LeadStatus::values();
+        $leadStatuses = LeadStatus::selectableValues();
         $this->addDropdownValidation($sheet, "M{$first}:M{$last}",
             options: $leadStatuses,
             errorTitle: 'Invalid Status',

@@ -26,7 +26,7 @@ class UpdateLeadStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['required', Rule::in(LeadStatus::values())],
+            'status' => ['required', Rule::in(LeadStatus::selectableValues())],
             'note' => ['nullable', 'string'],
         ];
     }

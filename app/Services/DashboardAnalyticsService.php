@@ -188,7 +188,6 @@ class DashboardAnalyticsService
         $converted = (int) ($statusCounts[LeadStatus::MATURE->value] ?? 0)
             + (int) ($statusCounts[LeadStatus::WON->value] ?? 0);
         $newLeads = (int) ($statusCounts[LeadStatus::NEW->value] ?? 0);
-        $matureLeads = (int) ($statusCounts[LeadStatus::MATURE->value] ?? 0);
 
         $conversionRate = $totalLeads > 0
             ? round(($converted / $totalLeads) * 100, 1)
@@ -196,7 +195,7 @@ class DashboardAnalyticsService
 
         $labels = [];
         $data = [];
-        foreach (LeadStatus::values() as $status) {
+        foreach (LeadStatus::selectableValues() as $status) {
             $labels[] = $status;
             $data[] = (int) ($statusCounts[$status] ?? 0);
         }
@@ -215,12 +214,6 @@ class DashboardAnalyticsService
                     'value' => (string) $newLeads,
                     'subtitle' => 'Awaiting follow-up',
                     'accent' => 'sky',
-                ],
-                'mature_leads' => [
-                    'label' => 'Mature leads',
-                    'value' => (string) $matureLeads,
-                    'subtitle' => 'Ready for conversion',
-                    'accent' => 'amber',
                 ],
                 'follow_up' => [
                     'label' => 'Follow up',

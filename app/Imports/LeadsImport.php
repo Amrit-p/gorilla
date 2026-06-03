@@ -308,8 +308,8 @@ class LeadsImport
 
         // M: Status — must be a valid enum value if provided
         $status = data_get($mapped, 'status', '');
-        if ($status !== '' && ! in_array($status, LeadStatus::values(), true)) {
-            $errors[] = 'Invalid status "' . $status . '". Valid options: ' . implode(', ', LeadStatus::values()) . '.';
+        if ($status !== '' && ! in_array($status, LeadStatus::selectableValues(), true)) {
+            $errors[] = 'Invalid status "' . $status . '". Valid options: ' . implode(', ', LeadStatus::selectableValues()) . '.';
         }
 
         // O: Lead Date — between 2020-01-01 and 2050-12-31 if provided (matches addDateValidation)
@@ -413,7 +413,7 @@ class LeadsImport
             'longitude'              => $this->parseCoordinate(data_get($mapped, 'longitude', ''), -180, 180),
             'lead_date'              => $this->parseDate(data_get($mapped, 'lead_date', '')),
             'lead_time'              => data_get($mapped, 'lead_time'),
-            'status'                 => in_array($status, LeadStatus::values(), true) ? $status : LeadStatus::NEW->value,
+            'status'                 => in_array($status, LeadStatus::selectableValues(), true) ? $status : LeadStatus::NEW->value,
             'assigned_sales_user_id' => null,
         ];
     }

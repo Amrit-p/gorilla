@@ -36,7 +36,7 @@ class LeadSeeder extends Seeder
         $faker   = Faker::create('en_AU');
 
         for ($i = 0; $i < self::COUNT; $i++) {
-            $status   = $faker->randomElement(LeadStatus::values());
+            $status   = $faker->randomElement(LeadStatus::selectableValues());
             $converts = LeadStatus::tryFrom($status)?->convertsToClient() ?? false;
 
             // Converted leads need a past lead_date so converted_at can follow it.

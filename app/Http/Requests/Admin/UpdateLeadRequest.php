@@ -30,7 +30,7 @@ class UpdateLeadRequest extends FormRequest
     {
         return array_merge($this->intakeRules(), [
             'assigned_sales_user_id' => ['nullable', 'exists:users,id'],
-            'status' => ['required', Rule::in(LeadStatus::values())],
+            'status' => ['required', Rule::in(LeadStatus::selectableValues())],
         ]);
     }
 }

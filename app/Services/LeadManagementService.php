@@ -48,7 +48,7 @@ class LeadManagementService
     public function formOptions(): array
     {
         return [
-            'statuses' => LeadStatus::values(),
+            'statuses' => LeadStatus::selectableValues(),
             'salesUsers' => User::query()
                 ->role(CrmRoles::SALES_MANAGER)
                 ->where('is_active', true)
