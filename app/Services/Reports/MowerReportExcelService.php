@@ -42,35 +42,22 @@ class MowerReportExcelService
     private const FONT_NAME     = 'Arial';
     private const DATA_FONT_SIZE = 10;
 
-    /**
-     * Column definitions with group membership.
-     * group: green | yellow | blue | pink
-     */
-    private array $columns = [
+    /** Base columns — bonus columns are appended dynamically per export. */
+    private const BASE_COLUMNS = [
         // Mower (green)
-        ['key' => 'name',                   'label' => 'Name',              'group' => 'green',  'format' => NumberFormat::FORMAT_TEXT,  'width' => 26, 'align' => 'left'],
-        ['key' => 'total_working_hours',    'label' => 'Total Hours',       'group' => 'green',  'format' => '#,##0.00',                 'width' => 16, 'align' => 'center'],
+        ['key' => 'name',                 'label' => 'Name',         'group' => 'green',  'format' => NumberFormat::FORMAT_TEXT,   'width' => 26, 'align' => 'left'],
+        ['key' => 'total_working_hours',  'label' => 'Total Hours',  'group' => 'green',  'format' => '#,##0.00',                  'width' => 16, 'align' => 'center'],
+        ['key' => 'working_days',         'label' => 'Working Days', 'group' => 'green',  'format' => NumberFormat::FORMAT_NUMBER, 'width' => 16, 'align' => 'center'],
         // Jobs (yellow)
-        ['key' => 'total_jobs_completed',   'label' => 'Completed',         'group' => 'yellow', 'format' => NumberFormat::FORMAT_NUMBER, 'width' => 14, 'align' => 'center'],
-        ['key' => 'total_jobs_started',     'label' => 'Started',           'group' => 'yellow', 'format' => NumberFormat::FORMAT_NUMBER, 'width' => 14, 'align' => 'center'],
-        ['key' => 'total_jobs_pending',     'label' => 'Pending',           'group' => 'yellow', 'format' => NumberFormat::FORMAT_NUMBER, 'width' => 14, 'align' => 'center'],
+        ['key' => 'total_jobs_completed', 'label' => 'Completed',    'group' => 'yellow', 'format' => NumberFormat::FORMAT_NUMBER, 'width' => 14, 'align' => 'center'],
         // Earnings (blue)
-        ['key' => 'completed_earnings',     'label' => 'Completed',         'group' => 'blue',   'format' => '"$"#,##0.00',              'width' => 18, 'align' => 'right'],
-        ['key' => 'started_earnings',       'label' => 'Started',           'group' => 'blue',   'format' => '"$"#,##0.00',              'width' => 18, 'align' => 'right'],
-        ['key' => 'pending_earnings',       'label' => 'Pending',           'group' => 'blue',   'format' => '"$"#,##0.00',              'width' => 18, 'align' => 'right'],
-        ['key' => 'total_earnings',         'label' => 'Total',             'group' => 'blue',   'format' => '"$"#,##0.00',              'width' => 18, 'align' => 'right'],
-        // Commission (pink)
-        ['key' => 'total_sales',            'label' => 'Total Sales',       'group' => 'pink',   'format' => '"$"#,##0.00',              'width' => 18, 'align' => 'right'],
-        ['key' => 'total_incentive_amount', 'label' => 'Commission',        'group' => 'pink',   'format' => '"$"#,##0.00',              'width' => 18, 'align' => 'right'],
+        ['key' => 'completed_earnings',   'label' => 'Completed',    'group' => 'blue',   'format' => '"$"#,##0.00',               'width' => 18, 'align' => 'right'],
+        // Bonus total (pink) — date columns are appended by setupDynamicColumns()
+        ['key' => 'bonus',                'label' => 'Total Bonus',  'group' => 'pink',   'format' => '"$"#,##0.00',               'width' => 18, 'align' => 'right'],
     ];
 
-    /** Group header definitions: label, colspan, colors */
-    private array $groups = [
-        ['label' => 'Mower',      'span' => 2, 'bg' => self::GREEN_BG,  'fg' => self::GREEN_FG],
-        ['label' => 'Jobs',       'span' => 3, 'bg' => self::YELLOW_BG, 'fg' => self::YELLOW_FG],
-        ['label' => 'Earnings',   'span' => 4, 'bg' => self::BLUE_BG,   'fg' => self::BLUE_FG],
-        ['label' => 'Commission', 'span' => 2, 'bg' => self::PINK_BG,   'fg' => self::PINK_FG],
-    ];
+    private array $columns = [];
+    private array $groups  = [];
 
     private array $subColors = [
         'green'  => ['bg' => self::GREEN_SUB,  'fg' => self::GREEN_SFG],
@@ -79,18 +66,7 @@ class MowerReportExcelService
         'pink'   => ['bg' => self::PINK_SUB,   'fg' => self::PINK_SFG],
     ];
 
-    private array $numericSumKeys = [
-        'total_working_hours',
-        'total_jobs_completed',
-        'total_jobs_started',
-        'total_jobs_pending',
-        'completed_earnings',
-        'started_earnings',
-        'pending_earnings',
-        'total_earnings',
-        'total_sales',
-        'total_incentive_amount',
-    ];
+    private array $numericSumKeys = [];
 
     public function export(Collection $reportData): StreamedResponse
     {
@@ -108,8 +84,56 @@ class MowerReportExcelService
         ]);
     }
 
+    private function setupDynamicColumns(Collection $reportData): void
+    {
+        // Collect all unique bonus dates (sorted ascending)
+        $allDates = [];
+        foreach ($reportData as $mower) {
+            $arr = is_array($mower) ? $mower : (array) $mower;
+            foreach (array_keys($arr['individual_bonuses'] ?? []) as $date) {
+                $allDates[$date] = true;
+            }
+        }
+        ksort($allDates);
+        $uniqueDates = array_keys($allDates);
+
+        $this->columns = self::BASE_COLUMNS;
+
+        foreach ($uniqueDates as $date) {
+            $label           = \Carbon\Carbon::parse($date)->format('d M, Y');
+            $this->columns[] = [
+                'key'    => 'bonus_date_' . $date,
+                'label'  => $label,
+                'group'  => 'pink',
+                'format' => '"$"#,##0.00',
+                'width'  => 16,
+                'align'  => 'right',
+            ];
+        }
+
+        $this->groups = [
+            ['label' => 'Mower',    'span' => 3,                        'bg' => self::GREEN_BG,  'fg' => self::GREEN_FG],
+            ['label' => 'Jobs',     'span' => 1,                        'bg' => self::YELLOW_BG, 'fg' => self::YELLOW_FG],
+            ['label' => 'Earnings', 'span' => 1,                        'bg' => self::BLUE_BG,   'fg' => self::BLUE_FG],
+            ['label' => 'Bonus',    'span' => 1 + count($uniqueDates),  'bg' => self::PINK_BG,   'fg' => self::PINK_FG],
+        ];
+
+        $this->numericSumKeys = [
+            'total_working_hours',
+            'working_days',
+            'total_jobs_completed',
+            'completed_earnings',
+            'bonus',
+        ];
+        foreach ($uniqueDates as $date) {
+            $this->numericSumKeys[] = 'bonus_date_' . $date;
+        }
+    }
+
     private function buildSpreadsheet(Collection $reportData): Spreadsheet
     {
+        $this->setupDynamicColumns($reportData);
+
         $spreadsheet = new Spreadsheet();
         $sheet       = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Mower Report');
@@ -213,7 +237,15 @@ class MowerReportExcelService
                 // Alternate rows: use a very light tint of the group color; odd rows white
                 $bgArgb = $isAlt ? ('FF' . $this->lighten($colors['bg'])) : 'FFFFFFFF';
 
-                $value = $rowData[$col['key']] ?? '';
+                if (isset($col['static'])) {
+                    $value = $col['static'];
+                } elseif (str_starts_with($col['key'], 'bonus_date_')) {
+                    $dateKey = substr($col['key'], 11);
+                    $individualBonuses = $rowData['individual_bonuses'] ?? [];
+                    $value = isset($individualBonuses[$dateKey]) ? (float) $individualBonuses[$dateKey] : '';
+                } else {
+                    $value = $rowData[$col['key']] ?? '';
+                }
                 $sheet->setCellValue($cell, $value);
                 $sheet->getStyle($cell)->getNumberFormat()->setFormatCode($col['format']);
                 $sheet->getStyle($cell)->applyFromArray([
@@ -249,6 +281,8 @@ class MowerReportExcelService
 
             if ($idx === 0) {
                 $sheet->setCellValue($cell, 'TOTALS');
+            } elseif (isset($col['static'])) {
+                $sheet->setCellValue($cell, $col['static']);
             } elseif (in_array($col['key'], $this->numericSumKeys, true)) {
                 $sheet->setCellValue($cell, "=SUM({$colLetter}{$dataStart}:{$colLetter}{$lastDataRow})");
                 $sheet->getStyle($cell)->getNumberFormat()->setFormatCode($col['format']);

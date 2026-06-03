@@ -30,6 +30,8 @@ final class CrmPermissions
 
     public const VIEW_MOWER_REPORT = 'view_mower_report';
 
+    public const MANAGE_EMPLOYEE_BONUSES = 'manage_employee_bonuses';
+
     /**
      * @return array<int, string>
      */
@@ -153,6 +155,11 @@ final class CrmPermissions
     public static function isOfficeManager(?User $user): bool
     {
         return $user?->hasRole(CrmRoles::OFFICE_MANAGER) ?? false;
+    }
+
+    public static function canManageEmployeeBonuses(?User $user): bool
+    {
+        return $user?->can(self::MANAGE_EMPLOYEE_BONUSES) ?? false;
     }
 
     public static function canViewReport(?User $user, string $permission): bool

@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\MapRoutingController;
 use App\Http\Controllers\Admin\RolePermissionController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\Admin\EmployeeBonusController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Mower\MowerDashboardController;
@@ -59,6 +60,19 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
         Route::get('/admin/activity-logs', [ActivityLogController::class, 'index'])->name('admin.activity-logs.index');
         Route::get('/admin/settings', [SettingsController::class, 'index'])->name('admin.settings.index');
         Route::patch('/admin/settings', [SettingsController::class, 'update'])->name('admin.settings.update');
+    });
+
+    // Mowers can view and export their own bonuses; policy + extractFilters enforce the user_id scope.
+    Route::get('/admin/employee-bonuses', [EmployeeBonusController::class, 'index'])->name('admin.employee-bonuses.index');
+    Route::get('/admin/employee-bonuses/export/excel', [EmployeeBonusController::class, 'exportExcel'])->name('admin.employee-bonuses.export.excel');
+    Route::get('/admin/employee-bonuses/export/pdf', [EmployeeBonusController::class, 'exportPdf'])->name('admin.employee-bonuses.export.pdf');
+
+    Route::middleware('crm.permission:'.CrmPermissions::MANAGE_EMPLOYEE_BONUSES)->group(function (): void {
+        Route::get('/admin/employee-bonuses/create', [EmployeeBonusController::class, 'create'])->name('admin.employee-bonuses.create');
+        Route::post('/admin/employee-bonuses', [EmployeeBonusController::class, 'store'])->name('admin.employee-bonuses.store');
+        Route::get('/admin/employee-bonuses/{employeeBonus}/edit', [EmployeeBonusController::class, 'edit'])->name('admin.employee-bonuses.edit');
+        Route::patch('/admin/employee-bonuses/{employeeBonus}', [EmployeeBonusController::class, 'update'])->name('admin.employee-bonuses.update');
+        Route::delete('/admin/employee-bonuses/{employeeBonus}', [EmployeeBonusController::class, 'destroy'])->name('admin.employee-bonuses.destroy');
     });
 
     Route::middleware('crm.permission:'.CrmPermissions::MANAGE_MASTERS)->prefix('admin/masters')->name('admin.masters.')->group(function (): void {

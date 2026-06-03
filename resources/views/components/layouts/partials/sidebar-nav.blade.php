@@ -106,9 +106,24 @@
             <span class="sidebar-text flex-1">Profile</span>
         </a>
 
+        @can('manage-employee-bonuses')
+            <p class="sidebar-label mb-2 mt-5 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Payroll</p>
+            <div class="sidebar-accordion" data-open="{{ $accordionOpen(['admin.employee-bonuses.*']) ? 'true' : 'false' }}">
+                <button type="button" class="sidebar-accordion-trigger {{ $linkClass(['admin.employee-bonuses.*']) }} w-full text-left" title="Employee Bonuses">
+                    <svg class="h-[18px] w-[18px] shrink-0 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span class="sidebar-text flex-1">Employee Bonuses</span>
+                    <svg class="sidebar-accordion-chevron h-4 w-4 shrink-0 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                <div class="sidebar-accordion-panel mt-0.5 space-y-0.5">
+                    <a href="{{ route('admin.employee-bonuses.index') }}" class="{{ $linkClass(['admin.employee-bonuses.index', 'admin.employee-bonuses.edit'], true) }}">All bonuses</a>
+                    <a href="{{ route('admin.employee-bonuses.create') }}" class="{{ $linkClass(['admin.employee-bonuses.create'], true) }}">Add bonus</a>
+                </div>
+            </div>
+        @endcan
+
         @can('manage-users')
             <p class="sidebar-label mb-2 mt-5 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Admin</p>
-            <div class="sidebar-accordion" data-open="{{ $accordionOpen(['admin.users.*', 'admin.activity-logs.*', 'admin.settings.*', 'admin.rbac.*', 'admin.masters.*']) ? 'true' : 'false' }}">
+            <div class="sidebar-accordion" data-open="{{ $accordionOpen(['admin.users.*', 'admin.activity-logs.*', 'admin.settings.*', 'admin.rbac.*', 'admin.masters.*', 'admin.employee-bonuses.*']) ? 'true' : 'false' }}">
                 <button type="button" class="sidebar-accordion-trigger {{ $linkClass(['admin.users.*', 'admin.activity-logs.*', 'admin.settings.*', 'admin.rbac.*', 'admin.masters.*']) }} w-full text-left" title="Administration">
                     <svg class="h-[18px] w-[18px] shrink-0 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                     <span class="sidebar-text flex-1">Administration</span>

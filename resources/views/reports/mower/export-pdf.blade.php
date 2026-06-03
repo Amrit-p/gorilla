@@ -37,7 +37,7 @@
     thead tr.sub-row th.yellow { background: #fffbeb; color: #b45309; text-align: center; }
     thead tr.sub-row th.blue   { background: #eff6ff; color: #1d4ed8; text-align: right; }
     thead tr.sub-row th.pink   { background: #fdf2f8; color: #be185d; text-align: right; }
-    thead tr.sub-row th.green-left  { background: #ecfdf5; color: #047857; text-align: left; }
+    thead tr.sub-row th.green-left   { background: #ecfdf5; color: #047857; text-align: left; }
     thead tr.sub-row th.green-center { background: #ecfdf5; color: #047857; text-align: center; }
 
     /* Data rows */
@@ -57,6 +57,7 @@
     td.center { text-align: center; }
     td.right  { text-align: right; }
     td.bold   { font-weight: bold; }
+    td.muted  { color: #94a3b8; text-align: center; }
 
     /* Totals row */
     tr.totals-row td {
@@ -80,53 +81,38 @@
 
     <table>
         <colgroup>
-            <col style="width:14%">  {{-- Name --}}
-            <col style="width:7%">   {{-- Total Hours --}}
-            <col style="width:7%">   {{-- Jobs Completed --}}
-            <col style="width:7%">   {{-- Jobs Started --}}
-            <col style="width:7%">   {{-- Jobs Pending --}}
-            <col style="width:9%">   {{-- Earnings Completed --}}
-            <col style="width:9%">   {{-- Earnings Started --}}
-            <col style="width:9%">   {{-- Earnings Pending --}}
-            <col style="width:9%">   {{-- Earnings Total --}}
-            <col style="width:11%">  {{-- Total Sales --}}
-            <col style="width:11%">  {{-- Commission --}}
+            <col style="width:22%">  {{-- Name --}}
+            <col style="width:13%">  {{-- Total Hours --}}
+            <col style="width:13%">  {{-- Working Days --}}
+            <col style="width:13%">  {{-- Jobs Completed --}}
+            <col style="width:17%">  {{-- Earnings Completed --}}
+            <col style="width:12%">  {{-- Bonus --}}
         </colgroup>
         <thead>
             <tr class="group-row">
-                <th colspan="2" class="green">Mower</th>
-                <th colspan="3" class="yellow">Jobs</th>
-                <th colspan="4" class="blue">Earnings</th>
-                <th colspan="2" class="pink">Commission</th>
+                <th colspan="3" class="green">Mower</th>
+                <th colspan="1" class="yellow">Jobs</th>
+                <th colspan="1" class="blue">Earnings</th>
+                <th colspan="1" class="pink">Bonus</th>
             </tr>
             <tr class="sub-row">
                 <th class="green-left">Name</th>
                 <th class="green-center">Total Hours</th>
+                <th class="green-center">Working Days</th>
                 <th class="yellow">Completed</th>
-                <th class="yellow">Started</th>
-                <th class="yellow">Pending</th>
                 <th class="blue">Completed</th>
-                <th class="blue">Started</th>
-                <th class="blue">Pending</th>
-                <th class="blue">Total</th>
-                <th class="pink">Total Sales</th>
-                <th class="pink">Commission</th>
+                <th class="pink">Bonus</th>
             </tr>
         </thead>
         <tbody>
             @if (is_countable($reportData) && count($reportData) > 0)
                 @php
                     $totals = [
-                        'total_working_hours'    => 0,
-                        'total_jobs_completed'   => 0,
-                        'total_jobs_started'     => 0,
-                        'total_jobs_pending'     => 0,
-                        'completed_earnings'     => 0,
-                        'started_earnings'       => 0,
-                        'pending_earnings'       => 0,
-                        'total_earnings'         => 0,
-                        'total_sales'            => 0,
-                        'total_incentive_amount' => 0,
+                        'total_working_hours'  => 0,
+                        'working_days'         => 0,
+                        'total_jobs_completed' => 0,
+                        'completed_earnings'   => 0,
+                        'bonus'                => 0,
                     ];
                 @endphp
                 @foreach ($reportData as $mower)
@@ -138,32 +124,22 @@
                     <tr>
                         <td class="left green">{{ data_get($mower, 'name') }}</td>
                         <td class="center green">{{ number_format((float) data_get($mower, 'total_working_hours', 0), 2) }}</td>
+                        <td class="center green">{{ data_get($mower, 'working_days', 0) }}</td>
                         <td class="center yellow">{{ data_get($mower, 'total_jobs_completed') }}</td>
-                        <td class="center yellow">{{ data_get($mower, 'total_jobs_started') }}</td>
-                        <td class="center yellow">{{ data_get($mower, 'total_jobs_pending') }}</td>
                         <td class="right blue">${{ number_format((float) data_get($mower, 'completed_earnings', 0), 2) }}</td>
-                        <td class="right blue">${{ number_format((float) data_get($mower, 'started_earnings', 0), 2) }}</td>
-                        <td class="right blue">${{ number_format((float) data_get($mower, 'pending_earnings', 0), 2) }}</td>
-                        <td class="right bold blue">${{ number_format((float) data_get($mower, 'total_earnings', 0), 2) }}</td>
-                        <td class="right pink">${{ number_format((float) data_get($mower, 'total_sales', 0), 2) }}</td>
-                        <td class="right bold pink">${{ number_format((float) data_get($mower, 'total_incentive_amount', 0), 2) }}</td>
+                        <td class="right pink">${{ number_format((float) data_get($mower, 'bonus', 0), 2) }}</td>
                     </tr>
                 @endforeach
                 <tr class="totals-row">
                     <td class="left">TOTALS</td>
                     <td class="center">{{ number_format($totals['total_working_hours'], 2) }}</td>
+                    <td class="center">{{ $totals['working_days'] }}</td>
                     <td class="center">{{ $totals['total_jobs_completed'] }}</td>
-                    <td class="center">{{ $totals['total_jobs_started'] }}</td>
-                    <td class="center">{{ $totals['total_jobs_pending'] }}</td>
                     <td class="right">${{ number_format($totals['completed_earnings'], 2) }}</td>
-                    <td class="right">${{ number_format($totals['started_earnings'], 2) }}</td>
-                    <td class="right">${{ number_format($totals['pending_earnings'], 2) }}</td>
-                    <td class="right">${{ number_format($totals['total_earnings'], 2) }}</td>
-                    <td class="right">${{ number_format($totals['total_sales'], 2) }}</td>
-                    <td class="right">${{ number_format($totals['total_incentive_amount'], 2) }}</td>
+                    <td class="right">${{ number_format($totals['bonus'], 2) }}</td>
                 </tr>
             @else
-                <tr><td colspan="11" class="no-records">No mower report data available.</td></tr>
+                <tr><td colspan="6" class="no-records">No mower report data available.</td></tr>
             @endif
         </tbody>
     </table>

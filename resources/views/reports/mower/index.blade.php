@@ -29,6 +29,7 @@
     </div>
 
     <x-reports.mower-jobs-modal :employees="$employees" :workflowStatuses="$workflowStatuses" />
+    <x-reports.mower-bonus-modal />
 
     <script>
         $(document).ready(function() {

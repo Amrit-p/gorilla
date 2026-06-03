@@ -19,6 +19,7 @@ return [
         'manage_masters',
         'upload_job_images',
         'view_mower_report',
+        'manage_employee_bonuses',
     ],
 
     'roles' => [

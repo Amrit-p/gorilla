@@ -11,6 +11,7 @@ use App\Enums\JobOperationalPaymentMode;
 use App\Enums\JobOperationalPaymentStatus;
 use App\Enums\JobWorkflowStatus;
 use App\Models\ActivityLog;
+use App\Models\EmployeeBonus;
 use App\Models\Job;
 use App\Support\QueryFilters\JobListFilter;
 use Illuminate\Support\Collection;
@@ -29,9 +30,19 @@ class MowerReportService implements MowerReportInterface
             ->whereNotNull('done_by_user_id')
             ->get();
 
+        $userIds = $jobs->pluck('done_by_user_id')->unique()->values()->toArray();
+
+        $bonusRecords = EmployeeBonus::query()
+            ->whereIn('user_id', $userIds)
+            ->when($request->start_date, fn($q) => $q->whereDate('bonus_date', '>=', $request->start_date))
+            ->when($request->end_date, fn($q) => $q->whereDate('bonus_date', '<=', $request->end_date))
+            ->get(['user_id', 'amount', 'bonus_date']);
+
+        $bonusByUser = $bonusRecords->groupBy('user_id');
+
         return $jobs
             ->groupBy('done_by_user_id')
-            ->map(function ($userJobs, $doneByUserId) use ($request) {
+            ->map(function ($userJobs, $doneByUserId) use ($request, $bonusByUser) {
                 $user = $userJobs->first()->doneByUser;
                 $completed = JobWorkflowStatus::COMPLETED;
                 $cash = JobOperationalPaymentMode::CASH;
@@ -72,6 +83,13 @@ class MowerReportService implements MowerReportInterface
                         return $job->consumed_time_minutes ? $job->consumed_time_minutes / 60 : 0;
                     });
 
+                $workingDays = $completedJobs
+                    ->pluck('scheduled_date')
+                    ->filter()
+                    ->map(fn($d) => \Carbon\Carbon::parse($d)->toDateString())
+                    ->unique()
+                    ->count();
+
                 return (new MowerResponseReportDTO())
                     ->withUserId((int) $doneByUserId)
                     ->withName($user?->name ?? 'Unknown')
@@ -86,6 +104,14 @@ class MowerReportService implements MowerReportInterface
                     ->withTotalSales((float) $totalSales)
                     ->withTotalIncentiveAmount($totalIncentiveAmount)
                     ->withTotalWorkingHours($totalWorkingHours)
+                    ->withWorkingDays($workingDays)
+                    ->withTotalBonus((float) ($bonusByUser->get($doneByUserId, collect())->sum('amount')))
+                    ->withIndividualBonuses(
+                        $bonusByUser->get($doneByUserId, collect())
+                            ->groupBy(fn($r) => $r->bonus_date->format('Y-m-d'))
+                            ->map(fn($dayRecords) => (float) $dayRecords->sum('amount'))
+                            ->toArray()
+                    )
                     ->toArray();
             })
             ->sortByDesc(fn($dto) => $dto['total_sales'])
