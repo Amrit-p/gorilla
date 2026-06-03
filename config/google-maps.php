@@ -2,8 +2,8 @@
 
 return [
     'default_center' => [
-        'lat' => (float) env('GOOGLE_MAPS_DEFAULT_LAT', 43.6532),
-        'lng' => (float) env('GOOGLE_MAPS_DEFAULT_LNG', -79.3832),
+        'lat' => (float) env('GOOGLE_MAPS_DEFAULT_LAT', -36.8485),
+        'lng' => (float) env('GOOGLE_MAPS_DEFAULT_LNG', 174.7633),
     ],
 
     'default_zoom' => 10,
