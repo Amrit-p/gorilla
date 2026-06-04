@@ -24,6 +24,7 @@ trait ValidatesJobOperational
             'recurrence_id' => ['required', 'exists:recurrences,id'],
             'zone_id' => ['nullable', 'exists:zones,id'],
             'equipment_type_id' => EquipmentTypes::idRules(),
+            'job_level_id' => ['required', 'exists:job_levels,id'],
             'client_address' => ['required', 'string', 'max:255'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:latitude'],

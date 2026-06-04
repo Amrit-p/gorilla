@@ -7,6 +7,7 @@ use App\Enums\JobOperationalPaymentStatus;
 use App\Enums\JobWorkflowStatus;
 use App\Models\Client;
 use App\Models\Job;
+use App\Models\JobLevel;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -15,13 +16,17 @@ class JobSeeder extends Seeder
 {
     public function run(): void
     {
-        $mowerIds = User::whereIn('email', [
+        $mowers = User::whereIn('email', [
             'jake.morrison@mowingcrm.test',
             'liam.carter@mowingcrm.test',
-        ])->pluck('id')->values();
+        ])->get(['id', 'incentive_percentage']);
 
-        $adminId   = User::where('email', 'admin@mowingcrm.test')->value('id');
-        $clients   = Client::with('lead')->orderBy('id')->take(20)->get();
+        $mowerIds         = $mowers->pluck('id')->values();
+        $mowerIncentives  = $mowers->pluck('incentive_percentage', 'id');
+
+        $adminId      = User::where('email', 'admin@mowingcrm.test')->value('id');
+        $clients      = Client::with('lead')->orderBy('id')->take(20)->get();
+        $jobLevelIds  = JobLevel::orderBy('sort_order')->pluck('id')->values();
 
         $statuses = [
             JobWorkflowStatus::COMPLETED->value,
@@ -96,13 +101,15 @@ class JobSeeder extends Seeder
                 ? JobOperationalPaymentStatus::RECEIVED->value
                 : JobOperationalPaymentStatus::PENDING->value;
 
-            $assignedMowerId = $mowerIds[$i % $mowerIds->count()];
+            $assignedMowerId  = $mowerIds[$i % $mowerIds->count()];
+            $mowerIncentive   = $mowerIncentives[$assignedMowerId] ?? 0;
 
             $job = Job::create([
                 'client_id'                  => $client->id,
                 'lead_id'                    => $client->lead_id,
                 'zone_id'                    => $client->zone_id,
                 'equipment_type_id'          => $client->equipment_type_id,
+                'job_level_id'               => $jobLevelIds[$i % $jobLevelIds->count()],
                 'recurrence_id'              => $client->recurrence_id,
                 'client_address'             => $client->address,
                 'latitude'                   => $client->latitude,
@@ -131,16 +138,17 @@ class JobSeeder extends Seeder
                 'internal_notes'             => null,
                 'created_by'                 => $adminId,
                 'charges'                    => rand(50, 150),
-                'incentive_percentage'       => User::find($assignedMowerId)->incentive_percentage,
+                'incentive_percentage'       => $mowerIncentive,
             ]);
 
             DB::table('job_user_assignments')->insert([
-                'job_id'            => $job->id,
-                'user_id'           => $assignedMowerId,
-                'assignment_date'   => $dates[$i],
-                'assignment_status' => $isCompleted ? 'Completed' : 'Assigned',
-                'created_at'        => now(),
-                'updated_at'        => now(),
+                'job_id'               => $job->id,
+                'user_id'              => $assignedMowerId,
+                'assignment_date'      => $dates[$i],
+                'assignment_status'    => $isCompleted ? 'Completed' : 'Assigned',
+                'incentive_percentage' => $mowerIncentive,
+                'created_at'           => now(),
+                'updated_at'           => now(),
             ]);
         }
     }

@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Client;
+use App\Models\JobLevel;
 use App\Models\Lead;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -11,8 +12,12 @@ class ClientSeeder extends Seeder
 {
     public function run(): void
     {
-        $adminId = User::where('email', 'admin@mowingcrm.test')->value('id');
-        $leadIds = Lead::orderBy('id')->take(20)->pluck('id');
+        $adminId    = User::where('email', 'admin@mowingcrm.test')->value('id');
+        $leadIds    = Lead::orderBy('id')->take(20)->pluck('id');
+        $levelIds   = JobLevel::orderBy('sort_order')->pluck('id')->values();
+
+        // 0=Entry, 1=Basic, 2=Intermediate, 3=Advanced, 4=Expert — one per client row below
+        $levelIndex = [2, 1, 0, 3, 4, 2, 1, 1, 2, 2, 1, 3, 3, 1, 2, 1, 4, 1, 2, 0];
 
         $rows = [
             ['name' => 'James Wilson',     'email' => 'james.wilson@email.com',     'phone' => '0412 345 678', 'address' => '12 Maple Street, Sunnybank QLD 4109',        'zone_id' => 1, 'equipment_type_id' => 1, 'recurrence_id' => 3, 'service_types' => ['Mulching'],                  'weed_spray' => 'Yes', 'job_type' => 'Recurring',  'charges' => 120.00, 'estimated_time' => '1 hour',      'payment_mode' => 'Cash',          'payment_status' => 'Paid',    'remarks_type' => 'Standard',  'customer_type' => 'Residential', 'client_type' => 'Regular',   'parking_status' => 'Driveway', 'additional_site_instructions' => 'Gate code 1234.',              'special_remarks' => 'Long-term client.',         'notes' => 'Prefers early morning.',                  'latitude' => -27.5832, 'longitude' => 153.0445],
@@ -39,8 +44,9 @@ class ClientSeeder extends Seeder
 
         foreach ($rows as $i => $data) {
             Client::create(array_merge($data, [
-                'lead_id' => $leadIds[$i] ?? null,
-                'created_by' => $adminId,
+                'lead_id'      => $leadIds[$i] ?? null,
+                'job_level_id' => $levelIds[$levelIndex[$i]] ?? null,
+                'created_by'   => $adminId,
             ]));
         }
     }

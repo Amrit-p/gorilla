@@ -1,7 +1,12 @@
 <x-ui.table :headers="['Name', 'Description', 'Sort', 'Status', 'Actions']">
     @forelse ($records as $record)
         <tr>
-            <td class="px-4 py-3 font-medium text-slate-800">{{ $record->name }}</td>
+            <td class="px-4 py-3">
+                <div class="flex items-center gap-2">
+                    <span class="inline-block h-3.5 w-3.5 shrink-0 rounded-full border border-slate-200" style="background-color: {{ $record->color_code }}"></span>
+                    <span class="font-medium text-slate-800">{{ $record->name }}</span>
+                </div>
+            </td>
             <td class="px-4 py-3 text-slate-500 italic text-xs">{{ $record->description ?: '—' }}</td>
             <td class="px-4 py-3 text-slate-600">{{ $record->sort_order }}</td>
             <td class="px-4 py-3">

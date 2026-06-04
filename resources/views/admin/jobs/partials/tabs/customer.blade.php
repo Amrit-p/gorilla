@@ -47,6 +47,21 @@
             hint="Prefilled from the customer. Change here if this job needs different equipment — the map marker updates to match."
         />
 
+        @isset($jobLevels)
+            <div>
+                <label class="mb-1 block text-sm font-medium text-slate-700">Job Level</label>
+                <select name="job_level_id" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    <option value="">— None —</option>
+                    @foreach ($jobLevels as $level)
+                        <option
+                            value="{{ $level->id }}"
+                            @selected((string) old('job_level_id', $jobModel?->job_level_id) === (string) $level->id)
+                        >{{ $level->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+        @endisset
+
         @isset($zones)
             <div>
                 <label class="mb-1 block text-sm font-medium text-slate-700">Zone</label>

@@ -8,7 +8,9 @@
 
 <x-ui.table :headers="$headers">
     @forelse ($jobs as $job)
-        <tr class="job-row group divide-x divide-slate-100 transition-colors hover:bg-slate-50/70" data-job-id="{{ $job->id }}">
+        @php $jobLevelColor = $job->jobLevel?->color_code; @endphp
+        <tr class="job-row group divide-x divide-slate-100 transition-colors hover:bg-slate-50/70" data-job-id="{{ $job->id }}"
+            @if ($jobLevelColor) style="background-color: {{ $jobLevelColor }}20" @endif>
 
             @if ($canReorder)
             {{-- Drag handle --}}
@@ -42,6 +44,12 @@
                     <span class="mt-1 inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
                         <span class="h-1.5 w-1.5 shrink-0 rounded-full" style="background-color: {{ $job->equipmentType->color_code ?? '#64748b' }}"></span>
                         {{ $job->equipmentType->name }}
+                    </span>
+                @endif
+                @if ($job->jobLevel)
+                    <span class="mt-1 inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium" style="background-color: {{ $job->jobLevel->color_code }}1a; color: {{ $job->jobLevel->color_code }}">
+                        <span class="h-1.5 w-1.5 shrink-0 rounded-full" style="background-color: {{ $job->jobLevel->color_code }}"></span>
+                        {{ $job->jobLevel->name }}
                     </span>
                 @endif
             </td>
@@ -136,7 +144,10 @@
                             </a>
                         @endcan
                         @can('assign-jobs')
-                            <button class="assign-job flex w-full items-center gap-2.5 px-3.5 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50" data-id="{{ $job->id }}">
+                            <button class="assign-job flex w-full items-center gap-2.5 px-3.5 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50"
+                                    data-id="{{ $job->id }}"
+                                    data-done-by="{{ $job->done_by_user_id ?? '' }}"
+                                    data-employee-ids="{{ json_encode($job->assignedEmployees->pluck('id')) }}">
                                 <svg class="h-3.5 w-3.5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/>
                                 </svg>

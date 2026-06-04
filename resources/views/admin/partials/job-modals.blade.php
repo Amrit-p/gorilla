@@ -2,14 +2,7 @@
     <form id="assign-job-form" class="space-y-3">
         @csrf
         <input type="hidden" name="job_id">
-        <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">Mowers</label>
-            <select name="employee_ids[]" multiple class="min-h-32 w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                @foreach ($employees as $employee)
-                    <option value="{{ $employee->id }}">{{ $employee->name }} ({{ $employee->efficiency ?? 'Average' }})</option>
-                @endforeach
-            </select>
-        </div>
+        <x-jobs.mower-assignment :employees="$employees" idPrefix="assign" />
         <x-ui.button type="submit">Assign</x-ui.button>
     </form>
 </x-ui.modal>

@@ -25,6 +25,7 @@ class MowerRequestReportDTO
         public ?string $assignment = null,
         public ?string $payment_mode = null,
         public ?string $payment_status = null,
+        public ?int $job_level_id = null,
     ) {
     }
 
@@ -47,6 +48,7 @@ class MowerRequestReportDTO
             assignment: isset($data['assignment']) ? $data['assignment'] : null,
             payment_mode: isset($data['payment_mode']) ? $data['payment_mode'] : null,
             payment_status: isset($data['payment_status']) ? $data['payment_status'] : null,
+            job_level_id: isset($data['job_level_id']) ? (int) $data['job_level_id'] : null,
         );
     }
 
@@ -69,6 +71,7 @@ class MowerRequestReportDTO
             'assignment' => $this->assignment,
             'payment_mode' => $this->payment_mode,
             'payment_status' => $this->payment_status,
+            'job_level_id' => $this->job_level_id,
         ];
     }
 
@@ -152,6 +155,12 @@ class MowerRequestReportDTO
     public function withPaymentStatus(string $payment_status): self
     {
         $this->payment_status = $payment_status;
+        return $this;
+    }
+
+    public function withJobLevelId(int $job_level_id): self
+    {
+        $this->job_level_id = $job_level_id;
         return $this;
     }
 }

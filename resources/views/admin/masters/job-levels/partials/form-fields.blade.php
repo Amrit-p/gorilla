@@ -1,4 +1,4 @@
-@include('components.masters.form-fields', ['showColorCode' => false])
+@include('components.masters.form-fields', ['showColorCode' => true])
 
 <div>
     <label for="description" class="mb-1 block text-sm font-medium text-slate-700">Description</label>

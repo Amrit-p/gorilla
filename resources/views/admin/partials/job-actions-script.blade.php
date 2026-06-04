@@ -132,8 +132,21 @@
     });
 
     $(document).on('click', '.assign-job', function() {
+        const $btn        = $(this);
+        const doneBy      = $btn.data('done-by');
+        const employeeIds = $btn.data('employee-ids') || [];
+
         $('#assign-job-form')[0].reset();
-        $('#assign-job-form').find('[name="job_id"]').val($(this).data('id'));
+        $('#assign-job-form').find('[name="job_id"]').val($btn.data('id'));
+
+        // Restore mower widget state
+        if (typeof window.mcaReset_assign === 'function') {
+            window.mcaReset_assign(
+                doneBy ? String(doneBy) : null,
+                (employeeIds || []).map(String)
+            );
+        }
+
         openModal('assign-job-modal');
     });
 
@@ -150,7 +163,7 @@
             success: function(res) {
                 closeModal('assign-job-modal');
                 showJobAlert(res.message);
-                {{$filterCallback}}();
+                {{$filterCallback}}(typeof getFilters === 'function' ? getFilters() : {});
             },
             error: function(xhr) {
                 showJobAlert(Object.values(xhr.responseJSON?.errors || {})[0]?.[0] ||
@@ -177,7 +190,7 @@
             success: function(res) {
                 closeModal('status-job-modal');
                 showJobAlert(res.message);
-                {{$filterCallback}}();
+                {{$filterCallback}}(typeof getFilters === 'function' ? getFilters() : {});
             },
             error: function(xhr) {
                 showJobAlert(Object.values(xhr.responseJSON?.errors || {})[0]?.[0] ||
@@ -201,7 +214,7 @@
             },
             success: function(res) {
                 showJobAlert(res.message);
-                {{$filterCallback}}();
+                {{$filterCallback}}(typeof getFilters === 'function' ? getFilters() : {});
             },
             error: function() {
                 showJobAlert('Failed to delete job.', true);

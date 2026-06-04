@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'lead_id',
     'zone_id',
     'equipment_type_id',
+    'job_level_id',
     'recurrence_id',
     'client_address',
     'latitude',
@@ -87,6 +88,11 @@ class Job extends Model
         return $this->belongsTo(EquipmentType::class);
     }
 
+    public function jobLevel(): BelongsTo
+    {
+        return $this->belongsTo(JobLevel::class);
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -100,7 +106,7 @@ class Job extends Model
     public function assignedEmployees(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'job_user_assignments')
-            ->withPivot(['assignment_date', 'assignment_status'])
+            ->withPivot(['assignment_date', 'assignment_status', 'incentive_percentage'])
             ->withTimestamps();
     }
 

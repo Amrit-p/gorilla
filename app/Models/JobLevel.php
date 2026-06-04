@@ -11,6 +11,7 @@ class JobLevel extends Model
 
     protected $fillable = [
         'name',
+        'color_code',
         'description',
         'is_active',
         'sort_order',

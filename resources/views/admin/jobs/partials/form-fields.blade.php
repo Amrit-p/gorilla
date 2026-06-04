@@ -37,6 +37,18 @@
 
 <x-ui.input label="Estimated duration (minutes)" name="estimated_duration_minutes" type="number" min="15" max="1440" :value="old('estimated_duration_minutes', $jobModel?->estimated_duration_minutes)" />
 
+<div>
+    <label class="mb-1 block text-sm font-medium text-slate-700">Job Level</label>
+    <select name="job_level_id" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+        <option value="">— None —</option>
+        @foreach ($jobLevels as $level)
+            <option value="{{ $level->id }}" @selected((string) old('job_level_id', $jobModel?->job_level_id) === (string) $level->id)>
+                {{ $level->name }}
+            </option>
+        @endforeach
+    </select>
+</div>
+
 <x-forms.service-types
     name="required_services[]"
     label="Required services"

@@ -8,6 +8,7 @@ use App\Helpers\OptimizationHelper;
 use App\Jobs\GeocodeJobAddressJob;
 use App\Models\Client;
 use App\Models\Job;
+use App\Models\JobLevel;
 use App\Models\Recurrence;
 use App\Models\User;
 use App\Models\Zone;
@@ -21,6 +22,7 @@ use App\Support\ServiceTypes;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class JobManagementService
@@ -64,8 +66,8 @@ class JobManagementService
     {
         $selectedClient = $selectedClientId
             ? Client::query()
-                ->with(['equipmentType:id,name,color_code', 'lead.equipmentType:id,name,color_code'])
-                ->find($selectedClientId, ['id', 'name', 'address', 'latitude', 'longitude', 'zone_id', 'recurrence_id', 'payment_mode', 'payment_status', 'service_types', 'parking_status', 'customer_type', 'pet_warning', 'additional_site_instructions', 'equipment_type_id', 'lead_id'])
+            ->with(['equipmentType:id,name,color_code', 'lead.equipmentType:id,name,color_code'])
+            ->find($selectedClientId, ['id', 'name', 'address', 'latitude', 'longitude', 'zone_id', 'recurrence_id', 'payment_mode', 'payment_status', 'service_types', 'parking_status', 'customer_type', 'pet_warning', 'additional_site_instructions', 'equipment_type_id', 'lead_id'])
             : null;
 
         return [
@@ -85,6 +87,7 @@ class JobManagementService
             'paymentStatuses' => JobOperationalPaymentStatus::values(),
             'recurrences' => Recurrence::query()->orderBy('name')->get(['id', 'name']),
             'equipmentTypes' => EquipmentTypes::selectOptions(),
+            'jobLevels' => JobLevel::query()->active()->ordered()->get(['id', 'name', 'color_code']),
             'zones' => Zone::query()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(['id', 'name']),
             'workflowStatuses' => JobWorkflowStatus::values(),
             'listScopes' => [
@@ -128,6 +131,9 @@ class JobManagementService
         GeocodeJobAddressJob::dispatch($job->id);
 
         if ($employeeIds !== []) {
+            if (! $job->done_by_user_id && count($employeeIds) === 1) {
+                $job->done_by_user_id = (int) $employeeIds[0];
+            }
             $this->assignEmployees($actor, $job, $employeeIds, false);
         }
 
@@ -149,7 +155,7 @@ class JobManagementService
         $job->save();
 
         if (is_array($employeeIds)) {
-            $this->assignEmployees($actor, $job, $employeeIds, false);
+            $this->assignEmployees($actor, $job, $job->done_by_user_id, $employeeIds, false);
         }
 
         GeocodeJobAddressJob::dispatch($job->id);
@@ -158,42 +164,56 @@ class JobManagementService
         return $job->fresh(['client', 'assignedEmployees', 'doneByUser']);
     }
 
-    public function assignEmployees(User $actor, Job $job, array $userIds, bool $notify = true): void
-    {
-        $userIds = array_values(array_unique(array_map('intval', $userIds)));
-        $this->assertActiveMowerIds($userIds);
+    public function assignEmployees(
+        User $actor,
+        Job $job,
+        string|int|null $primary_mower_id = null,
+        array $helper_mowers = [],
+        bool $notify = true
+    ): void {
+        try {
+            DB::beginTransaction();
+            $helper_mowers = array_values(array_unique(array_map('intval', $helper_mowers)));
+            $this->assertActiveMowerIds($helper_mowers);
 
-        $syncData = [];
-        foreach ($userIds as $userId) {
-            $syncData[$userId] = [
-                'assignment_date' => $job->scheduled_date,
-                'assignment_status' => JobWorkflowStatus::STARTED->value,
-            ];
-        }
-        $job->assignedEmployees()->sync($syncData);
-        OptimizationHelper::bumpMapCacheGeneration();
+            $incentives = User::query()
+                ->whereIn('id', $helper_mowers)
+                ->pluck('incentive_percentage', 'id');
 
-        if (! $job->done_by_user_id && count($userIds) === 1) {
-            $job->done_by_user_id = (int) $userIds[0];
+            $syncData = [];
+            foreach ($helper_mowers as $userId) {
+                $syncData[$userId] = [
+                    'assignment_date' => $job->scheduled_date,
+                    'assignment_status' => $job->status,
+                    'incentive_percentage' => $incentives[$userId] ?? 0,
+                ];
+            }
+            $job->assignedEmployees()->sync($syncData);
+            OptimizationHelper::bumpMapCacheGeneration();
+
+
+            $job->done_by_user_id = $primary_mower_id;
+            $job->incentive_percentage = $incentives[$primary_mower_id] ?? 0;
             $job->save();
-        }
 
-        if ($job->status !== JobWorkflowStatus::COMPLETED->value && $job->status !== JobWorkflowStatus::HOLD->value) {
-            $job->status = JobWorkflowStatus::STARTED->value;
-            $job->save();
-        }
+            if ($notify) {
+                User::query()->whereIn('id', $helper_mowers)->get()->each(function (User $employee) use ($job): void {
+                    $employee->notify(new JobAssignedNotification($job));
+                    OptimizationHelper::forgetNotificationUnreadCount($employee->id);
+                });
+            }
 
-        if ($notify) {
-            User::query()->whereIn('id', $userIds)->get()->each(function (User $employee) use ($job): void {
-                $employee->notify(new JobAssignedNotification($job));
-                OptimizationHelper::forgetNotificationUnreadCount($employee->id);
-            });
+            $this->activityLogService->log($actor, 'job.assigned', 'Mowers assigned to job.', [
+                'job_id' => $job->id,
+                'employee_ids' => $helper_mowers,
+            ]);
+            DB::commit();
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            report($th);
+            return;
         }
-        $job->incentive_percentage = User::find((int)$userIds[0])->incentive_percentage ?? 0;
-        $this->activityLogService->log($actor, 'job.assigned', 'Mowers assigned to job.', [
-            'job_id' => $job->id,
-            'employee_ids' => $userIds,
-        ]);
+       
     }
 
     public function updateStatus(User $actor, Job $job, string $status): Job
@@ -206,7 +226,7 @@ class JobManagementService
             OptimizationHelper::forgetNotificationUnreadCount($manager->id);
         });
 
-        $this->activityLogService->log($actor, 'job.status_updated', 'Job status updated to '.$status.'.', [
+        $this->activityLogService->log($actor, 'job.status_updated', 'Job status updated to ' . $status . '.', [
             'job_id' => $job->id,
             'status' => $status,
         ]);

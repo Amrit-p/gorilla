@@ -38,12 +38,14 @@ class JobRepository
                 'charges',
                 'incentive_percentage',
                 'equipment_type_id',
+                'job_level_id',
             ])
             ->with([
                 'client:id,name,address,customer_unique_id,phone,email,customer_type',
                 'zone:id,name',
                 'recurrence:id,name',
                 'equipmentType:id,name,color_code',
+                'jobLevel:id,name,color_code',
                 'assignedEmployees:id,name,efficiency',
                 'doneByUser:id,name',
             ]);

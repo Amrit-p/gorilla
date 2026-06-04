@@ -7,7 +7,6 @@ namespace App\Http\Requests\Reports;
 use App\DTOS\Request\Reports\MowerRequestReportDTO;
 use App\Support\CrmRoles;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Carbon;
 
 class MowerRequestReport extends FormRequest
 {
@@ -93,6 +92,10 @@ class MowerRequestReport extends FormRequest
                 'nullable',
                 'string',
             ],
+            'job_level_id' => [
+                'nullable',
+                'integer',
+            ],
         ];
     }
 
@@ -124,9 +127,10 @@ class MowerRequestReport extends FormRequest
             ? $this->user()->id
             : '';
 
-        $data['start_date'] = $this->date('date_range.start')?->toDateString();
-        $data['end_date']   = $this->date('date_range.end')?->toDateString();
-        $data['user_id']    = (string) $userId;
+        $data['start_date']    = $this->date('date_range.start')?->toDateString();
+        $data['end_date']      = $this->date('date_range.end')?->toDateString();
+        $data['user_id']       = (string) $userId;
+        $data['job_level_id']  = $this->integer('job_level_id') ?: null;
 
         $dto = MowerRequestReportDTO::fromArray($data);
 

@@ -193,7 +193,8 @@ class JobManagementController extends Controller
         $this->jobManagementService->assignEmployees(
             $request->user(),
             $job,
-            $request->validated('employee_ids')
+            $request->validated('done_by_user_id', null),
+            $request->validated('employee_ids', []),
         );
 
         return response()->json(['message' => 'Mowers assigned successfully.']);
@@ -272,6 +273,7 @@ class JobManagementController extends Controller
             'payment_mode'      => $request->string('payment_mode')->toString(),
             'payment_status'    => $request->string('payment_status')->toString(),
             'equipment_type_id' => $request->string('equipment_type_id')->toString(),
+            'job_level_id'      => $request->string('job_level_id')->toString(),
             'customer_type'     => $request->string('customer_type')->toString(),
             'service_type'      => $request->string('service_type')->toString(),
             'date_range_start'  => $request->input('date_range.start', ''),

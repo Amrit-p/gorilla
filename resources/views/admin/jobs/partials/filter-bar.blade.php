@@ -9,6 +9,7 @@
         !empty($filters['payment_mode']) ||
         !empty($filters['payment_status']) ||
         !empty($filters['equipment_type_id']) ||
+        !empty($filters['job_level_id']) ||
         !empty($filters['customer_type']) ||
         !empty($filters['service_type']) ||
         !empty($filters['date_range_start']) ||
@@ -175,6 +176,17 @@
                     @foreach ($equipmentTypes as $equipmentType)
                         <option value="{{ $equipmentType['id'] }}" @selected(($filters['equipment_type_id'] ?? '') == $equipmentType['id'])>
                             {{ $equipmentType['name'] }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-[10px] font-medium uppercase tracking-wide text-slate-400">Job Level</label>
+                <select name="job_level_id"
+                    class="filter cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
+                    <option value="">Any level</option>
+                    @foreach ($jobLevels as $jobLevel)
+                        <option value="{{ $jobLevel->id }}" @selected(($filters['job_level_id'] ?? '') == $jobLevel->id)>{{ $jobLevel->name }}</option>
                     @endforeach
                 </select>
             </div>

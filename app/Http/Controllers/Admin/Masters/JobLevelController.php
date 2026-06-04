@@ -102,6 +102,7 @@ class JobLevelController extends Controller
         return response()->json($jobLevel->only([
             'id',
             'name',
+            'color_code',
             'description',
             'sort_order',
             'is_active',

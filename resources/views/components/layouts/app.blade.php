@@ -21,6 +21,7 @@
 
     {{-- jQuery CDN for upcoming AJAX modules --}}
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
     <style>
         /* ===== PREVENT FLASH ON INITIAL LOAD ===== */
         .no-transitions * { transition: none !important; }

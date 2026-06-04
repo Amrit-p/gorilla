@@ -87,6 +87,10 @@ final class JobListFilter
             $query->where('equipment_type_id', $filters['equipment_type_id']);
         }
 
+        if (! empty($filters['job_level_id'])) {
+            $query->where('job_level_id', $filters['job_level_id']);
+        }
+
         if (! empty($filters['customer_type'])) {
             $query->where('customer_type', $filters['customer_type']);
         }

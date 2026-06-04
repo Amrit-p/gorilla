@@ -22,6 +22,7 @@ class UpdateJobLevelRequest extends FormRequest
 
         return [
             'name'        => ['required', 'string', 'max:120', Rule::unique('job_levels', 'name')->ignore($id)],
+            'color_code'  => ['required', 'string', 'max:20', 'regex:/^#?[0-9A-Fa-f]{3,8}$/'],
             'description' => ['nullable', 'string', 'max:1000'],
             'sort_order'  => ['nullable', 'integer', 'min:0', 'max:9999'],
             'is_active'   => ['required', 'boolean'],
