@@ -5,12 +5,18 @@ namespace App\Http\Controllers\Mower;
 use App\Enums\JobOperationalPaymentStatus;
 use App\Enums\JobWorkflowStatus;
 use App\Http\Controllers\Controller;
+use App\Support\CrmConstants;
 use App\Http\Requests\Mower\UpdateMowerConsumedTimeRequest;
 use App\Http\Requests\Mower\UpdateMowerJobPaymentRequest;
 use App\Http\Requests\Mower\UpdateMowerJobStatusRequest;
 use App\Http\Requests\Mower\UploadMowerJobImagesRequest;
+use App\Helpers\OptimizationHelper;
 use App\Models\Job;
+use App\Models\MowerRemark;
+use App\Models\User;
+use App\Notifications\MowerRemarkAddedNotification;
 use App\Services\DashboardAnalyticsService;
+use App\Support\CrmRoles;
 use App\Services\JobImageManagementService;
 use App\Services\MowerDashboardService;
 use Illuminate\Http\JsonResponse;
@@ -42,6 +48,13 @@ class MowerDashboardController extends Controller
         return view('mower.index', [
             'jobs' => $jobs,
             'scope' => $scope,
+            'listScopes' => [
+                CrmConstants::MOWER_SCOPE_TODAY_SPECIAL => 'Today Special',
+                CrmConstants::MOWER_SCOPE_TODAY => 'Today',
+                CrmConstants::MOWER_SCOPE_UPCOMING => 'Upcoming',
+                CrmConstants::MOWER_SCOPE_COMPLETED => 'Done',
+                CrmConstants::MOWER_SCOPE_HOLD => 'Hold',
+            ],
             'analytics' => $this->dashboardAnalyticsService->mower($request->user()),
             'workflowStatuses' => JobWorkflowStatus::values(),
             'paymentStatuses' => JobOperationalPaymentStatus::values(),
@@ -55,12 +68,19 @@ class MowerDashboardController extends Controller
 
         $images = $this->jobImageManagementService->presentAllForJob($job);
 
+        $lastRemark = $job->client_id
+            ? MowerRemark::where('client_id', $job->client_id)
+                ->latest()
+                ->first()
+            : null;
+
         return view('mower.jobs.show', [
             'job' => $job,
             'beforeImages' => $images['before'],
             'afterImages' => $images['after'],
             'workflowStatuses' => JobWorkflowStatus::values(),
             'paymentStatuses' => JobOperationalPaymentStatus::values(),
+            'lastRemark' => $lastRemark,
         ]);
     }
 
@@ -155,5 +175,29 @@ class MowerDashboardController extends Controller
             'message' => 'After photo removed.',
             'images' => $images,
         ]);
+    }
+
+    public function storeRemark(Request $request, Job $job): JsonResponse
+    {
+        $this->authorize('employeeUpdateStatus', $job);
+
+        $validated = $request->validate([
+            'description' => ['required', 'string', 'max:1000'],
+        ]);
+
+        $remark = MowerRemark::create([
+            'user_id'     => $request->user()->id,
+            'client_id'   => $job->client_id,
+            'description' => $validated['description'],
+        ]);
+
+        $remark->load('user:id,name');
+
+        User::query()->role(CrmRoles::OFFICE_MANAGER)->get()->each(function (User $manager) use ($job, $remark): void {
+            $manager->notify(new MowerRemarkAddedNotification($job, $remark));
+            OptimizationHelper::forgetNotificationUnreadCount($manager->id);
+        });
+
+        return response()->json(['message' => 'Remark saved.']);
     }
 }

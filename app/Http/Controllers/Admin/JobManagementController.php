@@ -11,6 +11,7 @@ use App\Http\Requests\Admin\UpdateJobRequest;
 use App\Http\Requests\Admin\UpdateJobStatusRequest;
 use App\Http\Requests\Admin\UploadJobImagesRequest;
 use App\Models\Job;
+use App\Models\MowerRemark;
 use App\Services\JobImageManagementService;
 use App\Services\JobManagementService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -169,6 +170,32 @@ class JobManagementController extends Controller
 
         return response()->json([
             'workloads' => $this->jobManagementService->mowerWorkloads($date),
+        ]);
+    }
+
+    public function clientRemarks(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Job::class);
+
+        $clientId = (int) $request->query('client_id');
+
+        if (!$clientId) {
+            return response()->json(['lastRemark' => null, 'allRemarks' => []]);
+        }
+
+        $remarks = MowerRemark::with('user:id,name')
+            ->where('client_id', $clientId)
+            ->latest()
+            ->get()
+            ->map(fn ($r) => [
+                'description' => $r->description,
+                'user_name'   => $r->user?->name ?? 'Unknown',
+                'created_at'  => $r->created_at->format('M j, Y g:i A'),
+            ]);
+
+        return response()->json([
+            'lastRemark' => $remarks->first(),
+            'allRemarks' => $remarks->all(),
         ]);
     }
 

@@ -22,7 +22,7 @@ class UpdateMowerJobPaymentRequest extends FormRequest
             'payment_status' => ['required', Rule::in(JobOperationalPaymentStatus::values())],
             'payment_pending_reason' => [
                 'nullable',
-                'required_if:payment_status,'.JobOperationalPaymentStatus::PENDING->value,
+                'required_if:payment_status,'.JobOperationalPaymentStatus::PENDING->value.','.JobOperationalPaymentStatus::PARTIAL->value,
                 'string',
                 'max:255',
             ],

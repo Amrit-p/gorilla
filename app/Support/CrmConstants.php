@@ -25,6 +25,8 @@ final class CrmConstants
 
     public const MOWER_SCOPE_HOLD = 'hold';
 
+    public const MOWER_SCOPE_TODAY_SPECIAL = 'today-special';
+
     /**
      * @return array<int, string>
      */

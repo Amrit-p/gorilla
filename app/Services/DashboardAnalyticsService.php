@@ -253,12 +253,12 @@ class DashboardAnalyticsService
             })
             ->where('jua.user_id', $mower->id)
             ->selectRaw(
-                'SUM(CASE WHEN sj.scheduled_date = ? AND sj.status != ? THEN 1 ELSE 0 END) as todays_jobs, '
+                'SUM(CASE WHEN sj.scheduled_date = ? THEN 1 ELSE 0 END) as todays_jobs, '
                 .'SUM(CASE WHEN sj.scheduled_date = ? AND sj.status = ? THEN 1 ELSE 0 END) as completed_today, '
                 .'SUM(CASE WHEN sj.scheduled_date = ? AND sj.status = ? THEN COALESCE(sj.consumed_time_minutes, 0) ELSE 0 END) as minutes_today, '
                 .'SUM(CASE WHEN sj.scheduled_date <= ? AND sj.status IN (?, ?) THEN 1 ELSE 0 END) as pending_jobs, '
                 .'SUM(CASE WHEN sj.scheduled_date BETWEEN ? AND ? AND sj.status = ? THEN COALESCE(sj.consumed_time_minutes, 0) ELSE 0 END) as minutes_week',
-                [$today, $completed, $today, $completed, $today, $completed, $today, $started, $hold, $weekStart, $today, $completed]
+                [$today, $today, $completed, $today, $completed, $today, $started, $hold, $weekStart, $today, $completed]
             )
             ->first();
 
@@ -273,8 +273,8 @@ class DashboardAnalyticsService
             'cards' => [
                 'todays_jobs' => [
                     'label' => "Today's jobs",
-                    'value' => (string) $todaysJobs,
-                    'subtitle' => $completedToday.' completed today',
+                    'value' => (string) $completedToday,
+                    'subtitle' => $todaysJobs.' total scheduled today',
                     'accent' => 'emerald',
                 ],
                 'completed_hours' => [

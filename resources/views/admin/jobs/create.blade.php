@@ -6,6 +6,7 @@
     ]" />
 
     <div class="mx-auto max-w-6xl space-y-5">
+        <x-jobs.remarks-card :empty="true" />
         <div>
             <h2 class="text-lg font-semibold text-slate-900">Create Job</h2>
             <p class="text-sm text-slate-600">Complete each step in order. Review mower assignment on the final step, then submit.</p>
@@ -25,6 +26,7 @@
             @csrf
             @include('admin.jobs.partials.form-tabs', ['submitLabel' => 'Create Job'])
         </form>
+
     </div>
 
     @push('scripts')
@@ -32,9 +34,11 @@
             window.jobFormRoutes = {
                 workloads: @json(route('admin.jobs.mower-workloads')),
                 suggestions: @json(route('admin.jobs.mower-suggestions')),
+                clientRemarks: @json(route('admin.jobs.client-remarks')),
             };
         </script>
         <script src="{{ asset('js/job-form.js') }}?v={{ @filemtime(public_path('js/job-form.js')) ?: 1 }}"></script>
+        <script src="{{ asset('js/job-remarks.js') }}?v={{ @filemtime(public_path('js/job-remarks.js')) ?: 1 }}"></script>
         <script>
             function showJobFormAlert(message, isError) {
                 const baseClass = isError

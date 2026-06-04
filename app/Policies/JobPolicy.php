@@ -54,7 +54,8 @@ class JobPolicy
             return true;
         }
 
-        return $job->assignedEmployees()->where('users.id', $user->id)->exists();
+        return $job->assignedEmployees()->where('users.id', $user->id)->exists()
+            || (int) $job->done_by_user_id === $user->id;
     }
 
     public function deleteJobImages(User $user, Job $job): bool
@@ -72,6 +73,7 @@ class JobPolicy
             return true;
         }
 
-        return $job->assignedEmployees()->where('users.id', $user->id)->exists();
+        return $job->assignedEmployees()->where('users.id', $user->id)->exists()
+            || (int) $job->done_by_user_id === $user->id;
     }
 }

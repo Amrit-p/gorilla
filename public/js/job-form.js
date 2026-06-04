@@ -211,7 +211,11 @@
         }
         syncJobEquipmentMarkerColor();
         if (typeof window.crmRefreshAddressPicker === 'function') {
-            window.crmRefreshAddressPicker('job');
+            try {
+                window.crmRefreshAddressPicker('job');
+            } catch (e) {
+                // Google Maps marker not ready yet
+            }
         }
         if ($option.data('zone-id')) {
             $('#job-zone-id').val(String($option.data('zone-id')));
@@ -315,7 +319,11 @@
         const $selected = $('#job-equipment-type-id option:selected');
         const color = $selected.data('color') || '#64748b';
         if (typeof window.crmSetAddressPickerMarkerColor === 'function') {
-            window.crmSetAddressPickerMarkerColor('job', color);
+            try {
+                window.crmSetAddressPickerMarkerColor('job', color);
+            } catch (e) {
+                // Google Maps marker not ready yet
+            }
         }
     }
 

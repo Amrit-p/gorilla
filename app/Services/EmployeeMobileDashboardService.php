@@ -20,7 +20,10 @@ class EmployeeMobileDashboardService
         return Job::query()
             ->with(['client:id,name,address,phone', 'lead:id,site_instructions'])
             ->whereDate('scheduled_date', now()->toDateString())
-            ->whereHas('assignedEmployees', fn ($q) => $q->where('users.id', $employee->id))
+            ->where(fn ($q) => $q
+                ->whereHas('assignedEmployees', fn ($q) => $q->where('users.id', $employee->id))
+                ->orWhere('done_by_user_id', $employee->id)
+            )
             ->orderBy('route_sequence')
             ->orderBy('scheduled_time')
             ->get();
@@ -34,7 +37,10 @@ class EmployeeMobileDashboardService
         return Job::query()
             ->with(['client:id,name,address'])
             ->where('status', \App\Enums\JobWorkflowStatus::COMPLETED->value)
-            ->whereHas('assignedEmployees', fn ($q) => $q->where('users.id', $employee->id))
+            ->where(fn ($q) => $q
+                ->whereHas('assignedEmployees', fn ($q) => $q->where('users.id', $employee->id))
+                ->orWhere('done_by_user_id', $employee->id)
+            )
             ->latest('scheduled_date')
             ->limit($limit)
             ->get();
@@ -43,7 +49,8 @@ class EmployeeMobileDashboardService
     public function updateJobStatus(User $employee, Job $job, string $status): Job
     {
         // Employee can only update jobs assigned to themselves unless manager role.
-        $isAssigned = $job->assignedEmployees()->where('users.id', $employee->id)->exists();
+        $isAssigned = $job->assignedEmployees()->where('users.id', $employee->id)->exists()
+            || (int) $job->done_by_user_id === $employee->id;
         if (! $isAssigned && ! $employee->hasAnyRole(['Office Manager', 'Super Admin'])) {
             abort(403, 'You are not allowed to update this job.');
         }

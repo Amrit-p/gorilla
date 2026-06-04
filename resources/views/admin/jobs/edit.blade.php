@@ -14,6 +14,7 @@
             </div>
             <a href="{{ route('admin.jobs.show', $job) }}" class="text-sm text-emerald-700 hover:underline">View job</a>
         </div>
+        <x-jobs.remarks-card />
 
         <div id="job-form-alert" class="hidden"></div>
 
@@ -34,6 +35,7 @@
             <input type="hidden" name="priority" value="{{ $job->priority }}">
             @include('admin.jobs.partials.form-tabs', ['job' => $job, 'submitLabel' => 'Update Job'])
         </form>
+
     </div>
 
     @push('scripts')
@@ -41,9 +43,11 @@
             window.jobFormRoutes = {
                 workloads: @json(route('admin.jobs.mower-workloads')),
                 suggestions: @json(route('admin.jobs.mower-suggestions')),
+                clientRemarks: @json(route('admin.jobs.client-remarks')),
             };
         </script>
         <script src="{{ asset('js/job-form.js') }}?v={{ @filemtime(public_path('js/job-form.js')) ?: 1 }}"></script>
+        <script src="{{ asset('js/job-remarks.js') }}?v={{ @filemtime(public_path('js/job-remarks.js')) ?: 1 }}"></script>
         <script>
             $('#job-form').on('submit', function (event) {
                 event.preventDefault();

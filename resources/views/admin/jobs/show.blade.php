@@ -77,7 +77,6 @@
                     </dl>
                 </div>
 
-                @include('admin.jobs.partials.timeline', ['timeline' => $timeline])
 
                 @if (count($beforeImages) || count($afterImages))
                     <div class="rounded-2xl border border-slate-200 bg-white p-5">
@@ -111,6 +110,8 @@
                         </div>
                     </div>
                 @endif
+                @include('admin.jobs.partials.timeline', ['timeline' => $timeline])
+
             </div>
 
             <div class="space-y-4">

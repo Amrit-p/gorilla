@@ -10,7 +10,7 @@
     :show-back="true"
     :back-url="route('mower.index')"
 >
-    <div id="mower-alert" class="mb-4 hidden rounded-xl px-4 py-3 text-sm"></div>
+    <div id="mower-alert" class="hidden rounded-xl px-4 py-3 text-sm" style="position:fixed;top:1rem;left:50%;transform:translateX(-50%);z-index:9999;min-width:280px;max-width:90vw;"></div>
 
     <div class="space-y-4">
         <section class="rounded-2xl bg-white p-4 shadow-sm">
@@ -71,18 +71,6 @@
                         <dd class="text-right">{{ $client->customer_type }}</dd>
                     </div>
                 @endif
-                @if ($client?->parking_status)
-                    <div class="flex justify-between gap-4">
-                        <dt class="text-slate-500">Parking</dt>
-                        <dd class="text-right">{{ $client->parking_status }}</dd>
-                    </div>
-                @endif
-                @if ($client?->pet_warning)
-                    <div>
-                        <dt class="text-slate-500">Pet warning</dt>
-                        <dd class="mt-1 rounded-lg bg-amber-50 px-3 py-2 text-amber-900">{{ $client->pet_warning }}</dd>
-                    </div>
-                @endif
                 @if ($client?->additional_site_instructions)
                     <div>
                         <dt class="text-slate-500">Site instructions</dt>
@@ -91,7 +79,18 @@
                 @endif
             </dl>
         </section>
-
+        <section class="rounded-2xl bg-white p-4 shadow-sm">
+            <h2 class="text-sm font-semibold text-slate-900">Last visit instructions</h2>
+            @if ($lastRemark)
+                <p class="mt-2 text-sm text-slate-800 whitespace-pre-wrap">{{ $lastRemark->description }}</p>
+                <p class="mt-2 text-xs text-slate-400">
+                    Left by {{ $lastRemark->user?->name ?: 'Unknown' }}
+                    &mdash; {{ $lastRemark->created_at->format('M j, Y g:i A') }}
+                </p>
+            @else
+                <p class="mt-2 text-sm text-slate-400">No instructions from previous visit.</p>
+            @endif
+        </section>
         <section class="rounded-2xl bg-white p-4 shadow-sm">
             <h2 class="text-sm font-semibold text-slate-900">Location</h2>
             <p class="mt-2 text-sm text-slate-800">{{ $job->client_address ?: $client?->address }}</p>
@@ -118,15 +117,15 @@
                         <option value="{{ $status }}" @selected($job->payment_status === $status)>{{ $status }}</option>
                     @endforeach
                 </select>
-                <div id="mower-payment-reason-wrap" class="{{ $job->payment_status === 'Pending' ? '' : 'hidden' }}">
-                    <label for="mower-payment-reason" class="mb-1 block text-sm text-slate-600">Pending reason</label>
+                <div id="mower-payment-reason-wrap" class="{{ in_array($job->payment_status, ['Pending', 'Partial']) ? '' : 'hidden' }}">
+                    <label for="mower-payment-reason" class="mb-1 block text-sm text-slate-600">Reason</label>
                     <input
                         type="text"
                         id="mower-payment-reason"
                         maxlength="255"
                         value="{{ $job->payment_pending_reason }}"
                         class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base"
-                        placeholder="Why is payment pending?"
+                        placeholder="Why is payment pending or partial?"
                     >
                 </div>
                 <button type="button" id="mower-save-payment" class="mower-touch w-full rounded-xl bg-slate-800 px-4 py-3 text-sm font-semibold text-white">
@@ -157,9 +156,9 @@
         <section class="rounded-2xl bg-white p-4 shadow-sm">
             <h2 class="text-sm font-semibold text-slate-900">Before photos</h2>
             <x-jobs.image-gallery :images="$beforeImages" gallery-id="mower-before-gallery" kind="before" />
-            <label class="mower-touch mt-3 flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-600">
+            <label id="mower-before-label" class="mower-touch mt-3 flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-600">
                 <input type="file" id="mower-before-input" accept="image/jpeg,image/png,image/webp,image/gif" capture="environment" multiple class="hidden">
-                <span class="font-medium text-emerald-700">Add before photos</span>
+                <span id="mower-before-upload-text" class="font-medium text-emerald-700">Add before photos</span>
                 <span class="mt-1 text-xs">JPEG, PNG, WebP — max 10MB each</span>
             </label>
         </section>
@@ -167,16 +166,34 @@
         <section class="rounded-2xl bg-white p-4 shadow-sm">
             <h2 class="text-sm font-semibold text-slate-900">After photos</h2>
             <x-jobs.image-gallery :images="$afterImages" gallery-id="mower-after-gallery" kind="after" />
-            <label class="mower-touch mt-3 flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-600">
+            <label id="mower-after-label" class="mower-touch mt-3 flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-600">
                 <input type="file" id="mower-after-input" accept="image/jpeg,image/png,image/webp,image/gif" capture="environment" multiple class="hidden">
-                <span class="font-medium text-emerald-700">Add after photos</span>
+                <span id="mower-after-upload-text" class="font-medium text-emerald-700">Add after photos</span>
                 <span class="mt-1 text-xs">Compressed on upload</span>
             </label>
         </section>
+        <section class="rounded-2xl bg-white p-4 shadow-sm">
+            <h2 class="text-sm font-semibold text-slate-900">Next visit instructions</h2>
+            <p class="mt-1 text-xs text-slate-500">Next visit instructions given by the customer.</p>
+            <div class="mt-3 space-y-3">
+                <textarea
+                    id="mower-remark-text"
+                    rows="4"
+                    maxlength="1000"
+                    class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base resize-none"
+                    placeholder="e.g. Gate code is 1234, dog is friendly, avoid the rose bed..."
+                ></textarea>
+                <button type="button" id="mower-save-remark" class="mower-touch w-full rounded-xl bg-emerald-700 px-4 py-3 text-sm font-semibold text-white">
+                    Save instructions
+                </button>
+            </div>
+        </section>
+    </div>
+
     </div>
 
     @push('scripts')
-        <script src="{{ asset('js/mower-dashboard.js') }}"></script>
+        <script src="{{ asset('js/mower-dashboard.js') }}?v={{ filemtime(public_path('js/mower-dashboard.js')) }}"></script>
         <script>
             window.mowerRoutes = { index: @json(route('mower.index')) };
             window.mowerJobRoutes = {
@@ -187,6 +204,7 @@
                 after: @json(route('mower.jobs.images.after', $job)),
                 deleteBeforeTemplate: @json(route('mower.jobs.images.before.destroy', [$job, '__IMAGE__'])),
                 deleteAfterTemplate: @json(route('mower.jobs.images.after.destroy', [$job, '__IMAGE__'])),
+                remark: @json(route('mower.jobs.remark.store', $job)),
             };
         </script>
     @endpush

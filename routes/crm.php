@@ -159,6 +159,7 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
         Route::get('/admin/jobs/create', [JobManagementController::class, 'create'])->name('admin.jobs.create');
         Route::get('/admin/jobs/mower-suggestions', [JobManagementController::class, 'mowerSuggestions'])->name('admin.jobs.mower-suggestions');
         Route::get('/admin/jobs/mower-workloads', [JobManagementController::class, 'mowerWorkloads'])->name('admin.jobs.mower-workloads');
+        Route::get('/admin/jobs/client-remarks', [JobManagementController::class, 'clientRemarks'])->name('admin.jobs.client-remarks');
         Route::post('/admin/jobs', [JobManagementController::class, 'store'])->name('admin.jobs.store');
         Route::get('/admin/jobs/{job}/edit', [JobManagementController::class, 'edit'])->name('admin.jobs.edit');
         Route::patch('/admin/jobs/{job}', [JobManagementController::class, 'update'])->name('admin.jobs.update');
@@ -192,6 +193,7 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
             Route::post('/jobs/{job}/images/after', [MowerDashboardController::class, 'uploadAfter'])->name('jobs.images.after');
             Route::delete('/jobs/{job}/images/before/{imageId}', [MowerDashboardController::class, 'deleteBefore'])->name('jobs.images.before.destroy');
             Route::delete('/jobs/{job}/images/after/{imageId}', [MowerDashboardController::class, 'deleteAfter'])->name('jobs.images.after.destroy');
+            Route::post('/jobs/{job}/remark', [MowerDashboardController::class, 'storeRemark'])->name('jobs.remark.store');
         });
     });
 

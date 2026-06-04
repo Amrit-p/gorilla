@@ -6,6 +6,7 @@ use App\Enums\JobImageKind;
 use App\Enums\JobOperationalPaymentStatus;
 use App\Enums\JobWorkflowStatus;
 use App\Models\Job;
+use App\Models\JobLevel;
 use App\Models\User;
 use App\Support\CrmRoles;
 use Illuminate\Http\UploadedFile;
@@ -24,7 +25,10 @@ class MowerDashboardService
             return;
         }
 
-        if (! $job->assignedEmployees()->where('users.id', $mower->id)->exists()) {
+        $isAssigned = $job->assignedEmployees()->where('users.id', $mower->id)->exists()
+            || (int) $job->done_by_user_id === $mower->id;
+
+        if (! $isAssigned) {
             abort(403, 'This job is not assigned to you.');
         }
     }
@@ -52,7 +56,10 @@ class MowerDashboardService
             ->with([
                 'client:id,customer_unique_id,name,phone,email,address',
             ])
-            ->whereHas('assignedEmployees', fn ($q) => $q->where('users.id', $mower->id));
+            ->where(function ($q) use ($mower) {
+                $q->whereHas('assignedEmployees', fn ($q) => $q->where('users.id', $mower->id))
+                  ->orWhere('done_by_user_id', $mower->id);
+            });
 
         $today = now()->toDateString();
 
@@ -61,14 +68,16 @@ class MowerDashboardService
                 ->where('status', '!=', JobWorkflowStatus::COMPLETED->value),
             'completed' => $query->where('status', JobWorkflowStatus::COMPLETED->value),
             'hold' => $query->where('status', JobWorkflowStatus::HOLD->value),
+            'today-special' => $query->whereDate('scheduled_date', $today)
+                ->whereHas('jobLevel', fn ($q) => $q->where('name', 'Special')),
+            'today' => $query->whereDate('scheduled_date', $today),
             default => $query->whereDate('scheduled_date', '<=', $today)
                 ->whereNotIn('status', [JobWorkflowStatus::COMPLETED->value]),
         };
-
         return $query
-            ->orderBy('scheduled_date')
-            ->orderBy('route_sequence')
-            ->orderBy('scheduled_time')
+            ->orderByRaw("ISNULL(numeric_priority) DESC, numeric_priority DESC")
+            ->orderBy('scheduled_date', 'desc')
+            ->orderBy('scheduled_time', 'desc')
             ->get();
     }
 
@@ -116,9 +125,9 @@ class MowerDashboardService
         $this->assertAssigned($mower, $job);
 
         $job->payment_status = $data['payment_status'];
-        $job->payment_pending_reason = $data['payment_status'] === JobOperationalPaymentStatus::PENDING->value
-            ? ($data['payment_pending_reason'] ?? null)
-            : null;
+        $isPartial = $data['payment_status'] === JobOperationalPaymentStatus::PARTIAL->value;
+        $needsReason = $isPartial || $data['payment_status'] === JobOperationalPaymentStatus::PENDING->value;
+        $job->payment_pending_reason = $needsReason ? ($data['payment_pending_reason'] ?? null) : null;
         $job->save();
 
         $this->activityLogService->log($mower, 'mower.payment_updated', 'Mower updated job payment status.', [

@@ -21,10 +21,10 @@
             <p class="mt-1 text-lg font-semibold text-slate-900">{{ now()->format('l, M j') }}</p>
         </div>
 
-        <div id="mower-alert" class="hidden rounded-xl px-4 py-3 text-sm"></div>
+        <div id="mower-alert" class="hidden rounded-xl px-4 py-3 text-sm" style="position:fixed;top:1rem;left:50%;transform:translateX(-50%);z-index:9999;min-width:280px;max-width:90vw;"></div>
 
         <div class="flex gap-2 overflow-x-auto pb-1">
-            @foreach (['today' => 'Today', 'upcoming' => 'Upcoming', 'completed' => 'Done', 'hold' => 'Hold'] as $key => $label)
+            @foreach ($listScopes as $key => $label)
                 <button
                     type="button"
                     data-scope="{{ $key }}"
@@ -41,7 +41,7 @@
     </div>
 
     @push('scripts')
-        <script src="{{ asset('js/mower-dashboard.js') }}"></script>
+        <script src="{{ asset('js/mower-dashboard.js') }}?v={{ filemtime(public_path('js/mower-dashboard.js')) }}"></script>
         <script>
             window.mowerRoutes = { index: @json(route('mower.index')) };
         </script>
