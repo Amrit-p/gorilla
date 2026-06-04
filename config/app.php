@@ -14,7 +14,7 @@ return [
     */
 
     'name' => env('APP_NAME', 'Laravel'),
-
+    'website_url' => env('APP_WEBSITE_URL', '#'),
     /*
     |--------------------------------------------------------------------------
     | Application Environment

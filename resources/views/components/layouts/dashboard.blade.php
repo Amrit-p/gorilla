@@ -45,6 +45,29 @@
                             @endif
                         </div>
                         <div class="flex items-center gap-2">
+                            <a
+                                href="{{ config('app.website_url') }}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="inline-flex items-center gap-2 rounded-md border border-slate-300 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                            >
+                                Website
+
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke-width="2"
+                                    stroke="currentColor"
+                                    class="h-4 w-4"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        d="M13.5 6H18m0 0v4.5M18 6l-7.5 7.5M7.5 7.5h3m-6 3v6a1.5 1.5 0 001.5 1.5h6a1.5 1.5 0 001.5-1.5v-6"
+                                    />
+                                </svg>
+                            </a>
                             <a href="{{ route('notifications.index') }}" class="relative rounded-md border border-slate-300 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50">
                                 Notifications
                                 @if (($unreadNotificationCount ?? 0) > 0)
