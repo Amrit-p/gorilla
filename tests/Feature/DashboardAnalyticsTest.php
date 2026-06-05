@@ -76,7 +76,7 @@ class DashboardAnalyticsTest extends TestCase
             ->assertOk()
             ->assertSee('Lead conversion rate', false)
             ->assertSee('New leads', false)
-            ->assertSee('Mature leads', false)
+            ->assertSee('Follow up', false)
             ->assertSee('Lead pipeline', false);
     }
 

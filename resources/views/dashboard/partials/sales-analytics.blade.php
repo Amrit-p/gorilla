@@ -3,7 +3,7 @@
     $charts = $analytics['charts'] ?? [];
 @endphp
 
-<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
     <x-dashboard.stat-card
         :label="$cards['conversion_rate']['label']"
         :value="$cards['conversion_rate']['value']"
@@ -15,12 +15,6 @@
         :value="$cards['new_leads']['value']"
         :subtitle="$cards['new_leads']['subtitle']"
         :accent="$cards['new_leads']['accent']"
-    />
-    <x-dashboard.stat-card
-        :label="$cards['mature_leads']['label']"
-        :value="$cards['mature_leads']['value']"
-        :subtitle="$cards['mature_leads']['subtitle']"
-        :accent="$cards['mature_leads']['accent']"
     />
     <x-dashboard.stat-card
         :label="$cards['follow_up']['label']"
@@ -41,7 +35,7 @@
     />
     <x-dashboard.chart-panel
         title="Conversion activity"
-        subtitle="New vs mature/won — last 14 days"
+        subtitle="New vs won — last 14 days"
         chart-id="sales-conversion-chart"
         type="line"
         :labels="$charts['conversion_trend']['labels'] ?? []"
