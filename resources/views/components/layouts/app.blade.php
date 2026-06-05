@@ -177,7 +177,7 @@
             padding: 0.375rem;
             min-width: 180px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-            z-index: 9999;
+            z-index: 999999;
             transition: none !important;
         }
         .sidebar-flyout-title {

@@ -174,6 +174,17 @@
             }
 
             $panel.css({ top: triggerRect.top + 'px', display: 'block' }).addClass('sidebar-flyout');
+
+            // Clamp upward if flyout overflows the viewport bottom
+            var panelHeight = $panel[0].offsetHeight;
+            var margin = 8;
+            var top = triggerRect.top;
+            if (top + panelHeight + margin > window.innerHeight) {
+                top = window.innerHeight - panelHeight - margin;
+            }
+            if (top < margin) top = margin;
+            $panel.css({ top: top + 'px' });
+
             $activeFlyout = $panel;
         }
 
