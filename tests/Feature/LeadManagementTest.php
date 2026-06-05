@@ -111,7 +111,7 @@ class LeadManagementTest extends TestCase
         $lead = Lead::query()->create($this->validLeadPayload());
 
         $this->actingAs($this->admin)
-            ->patchJson(route('admin.leads.status.update', $lead), ['status' => LeadStatus::MATURE->value])
+            ->patchJson(route('admin.leads.status.update', $lead), ['status' => LeadStatus::WON->value])
             ->assertOk();
 
         $this->actingAs($this->admin)
