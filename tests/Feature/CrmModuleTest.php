@@ -11,8 +11,8 @@ use App\Enums\JobOperationalPaymentMode;
 use App\Enums\JobOperationalPaymentStatus;
 use App\Enums\LeadJobType;
 use App\Enums\LeadPaymentMode;
-use App\Enums\LeadReCompletionDays;
 use App\Enums\LeadStatus;
+use App\Models\Recurrence;
 use App\Enums\LeadWeedSpray;
 use App\Models\Client;
 use App\Models\Job;
@@ -22,6 +22,7 @@ use App\Enums\LeadPaymentStatus;
 use App\Models\EquipmentType;
 use App\Support\ServiceTypes;
 use Database\Seeders\MasterCatalogSeeder;
+use Database\Seeders\RecurrenceSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -37,6 +38,7 @@ class CrmModuleTest extends TestCase
         parent::setUp();
         $this->seed(RoleAndPermissionSeeder::class);
         $this->seed(MasterCatalogSeeder::class);
+        $this->seed(RecurrenceSeeder::class);
         $this->admin = User::query()->where('email', 'admin@mowingcrm.test')->firstOrFail();
     }
 
@@ -184,7 +186,7 @@ class CrmModuleTest extends TestCase
             'service_types' => [ServiceTypes::all()[0]],
             'weed_spray' => LeadWeedSpray::NO->value,
             'equipment_type_id' => EquipmentType::query()->where('is_active', true)->value('id'),
-            're_completion_days' => LeadReCompletionDays::DAYS_14->value,
+            'recurrence_id' => Recurrence::query()->where('is_active', true)->value('id'),
             'job_type' => LeadJobType::REGULAR->value,
             'charges' => '50.00',
             'mobile_number' => '555-0100',
@@ -208,7 +210,7 @@ class CrmModuleTest extends TestCase
             'address' => '456 Client Ave',
             'service_types' => [collect(ServiceTypes::all())->first(fn ($s) => str_contains($s, 'Cut')) ?? ServiceTypes::all()[0]],
             'weed_spray' => LeadWeedSpray::YES->value,
-            're_completion_days' => LeadReCompletionDays::DAYS_21->value,
+            'recurrence_id' => Recurrence::query()->where('is_active', true)->value('id'),
             'job_type' => LeadJobType::REGULAR->value,
             'safety_concerns' => ['Pet'],
             'charges' => '75.00',
