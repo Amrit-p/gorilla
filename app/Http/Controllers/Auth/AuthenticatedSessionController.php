@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Services\Auth\AuthService;
+use App\Support\CrmRoles;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -35,7 +36,7 @@ class AuthenticatedSessionController extends Controller
 
         $user = auth()->user();
 
-        if ($user->hasRole('mower')) {
+        if ($user->hasRole(CrmRoles::MOWER)) {
             return redirect()->intended(route('mower.index'));
         }
 
