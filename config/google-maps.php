@@ -11,4 +11,10 @@ return [
 
     /** Google Maps JS API libraries to load (Places for autocomplete). */
     'libraries' => ['places'],
+
+    /**
+     * Map ID from Google Cloud Console (required for vector maps + POI hiding via featureLayer).
+     * Set GOOGLE_MAPS_MAP_ID in .env and enable vector rendering + POI feature layer in Cloud Console.
+     */
+    'map_id' => env('GOOGLE_MAPS_MAP_ID', ''),
 ];

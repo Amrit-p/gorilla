@@ -60,10 +60,13 @@ final class GoogleMapsSettings
      */
     public static function loaderConfig(): array
     {
+        $mapId = trim((string) config('google-maps.map_id', ''));
+
         return [
             'enabled' => self::hasApiKey(),
             'apiKey' => self::apiKey(),
             'libraries' => config('google-maps.libraries', ['places']),
+            'mapId' => $mapId !== '' ? $mapId : null,
         ];
     }
 

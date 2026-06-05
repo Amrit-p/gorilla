@@ -34,8 +34,10 @@ window.crmInitGoogleJobsMap = window.crmInitJobsMap = function (mapConfig) {
                 mapTypeControl: false,
                 fullscreenControl: false,
                 streetViewControl: false,
+                clickableIcons: false,
             });
             infoWindow = new google.maps.InfoWindow({ maxWidth: 320 });
+            window.crmHideMapPois(map);
         }
 
 

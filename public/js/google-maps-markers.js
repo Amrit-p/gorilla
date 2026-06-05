@@ -30,6 +30,16 @@
         return 'DEMO_MAP_ID';
     };
 
+    window.crmHideMapPois = function (map) {
+        try {
+            if (!map || !map.getFeatureLayer) return;
+            const layer = map.getFeatureLayer(google.maps.FeatureType.POINT_OF_INTEREST);
+            if (layer) layer.style = null;
+        } catch (_) {
+            /* silently ignore — requires Cloud Console vector map + feature layer */
+        }
+    };
+
     window.crmEnsureGoogleMarkerLibrary = function () {
         return loadMarkerLibrary();
     };
