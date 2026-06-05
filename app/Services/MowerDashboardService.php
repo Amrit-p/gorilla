@@ -36,7 +36,7 @@ class MowerDashboardService
     /**
      * @return Collection<int, Job>
      */
-    public function assignedJobs(User $mower, ?string $scope = 'today'): Collection
+    public function assignedJobs(User $mower, ?string $scope = 'today', ?string $scheduleDate = null): Collection
     {
         $query = Job::query()
             ->select([
@@ -62,15 +62,18 @@ class MowerDashboardService
             });
 
         $today = now()->toDateString();
+        $targetDate = $scheduleDate ?? $today;
 
         match ($scope) {
             'upcoming' => $query->whereDate('scheduled_date', '>', $today)
                 ->where('status', '!=', JobWorkflowStatus::COMPLETED->value),
             'completed' => $query->where('status', JobWorkflowStatus::COMPLETED->value),
             'hold' => $query->where('status', JobWorkflowStatus::HOLD->value),
-            'today-special' => $query->whereDate('scheduled_date', $today)
+            'pending' => $query->whereIn('status', [JobWorkflowStatus::STARTED->value, JobWorkflowStatus::HOLD->value]),
+            'started' => $query->where('status', JobWorkflowStatus::STARTED->value),
+            'today-special' => $query->whereDate('scheduled_date', $targetDate)
                 ->whereHas('jobLevel', fn ($q) => $q->where('name', 'Special')),
-            'today' => $query->whereDate('scheduled_date', $today),
+            'today' => $query->whereDate('scheduled_date', $targetDate),
             default => $query->whereDate('scheduled_date', '<=', $today)
                 ->whereNotIn('status', [JobWorkflowStatus::COMPLETED->value]),
         };

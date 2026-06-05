@@ -3,6 +3,7 @@
 
     const INDEX_URL = (window.mowerRoutes || {}).index || '';
     let activeScope = null;
+    let activeDate = window.mowerInitialDate || new Date().toISOString().slice(0, 10);
 
     let alertTimeout = null;
 
@@ -34,11 +35,20 @@
         });
     }
 
-    function loadScope(scope) {
-        if (scope === activeScope) {
+    function updateAnalyticsCards(cards) {
+        if (!cards) return;
+        if (cards.todays_jobs)    $('#mower-analytics-completed').text(cards.todays_jobs.value    || '0');
+        if (cards.completed_hours) $('#mower-analytics-hours').text(cards.completed_hours.value || '0h');
+        if (cards.pending_jobs)   $('#mower-analytics-pending').text(cards.pending_jobs.value   || '0');
+    }
+
+    function loadScope(scope, date) {
+        const targetDate = date || activeDate;
+        if (scope === activeScope && targetDate === activeDate && !date) {
             return;
         }
         activeScope = scope;
+        activeDate = targetDate;
 
         updateScopeButtons(scope);
         hideAlert();
@@ -47,12 +57,13 @@
         $.ajax({
             url: INDEX_URL,
             method: 'GET',
-            data: { scope: scope },
+            data: { scope: scope, schedule_date: targetDate },
             dataType: 'json',
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
         })
             .done(function (response) {
                 $('#mower-job-list').html(response.html || '');
+                updateAnalyticsCards(response.analytics || null);
             })
             .fail(function () {
                 showAlert('Failed to load jobs. Please try again.', true);
@@ -67,6 +78,15 @@
         if (scope) {
             loadScope(scope);
         }
+    });
+
+    $(document).on('change', '#mower-schedule-date', function () {
+        const date = $(this).val();
+        if (!date) return;
+        activeScope = null;
+        loadScope('today', date);
+        // Switch the Today button to active state immediately
+        updateScopeButtons('today');
     });
 
     // ─── Job detail: gallery ────────────────────────────────────────────────

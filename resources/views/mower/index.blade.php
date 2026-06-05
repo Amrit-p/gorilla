@@ -3,22 +3,27 @@
         @php $cards = $analytics['cards'] ?? []; @endphp
         <div class="grid grid-cols-3 gap-2">
             <div class="rounded-xl bg-white p-3 text-center shadow-sm">
-                <p class="text-[10px] font-medium uppercase tracking-wide text-slate-500">Today</p>
-                <p class="mt-1 text-xl font-bold text-emerald-800">{{ $cards['todays_jobs']['value'] ?? '0' }}</p>
+                <p class="text-[10px] font-medium uppercase tracking-wide text-slate-500">Completed</p>
+                <p id="mower-analytics-completed" class="mt-1 text-xl font-bold text-emerald-800">{{ $cards['todays_jobs']['value'] ?? '0' }}</p>
             </div>
             <div class="rounded-xl bg-white p-3 text-center shadow-sm">
                 <p class="text-[10px] font-medium uppercase tracking-wide text-slate-500">Hours</p>
-                <p class="mt-1 text-xl font-bold text-sky-800">{{ $cards['completed_hours']['value'] ?? '0h' }}</p>
+                <p id="mower-analytics-hours" class="mt-1 text-xl font-bold text-sky-800">{{ $cards['completed_hours']['value'] ?? '0h' }}</p>
             </div>
             <div class="rounded-xl bg-white p-3 text-center shadow-sm">
-                <p class="text-[10px] font-medium uppercase tracking-wide text-slate-500">Pending</p>
-                <p class="mt-1 text-xl font-bold text-amber-800">{{ $cards['pending_jobs']['value'] ?? '0' }}</p>
+                <p class="text-[10px] font-medium uppercase tracking-wide text-slate-500">Total Pending</p>
+                <p id="mower-analytics-pending" class="mt-1 text-xl font-bold text-amber-800">{{ $cards['pending_jobs']['value'] ?? '0' }}</p>
             </div>
         </div>
 
         <div class="rounded-2xl bg-white p-4 shadow-sm">
             <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Assigned to you</p>
-            <p class="mt-1 text-lg font-semibold text-slate-900">{{ now()->format('l, M j') }}</p>
+            <input
+                type="date"
+                id="mower-schedule-date"
+                value="{{ $scheduleDate }}"
+                class="mt-1 w-full rounded-lg border-0 bg-transparent p-0 text-lg font-semibold text-slate-900 focus:ring-0"
+            >
         </div>
 
         <div id="mower-alert" class="hidden rounded-xl px-4 py-3 text-sm" style="position:fixed;top:1rem;left:50%;transform:translateX(-50%);z-index:9999;min-width:280px;max-width:90vw;"></div>
@@ -44,6 +49,7 @@
         <script src="{{ asset('js/mower-dashboard.js') }}?v={{ filemtime(public_path('js/mower-dashboard.js')) }}"></script>
         <script>
             window.mowerRoutes = { index: @json(route('mower.index')) };
+            window.mowerInitialDate = @json($scheduleDate);
         </script>
     @endpush
 </x-layouts.mower>

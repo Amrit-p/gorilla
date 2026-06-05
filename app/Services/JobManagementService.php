@@ -121,25 +121,29 @@ class JobManagementService
      * @param  array<string, mixed>  $data
      * @param  array<int, UploadedFile>  $images
      */
-    public function createJob(User $actor, array $data, array $images = []): Job
+    public function createJob(User $actor, array $data, array $images = []): Job|null
     {
-        $employeeIds = $data['employee_ids'] ?? [];
-        unset($data['employee_ids']);
+        try {
+            DB::beginTransaction();
+            $employeeIds = $data['employee_ids'] ?? [];
+            unset($data['employee_ids']);
 
-        $data['created_by'] = $actor->id;
-        $job = Job::query()->create($this->prepareJobData($data, $images));
-        GeocodeJobAddressJob::dispatch($job->id);
+            $data['created_by'] = $actor->id;
+            $job = Job::query()->create($this->prepareJobData($data, $images));
+            GeocodeJobAddressJob::dispatch($job->id);
 
-        if ($employeeIds !== []) {
-            if (! $job->done_by_user_id && count($employeeIds) === 1) {
-                $job->done_by_user_id = (int) $employeeIds[0];
+            if (is_array($employeeIds)) {
+                $this->assignEmployees($actor, $job, $job->done_by_user_id, $employeeIds, false);
             }
-            $this->assignEmployees($actor, $job, $employeeIds, false);
+
+            $this->activityLogService->log($actor, 'job.created', 'Job created.', ['job_id' => $job->id]);
+            DB::commit();
+            return $job->fresh(['client', 'assignedEmployees', 'doneByUser']);
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            report($th);
+            return null;
         }
-
-        $this->activityLogService->log($actor, 'job.created', 'Job created.', ['job_id' => $job->id]);
-
-        return $job->fresh(['client', 'assignedEmployees', 'doneByUser']);
     }
 
     /**
@@ -148,20 +152,28 @@ class JobManagementService
      */
     public function updateJob(User $actor, Job $job, array $data, array $images = []): Job
     {
-        $employeeIds = $data['employee_ids'] ?? null;
-        unset($data['employee_ids']);
+        try {
+            DB::beginTransaction();
+            $employeeIds = $data['employee_ids'] ?? null;
+            unset($data['employee_ids']);
 
-        $job->fill($this->prepareJobData($data, $images, $job));
-        $job->save();
+            $job->fill($this->prepareJobData($data, $images, $job));
+            $job->save();
 
-        if (is_array($employeeIds)) {
-            $this->assignEmployees($actor, $job, $job->done_by_user_id, $employeeIds, false);
+            if (is_array($employeeIds)) {
+                $this->assignEmployees($actor, $job, $job->done_by_user_id, $employeeIds, false);
+            }
+
+            GeocodeJobAddressJob::dispatch($job->id);
+            $this->activityLogService->log($actor, 'job.updated', 'Job updated.', ['job_id' => $job->id]);
+
+            DB::commit();
+            return $job->fresh(['client', 'assignedEmployees', 'doneByUser']);
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            report($th);
+            return null;
         }
-
-        GeocodeJobAddressJob::dispatch($job->id);
-        $this->activityLogService->log($actor, 'job.updated', 'Job updated.', ['job_id' => $job->id]);
-
-        return $job->fresh(['client', 'assignedEmployees', 'doneByUser']);
     }
 
     public function assignEmployees(

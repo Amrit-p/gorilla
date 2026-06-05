@@ -71,12 +71,14 @@ class DashboardAnalyticsService
     /**
      * @return array<string, mixed>
      */
-    public function mower(User $mower): array
+    public function mower(User $mower, ?string $scheduleDate = null): array
     {
+        $date = $scheduleDate ?? now()->toDateString();
+
         return Cache::remember(
-            $this->cacheKey('mower.'.$mower->id),
+            $this->cacheKey('mower.'.$mower->id.'.'.$date),
             $this->ttl(),
-            fn (): array => $this->buildMowerAnalytics($mower)
+            fn (): array => $this->buildMowerAnalytics($mower, $date)
         );
     }
 
@@ -239,7 +241,7 @@ class DashboardAnalyticsService
     /**
      * @return array<string, mixed>
      */
-    private function buildMowerAnalytics(User $mower): array
+    private function buildMowerAnalytics(User $mower, string $date): array
     {
         $today = now()->toDateString();
         $weekStart = now()->startOfWeek()->toDateString();
@@ -256,9 +258,9 @@ class DashboardAnalyticsService
                 'SUM(CASE WHEN sj.scheduled_date = ? THEN 1 ELSE 0 END) as todays_jobs, '
                 .'SUM(CASE WHEN sj.scheduled_date = ? AND sj.status = ? THEN 1 ELSE 0 END) as completed_today, '
                 .'SUM(CASE WHEN sj.scheduled_date = ? AND sj.status = ? THEN COALESCE(sj.consumed_time_minutes, 0) ELSE 0 END) as minutes_today, '
-                .'SUM(CASE WHEN sj.scheduled_date <= ? AND sj.status IN (?, ?) THEN 1 ELSE 0 END) as pending_jobs, '
+                .'SUM(CASE WHEN sj.status IN (?, ?) THEN 1 ELSE 0 END) as pending_jobs, '
                 .'SUM(CASE WHEN sj.scheduled_date BETWEEN ? AND ? AND sj.status = ? THEN COALESCE(sj.consumed_time_minutes, 0) ELSE 0 END) as minutes_week',
-                [$today, $today, $completed, $today, $completed, $today, $started, $hold, $weekStart, $today, $completed]
+                [$date, $date, $completed, $date, $completed, $started, $hold, $weekStart, $today, $completed]
             )
             ->first();
 

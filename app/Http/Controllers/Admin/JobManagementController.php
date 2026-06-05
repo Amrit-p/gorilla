@@ -66,7 +66,9 @@ class JobManagementController extends Controller
             $request->validated(),
             $request->file('images', [])
         );
-
+        if (!$job) {
+            return response()->json(['message' => 'Failed to create job. Please try again.'], 500);
+        }
         if ($request->expectsJson()) {
             return response()->json([
                 'message' => 'Job created successfully.',
@@ -128,7 +130,9 @@ class JobManagementController extends Controller
             $request->validated(),
             $images
         );
-
+        if($job === null) {
+            return response()->json(['message' => 'Failed to update job. Please try again.'], 500);
+        }
         if ($request->expectsJson()) {
             return response()->json([
                 'message' => 'Job updated successfully.',

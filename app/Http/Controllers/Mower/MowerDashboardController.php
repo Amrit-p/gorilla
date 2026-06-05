@@ -36,26 +36,30 @@ class MowerDashboardController extends Controller
         $this->authorize('viewAny', Job::class);
 
         $scope = $request->string('scope')->toString() ?: 'today';
-        $jobs = $this->mowerDashboardService->assignedJobs($request->user(), $scope);
+        $scheduleDate = $request->date('schedule_date')?->toDateString() ?? now()->toDateString();
+        $jobs = $this->mowerDashboardService->assignedJobs($request->user(), $scope, $scheduleDate);
 
         if (crm_wants_partial($request)) {
-            return crm_ajax_html('mower.partials.job-list', [
-                'jobs' => $jobs,
-                'scope' => $scope,
+            $analytics = $this->dashboardAnalyticsService->mower($request->user(), $scheduleDate);
+
+            return response()->json([
+                'html' => view('mower.partials.job-list', ['jobs' => $jobs, 'scope' => $scope])->render(),
+                'analytics' => $analytics['cards'] ?? [],
             ]);
         }
 
         return view('mower.index', [
             'jobs' => $jobs,
             'scope' => $scope,
+            'scheduleDate' => $scheduleDate,
             'listScopes' => [
                 CrmConstants::MOWER_SCOPE_TODAY_SPECIAL => 'Today Special',
                 CrmConstants::MOWER_SCOPE_TODAY => 'Today',
                 CrmConstants::MOWER_SCOPE_UPCOMING => 'Upcoming',
+                CrmConstants::MOWER_SCOPE_PENDING => 'Pending',
                 CrmConstants::MOWER_SCOPE_COMPLETED => 'Done',
-                CrmConstants::MOWER_SCOPE_HOLD => 'Hold',
             ],
-            'analytics' => $this->dashboardAnalyticsService->mower($request->user()),
+            'analytics' => $this->dashboardAnalyticsService->mower($request->user(), $scheduleDate),
             'workflowStatuses' => JobWorkflowStatus::values(),
             'paymentStatuses' => JobOperationalPaymentStatus::values(),
         ]);
