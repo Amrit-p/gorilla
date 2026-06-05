@@ -144,7 +144,7 @@ class LeadManagementTest extends TestCase
         $lead = Lead::query()->create($payload);
 
         $this->actingAs($this->admin)
-            ->patchJson(route('admin.leads.status.update', $lead), ['status' => LeadStatus::MATURE->value])
+            ->patchJson(route('admin.leads.status.update', $lead), ['status' => LeadStatus::WON->value])
             ->assertOk();
 
         $this->assertSame(1, Client::query()->where('email', 'duplicate@example.com')->count());
