@@ -63,7 +63,7 @@ window.crmInitLeafletJobsMap = window.crmInitJobsMap = function (mapConfig) {
                     typeof window.crmBuildMapJobPopup === 'function'
                         ? window.crmBuildMapJobPopup(job)
                         : '<strong>Job #' + job.id + '</strong>',
-                    { maxWidth: 320 }
+                    { maxWidth: 320, closeButton: false }
                 );
                 markerLayer.addLayer(marker);
                 bounds.push([job.lat, job.lng]);

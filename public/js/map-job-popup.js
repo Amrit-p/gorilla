@@ -19,10 +19,15 @@ window.crmBuildMapJobPopup = function (job) {
     const ICON_PEOPLE   = 'M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z';
 
     return `
-<div style="width:270px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;line-height:1.5;color:#1e293b;">
+<div style="width:270px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;line-height:1.5;color:#1e293b;position:relative;">
+
+    <!-- Close button -->
+    <button onclick="window.crmCloseMapPopup(this)"
+            style="position:absolute;top:0;right:0;width:22px;height:22px;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:4px;color:#94a3b8;font-size:16px;line-height:1;padding:0;"
+            title="Close">&#x2715;</button>
 
     <!-- Header -->
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-right:20px;">
         <a href="${job.show_url}" target="_blank"
            style="font-weight:700;font-size:14px;color:#4338ca;text-decoration:none;letter-spacing:-0.01em;">
             Job #${job.id}
@@ -85,6 +90,28 @@ window.crmBuildMapJobPopup = function (job) {
     </div>
 
 </div>`;
+};
+
+/* ── hide native framework close buttons ────────────────────────── */
+
+(function () {
+    var style = document.createElement('style');
+    style.textContent = '.gm-ui-hover-effect { display: none !important; } .gm-style-iw-d, .gm-style-iw-c { overflow: hidden !important; } .leaflet-popup-content-wrapper, .leaflet-popup-content { overflow: hidden !important; } .leaflet-popup-content { margin: 12px 16px !important; }';
+    document.head.appendChild(style);
+})();
+
+/* ── popup close ────────────────────────────────────────────────── */
+
+window.crmCloseMapPopup = function (el) {
+    // Leaflet
+    var lp = el.closest('.leaflet-popup');
+    if (lp) {
+        var cb = lp.querySelector('.leaflet-popup-close-button');
+        if (cb) { cb.click(); return; }
+    }
+    // Google Maps InfoWindow
+    var gm = document.querySelector('.gm-ui-hover-effect');
+    if (gm) gm.click();
 };
 
 /* ── helpers ─────────────────────────────────────────────────────── */
