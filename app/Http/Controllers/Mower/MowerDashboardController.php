@@ -53,7 +53,7 @@ class MowerDashboardController extends Controller
             'scope' => $scope,
             'scheduleDate' => $scheduleDate,
             'listScopes' => [
-                CrmConstants::MOWER_SCOPE_TODAY_SPECIAL => 'Today Special',
+                CrmConstants::MOWER_SCOPE_TODAY_SPECIAL => 'Special Jobs',
                 CrmConstants::MOWER_SCOPE_TODAY => 'Today',
                 CrmConstants::MOWER_SCOPE_UPCOMING => 'Upcoming',
                 CrmConstants::MOWER_SCOPE_PENDING => 'Pending',
