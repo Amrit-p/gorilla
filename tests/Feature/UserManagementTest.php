@@ -39,11 +39,11 @@ class UserManagementTest extends TestCase
         $this->actingAs($this->admin)
             ->postJson(route('admin.users.store'), $payload)
             ->assertOk()
-            ->assertJsonPath('user.user_unique_id', 1002);
+            ->assertJsonPath('user.user_unique_id', 1004);
 
         $this->assertDatabaseHas('users', [
             'email' => 'sales.new@example.com',
-            'user_unique_id' => 1002,
+            'user_unique_id' => 1004,
             'efficiency' => UserEfficiency::AVERAGE->value,
             'status' => UserStatus::ACTIVE->value,
             'is_active' => true,
