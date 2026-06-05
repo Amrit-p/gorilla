@@ -15,9 +15,12 @@ use App\Models\Client;
 use App\Models\EquipmentType;
 use App\Models\Job;
 use App\Models\Lead;
+use App\Models\Recurrence;
 use App\Models\User;
 use App\Support\ServiceTypes;
+use Database\Seeders\JobLevelSeeder;
 use Database\Seeders\MasterCatalogSeeder;
+use Database\Seeders\RecurrenceSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -33,6 +36,8 @@ class CustomerManagementTest extends TestCase
         parent::setUp();
         $this->seed(RoleAndPermissionSeeder::class);
         $this->seed(MasterCatalogSeeder::class);
+        $this->seed(RecurrenceSeeder::class);
+        $this->seed(JobLevelSeeder::class);
         $this->admin = User::query()->where('email', 'admin@mowingcrm.test')->firstOrFail();
     }
 
@@ -203,6 +208,7 @@ class CustomerManagementTest extends TestCase
             'customer_type' => ClientCustomerType::HARD->value,
             'parking_status' => JobParkingStatus::EASY->value,
             'equipment_type_id' => EquipmentType::query()->where('is_active', true)->value('id'),
+            'recurrence_id' => Recurrence::query()->where('is_active', true)->value('id'),
             'additional_site_instructions' => 'Use side gate',
             'pet_warning' => 'Dog in backyard',
             'special_remarks' => 'VIP customer',
