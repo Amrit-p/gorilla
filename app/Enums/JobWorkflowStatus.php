@@ -4,6 +4,7 @@ namespace App\Enums;
 
 enum JobWorkflowStatus: string
 {
+    case PENDING = 'Pending';
     case STARTED = 'Started';
     case HOLD = 'Hold';
     case COMPLETED = 'Completed';
@@ -25,6 +26,7 @@ enum JobWorkflowStatus: string
             self::STARTED => 'info',
             self::HOLD => 'warning',
             self::COMPLETED => 'success',
+            self::PENDING => 'secondary',
         };
     }
 

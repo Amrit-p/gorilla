@@ -69,7 +69,8 @@ class MowerDashboardService
                 ->where('status', '!=', JobWorkflowStatus::COMPLETED->value),
             'completed' => $query->where('status', JobWorkflowStatus::COMPLETED->value),
             'hold' => $query->where('status', JobWorkflowStatus::HOLD->value),
-            'pending' => $query->whereIn('status', [JobWorkflowStatus::STARTED->value, JobWorkflowStatus::HOLD->value]),
+            'pending' => $query->whereIn('status', [JobWorkflowStatus::STARTED->value, JobWorkflowStatus::HOLD->value, JobWorkflowStatus::PENDING->value])
+                ->whereDate('scheduled_date', '<=', $today),
             'started' => $query->where('status', JobWorkflowStatus::STARTED->value),
             'today-special' => $query->whereDate('scheduled_date', $targetDate)
                 ->whereHas('jobLevel', fn ($q) => $q->where('name', 'Special')),

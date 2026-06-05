@@ -248,6 +248,7 @@ class DashboardAnalyticsService
         $completed = JobWorkflowStatus::COMPLETED->value;
         $started = JobWorkflowStatus::STARTED->value;
         $hold = JobWorkflowStatus::HOLD->value;
+        $pending = JobWorkflowStatus::PENDING->value;
 
         $stats = DB::table('job_user_assignments as jua')
             ->join('service_jobs as sj', function ($join): void {
@@ -258,16 +259,22 @@ class DashboardAnalyticsService
                 'SUM(CASE WHEN sj.scheduled_date = ? THEN 1 ELSE 0 END) as todays_jobs, '
                 .'SUM(CASE WHEN sj.scheduled_date = ? AND sj.status = ? THEN 1 ELSE 0 END) as completed_today, '
                 .'SUM(CASE WHEN sj.scheduled_date = ? AND sj.status = ? THEN COALESCE(sj.consumed_time_minutes, 0) ELSE 0 END) as minutes_today, '
-                .'SUM(CASE WHEN sj.status IN (?, ?) THEN 1 ELSE 0 END) as pending_jobs, '
                 .'SUM(CASE WHEN sj.scheduled_date BETWEEN ? AND ? AND sj.status = ? THEN COALESCE(sj.consumed_time_minutes, 0) ELSE 0 END) as minutes_week',
-                [$date, $date, $completed, $date, $completed, $started, $hold, $weekStart, $today, $completed]
+                [$date, $date, $completed, $date, $completed, $weekStart, $today, $completed]
             )
             ->first();
+
+        $pendingJobs = Job::query()
+            ->where(function ($q) use ($mower): void {
+                $q->whereHas('assignedEmployees', fn ($q) => $q->where('users.id', $mower->id))
+                  ->orWhere('done_by_user_id', $mower->id);
+            })
+            ->whereIn('status', [$started, $hold, $pending])
+            ->count();
 
         $todaysJobs = (int) ($stats->todays_jobs ?? 0);
         $completedToday = (int) ($stats->completed_today ?? 0);
         $completedMinutesToday = (int) ($stats->minutes_today ?? 0);
-        $pendingJobs = (int) ($stats->pending_jobs ?? 0);
         $completedWeekMinutes = (int) ($stats->minutes_week ?? 0);
 
         return [

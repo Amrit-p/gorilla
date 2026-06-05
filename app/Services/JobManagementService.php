@@ -307,7 +307,7 @@ class JobManagementService
     {
         unset($data['images']);
 
-        $data['status'] ??= JobWorkflowStatus::STARTED->value;
+        $data['status'] ??= JobWorkflowStatus::PENDING->value;
         $data['priority'] ??= 'Medium';
         $data['route_sequence'] ??= 0;
         $data['is_recurring'] ??= false;
