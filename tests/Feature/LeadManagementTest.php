@@ -10,6 +10,7 @@ use App\Enums\LeadStatus;
 use App\Enums\LeadWeedSpray;
 use App\Models\Client;
 use App\Models\EquipmentType;
+use App\Models\Job;
 use App\Models\Lead;
 use App\Models\Recurrence;
 use App\Models\User;
@@ -70,7 +71,7 @@ class LeadManagementTest extends TestCase
 
         $this->actingAs($this->admin)
             ->patchJson(route('admin.leads.status.update', $lead), [
-                'status' => LeadStatus::MATURE->value,
+                'status' => LeadStatus::WON->value,
             ])
             ->assertOk()
             ->assertJsonPath('converted', true);
@@ -78,10 +79,16 @@ class LeadManagementTest extends TestCase
         $lead->refresh();
         $this->assertTrue($lead->is_locked);
         $this->assertNotNull($lead->converted_at);
+        $client = Client::query()->where('lead_id', $lead->id)->firstOrFail();
         $this->assertDatabaseHas('clients', [
             'lead_id' => $lead->id,
             'email' => $lead->email,
             'phone' => $lead->mobile_number,
+        ]);
+        $this->assertSame(1, Job::query()->where('lead_id', $lead->id)->count());
+        $this->assertDatabaseHas('service_jobs', [
+            'lead_id'   => $lead->id,
+            'client_id' => $client->id,
         ]);
     }
 
