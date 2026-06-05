@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Enums\JobWorkflowStatus;
 use App\Models\ActivityLog;
 use App\Models\Job;
 use App\Support\QueryFilters\JobListFilter;
@@ -90,7 +91,13 @@ class JobRepository
     {
         $query = Job::query()
             ->orderByRaw('CASE WHEN numeric_priority IS NULL THEN 1 ELSE 0 END ASC, numeric_priority ASC')
-            ->orderByDesc('scheduled_date')
+            ->orderByRaw("CASE status WHEN ? THEN 1 WHEN ? THEN 2 WHEN ? THEN 3 WHEN ? THEN 4 ELSE 5 END ASC", [
+                JobWorkflowStatus::PENDING->value,
+                JobWorkflowStatus::STARTED->value,
+                JobWorkflowStatus::HOLD->value,
+                JobWorkflowStatus::COMPLETED->value,
+            ])
+            ->orderBy('scheduled_date')
             ->orderBy('scheduled_time');
 
         $this->jobListFilter->apply($query, $filters);
