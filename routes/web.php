@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/clear-cache', function () {
-    dd(env('GOOGLE_MAPS_API_KEY'));
     Artisan::call('cache:clear');
     Artisan::call('config:clear');
     Artisan::call('route:clear');
