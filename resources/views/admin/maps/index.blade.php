@@ -46,6 +46,7 @@
         <script src="{{ asset('js/google-jobs-map.js') }}?v={{ @filemtime(public_path('js/google-jobs-map.js')) ?: 1 }}"></script>
         <script>window.crmInitJobsMap(window.crmJobsMapConfig);</script>
     @else
+        <span id="map-provider-label" class="hidden">OpenStreetMap fallback</span>
         <link rel="stylesheet" href="{{ asset('js/leaflet/leaflet.css') }}">
         <link rel="stylesheet" href="{{ asset('js/leaflet/MarkerCluster.css') }}">
         <link rel="stylesheet" href="{{ asset('js/leaflet/MarkerCluster.Default.css') }}">
