@@ -4,13 +4,19 @@
  * Handles async API loading internally.
  */
 window.crmInitGoogleJobsMap = window.crmInitJobsMap = function (mapConfig) {
+    /* Stub crmMapLoad immediately so calls made before Google Maps finishes loading
+       are captured and replayed once the real implementation is ready. */
+    var _pendingParams;
+    window.crmMapLoad = function (params) {
+        _pendingParams = params || {};
+    };
+
     window.crmLoadGoogleMaps(mapConfig.google, function () {
         'use strict';
 
         var map;
         var infoWindow;
         var markers = [];
-        var selectedJobIds = new Set();
 
 
         function clearMarkers() {
@@ -33,7 +39,7 @@ window.crmInitGoogleJobsMap = window.crmInitJobsMap = function (mapConfig) {
         }
 
 
-        window.crmMapLoad = function (params) {
+        window.crmMapLoad = function (params, preserveView) {
             $.get(mapConfig.jobsUrl, params || {}, function (response) {
                 clearMarkers();
 
@@ -61,14 +67,6 @@ window.crmInitGoogleJobsMap = window.crmInitJobsMap = function (mapConfig) {
 
                             infoWindow.setContent(html);
                             infoWindow.open({ map: map, anchor: marker });
-
-                            if (selectedJobIds.has(job.id)) {
-                                selectedJobIds.delete(job.id);
-                                window.crmSetAdvancedMarkerColor(marker, job.equipment_color || '#64748b');
-                            } else {
-                                selectedJobIds.add(job.id);
-                                window.crmSetAdvancedMarkerColor(marker, '#1d4ed8');
-                            }
                         });
 
                         markers.push(marker);
@@ -94,7 +92,7 @@ window.crmInitGoogleJobsMap = window.crmInitJobsMap = function (mapConfig) {
                             : '<strong>Job #' + highlightData.job.id + '</strong>';
                         infoWindow.setContent(html);
                         infoWindow.open({ map: map, anchor: highlightData.marker });
-                    } else if (jobs.length > 0) {
+                    } else if (!preserveView && jobs.length > 0) {
                         map.fitBounds(bounds, 40);
                     }
 
@@ -107,5 +105,10 @@ window.crmInitGoogleJobsMap = window.crmInitJobsMap = function (mapConfig) {
 
 
         initMap();
+
+        /* Replay any call that arrived before Google Maps was ready */
+        if (_pendingParams !== undefined) {
+            window.crmMapLoad(_pendingParams);
+        }
     });
 };

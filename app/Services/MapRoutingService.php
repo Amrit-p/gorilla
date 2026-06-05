@@ -70,6 +70,7 @@ class MapRoutingService
                 'lead.equipmentType:id,name,color_code',
                 'equipmentType:id,name,color_code',
                 'assignedEmployees:id,name',
+                'doneByUser:id,name',
             ]);
 
         (new JobListFilter)->apply($query, $filters);
@@ -100,7 +101,14 @@ class MapRoutingService
                     ?? $job->client?->equipmentType?->color_code
                     ?? $job->lead?->equipmentType?->color_code
                     ?? '#64748b',
-                'assigned_employees' => $job->assignedEmployees->pluck('name')->values()->all(),
+                'assigned_employees' => collect([$job->doneByUser?->name])
+                    ->filter()
+                    ->concat($job->assignedEmployees->pluck('name'))
+                    ->unique()
+                    ->values()
+                    ->all(),
+                'done_by_user_id'   => $job->done_by_user_id,
+                'helper_employee_ids' => $job->assignedEmployees->pluck('id')->map('strval')->values()->all(),
             ];
         })->filter(fn (array $item): bool => ! is_null($item['lat']) && ! is_null($item['lng']))->values();
     }

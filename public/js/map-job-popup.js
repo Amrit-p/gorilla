@@ -79,7 +79,7 @@ window.crmBuildMapJobPopup = function (job) {
         <a href="${job.show_url}" target="_blank" style="${_btn('#475569', false)}">View</a>
         ${job.edit_url ? `<a href="${job.edit_url}" target="_blank" style="${_btn('#0f766e', false)}">Edit</a>` : ''}
         ${canManage ? `
-        <button class="assign-job" data-id="${job.id}" style="${_btn('#4f46e5', true)}">Assign</button>
+        <button class="assign-job" data-id="${job.id}" data-done-by="${job.done_by_user_id || ''}" data-employee-ids='${JSON.stringify(job.helper_employee_ids || [])}' style="${_btn('#4f46e5', true)}">Assign</button>
         <button class="status-job" data-id="${job.id}" style="${_btn('#0891b2', true)}">Status</button>
         <button class="delete-job" data-id="${job.id}" style="${_btn('#dc2626', true)}">Delete</button>` : ''}
     </div>
