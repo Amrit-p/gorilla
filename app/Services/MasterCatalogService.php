@@ -80,7 +80,7 @@ class MasterCatalogService
             'sort_order' => (int) ($data['sort_order'] ?? ($existing?->sort_order ?? 0)),
         ];
 
-        if ($catalog === MasterCatalog::EQUIPMENT_TYPES) {
+        if ($catalog === MasterCatalog::EQUIPMENT_TYPES || $catalog === MasterCatalog::JOB_LEVELS) {
             $payload['color_code'] = $this->normalizeColorCode((string) ($data['color_code'] ?? '#64748b'));
         }
 
