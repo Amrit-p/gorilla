@@ -63,9 +63,11 @@ window.crmBuildMapJobPopup = function (job) {
 
     <!-- Equipment -->
     ${job.equipment_name ? `
-    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
-        <span style="display:inline-block;width:10px;height:10px;border-radius:50%;flex-shrink:0;
-                     background:${equipColor};box-shadow:0 0 0 2px #fff,0 0 0 3px ${equipColor}44;"></span>
+    <div style="display:flex;align-items:center;gap:5px;margin-bottom:6px;">
+        <span style="display:inline-flex;width:14px;height:14px;flex-shrink:0;align-items:center;justify-content:center;">
+            <span style="display:inline-block;width:10px;height:10px;border-radius:50%;
+                         background:${equipColor};box-shadow:0 0 0 2px #fff,0 0 0 3px ${equipColor}44;"></span>
+        </span>
         <span style="color:#475569;font-size:12px;">${_esc(job.equipment_name)}</span>
     </div>` : ''}
 
@@ -123,14 +125,14 @@ function _esc(str) {
 }
 
 function _btn(bg, isFill) {
-    const base = 'display:inline-flex;align-items:center;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:none;text-decoration:none;transition:opacity .15s;';
+    const base = 'display:inline-flex;align-items:center;justify-content:center;height:26px;padding:0 9px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;text-decoration:none;transition:opacity .15s;box-sizing:border-box;';
     return isFill
-        ? `${base}background:${bg};color:#fff;`
+        ? `${base}background:${bg};color:#fff;border:1px solid transparent;`
         : `${base}background:#f1f5f9;color:${bg};border:1px solid #e2e8f0;`;
 }
 
 function _icon(path, color) {
-    return `<svg style="width:14px;height:14px;flex-shrink:0;margin-top:1px;" viewBox="0 0 24 24" fill="${color}"><path d="${path}"/></svg>`;
+    return `<svg style="width:14px;height:14px;flex-shrink:0;" viewBox="0 0 24 24" fill="${color}"><path d="${path}"/></svg>`;
 }
 
 function _formatDate(str) {
