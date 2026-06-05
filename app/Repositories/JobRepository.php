@@ -90,15 +90,15 @@ class JobRepository
     private function baseListQuery(array $filters): \Illuminate\Database\Eloquent\Builder
     {
         $query = Job::query()
+            ->orderBy('scheduled_date', 'desc')
+            ->orderBy('scheduled_time', 'desc')
             ->orderByRaw('CASE WHEN numeric_priority IS NULL THEN 1 ELSE 0 END ASC, numeric_priority ASC')
             ->orderByRaw("CASE status WHEN ? THEN 1 WHEN ? THEN 2 WHEN ? THEN 3 WHEN ? THEN 4 ELSE 5 END ASC", [
                 JobWorkflowStatus::PENDING->value,
                 JobWorkflowStatus::STARTED->value,
                 JobWorkflowStatus::HOLD->value,
                 JobWorkflowStatus::COMPLETED->value,
-            ])
-            ->orderBy('scheduled_date')
-            ->orderBy('scheduled_time');
+            ]);
 
         $this->jobListFilter->apply($query, $filters);
 

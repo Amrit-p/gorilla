@@ -79,6 +79,8 @@ class MowerDashboardService
                 ->whereNotIn('status', [JobWorkflowStatus::COMPLETED->value]),
         };
         return $query
+            ->orderBy('scheduled_date', 'desc')
+            ->orderBy('scheduled_time', 'desc')
             ->orderByRaw('CASE WHEN numeric_priority IS NULL THEN 1 ELSE 0 END ASC, numeric_priority ASC')
             ->orderByRaw("CASE status WHEN ? THEN 1 WHEN ? THEN 2 WHEN ? THEN 3 WHEN ? THEN 4 ELSE 5 END ASC", [
                 JobWorkflowStatus::PENDING->value,
@@ -86,8 +88,6 @@ class MowerDashboardService
                 JobWorkflowStatus::HOLD->value,
                 JobWorkflowStatus::COMPLETED->value,
             ])
-            ->orderBy('scheduled_date')
-            ->orderBy('scheduled_time')
             ->get();
     }
 
