@@ -28,12 +28,12 @@
 
         <div id="mower-alert" class="hidden rounded-xl px-4 py-3 text-sm" style="position:fixed;top:1rem;left:50%;transform:translateX(-50%);z-index:9999;min-width:280px;max-width:90vw;"></div>
 
-        <div class="flex gap-2 overflow-x-auto pb-1">
+        <div class="grid grid-cols-3 gap-2">
             @foreach ($listScopes as $key => $label)
                 <button
                     type="button"
                     data-scope="{{ $key }}"
-                    class="mower-scope mower-touch shrink-0 rounded-full px-4 py-2 text-sm font-medium {{ $scope === $key ? 'bg-emerald-700 text-white' : 'bg-white text-slate-600 shadow-sm' }}"
+                    class="mower-scope mower-touch rounded-full px-2 py-2 text-sm font-medium text-center {{ $scope === $key ? 'bg-emerald-700 text-white' : 'bg-white text-slate-600 shadow-sm' }}"
                 >
                     {{ $label }}
                 </button>
