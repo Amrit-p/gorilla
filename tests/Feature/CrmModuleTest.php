@@ -20,7 +20,9 @@ use App\Models\Lead;
 use App\Models\User;
 use App\Enums\LeadPaymentStatus;
 use App\Models\EquipmentType;
+use App\Models\JobLevel;
 use App\Support\ServiceTypes;
+use Database\Seeders\JobLevelSeeder;
 use Database\Seeders\MasterCatalogSeeder;
 use Database\Seeders\RecurrenceSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
@@ -39,6 +41,8 @@ class CrmModuleTest extends TestCase
         $this->seed(RoleAndPermissionSeeder::class);
         $this->seed(MasterCatalogSeeder::class);
         $this->seed(RecurrenceSeeder::class);
+        $this->seed(JobLevelSeeder::class);
+
         $this->admin = User::query()->where('email', 'admin@mowingcrm.test')->firstOrFail();
     }
 
@@ -77,18 +81,31 @@ class CrmModuleTest extends TestCase
             ->assertSee('Edit Lead');
     }
 
-    public function test_lead_import_sample_csv_can_be_downloaded(): void
+    public function test_lead_import_sample_excel_can_be_downloaded(): void
     {
         $response = $this->actingAs($this->admin)
             ->get(route('admin.leads.import.sample'));
 
         $response->assertOk();
-        $response->assertHeader('content-type', 'text/csv; charset=UTF-8');
-        $response->assertDownload('leads-import-sample.csv');
+        $response->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $response->assertDownload('leads-import-sample.xlsx');
 
-        $content = $response->streamedContent();
-        $this->assertStringContainsString('client_name,email,mobile_number,address,service_types', $content);
-        $this->assertStringContainsString('Sample Property', $content);
+        $tmp = tempnam(sys_get_temp_dir(), 'leads_sample_') . '.xlsx';
+        file_put_contents($tmp, $response->streamedContent());
+
+        try {
+            $sheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($tmp)->getActiveSheet();
+
+            foreach (\App\Exports\LeadsExport::COLUMNS as $col => $def) {
+                $this->assertSame(
+                    $def['header'],
+                    $sheet->getCell($col . '4')->getValue(),
+                    "Row 4 column {$col} header mismatch"
+                );
+            }
+        } finally {
+            @unlink($tmp);
+        }
     }
 
     public function test_lead_create_route_is_not_captured_by_show_route(): void
@@ -231,6 +248,8 @@ class CrmModuleTest extends TestCase
     {
         return [
             'client_id' => $clientId,
+            'recurrence_id' => Recurrence::query()->where('is_active', true)->value('id'),
+            'job_level_id' => JobLevel::query()->where('is_active', true)->value('id'),
             'client_address' => '456 Client Ave',
             'scheduled_date' => now()->addDay()->toDateString(),
             'scheduled_time' => '09:00',
