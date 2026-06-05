@@ -409,7 +409,8 @@
         initWizard();
 
         const $client = $('#job-client-id option:selected');
-        if ($client.val()) {
+        const isEditMode = $('#job-form').find('input[name="_method"][value="PATCH"]').length > 0;
+        if ($client.val() && !isEditMode) {
             fillFromClient($client);
         }
         syncJobEquipmentMarkerColor();
