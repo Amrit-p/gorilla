@@ -56,7 +56,7 @@ class UserManagementTest extends TestCase
     public function test_edit_user_via_ajax_updates_fields_and_role(): void
     {
         $user = User::factory()->create([
-            'user_unique_id' => 1003,
+            'user_unique_id' => 1004,
             'efficiency' => UserEfficiency::BEGINNER->value,
             'status' => UserStatus::ACTIVE->value,
             'is_active' => true,
