@@ -11,11 +11,15 @@ use App\Enums\UserEfficiency;
 use App\Models\Client;
 use App\Models\EquipmentType;
 use App\Models\Job;
+use App\Models\JobLevel;
+use App\Models\Recurrence;
 use App\Models\User;
 use App\Support\CrmPermissions;
 use App\Support\CrmRoles;
 use App\Support\ServiceTypes;
+use Database\Seeders\JobLevelSeeder;
 use Database\Seeders\MasterCatalogSeeder;
+use Database\Seeders\RecurrenceSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -33,6 +37,8 @@ class JobManagementTest extends TestCase
         parent::setUp();
         $this->seed(RoleAndPermissionSeeder::class);
         $this->seed(MasterCatalogSeeder::class);
+        $this->seed(RecurrenceSeeder::class);
+        $this->seed(JobLevelSeeder::class);
         $this->admin = User::query()->where('email', 'admin@mowingcrm.test')->firstOrFail();
         $this->mower = User::factory()->create([
             'is_active' => true,
@@ -199,6 +205,8 @@ class JobManagementTest extends TestCase
             'payment_mode' => JobOperationalPaymentMode::CASH->value,
             'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
             'equipment_type_id' => EquipmentType::query()->where('is_active', true)->value('id'),
+            'recurrence_id' => Recurrence::query()->where('is_active', true)->value('id'),
+            'job_level_id' => JobLevel::query()->where('is_active', true)->value('id'),
         ];
     }
 }
