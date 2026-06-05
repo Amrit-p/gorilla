@@ -26,10 +26,16 @@
     </div>
 
     <script src="{{ asset('js/map-job-popup.js') }}?v={{ @filemtime(public_path('js/map-job-popup.js')) ?: 1 }}"></script>
+    @php
+        $jsMapConfig = array_merge($mapConfig, [
+            'canViewJobs'     => auth()->user()->can('view-jobs'),
+            'canManageJobs'   => auth()->user()->can('manage-job-records'),
+            'isMower'         => auth()->user()->hasRole('Mower'),
+            'mowerJobBaseUrl' => url('/mower/jobs'),
+        ]);
+    @endphp
     <script>
-        window.crmJobsMapConfig = @json(array_merge($mapConfig, [
-            'canManageJobs' => auth()->user()->can('manage-job-records'),
-        ]));
+        window.crmJobsMapConfig = @json($jsMapConfig);
         window.crmJobsMapConfig.highlightJob = new URLSearchParams(window.location.search).get('highlight_job');
 
         function showMapAlert(message, isError) {

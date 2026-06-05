@@ -56,7 +56,11 @@ final class JobListFilter
         }
 
         if (! empty($filters['done_by_user_id'])) {
-            $query->where('done_by_user_id', $filters['done_by_user_id']);
+            $uid = (int) $filters['done_by_user_id'];
+            $query->where(function (Builder $q) use ($uid): void {
+                $q->where('done_by_user_id', $uid)
+                    ->orWhereHas('assignedEmployees', fn (Builder $e) => $e->where('users.id', $uid));
+            });
         }
 
         if (! empty($filters['client_id'])) {

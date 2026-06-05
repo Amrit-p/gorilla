@@ -37,7 +37,8 @@ class MapRoutingService
             || ! empty($filters['equipment_type_id'])
             || ! empty($filters['customer_type'])
             || ! empty($filters['service_type'])
-            || ! empty($filters['list_scope']);
+            || ! empty($filters['list_scope'])
+            || ! empty($filters['done_by_user_id']);
 
         if ($hasExtraFilters) {
             return $this->buildMapJobsPayload($filters);

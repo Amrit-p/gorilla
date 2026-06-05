@@ -65,6 +65,11 @@ class MapRoutingController extends Controller
         $validated['date_range_start'] = $validated['date_range']['start'] ?? null;
         $validated['date_range_end']   = $validated['date_range']['end'] ?? null;
         unset($validated['date_range']);
+
+        if ($request->user()->hasRole(CrmRoles::MOWER)) {
+            $validated['done_by_user_id'] = $request->user()->id;
+        }
+
         $jobs = $this->mapRoutingService->mapJobs($validated);
 
         return response()->json(['jobs' => $jobs]);

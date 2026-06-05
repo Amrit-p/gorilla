@@ -3,7 +3,10 @@
  * Action buttons rely on document-level jQuery delegation in job-actions-script.blade.php.
  */
 window.crmBuildMapJobPopup = function (job) {
-    const canManage = window.crmJobsMapConfig && window.crmJobsMapConfig.canManageJobs;
+    const cfg       = window.crmJobsMapConfig || {};
+    const canView   = cfg.canViewJobs;
+    const canManage = cfg.canManageJobs;
+    const showUrl   = cfg.isMower ? (cfg.mowerJobBaseUrl + '/' + job.id) : job.show_url;
 
     const employees = (job.assigned_employees || []).length
         ? job.assigned_employees.map(_esc).join(', ')
@@ -26,7 +29,7 @@ window.crmBuildMapJobPopup = function (job) {
             title="Close">&#x2715;</button>
 
     <div class="flex items-center gap-2 mb-3 pr-8">
-        <a href="${job.show_url}" target="_blank"
+        <a href="${showUrl}" target="_blank"
            class="font-bold text-sm text-indigo-600 hover:text-indigo-800 no-underline tracking-tight">
             Job #${job.id}
         </a>
@@ -74,9 +77,10 @@ window.crmBuildMapJobPopup = function (job) {
     <div class="h-px bg-slate-100 mb-3"></div>
 
     <div class="flex flex-wrap gap-1.5">
-        <a href="${job.show_url}" target="_blank"
-           class="inline-flex items-center justify-center h-8 sm:h-7 px-3 rounded-md text-[11px] font-semibold no-underline bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-colors">View</a>
-        ${job.edit_url ? `
+        ${canView ? `
+        <a href="${showUrl}" target="_blank"
+           class="inline-flex items-center justify-center h-8 sm:h-7 px-3 rounded-md text-[11px] font-semibold no-underline bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-colors">View</a>` : ''}
+        ${canManage && job.edit_url ? `
         <a href="${job.edit_url}" target="_blank"
            class="inline-flex items-center justify-center h-8 sm:h-7 px-3 rounded-md text-[11px] font-semibold no-underline bg-emerald-600 text-white hover:bg-emerald-700 transition-colors">Edit</a>` : ''}
         ${canManage ? `
