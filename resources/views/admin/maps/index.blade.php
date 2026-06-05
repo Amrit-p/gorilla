@@ -41,6 +41,7 @@
     </script>
 
     @if ($mapConfig['provider'] === 'google')
+        <span id="map-provider-label" class="hidden">Google Maps</span>
         @include('components.scripts.google-maps')
         <script src="{{ asset('js/google-jobs-map.js') }}?v={{ @filemtime(public_path('js/google-jobs-map.js')) ?: 1 }}"></script>
         <script>window.crmInitJobsMap(window.crmJobsMapConfig);</script>
