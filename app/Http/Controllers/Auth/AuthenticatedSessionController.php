@@ -33,6 +33,12 @@ class AuthenticatedSessionController extends Controller
                 ->onlyInput('email');
         }
 
+        $user = auth()->user();
+
+        if ($user->hasRole('mower')) {
+            return redirect()->intended(route('mower.index'));
+        }
+
         return redirect()->intended(route('dashboard.index'));
     }
 
