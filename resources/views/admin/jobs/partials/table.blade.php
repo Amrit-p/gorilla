@@ -1,16 +1,78 @@
 @php
     $canReorder = auth()->user()?->can('manage-job-records');
-    $headers = ['Customer / Address', 'Zone', 'Schedule', 'Services', 'Recurrence', 'Payment', 'Mowers', 'Actions'];
+    $headers = ['<input id="job-select-all" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" aria-label="Select all jobs">'];
     if ($canReorder) {
-        array_unshift($headers, '');
+        $headers[] = '';
     }
+    $headers = array_merge($headers, ['Customer / Address', 'Zone', 'Schedule', 'Services', 'Recurrence', 'Payment', 'Mowers', 'Actions']);
 @endphp
+
+<div id="job-bulk-toolbar" class="fixed bottom-5 left-1/2 z-40 hidden w-[min(calc(100vw-2rem),64rem)] -translate-x-1/2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-xl shadow-slate-900/10 ring-1 ring-slate-900/5">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex min-w-0 items-center gap-3">
+            <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/>
+                </svg>
+            </span>
+            <div class="min-w-0">
+                <p class="text-sm font-semibold text-slate-800"><span id="job-bulk-count">0</span> selected</p>
+                <p class="text-xs text-slate-500">Long press any row to enter bulk mode.</p>
+            </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <button type="button" id="job-bulk-select-page" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50">
+                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5"/>
+                </svg>
+                Select page
+            </button>
+            @can('assign-jobs')
+                <button type="button" id="job-bulk-assign" class="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-slate-700">
+                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3.75 19.5a7.5 7.5 0 0 1 12.122-5.894"/>
+                    </svg>
+                    Assign
+                </button>
+                <button type="button" id="job-bulk-status" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50">
+                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992m-4.992 0v4.992m0-4.992 3.182-3.182M7.977 14.652H2.985m4.992 0V9.66m0 4.992-3.182 3.182"/>
+                    </svg>
+                    Status
+                </button>
+                <button type="button" id="job-bulk-schedule" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50">
+                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"/>
+                    </svg>
+                    Schedule
+                </button>
+            @endcan
+            @can('manage-job-records')
+                <button type="button" id="job-bulk-delete" class="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50">
+                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166M4.772 5.79c.34-.059.68-.114 1.022-.165m13.434.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.667 48.667 0 0 0-14.456 0M8.25 5.25V4.875c0-1.036.84-1.875 1.875-1.875h3.75c1.036 0 1.875.84 1.875 1.875v.375"/>
+                    </svg>
+                    Delete
+                </button>
+            @endcan
+            <button type="button" id="job-bulk-clear" class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600" aria-label="Clear selected jobs">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+</div>
 
 <x-ui.table :headers="$headers">
     @forelse ($jobs as $job)
         @php $jobLevelColor = $job->jobLevel?->color_code; @endphp
-        <tr class="job-row group divide-x divide-slate-100 transition-colors hover:bg-slate-50/70" data-job-id="{{ $job->id }}"
+        <tr class="job-row group divide-x divide-slate-100 transition-colors hover:bg-slate-50/70 data-[selected=true]:bg-emerald-50/70 data-[selected=true]:shadow-[inset_3px_0_0_#10b981] data-[bulk-mode=true]:cursor-pointer" data-job-id="{{ $job->id }}" data-selected="false" data-bulk-mode="false"
             @if ($jobLevelColor) style="background-color: {{ $jobLevelColor }}20" @endif>
+
+                <td class="w-8 px-2 py-4">
+                <input type="checkbox" class="job-select-checkbox h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" data-job-id="{{ $job->id }}" aria-label="Select job">
+            </td>
 
             @if ($canReorder)
             {{-- Drag handle --}}
@@ -159,6 +221,15 @@
                                 </svg>
                                 Status
                             </button>
+                            <button class="schedule-job flex w-full items-center gap-2.5 px-3.5 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50"
+                                    data-id="{{ $job->id }}"
+                                    data-scheduled-date="{{ $job->scheduled_date?->format('Y-m-d') ?? '' }}"
+                                    data-scheduled-time="{{ $job->scheduled_time ?? '' }}">
+                                <svg class="h-3.5 w-3.5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"/>
+                                </svg>
+                                Schedule
+                            </button>
                         @endcan
                         @can('manage-job-records')
                             <div class="my-1 border-t border-slate-100"></div>
@@ -176,8 +247,155 @@
         </tr>
     @empty
         <tr>
-            <td colspan="{{ $canReorder ? 9 : 8 }}" class="px-4 py-10 text-center text-sm text-slate-400">No jobs found.</td>
+            <td colspan="{{ $canReorder ? 10 : 9 }}" class="px-4 py-10 text-center text-sm text-slate-400">No jobs found.</td>
         </tr>
     @endforelse
 </x-ui.table>
+<script>
+    (function () {
+        if (typeof window.cleanupJobBulkSelection === 'function') {
+            window.cleanupJobBulkSelection();
+        }
+
+        const controller = new AbortController();
+        const signal = controller.signal;
+
+        function container() {
+            return document.getElementById('jobs-table-container');
+        }
+
+        if (!container()) return;
+
+        let bulkMode = false;
+        let longPressTimer = null;
+        let longPressStartedAt = 0;
+        let longPressActivated = false;
+        const longPressMs = 520;
+
+        function checkboxes() {
+            return Array.from(container()?.querySelectorAll('.job-select-checkbox') || []);
+        }
+
+        function selectedTableIds() {
+            return checkboxes()
+                .filter(el => el.checked)
+                .map(el => Number(el.dataset.jobId))
+                .filter(id => Number.isInteger(id) && id > 0);
+        }
+
+        function setBulkMode(active) {
+            bulkMode = active;
+            (container()?.querySelectorAll('.job-row') || []).forEach(row => {
+                row.dataset.bulkMode = active ? 'true' : 'false';
+            });
+        }
+
+        function syncBulkState() {
+            const boxes = checkboxes();
+            const selected = boxes.filter(el => el.checked);
+            const toolbar = document.getElementById('job-bulk-toolbar');
+            const count = document.getElementById('job-bulk-count');
+            const master = document.getElementById('job-select-all');
+
+            boxes.forEach(checkbox => {
+                const row = checkbox.closest('.job-row');
+                if (row) row.dataset.selected = checkbox.checked ? 'true' : 'false';
+            });
+
+            if (master) {
+                master.checked = boxes.length > 0 && selected.length === boxes.length;
+                master.indeterminate = selected.length > 0 && selected.length < boxes.length;
+            }
+
+            if (count) count.textContent = selected.length;
+            if (toolbar) toolbar.classList.toggle('hidden', selected.length === 0);
+            setBulkMode(selected.length > 0);
+            window.dispatchEvent(new CustomEvent('jobs:selection-changed', { detail: { ids: selectedTableIds() } }));
+        }
+
+        function setAllSelected(checked) {
+            checkboxes().forEach(checkbox => {
+                checkbox.checked = checked;
+            });
+            syncBulkState();
+        }
+
+        function clearLongPress() {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+
+        window.selectedTableIds = selectedTableIds;
+        window.clearJobBulkSelection = function () {
+            setAllSelected(false);
+        };
+        window.cleanupJobBulkSelection = function () {
+            controller.abort();
+            clearLongPress();
+        };
+
+        document.addEventListener('change', function (event) {
+            const target = event.target;
+
+            if (target.matches('#job-select-all')) {
+                setAllSelected(target.checked);
+                return;
+            }
+
+            if (target.matches('#jobs-table-container .job-select-checkbox')) {
+                syncBulkState();
+            }
+        }, { signal });
+
+        document.addEventListener('click', function (event) {
+            const target = event.target;
+
+            if (target.closest('#job-bulk-select-page')) {
+                setAllSelected(true);
+                return;
+            }
+
+            if (target.closest('#job-bulk-clear')) {
+                setAllSelected(false);
+                return;
+            }
+
+            const row = target.closest('#jobs-table-container .job-row');
+            if (!row || target.closest('a, button, input, select, textarea, .drag-handle')) return;
+            if (longPressActivated) {
+                longPressActivated = false;
+                return;
+            }
+            if (Date.now() - longPressStartedAt < longPressMs + 80) return;
+            if (!bulkMode) return;
+
+            const checkbox = row.querySelector('.job-select-checkbox');
+            if (!checkbox) return;
+            checkbox.checked = !checkbox.checked;
+            syncBulkState();
+        }, { signal });
+
+        document.addEventListener('pointerdown', function (event) {
+            const row = event.target.closest('#jobs-table-container .job-row');
+            if (!row || event.target.closest('a, button, input, select, textarea, .drag-handle')) return;
+
+            longPressStartedAt = Date.now();
+            longPressActivated = false;
+            clearLongPress();
+            longPressTimer = setTimeout(function () {
+                const checkbox = row.querySelector('.job-select-checkbox');
+                if (!checkbox) return;
+                checkbox.checked = true;
+                longPressActivated = true;
+                syncBulkState();
+            }, longPressMs);
+        }, { signal });
+
+        document.addEventListener('pointerup', clearLongPress, { signal });
+        document.addEventListener('pointercancel', clearLongPress, { signal });
+        document.addEventListener('pointerleave', clearLongPress, { signal });
+
+        syncBulkState();
+    })();
+</script>
 <div class="mt-4">{{ $jobs->links() }}</div>

@@ -133,7 +133,7 @@ class JobManagementService
             GeocodeJobAddressJob::dispatch($job->id);
 
             if (is_array($employeeIds)) {
-                $this->assignEmployees($actor, $job, $job->done_by_user_id, $employeeIds, false);
+                $this->assignEmployeesToJobs($actor, collect([$job]), $job->done_by_user_id, $employeeIds, false);
             }
 
             $this->activityLogService->log($actor, 'job.created', 'Job created.', ['job_id' => $job->id]);
@@ -161,7 +161,7 @@ class JobManagementService
             $job->save();
 
             if (is_array($employeeIds)) {
-                $this->assignEmployees($actor, $job, $job->done_by_user_id, $employeeIds, false);
+                $this->assignEmployeesToJobs($actor, collect([$job]), $job->done_by_user_id, $employeeIds, false);
             }
 
             GeocodeJobAddressJob::dispatch($job->id);
@@ -176,80 +176,152 @@ class JobManagementService
         }
     }
 
-    public function assignEmployees(
+
+    /**
+     * @param  Collection<int, Job>  $jobs
+     * @return Collection<int, Job>
+     */
+    public function assignEmployeesToJobs(
         User $actor,
-        Job $job,
+        Collection $jobs,
         string|int|null $primary_mower_id = null,
         array $helper_mowers = [],
         bool $notify = true
-    ): void {
+    ): Collection {
+        // Validate mowers before opening a transaction so domain exceptions propagate cleanly.
+        $helper_mowers = array_values(array_unique(array_map('intval', $helper_mowers)));
+        $this->assertActiveMowerIds($helper_mowers);
+
+        if ($primary_mower_id !== null && $primary_mower_id !== '') {
+            $this->assertActiveMowerIds([(int) $primary_mower_id]);
+        }
+
+        $incentives = User::query()
+            ->whereIn('id', array_filter(array_unique(array_merge($helper_mowers, [(int) $primary_mower_id]))))
+            ->pluck('incentive_percentage', 'id');
+
         try {
             DB::beginTransaction();
-            $helper_mowers = array_values(array_unique(array_map('intval', $helper_mowers)));
-            $this->assertActiveMowerIds($helper_mowers);
 
-            $incentives = User::query()
-                ->whereIn('id', $helper_mowers)
-                ->pluck('incentive_percentage', 'id');
+            foreach ($jobs as $job) {
+                $syncData = [];
+                foreach ($helper_mowers as $userId) {
+                    $syncData[$userId] = [
+                        'assignment_date' => $job->scheduled_date,
+                        'assignment_status' => $job->status,
+                        'incentive_percentage' => $incentives[$userId] ?? 0,
+                    ];
+                }
 
-            $syncData = [];
-            foreach ($helper_mowers as $userId) {
-                $syncData[$userId] = [
-                    'assignment_date' => $job->scheduled_date,
-                    'assignment_status' => $job->status,
-                    'incentive_percentage' => $incentives[$userId] ?? 0,
-                ];
+                $job->assignedEmployees()->sync($syncData);
+                $job->done_by_user_id = $primary_mower_id;
+                $job->incentive_percentage = $incentives[(int) $primary_mower_id] ?? 0;
+                $job->save();
+
+                $this->activityLogService->log($actor, 'job.assigned', 'Mowers assigned to job.', [
+                    'job_id' => $job->id,
+                    'employee_ids' => $helper_mowers,
+                ]);
             }
-            $job->assignedEmployees()->sync($syncData);
+
             OptimizationHelper::bumpMapCacheGeneration();
-
-
-            $job->done_by_user_id = $primary_mower_id;
-            $job->incentive_percentage = $incentives[$primary_mower_id] ?? 0;
-            $job->save();
-
-            if ($notify) {
-                User::query()->whereIn('id', $helper_mowers)->get()->each(function (User $employee) use ($job): void {
-                    $employee->notify(new JobAssignedNotification($job));
-                    OptimizationHelper::forgetNotificationUnreadCount($employee->id);
-                });
-            }
-
-            $this->activityLogService->log($actor, 'job.assigned', 'Mowers assigned to job.', [
-                'job_id' => $job->id,
-                'employee_ids' => $helper_mowers,
-            ]);
             DB::commit();
         } catch (\Throwable $th) {
             DB::rollBack();
             report($th);
-            return;
+            return collect();
         }
-       
+
+        // Reload jobs after commit — one query with eager loads instead of N fresh() calls.
+        $freshJobs = Job::with(['client', 'assignedEmployees', 'doneByUser'])
+            ->whereIn('id', $jobs->pluck('id'))
+            ->get();
+
+        if ($notify && $helper_mowers !== []) {
+            User::query()->whereIn('id', $helper_mowers)->get()->each(function (User $employee) use ($freshJobs): void {
+                $freshJobs->each(function (Job $job) use ($employee): void {
+                    $employee->notify(new JobAssignedNotification($job));
+                });
+                OptimizationHelper::forgetNotificationUnreadCount($employee->id);
+            });
+        }
+
+        return $freshJobs;
     }
 
-    public function updateStatus(User $actor, Job $job, string $status): Job
-    {
-        $job->status = $status;
-        $job->save();
 
-        User::query()->role([CrmRoles::OFFICE_MANAGER])->get()->each(function (User $manager) use ($job): void {
-            $manager->notify(new JobStatusChangedNotification($job));
+    /**
+     * @param  Collection<int, Job>  $jobs
+     * @return Collection<int, Job>
+     */
+    public function updateJobsStatus(User $actor, Collection $jobs, string $status): Collection
+    {
+        DB::transaction(function () use ($actor, $jobs, $status): void {
+            $jobs->each(function (Job $job) use ($actor, $status): void {
+                $job->status = $status;
+                $job->save();
+                $this->activityLogService->log($actor, 'job.status_updated', 'Job status updated to ' . $status . '.', [
+                    'job_id' => $job->id,
+                    'status' => $status,
+                ]);
+            });
+        });
+
+        User::query()->role([CrmRoles::OFFICE_MANAGER])->get()->each(function (User $manager) use ($jobs): void {
+            $jobs->each(function (Job $job) use ($manager): void {
+                $manager->notify(new JobStatusChangedNotification($job));
+            });
             OptimizationHelper::forgetNotificationUnreadCount($manager->id);
         });
 
-        $this->activityLogService->log($actor, 'job.status_updated', 'Job status updated to ' . $status . '.', [
-            'job_id' => $job->id,
-            'status' => $status,
-        ]);
+        return $jobs;
+    }
 
-        return $job;
+    /**
+     * @param  Collection<int, Job>  $jobs
+     * @return Collection<int, Job>
+     */
+    public function scheduleJobs(User $actor, Collection $jobs, string $scheduledDate, ?string $scheduledTime = null): Collection
+    {
+        // Normalise to H:i regardless of whether the browser sent H:i:s
+        if ($scheduledTime !== null) {
+            $scheduledTime = substr($scheduledTime, 0, 5);
+        }
+
+        DB::transaction(function () use ($actor, $jobs, $scheduledDate, $scheduledTime): void {
+            $jobs->each(function (Job $job) use ($actor, $scheduledDate, $scheduledTime): void {
+                $job->scheduled_date = $scheduledDate;
+                if ($scheduledTime !== null) {
+                    $job->scheduled_time = $scheduledTime;
+                }
+                $job->save();
+                $this->activityLogService->log($actor, 'job.rescheduled', 'Job rescheduled to ' . $scheduledDate . '.', [
+                    'job_id' => $job->id,
+                    'scheduled_date' => $scheduledDate,
+                    'scheduled_time' => $scheduledTime,
+                ]);
+            });
+        });
+
+        return $jobs;
     }
 
     public function deleteJob(User $actor, Job $job): void
     {
         $job->delete();
         $this->activityLogService->log($actor, 'job.deleted', 'Job deleted.', ['job_id' => $job->id]);
+    }
+
+    /**
+     * @param  Collection<int, Job>  $jobs
+     */
+    public function deleteJobs(User $actor, Collection $jobs): int
+    {
+        DB::transaction(function () use ($actor, $jobs): void {
+            $jobs->each(fn (Job $job) => $this->deleteJob($actor, $job));
+        });
+
+        return $jobs->count();
     }
 
     /**

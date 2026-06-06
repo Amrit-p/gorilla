@@ -87,7 +87,7 @@
             $('.customer-tab[data-tab="' + tab + '"]').addClass('border-b-2 border-emerald-600 text-emerald-700').removeClass('text-slate-600');
             $('#customer-tab-details, #customer-tab-jobs').addClass('hidden');
             $('#customer-tab-' + tab).removeClass('hidden');
-            if (tab === 'jobs') loadJobs();
+            if (tab === 'jobs') loadJobs(getFilters());
             const u = new URL(window.location.href);
             u.searchParams.set('tab', tab);
             window.history.replaceState({}, '', u);
@@ -98,7 +98,7 @@
         });
 
         @if ($activeTab === 'jobs')
-            loadJobs();
+            loadJobs(getFilters());
         @endif
     </script>
 </x-layouts.dashboard>

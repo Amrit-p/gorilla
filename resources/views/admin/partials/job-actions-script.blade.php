@@ -131,13 +131,50 @@
         closeModal($(this).data('close-modal'));
     });
 
+    function selectedJobIds() {
+        return typeof window.selectedTableIds === 'function' ? window.selectedTableIds() : [];
+    }
+
+    function markModalBulkContext($form, ids, action) {
+        const $context = $form.find('.bulk-job-context');
+        $form.data('jobIds', ids);
+
+        if (ids.length > 1) {
+            $context.removeClass('hidden').text(action + ' will apply to ' + ids.length + ' selected jobs.');
+        } else {
+            $context.addClass('hidden').text('');
+        }
+    }
+
+    function bulkActionPayload($form) {
+        const payload = $form.serializeArray().filter(function(field) {
+            return field.name !== 'job_id' && field.name !== 'job_ids' && field.name !== 'job_ids[]';
+        });
+        const ids = ($form.data('jobIds') || []).map(Number).filter(function(id) {
+            return Number.isInteger(id) && id > 0;
+        });
+
+        ids.forEach(function(id) {
+            payload.push({ name: 'job_ids[]', value: id });
+        });
+
+        return $.param(payload);
+    }
+
+    function refreshJobsTable() {
+        {{$filterCallback}}(typeof getFilters === 'function' ? getFilters() : {});
+        if (typeof window.clearJobBulkSelection === 'function') {
+            window.clearJobBulkSelection();
+        }
+    }
+
     $(document).on('click', '.assign-job', function() {
         const $btn        = $(this);
         const doneBy      = $btn.data('done-by');
         const employeeIds = $btn.data('employee-ids') || [];
 
         $('#assign-job-form')[0].reset();
-        $('#assign-job-form').find('[name="job_id"]').val($btn.data('id'));
+        markModalBulkContext($('#assign-job-form'), [Number($btn.data('id'))], 'Assignment');
 
         // Restore mower widget state
         if (typeof window.mcaReset_assign === 'function') {
@@ -150,75 +187,113 @@
         openModal('assign-job-modal');
     });
 
-    $('#assign-job-form').on('submit', function(e) {
-        e.preventDefault();
-        const id = $(this).find('[name="job_id"]').val();
+    $(document).on('click', '#job-bulk-assign', function() {
+        const ids = selectedJobIds();
+        if (!ids.length) return;
+
+        $('#assign-job-form')[0].reset();
+        markModalBulkContext($('#assign-job-form'), ids, 'Assignment');
+
+        if (typeof window.mcaReset_assign === 'function') {
+            window.mcaReset_assign(null, []);
+        }
+
+        openModal('assign-job-modal');
+    });
+
+    function submitBulkForm($form, url, modalId, successMsg, errorMsg) {
         $.ajax({
-            url: "{{ url('/admin/jobs') }}/" + id + "/assign",
+            url: url,
             method: 'POST',
-            data: $(this).serialize(),
-            headers: {
-                Accept: 'application/json'
-            },
+            data: bulkActionPayload($form),
+            headers: { Accept: 'application/json' },
             success: function(res) {
-                closeModal('assign-job-modal');
-                showJobAlert(res.message);
-                {{$filterCallback}}(typeof getFilters === 'function' ? getFilters() : {});
+                closeModal(modalId);
+                showJobAlert(res.message || successMsg);
+                refreshJobsTable();
             },
             error: function(xhr) {
-                showJobAlert(Object.values(xhr.responseJSON?.errors || {})[0]?.[0] ||
-                    'Failed to assign.', true);
+                showJobAlert(Object.values(xhr.responseJSON?.errors || {})[0]?.[0] || errorMsg, true);
             }
         });
+    }
+
+    function deleteJobs(ids) {
+        $.ajax({
+            url: "{{ route('admin.jobs.bulk.destroy') }}",
+            method: 'POST',
+            data: { _token: "{{ csrf_token() }}", _method: 'DELETE', job_ids: ids },
+            headers: { Accept: 'application/json' },
+            success: function(res) {
+                showJobAlert(res.message || (ids.length > 1 ? 'Deleted selected jobs.' : 'Job deleted.'));
+                refreshJobsTable();
+            },
+            error: function() {
+                showJobAlert('Failed to delete job' + (ids.length > 1 ? 's' : '') + '.', true);
+            }
+        });
+    }
+
+    $('#assign-job-form').on('submit', function(e) {
+        e.preventDefault();
+        const ids = $(this).data('jobIds') || [];
+        submitBulkForm($(this), "{{ route('admin.jobs.bulk.assign') }}", 'assign-job-modal',
+            ids.length > 1 ? 'Assigned selected jobs.' : 'Job assigned.', 'Failed to assign.');
     });
 
     $(document).on('click', '.status-job', function() {
-        $('#status-job-form').find('[name="job_id"]').val($(this).data('id'));
+        markModalBulkContext($('#status-job-form'), [Number($(this).data('id'))], 'Status update');
         $('#status-job-form').find('[name="status"]').val($(this).data('status') || 'Started');
         openModal('status-job-modal');
     });
+
+    $(document).on('click', '#job-bulk-status', function() {
+        const ids = selectedJobIds();
+        if (!ids.length) return;
+        markModalBulkContext($('#status-job-form'), ids, 'Status update');
+        openModal('status-job-modal');
+    });
+
     $('#status-job-form').on('submit', function(e) {
         e.preventDefault();
-        const id = $(this).find('[name="job_id"]').val();
-        $.ajax({
-            url: "{{ url('/admin/jobs') }}/" + id + "/status",
-            method: 'POST',
-            data: $(this).serialize(),
-            headers: {
-                Accept: 'application/json'
-            },
-            success: function(res) {
-                closeModal('status-job-modal');
-                showJobAlert(res.message);
-                {{$filterCallback}}(typeof getFilters === 'function' ? getFilters() : {});
-            },
-            error: function(xhr) {
-                showJobAlert(Object.values(xhr.responseJSON?.errors || {})[0]?.[0] ||
-                    'Failed to update status.', true);
-            }
-        });
+        const ids = $(this).data('jobIds') || [];
+        submitBulkForm($(this), "{{ route('admin.jobs.bulk.status.update') }}", 'status-job-modal',
+            ids.length > 1 ? 'Updated selected job statuses.' : 'Job status updated.', 'Failed to update status.');
+    });
+
+    $(document).on('click', '.schedule-job', function() {
+        const $btn = $(this);
+        markModalBulkContext($('#schedule-job-form'), [Number($btn.data('id'))], 'Reschedule');
+        $('#schedule-job-form').find('[name="scheduled_date"]').val($btn.data('scheduled-date') || '');
+        $('#schedule-job-form').find('[name="scheduled_time"]').val($btn.data('scheduled-time') || '');
+        openModal('schedule-job-modal');
+    });
+
+    $(document).on('click', '#job-bulk-schedule', function() {
+        const ids = selectedJobIds();
+        if (!ids.length) return;
+        markModalBulkContext($('#schedule-job-form'), ids, 'Reschedule');
+        $('#schedule-job-form').find('[name="scheduled_date"]').val('');
+        $('#schedule-job-form').find('[name="scheduled_time"]').val('');
+        openModal('schedule-job-modal');
+    });
+
+    $('#schedule-job-form').on('submit', function(e) {
+        e.preventDefault();
+        const ids = $(this).data('jobIds') || [];
+        submitBulkForm($(this), "{{ route('admin.jobs.bulk.schedule') }}", 'schedule-job-modal',
+            ids.length > 1 ? 'Rescheduled selected jobs.' : 'Job rescheduled.', 'Failed to reschedule.');
     });
 
     $(document).on('click', '.delete-job', function() {
-        const id = $(this).data('id');
         if (!confirm('Delete this job?')) return;
-        $.ajax({
-            url: "{{ url('/admin/jobs') }}/" + id,
-            method: 'POST',
-            data: {
-                _token: "{{ csrf_token() }}",
-                _method: 'DELETE'
-            },
-            headers: {
-                Accept: 'application/json'
-            },
-            success: function(res) {
-                showJobAlert(res.message);
-                {{$filterCallback}}(typeof getFilters === 'function' ? getFilters() : {});
-            },
-            error: function() {
-                showJobAlert('Failed to delete job.', true);
-            }
-        });
+        deleteJobs([Number($(this).data('id'))]);
+    });
+
+    $(document).on('click', '#job-bulk-delete', function() {
+        const ids = selectedJobIds();
+        if (!ids.length) return;
+        if (!confirm('Delete ' + ids.length + ' selected jobs?')) return;
+        deleteJobs(ids);
     });
 </script>

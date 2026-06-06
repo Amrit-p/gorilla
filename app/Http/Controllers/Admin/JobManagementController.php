@@ -6,6 +6,7 @@ use App\Enums\JobWorkflowStatus;
 use App\Exports\JobsExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AssignJobRequest;
+use App\Http\Requests\Admin\ScheduleJobsRequest;
 use App\Http\Requests\Admin\StoreJobRequest;
 use App\Http\Requests\Admin\UpdateJobRequest;
 use App\Http\Requests\Admin\UpdateJobStatusRequest;
@@ -19,6 +20,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -218,40 +220,83 @@ class JobManagementController extends Controller
         ]);
     }
 
-    public function assignEmployees(AssignJobRequest $request, Job $job): JsonResponse
+
+    public function bulkAssignEmployees(AssignJobRequest $request): JsonResponse
     {
-        $this->authorize('assign', $job);
-        $this->jobManagementService->assignEmployees(
+        $jobs = $this->jobsForBulkAction($request->validated('job_ids'), 'assign');
+
+        $updatedJobs = $this->jobManagementService->assignEmployeesToJobs(
             $request->user(),
-            $job,
+            $jobs,
             $request->validated('done_by_user_id', null),
             $request->validated('employee_ids', []),
         );
 
-        return response()->json(['message' => 'Mowers assigned successfully.']);
+        if ($updatedJobs->count() !== $jobs->count()) {
+            return response()->json(['message' => 'Failed to assign selected jobs.'], 500);
+        }
+
+        return response()->json([
+            'message' => $updatedJobs->count() === 1
+                ? 'Mowers assigned successfully.'
+                : 'Mowers assigned to selected jobs successfully.',
+            'updated_count' => $updatedJobs->count(),
+        ]);
     }
 
-    public function updateStatus(UpdateJobStatusRequest $request, Job $job): JsonResponse
+
+    public function bulkUpdateStatus(UpdateJobStatusRequest $request): JsonResponse
     {
-        $this->authorize('transitionStatus', $job);
-        $job = $this->jobManagementService->updateStatus(
+        $jobs = $this->jobsForBulkAction($request->validated('job_ids'), 'transitionStatus');
+        $updatedJobs = $this->jobManagementService->updateJobsStatus(
             $request->user(),
-            $job,
+            $jobs,
             $request->validated('status')
         );
 
         return response()->json([
-            'message' => 'Job status updated successfully.',
-            'job' => $job,
+            'message' => $updatedJobs->count() === 1
+                ? 'Job status updated successfully.'
+                : 'Selected job statuses updated successfully.',
+            'updated_count' => $updatedJobs->count(),
         ]);
     }
 
-    public function destroy(Request $request, Job $job): JsonResponse
-    {
-        $this->authorize('delete', $job);
-        $this->jobManagementService->deleteJob($request->user(), $job);
 
-        return response()->json(['message' => 'Job deleted successfully.']);
+    public function bulkScheduleJobs(ScheduleJobsRequest $request): JsonResponse
+    {
+        $jobs = $this->jobsForBulkAction($request->validated('job_ids'), 'update');
+        $updatedJobs = $this->jobManagementService->scheduleJobs(
+            $request->user(),
+            $jobs,
+            $request->validated('scheduled_date'),
+            $request->validated('scheduled_time'),
+        );
+
+        return response()->json([
+            'message' => $updatedJobs->count() === 1
+                ? 'Job rescheduled successfully.'
+                : 'Selected jobs rescheduled successfully.',
+            'updated_count' => $updatedJobs->count(),
+        ]);
+    }
+
+    public function bulkDestroy(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'job_ids' => ['required', 'array', 'min:1'],
+            'job_ids.*' => ['integer', 'distinct'],
+        ]);
+
+        $jobs = $this->jobsForBulkAction($validated['job_ids'], 'delete');
+        $deletedCount = $this->jobManagementService->deleteJobs($request->user(), $jobs);
+
+        return response()->json([
+            'message' => $deletedCount === 1
+                ? 'Job deleted successfully.'
+                : 'Selected jobs deleted successfully.',
+            'deleted_count' => $deletedCount,
+        ]);
     }
 
     public function exportExcel(Request $request): StreamedResponse
@@ -310,5 +355,28 @@ class JobManagementController extends Controller
             'date_range_start'  => $request->input('date_range.start', ''),
             'date_range_end'    => $request->input('date_range.end', ''),
         ];
+    }
+
+    /**
+     * @param  array<int, int>  $jobIds
+     * @return Collection<int, Job>
+     */
+    private function jobsForBulkAction(array $jobIds, string $ability): Collection
+    {
+        $jobIds = array_values(array_unique(array_map('intval', $jobIds)));
+
+        $jobs = Job::query()
+            ->whereIn('id', $jobIds)
+            ->get()
+            ->keyBy('id');
+
+        if ($jobs->count() !== count($jobIds)) {
+            abort(422, 'One or more selected jobs could not be found.');
+        }
+
+        $orderedJobs = collect($jobIds)->map(fn (int $jobId): Job => $jobs->get($jobId));
+        $orderedJobs->each(fn (Job $job) => $this->authorize($ability, $job));
+
+        return $orderedJobs;
     }
 }

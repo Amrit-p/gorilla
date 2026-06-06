@@ -58,7 +58,7 @@ class JobManagementTest extends TestCase
 
         $this->assertDatabaseHas('service_jobs', [
             'client_id' => $client->id,
-            'status' => JobWorkflowStatus::STARTED->value,
+            'status' => JobWorkflowStatus::PENDING->value,
         ]);
     }
 
@@ -83,14 +83,16 @@ class JobManagementTest extends TestCase
         $job = $this->createJob();
 
         $this->actingAs($this->admin)
-            ->postJson(route('admin.jobs.status.update', $job), [
+            ->postJson(route('admin.jobs.bulk.status.update'), [
+                'job_ids' => [$job->id],
                 'status' => JobWorkflowStatus::HOLD->value,
             ])
             ->assertOk()
-            ->assertJsonPath('job.status', JobWorkflowStatus::HOLD->value);
+            ->assertJsonPath('updated_count', 1);
 
         $this->actingAs($this->admin)
-            ->postJson(route('admin.jobs.status.update', $job), [
+            ->postJson(route('admin.jobs.bulk.status.update'), [
+                'job_ids' => [$job->id],
                 'status' => JobWorkflowStatus::COMPLETED->value,
             ])
             ->assertOk();
@@ -148,7 +150,8 @@ class JobManagementTest extends TestCase
         $job = $this->createJob();
 
         $this->actingAs($this->admin)
-            ->postJson(route('admin.jobs.status.update', $job), [
+            ->postJson(route('admin.jobs.bulk.status.update'), [
+                'job_ids' => [$job->id],
                 'status' => JobWorkflowStatus::HOLD->value,
             ]);
 
@@ -157,6 +160,73 @@ class JobManagementTest extends TestCase
             ->assertOk()
             ->assertSee('Activity timeline')
             ->assertSee('Job tracking');
+    }
+
+    public function test_bulk_schedule_updates_scheduled_date(): void
+    {
+        $job = $this->createJob();
+        $newDate = now()->addDays(3)->toDateString();
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.jobs.bulk.schedule'), [
+                'job_ids' => [$job->id],
+                'scheduled_date' => $newDate,
+            ])
+            ->assertOk()
+            ->assertJsonPath('updated_count', 1)
+            ->assertJsonPath('message', 'Job rescheduled successfully.');
+
+        $job->refresh();
+        $this->assertSame($newDate, $job->scheduled_date->toDateString());
+    }
+
+    public function test_bulk_schedule_updates_scheduled_time_when_provided(): void
+    {
+        $job = $this->createJob();
+        $newDate = now()->addDays(2)->toDateString();
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.jobs.bulk.schedule'), [
+                'job_ids' => [$job->id],
+                'scheduled_date' => $newDate,
+                'scheduled_time' => '14:30',
+            ])
+            ->assertOk();
+
+        $job->refresh();
+        $this->assertSame($newDate, $job->scheduled_date->toDateString());
+        $this->assertSame('14:30', $job->scheduled_time);
+    }
+
+    public function test_bulk_schedule_multiple_jobs(): void
+    {
+        $jobA = $this->createJob();
+        $jobB = $this->createJob();
+        $newDate = now()->addWeek()->toDateString();
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.jobs.bulk.schedule'), [
+                'job_ids' => [$jobA->id, $jobB->id],
+                'scheduled_date' => $newDate,
+            ])
+            ->assertOk()
+            ->assertJsonPath('updated_count', 2)
+            ->assertJsonPath('message', 'Selected jobs rescheduled successfully.');
+
+        $this->assertSame($newDate, $jobA->refresh()->scheduled_date->toDateString());
+        $this->assertSame($newDate, $jobB->refresh()->scheduled_date->toDateString());
+    }
+
+    public function test_mower_cannot_bulk_schedule_jobs(): void
+    {
+        $job = $this->createJob();
+
+        $this->actingAs($this->mower)
+            ->postJson(route('admin.jobs.bulk.schedule'), [
+                'job_ids' => [$job->id],
+                'scheduled_date' => now()->addDay()->toDateString(),
+            ])
+            ->assertForbidden();
     }
 
     private function createJob(): Job

@@ -24,6 +24,8 @@ class AssignJobRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'job_ids'          => ['required', 'array', 'min:1'],
+            'job_ids.*'        => ['integer', 'distinct', 'exists:service_jobs,id'],
             'done_by_user_id'  => ['nullable', 'integer', 'exists:users,id'],
             'employee_ids'     => ['nullable', 'array'],
             'employee_ids.*'   => ['integer', 'exists:users,id'],

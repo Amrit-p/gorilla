@@ -169,10 +169,11 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
         Route::post('/admin/jobs', [JobManagementController::class, 'store'])->name('admin.jobs.store');
         Route::get('/admin/jobs/{job}/edit', [JobManagementController::class, 'edit'])->name('admin.jobs.edit');
         Route::patch('/admin/jobs/{job}', [JobManagementController::class, 'update'])->name('admin.jobs.update');
-        Route::delete('/admin/jobs/{job}', [JobManagementController::class, 'destroy'])->name('admin.jobs.destroy');
+        Route::post('/admin/jobs/bulk/assign', [JobManagementController::class, 'bulkAssignEmployees'])->name('admin.jobs.bulk.assign');
+        Route::post('/admin/jobs/bulk/status', [JobManagementController::class, 'bulkUpdateStatus'])->name('admin.jobs.bulk.status.update');
+        Route::post('/admin/jobs/bulk/schedule', [JobManagementController::class, 'bulkScheduleJobs'])->name('admin.jobs.bulk.schedule');
+        Route::delete('/admin/jobs/bulk', [JobManagementController::class, 'bulkDestroy'])->name('admin.jobs.bulk.destroy');
         Route::post('/admin/jobs/reorder', [JobManagementController::class, 'reorder'])->name('admin.jobs.reorder');
-        Route::post('/admin/jobs/{job}/assign', [JobManagementController::class, 'assignEmployees'])->name('admin.jobs.assign');
-        Route::post('/admin/jobs/{job}/status', [JobManagementController::class, 'updateStatus'])->name('admin.jobs.status.update');
         Route::post('/admin/jobs/{job}/images', [JobManagementController::class, 'uploadImages'])
             ->middleware('crm.permission:'.CrmPermissions::UPLOAD_JOB_IMAGES)
             ->name('admin.jobs.images.store');

@@ -24,6 +24,9 @@ class UpdateJobStatusRequest extends FormRequest
      */
     public function rules(): array
     {
-        return $this->jobWorkflowStatusRules();
+        return array_merge($this->jobWorkflowStatusRules(), [
+            'job_ids'   => ['required', 'array', 'min:1'],
+            'job_ids.*' => ['integer', 'distinct', 'exists:service_jobs,id'],
+        ]);
     }
 }
