@@ -95,7 +95,7 @@
             <tr class="group-row">
                 <th colspan="3" class="green">Mower</th>
                 <th colspan="1" class="yellow">Jobs</th>
-                <th colspan="1" class="blue">Earnings</th>
+                <th colspan="1" class="blue">Total Sale</th>
                 @if($showBonus)
                     <th colspan="1" class="pink">Bonus</th>
                 @endif

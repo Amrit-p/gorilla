@@ -121,7 +121,7 @@ class MowerReportExcelService
         $this->groups = [
             ['label' => 'Mower',    'span' => 3, 'bg' => self::GREEN_BG,  'fg' => self::GREEN_FG],
             ['label' => 'Jobs',     'span' => 1, 'bg' => self::YELLOW_BG, 'fg' => self::YELLOW_FG],
-            ['label' => 'Earnings', 'span' => 1, 'bg' => self::BLUE_BG,   'fg' => self::BLUE_FG],
+            ['label' => 'Total Sale', 'span' => 1, 'bg' => self::BLUE_BG,   'fg' => self::BLUE_FG],
         ];
 
         if (!$this->hideBonusColumn) {

@@ -5,7 +5,7 @@
             <tr class="divide-x divide-slate-200">
                 <th colspan="3" class="px-4 py-3 text-center font-semibold tracking-wide bg-green-100 text-green-800">Mower</th>
                 <th colspan="1" class="px-4 py-3 text-center font-semibold tracking-wide bg-yellow-100 text-yellow-800">Jobs</th>
-                <th colspan="1" class="px-4 py-3 text-center font-semibold tracking-wide bg-blue-100 text-blue-800">Earnings</th>
+                <th colspan="1" class="px-4 py-3 text-center font-semibold tracking-wide bg-blue-100 text-blue-800">Total Sale</th>
                 @if($showBonus)
                     <th colspan="1" class="px-4 py-3 text-center font-semibold tracking-wide bg-pink-100 text-pink-800">Bonus</th>
                 @endif
