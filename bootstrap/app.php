@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureAnyCrmPermission;
 use App\Http\Middleware\EnsureCrmPermission;
+use App\Http\Middleware\EnsureMowerChecklistComplete;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
@@ -26,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'active_user' => EnsureUserIsActive::class,
             'crm.permission' => EnsureCrmPermission::class,
             'crm.any_permission' => EnsureAnyCrmPermission::class,
+            'mower.checklist' => EnsureMowerChecklistComplete::class,
         ]);
 
         // Module 15: Baseline security headers on every web response.

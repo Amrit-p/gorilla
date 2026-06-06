@@ -11,7 +11,9 @@ use App\Http\Controllers\Admin\Masters\ServiceTypeController;
 use App\Http\Controllers\Admin\Masters\RecurrenceController;
 use App\Http\Controllers\Admin\Masters\AccountingLevelController;
 use App\Http\Controllers\Admin\Masters\JobLevelController;
+use App\Http\Controllers\Admin\Masters\ChecklistController;
 use App\Http\Controllers\Admin\Masters\ZoneController;
+use App\Http\Controllers\Mower\ChecklistController as MowerChecklistController;
 use App\Http\Controllers\Admin\ClientManagementController;
 use App\Http\Controllers\Admin\JobManagementController;
 use App\Http\Controllers\Admin\LeadManagementController;
@@ -76,6 +78,10 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
     });
 
     Route::middleware('crm.permission:'.CrmPermissions::MANAGE_MASTERS)->prefix('admin/masters')->name('admin.masters.')->group(function (): void {
+        Route::get('checklists', [ChecklistController::class, 'index'])->name('checklists.index');
+        Route::post('checklists', [ChecklistController::class, 'store'])->name('checklists.store');
+        Route::get('checklists/{checklist}', [ChecklistController::class, 'show'])->name('checklists.show');
+        Route::patch('checklists/{checklist}', [ChecklistController::class, 'update'])->name('checklists.update');
         Route::get('service-types', [ServiceTypeController::class, 'index'])->name('service-types.index');
         Route::post('service-types', [ServiceTypeController::class, 'store'])->name('service-types.store');
         Route::get('service-types/{serviceType}', [ServiceTypeController::class, 'show'])->name('service-types.show');
@@ -184,17 +190,22 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
         Route::redirect('/employee/mobile', '/mower')->name('employee.mobile.index');
 
         Route::prefix('mower')->name('mower.')->group(function (): void {
-            Route::get('/', [MowerDashboardController::class, 'index'])->name('index');
-            Route::get('/notifications', [NotificationController::class, 'mowerIndex'])->name('notifications.index');
-            Route::get('/jobs/{job}', [MowerDashboardController::class, 'show'])->name('jobs.show');
-            Route::patch('/jobs/{job}/status', [MowerDashboardController::class, 'updateStatus'])->name('jobs.status.update');
-            Route::patch('/jobs/{job}/payment', [MowerDashboardController::class, 'updatePayment'])->name('jobs.payment.update');
-            Route::patch('/jobs/{job}/consumed-time', [MowerDashboardController::class, 'updateConsumedTime'])->name('jobs.consumed-time.update');
-            Route::post('/jobs/{job}/images/before', [MowerDashboardController::class, 'uploadBefore'])->name('jobs.images.before');
-            Route::post('/jobs/{job}/images/after', [MowerDashboardController::class, 'uploadAfter'])->name('jobs.images.after');
-            Route::delete('/jobs/{job}/images/before/{imageId}', [MowerDashboardController::class, 'deleteBefore'])->name('jobs.images.before.destroy');
-            Route::delete('/jobs/{job}/images/after/{imageId}', [MowerDashboardController::class, 'deleteAfter'])->name('jobs.images.after.destroy');
-            Route::post('/jobs/{job}/remark', [MowerDashboardController::class, 'storeRemark'])->name('jobs.remark.store');
+            Route::get('/checklist', [MowerChecklistController::class, 'index'])->name('checklist.index');
+            Route::post('/checklist', [MowerChecklistController::class, 'submit'])->name('checklist.submit');
+
+            Route::middleware('mower.checklist')->group(function (): void {
+                Route::get('/', [MowerDashboardController::class, 'index'])->name('index');
+                Route::get('/notifications', [NotificationController::class, 'mowerIndex'])->name('notifications.index');
+                Route::get('/jobs/{job}', [MowerDashboardController::class, 'show'])->name('jobs.show');
+                Route::patch('/jobs/{job}/status', [MowerDashboardController::class, 'updateStatus'])->name('jobs.status.update');
+                Route::patch('/jobs/{job}/payment', [MowerDashboardController::class, 'updatePayment'])->name('jobs.payment.update');
+                Route::patch('/jobs/{job}/consumed-time', [MowerDashboardController::class, 'updateConsumedTime'])->name('jobs.consumed-time.update');
+                Route::post('/jobs/{job}/images/before', [MowerDashboardController::class, 'uploadBefore'])->name('jobs.images.before');
+                Route::post('/jobs/{job}/images/after', [MowerDashboardController::class, 'uploadAfter'])->name('jobs.images.after');
+                Route::delete('/jobs/{job}/images/before/{imageId}', [MowerDashboardController::class, 'deleteBefore'])->name('jobs.images.before.destroy');
+                Route::delete('/jobs/{job}/images/after/{imageId}', [MowerDashboardController::class, 'deleteAfter'])->name('jobs.images.after.destroy');
+                Route::post('/jobs/{job}/remark', [MowerDashboardController::class, 'storeRemark'])->name('jobs.remark.store');
+            });
         });
     });
 
