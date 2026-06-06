@@ -1,4 +1,4 @@
-<x-layouts.dashboard :title="'Mower Reports'" :subtitle="'View earnings, completed jobs, and incentive details for all mowers.'">
+<x-layouts.dashboard :title="'Mower Reports'" :subtitle="$hideBonusColumn ? null : 'View earnings, completed jobs, and incentive details for all mowers.'">
     <div class="space-y-5">
 
         @if (session('success'))
@@ -17,7 +17,7 @@
         ])
 
         <div id="mower-table-container" class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-            @include('reports.mower.partials.table')
+            @include('reports.mower.partials.table', ['hideBonusColumn' => $hideBonusColumn])
         </div>
     </div>
 

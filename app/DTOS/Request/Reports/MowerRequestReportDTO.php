@@ -26,6 +26,7 @@ class MowerRequestReportDTO
         public ?string $payment_mode = null,
         public ?string $payment_status = null,
         public ?int $job_level_id = null,
+        public ?bool $hideBonusColumn = false,
     ) {
     }
 
@@ -49,6 +50,7 @@ class MowerRequestReportDTO
             payment_mode: isset($data['payment_mode']) ? $data['payment_mode'] : null,
             payment_status: isset($data['payment_status']) ? $data['payment_status'] : null,
             job_level_id: isset($data['job_level_id']) ? (int) $data['job_level_id'] : null,
+            hideBonusColumn: isset($data['hideBonusColumn']) ? (bool) $data['hideBonusColumn'] : false,
         );
     }
 
@@ -72,6 +74,7 @@ class MowerRequestReportDTO
             'payment_mode' => $this->payment_mode,
             'payment_status' => $this->payment_status,
             'job_level_id' => $this->job_level_id,
+            'hideBonusColumn' => $this->hideBonusColumn,
         ];
     }
 

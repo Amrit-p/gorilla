@@ -56,8 +56,9 @@ class MowerReportExcelService
         ['key' => 'bonus',                'label' => 'Total Bonus',  'group' => 'pink',   'format' => '"$"#,##0.00',               'width' => 18, 'align' => 'right'],
     ];
 
-    private array $columns = [];
-    private array $groups  = [];
+    private array $columns        = [];
+    private array $groups         = [];
+    private bool  $hideBonusColumn = false;
 
     private array $subColors = [
         'green'  => ['bg' => self::GREEN_SUB,  'fg' => self::GREEN_SFG],
@@ -68,8 +69,9 @@ class MowerReportExcelService
 
     private array $numericSumKeys = [];
 
-    public function export(Collection $reportData): StreamedResponse
+    public function export(Collection $reportData, bool $hideBonusColumn = false): StreamedResponse
     {
+        $this->hideBonusColumn = $hideBonusColumn;
         $spreadsheet = $this->buildSpreadsheet($reportData);
         $filename    = $this->filenameForNow() . '.xlsx';
 
@@ -97,36 +99,47 @@ class MowerReportExcelService
         ksort($allDates);
         $uniqueDates = array_keys($allDates);
 
-        $this->columns = self::BASE_COLUMNS;
+        $this->columns = array_values(array_filter(
+            self::BASE_COLUMNS,
+            fn($col) => !($this->hideBonusColumn && $col['key'] === 'bonus')
+        ));
 
-        foreach ($uniqueDates as $date) {
-            $label           = \Carbon\Carbon::parse($date)->format('d M, Y');
-            $this->columns[] = [
-                'key'    => 'bonus_date_' . $date,
-                'label'  => $label,
-                'group'  => 'pink',
-                'format' => '"$"#,##0.00',
-                'width'  => 16,
-                'align'  => 'right',
-            ];
+        if (!$this->hideBonusColumn) {
+            foreach ($uniqueDates as $date) {
+                $label           = \Carbon\Carbon::parse($date)->format('d M, Y');
+                $this->columns[] = [
+                    'key'    => 'bonus_date_' . $date,
+                    'label'  => $label,
+                    'group'  => 'pink',
+                    'format' => '"$"#,##0.00',
+                    'width'  => 16,
+                    'align'  => 'right',
+                ];
+            }
         }
 
         $this->groups = [
-            ['label' => 'Mower',    'span' => 3,                        'bg' => self::GREEN_BG,  'fg' => self::GREEN_FG],
-            ['label' => 'Jobs',     'span' => 1,                        'bg' => self::YELLOW_BG, 'fg' => self::YELLOW_FG],
-            ['label' => 'Earnings', 'span' => 1,                        'bg' => self::BLUE_BG,   'fg' => self::BLUE_FG],
-            ['label' => 'Bonus',    'span' => 1 + count($uniqueDates),  'bg' => self::PINK_BG,   'fg' => self::PINK_FG],
+            ['label' => 'Mower',    'span' => 3, 'bg' => self::GREEN_BG,  'fg' => self::GREEN_FG],
+            ['label' => 'Jobs',     'span' => 1, 'bg' => self::YELLOW_BG, 'fg' => self::YELLOW_FG],
+            ['label' => 'Earnings', 'span' => 1, 'bg' => self::BLUE_BG,   'fg' => self::BLUE_FG],
         ];
+
+        if (!$this->hideBonusColumn) {
+            $this->groups[] = ['label' => 'Bonus', 'span' => 1 + count($uniqueDates), 'bg' => self::PINK_BG, 'fg' => self::PINK_FG];
+        }
 
         $this->numericSumKeys = [
             'total_working_hours',
             'working_days',
             'total_jobs_completed',
             'completed_earnings',
-            'bonus',
         ];
-        foreach ($uniqueDates as $date) {
-            $this->numericSumKeys[] = 'bonus_date_' . $date;
+
+        if (!$this->hideBonusColumn) {
+            $this->numericSumKeys[] = 'bonus';
+            foreach ($uniqueDates as $date) {
+                $this->numericSumKeys[] = 'bonus_date_' . $date;
+            }
         }
     }
 

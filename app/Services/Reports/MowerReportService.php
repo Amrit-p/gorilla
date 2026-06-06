@@ -121,6 +121,6 @@ class MowerReportService implements MowerReportInterface
     public function export(MowerRequestReportDTO $request): \Symfony\Component\HttpFoundation\Response
     {
         $reportData = $this->generate($request);
-        return $this->mowerReportExcelExporter->export($reportData);
+        return $this->mowerReportExcelExporter->export($reportData, $request->hideBonusColumn);
     }
 }

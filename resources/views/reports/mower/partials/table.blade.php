@@ -1,11 +1,14 @@
 <div class="overflow-x-auto rounded-lg border border-slate-200">
     <table class="w-full text-sm divide-y divide-slate-200">
+        @php $showBonus = !($hideBonusColumn ?? false); @endphp
         <thead class="bg-slate-50 text-slate-600 uppercase text-xs">
             <tr class="divide-x divide-slate-200">
                 <th colspan="3" class="px-4 py-3 text-center font-semibold tracking-wide bg-green-100 text-green-800">Mower</th>
                 <th colspan="1" class="px-4 py-3 text-center font-semibold tracking-wide bg-yellow-100 text-yellow-800">Jobs</th>
                 <th colspan="1" class="px-4 py-3 text-center font-semibold tracking-wide bg-blue-100 text-blue-800">Earnings</th>
-                <th colspan="1" class="px-4 py-3 text-center font-semibold tracking-wide bg-pink-100 text-pink-800">Bonus</th>
+                @if($showBonus)
+                    <th colspan="1" class="px-4 py-3 text-center font-semibold tracking-wide bg-pink-100 text-pink-800">Bonus</th>
+                @endif
             </tr>
             <tr class="divide-x divide-slate-200 border-t border-slate-200">
                 {{-- Mower --}}
@@ -17,7 +20,9 @@
                 {{-- Earnings --}}
                 <th class="px-4 py-2 text-right font-medium bg-blue-50 text-blue-700">Completed</th>
                 {{-- Bonus --}}
-                <th class="px-4 py-2 text-right font-medium bg-pink-50 text-pink-700">Bonus</th>
+                @if($showBonus)
+                    <th class="px-4 py-2 text-right font-medium bg-pink-50 text-pink-700">Bonus</th>
+                @endif
             </tr>
         </thead>
         <tbody class="divide-y divide-slate-200 bg-white">
@@ -59,21 +64,23 @@
                                 ${{ number_format((float) data_get($mower, 'completed_earnings', 0), 2) }}
                             </td>
                             {{-- Bonus --}}
-                            <td class="px-4 py-3 text-right {{ $userId ? 'mower-bonus-cell cursor-pointer hover:bg-pink-50 hover:text-pink-700' : '' }}"
-                                data-user-id="{{ $userId }}"
-                                data-mower-name="{{ data_get($mower, 'name') }}">
-                                ${{ number_format((float) data_get($mower, 'bonus', 0), 2) }}
-                            </td>
+                            @if($showBonus)
+                                <td class="px-4 py-3 text-right {{ $userId ? 'mower-bonus-cell cursor-pointer hover:bg-pink-50 hover:text-pink-700' : '' }}"
+                                    data-user-id="{{ $userId }}"
+                                    data-mower-name="{{ data_get($mower, 'name') }}">
+                                    ${{ number_format((float) data_get($mower, 'bonus', 0), 2) }}
+                                </td>
+                            @endif
                         </tr>
                     @endforeach
                 @else
                     <tr>
-                        <td colspan="6" class="px-4 py-8 text-center text-slate-500">No mower reports available.</td>
+                        <td colspan="{{ $showBonus ? 6 : 5 }}" class="px-4 py-8 text-center text-slate-500">No mower reports available.</td>
                     </tr>
                 @endif
             @else
                 <tr>
-                    <td colspan="6" class="px-4 py-6 text-center text-slate-500">Loading mower reports...</td>
+                    <td colspan="{{ $showBonus ? 6 : 5 }}" class="px-4 py-6 text-center text-slate-500">Loading mower reports...</td>
                 </tr>
             @endif
         </tbody>

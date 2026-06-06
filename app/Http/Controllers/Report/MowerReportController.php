@@ -28,8 +28,10 @@ class MowerReportController extends Controller
 
     public function index(MowerRequestReport $request): View
     {
+        $dto  = $request->toDTO();
         $data = [
-            'filters' => $request->toDTO()->toArray(),
+            'filters'         => $dto->toArray(),
+            'hideBonusColumn' => $dto->hideBonusColumn,
             ...$this->jobManagementService->formOptions()
         ];
         return view('reports.mower.index', $data);
@@ -38,9 +40,13 @@ class MowerReportController extends Controller
     public function report(MowerRequestReport $request): JsonResponse
     {
         try {
-            $reportData = $this->mowerReportService->generate($request->toDTO());
+            $dto        = $request->toDTO();
+            $reportData = $this->mowerReportService->generate($dto);
             return response()->json([
-                'html' => view('reports.mower.partials.table', compact('reportData'))->render()
+                'html' => view('reports.mower.partials.table', [
+                    'reportData'      => $reportData,
+                    'hideBonusColumn' => $dto->hideBonusColumn,
+                ])->render()
             ]);
         } catch (\Exception $e) {
             report($e);
@@ -84,10 +90,13 @@ class MowerReportController extends Controller
     public function exportPdf(MowerRequestReport $request): \Symfony\Component\HttpFoundation\Response
     {
         try {
-            $reportData = $this->mowerReportService->generate($request->toDTO());
+            $dto        = $request->toDTO();
+            $reportData = $this->mowerReportService->generate($dto);
 
-            return Pdf::loadView('reports.mower.export-pdf', compact('reportData'))
-                ->setPaper('a4', 'landscape')
+            return Pdf::loadView('reports.mower.export-pdf', [
+                'reportData'      => $reportData,
+                'hideBonusColumn' => $dto->hideBonusColumn,
+            ])->setPaper('a4', 'landscape')
                 ->download('mower_report_' . now()->format('Y_m_d') . '.pdf');
         } catch (\Exception $e) {
             report($e);

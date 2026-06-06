@@ -133,6 +133,7 @@ class MowerRequestReport extends FormRequest
         $data['job_level_id']  = $this->integer('job_level_id') ?: null;
 
         $dto = MowerRequestReportDTO::fromArray($data);
+        $dto->hideBonusColumn = !CrmRoles::MOWER_SHOW_BONUS && $this->user()->hasRole(CrmRoles::MOWER);
 
         return $dto;
     }

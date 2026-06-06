@@ -14,6 +14,12 @@ final class CrmRoles
     public const MOWER = 'Mower';
 
     /**
+     * Set to true to re-enable the Bonus column for Mower-role users everywhere
+     * (table view, PDF export, Excel export). false = hidden for Mowers.
+     */
+    public const MOWER_SHOW_BONUS = false;
+
+    /**
      * @return array<int, string>
      */
     public static function all(): array
