@@ -1,12 +1,5 @@
-<x-layouts.dashboard :title="'Mower Reports'">
+<x-layouts.dashboard :title="'Mower Reports'" :subtitle="'View earnings, completed jobs, and incentive details for all mowers.'">
     <div class="space-y-5">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-                <h2 class="text-lg font-semibold text-slate-900">Mower Reports</h2>
-                <p class="text-sm text-slate-600">View earnings, completed jobs, and incentive details for all mowers.
-                </p>
-            </div>
-        </div>
 
         @if (session('success'))
             <div class="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
