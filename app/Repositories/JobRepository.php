@@ -40,6 +40,8 @@ class JobRepository
                 'incentive_percentage',
                 'equipment_type_id',
                 'job_level_id',
+                'special_remarks',
+                'internal_notes',
             ])
             ->with([
                 'client:id,name,address,customer_unique_id,phone,email,customer_type',

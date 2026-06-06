@@ -169,6 +169,7 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
         Route::post('/admin/jobs', [JobManagementController::class, 'store'])->name('admin.jobs.store');
         Route::get('/admin/jobs/{job}/edit', [JobManagementController::class, 'edit'])->name('admin.jobs.edit');
         Route::patch('/admin/jobs/{job}', [JobManagementController::class, 'update'])->name('admin.jobs.update');
+        Route::patch('/admin/jobs/{job}/remarks', [JobManagementController::class, 'updateRemarks'])->name('admin.jobs.remarks.update');
         Route::post('/admin/jobs/bulk/assign', [JobManagementController::class, 'bulkAssignEmployees'])->name('admin.jobs.bulk.assign');
         Route::post('/admin/jobs/bulk/status', [JobManagementController::class, 'bulkUpdateStatus'])->name('admin.jobs.bulk.status.update');
         Route::post('/admin/jobs/bulk/schedule', [JobManagementController::class, 'bulkScheduleJobs'])->name('admin.jobs.bulk.schedule');
@@ -228,4 +229,5 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
             });
         });
     });
+
 });

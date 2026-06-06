@@ -319,6 +319,20 @@ class JobManagementController extends Controller
             ->download('jobs-' . now()->format('Y-m-d') . '.pdf');
     }
 
+    public function updateRemarks(Request $request, Job $job): JsonResponse
+    {
+        $this->authorize('update', $job);
+
+        $validated = $request->validate([
+            'special_remarks' => ['nullable', 'string'],
+            'internal_notes'  => ['nullable', 'string'],
+        ]);
+
+        $job->update($validated);
+
+        return response()->json(['message' => 'Remarks updated successfully.']);
+    }
+
     public function reorder(Request $request): JsonResponse
     {
         $this->authorize('manage-job-records');

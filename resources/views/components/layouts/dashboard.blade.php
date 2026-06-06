@@ -35,7 +35,7 @@
                 </svg>
             </button>
 
-            <main id="main-content" class="min-h-screen w-full flex-1">
+            <main id="main-content" class="min-h-screen flex-1 min-w-0">
                 <div class="border-b border-slate-200 bg-white">
                     <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
                         <div class="min-w-[200px]">

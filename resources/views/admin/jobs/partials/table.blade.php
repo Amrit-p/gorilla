@@ -4,7 +4,7 @@
     if ($canReorder) {
         $headers[] = '';
     }
-    $headers = array_merge($headers, ['Customer / Address', 'Zone', 'Schedule', 'Services', 'Recurrence', 'Payment', 'Mowers', 'Actions']);
+    $headers = array_merge($headers, ['Customer / Address', 'Zone', 'Schedule', 'Services', 'Recurrence', 'Payment', 'Mowers', 'Remarks', 'Actions']);
 @endphp
 
 <div id="job-bulk-toolbar" class="fixed bottom-5 left-1/2 z-40 hidden w-[min(calc(100vw-2rem),64rem)] -translate-x-1/2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-xl shadow-slate-900/10 ring-1 ring-slate-900/5">
@@ -174,6 +174,24 @@
                 @endif
             </td>
 
+            {{-- Remarks --}}
+            <td class="px-4 py-4 max-w-[200px]">
+                <button type="button" class="view-remarks-btn group/rem w-full text-left"
+                        data-id="{{ $job->id }}"
+                        data-special-remarks="{{ $job->special_remarks ?? '' }}"
+                        data-internal-notes="{{ $job->internal_notes ?? '' }}">
+                    @if ($job->special_remarks)
+                        <p class="truncate text-sm text-slate-700 group-hover/rem:text-emerald-600">{{ $job->special_remarks }}</p>
+                    @endif
+                    @if ($job->internal_notes)
+                        <p class="truncate text-xs text-slate-400 group-hover/rem:text-emerald-500">{{ $job->internal_notes }}</p>
+                    @endif
+                    @if (!$job->special_remarks && !$job->internal_notes)
+                        <span class="text-sm text-slate-300 group-hover/rem:text-emerald-400">+ Add</span>
+                    @endif
+                </button>
+            </td>
+
             {{-- Actions --}}
             <td class="whitespace-nowrap px-4 py-4">
                 <div class="relative inline-block">
@@ -247,7 +265,7 @@
         </tr>
     @empty
         <tr>
-            <td colspan="{{ $canReorder ? 10 : 9 }}" class="px-4 py-10 text-center text-sm text-slate-400">No jobs found.</td>
+            <td colspan="{{ $canReorder ? 11 : 10 }}" class="px-4 py-10 text-center text-sm text-slate-400">No jobs found.</td>
         </tr>
     @endforelse
 </x-ui.table>

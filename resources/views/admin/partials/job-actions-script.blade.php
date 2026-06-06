@@ -285,6 +285,33 @@
             ids.length > 1 ? 'Rescheduled selected jobs.' : 'Job rescheduled.', 'Failed to reschedule.');
     });
 
+    $(document).on('click', '.view-remarks-btn', function() {
+        const $btn = $(this);
+        $('#remarks-job-form').data('jobId', $btn.data('id'));
+        $('#remarks-job-form').find('[name="special_remarks"]').val($btn.data('special-remarks') || '');
+        $('#remarks-job-form').find('[name="internal_notes"]').val($btn.data('internal-notes') || '');
+        openModal('remarks-job-modal');
+    });
+
+    $('#remarks-job-form').on('submit', function(e) {
+        e.preventDefault();
+        const id = $(this).data('jobId');
+        $.ajax({
+            url: "{{ url('admin/jobs') }}/" + id + '/remarks',
+            method: 'POST',
+            data: $(this).serialize() + '&_method=PATCH',
+            headers: { Accept: 'application/json' },
+            success: function(res) {
+                closeModal('remarks-job-modal');
+                showJobAlert(res.message || 'Remarks updated.');
+                refreshJobsTable();
+            },
+            error: function(xhr) {
+                showJobAlert(Object.values(xhr.responseJSON?.errors || {})[0]?.[0] || 'Failed to update remarks.', true);
+            }
+        });
+    });
+
     $(document).on('click', '.delete-job', function() {
         if (!confirm('Delete this job?')) return;
         deleteJobs([Number($(this).data('id'))]);
