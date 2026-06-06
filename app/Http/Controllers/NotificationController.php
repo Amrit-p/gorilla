@@ -22,6 +22,22 @@ class NotificationController extends Controller
         ]);
     }
 
+    public function mowerIndex(Request $request): View
+    {
+        $user = $request->user();
+        $notifications = $user->notifications()->latest()->paginate(30);
+
+        $grouped = $notifications->getCollection()->groupBy(
+            fn ($n) => $n->created_at->toDateString()
+        );
+
+        return view('mower.notifications.index', [
+            'notifications' => $notifications,
+            'grouped' => $grouped,
+            'unreadCount' => $this->rememberUnreadCount($user),
+        ]);
+    }
+
     public function unread(Request $request): JsonResponse
     {
         $user = $request->user();

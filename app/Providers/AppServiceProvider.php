@@ -72,7 +72,7 @@ class AppServiceProvider extends ServiceProvider
             $view->with('websiteBranding', WebsiteSettings::branding());
         });
 
-        View::composer(['components.layouts.dashboard', 'components.layouts.app'], function ($view): void {
+        View::composer(['components.layouts.dashboard', 'components.layouts.app', 'components.layouts.mower'], function ($view): void {
             if (! auth()->check()) {
                 $view->with('unreadNotificationCount', 0);
 

@@ -185,6 +185,7 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
 
         Route::prefix('mower')->name('mower.')->group(function (): void {
             Route::get('/', [MowerDashboardController::class, 'index'])->name('index');
+            Route::get('/notifications', [NotificationController::class, 'mowerIndex'])->name('notifications.index');
             Route::get('/jobs/{job}', [MowerDashboardController::class, 'show'])->name('jobs.show');
             Route::patch('/jobs/{job}/status', [MowerDashboardController::class, 'updateStatus'])->name('jobs.status.update');
             Route::patch('/jobs/{job}/payment', [MowerDashboardController::class, 'updatePayment'])->name('jobs.payment.update');
