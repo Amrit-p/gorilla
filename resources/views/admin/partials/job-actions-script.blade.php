@@ -131,6 +131,67 @@
         closeModal($(this).data('close-modal'));
     });
 
+    // ── Tab switcher ────────────────────────────────────────────────────────
+    const TAB_INACTIVE = 'border-transparent text-slate-500 hover:text-slate-700';
+    const TAB_ACTIVE   = 'border-emerald-500 text-emerald-600 job-tab-active';
+
+    $(document).on('click', '.job-tab-btn', function() {
+        const $btn   = $(this);
+        const modal  = $btn.data('modal');
+        const target = $btn.data('tab');
+        const $modal = $('#' + modal);
+
+        // Switch button styles
+        $modal.find('.job-tab-btn').each(function() {
+            $(this).removeClass(TAB_ACTIVE).addClass('border-transparent text-slate-500 hover:text-slate-700')
+                   .attr('aria-selected', 'false');
+        });
+        $btn.removeClass('border-transparent text-slate-500 hover:text-slate-700')
+            .addClass(TAB_ACTIVE).attr('aria-selected', 'true');
+
+        // Switch panels
+        $modal.find('.job-tab-panel').addClass('hidden');
+        $modal.find(`.job-tab-panel[data-panel="${target}"]`).removeClass('hidden');
+
+        // Lazy-load history on first click
+        if (target === 'history') {
+            const panelId  = modal === 'assign-job-modal' ? 'assign-client-history' : 'schedule-client-history';
+            const clientId = $modal.data('client-id') || '';
+            const jobId    = $modal.data('job-id') || 0;
+            const loaded   = $modal.data('history-loaded');
+            if (!loaded && clientId) {
+                loadClientHistory(panelId, clientId, jobId);
+                $modal.data('history-loaded', true);
+            }
+        }
+    });
+
+    function resetHistoryPanel(panelId) {
+        const $p = $('#' + panelId);
+        $p.find('.client-history-loading').removeClass('hidden');
+        $p.find('.client-history-content').addClass('hidden');
+        $p.find('.client-history-accounting').addClass('hidden').text('');
+        $p.find('.client-history-level-banner').css('display', 'none');
+        $p.find('.client-history-service').empty();
+        $p.find('.client-history-service-section').addClass('hidden');
+        $p.find('.client-history-remarks').empty();
+        $p.find('.client-history-remarks-section').addClass('hidden');
+        $p.find('.client-history-empty').css('display', 'none');
+        $p.closest('.job-tab-panel').siblings('[role="tablist"]').find('.job-history-dot').addClass('hidden');
+    }
+
+    function resetModalTabs(modalId) {
+        const $modal = $('#' + modalId);
+        $modal.find('.job-tab-btn').each(function() {
+            const isForm = $(this).data('tab') === 'form';
+            $(this).toggleClass(TAB_ACTIVE, isForm)
+                   .toggleClass('border-transparent text-slate-500 hover:text-slate-700', !isForm)
+                   .attr('aria-selected', isForm ? 'true' : 'false');
+        });
+        $modal.find('.job-tab-panel').addClass('hidden');
+        $modal.find('.job-tab-panel[data-panel="form"]').removeClass('hidden');
+    }
+
     function selectedJobIds() {
         return typeof window.selectedTableIds === 'function' ? window.selectedTableIds() : [];
     }
@@ -168,15 +229,216 @@
         }
     }
 
+    // ── Clampable text helper ───────────────────────────────────────────────
+    let _chSeq = 0;
+    function clampable(text, extraClass) {
+        const id = 'ch-' + (++_chSeq);
+        return '<p id="' + id + '" class="ch-clamped ' + (extraClass || '') + '">' + esc(text) + '</p>' +
+               '<button type="button" class="ch-toggle mt-0.5 text-[10px] font-medium text-emerald-600 hover:underline" data-target="' + id + '" data-expanded="false">Show more</button>';
+    }
+
+    $(document).on('click', '.ch-section-toggle', function (e) {
+        e.preventDefault();
+        const $btn     = $(this);
+        const $section = $('#' + $btn.data('target'));
+        const opening  = $section.hasClass('hidden');
+        $section.toggleClass('hidden', !opening);
+        $btn.find('.ch-chevron').toggleClass('rotate-180', opening);
+    });
+
+    $(document).on('click', '.ch-toggle', function () {
+        const $btn      = $(this);
+        const $p        = $('#' + $btn.data('target'));
+        const expanded  = $btn.data('expanded') === true;
+        if (expanded) {
+            $p.addClass('ch-clamped');
+            $btn.text('Show more').data('expanded', false);
+        } else {
+            $p.removeClass('ch-clamped');
+            $btn.text('Show less').data('expanded', true);
+        }
+    });
+
+    function hideToggleIfNotClamped($container) {
+        $container.find('.ch-toggle').each(function () {
+            const $btn = $(this);
+            const el   = document.getElementById($btn.data('target'));
+            if (el && el.scrollHeight <= el.clientHeight + 2) {
+                $btn.hide();
+            }
+        });
+    }
+
+    const STATUS_COLORS = {
+        'Pending':    'bg-amber-50 text-amber-700 ring-amber-200/60',
+        'Started':    'bg-blue-50 text-blue-700 ring-blue-200/60',
+        'Completed':  'bg-emerald-50 text-emerald-700 ring-emerald-200/60',
+        'Cancelled':  'bg-red-50 text-red-600 ring-red-200/60',
+    };
+
+    function statusBadge(status) {
+        const cls = STATUS_COLORS[status] || 'bg-slate-100 text-slate-600 ring-slate-200/60';
+        return '<span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ' + cls + '">' + $('<span>').text(status).html() + '</span>';
+    }
+
+    function esc(str) {
+        return $('<span>').text(str || '').html();
+    }
+
+    function loadClientHistory(panelId, clientId, jobId) {
+        const $panel = $('#' + panelId);
+        if (!$panel.length || !clientId) {
+            $panel.addClass('hidden');
+            return;
+        }
+        $panel.removeClass('hidden');
+        $panel.find('.client-history-loading').removeClass('hidden');
+        $panel.find('.client-history-content').addClass('hidden');
+        $panel.find('.client-history-accounting').addClass('hidden').text('');
+
+        // wire toggle button (once)
+        if (!$panel.data('history-wired')) {
+            $panel.data('history-wired', true);
+            $panel.on('click', '.client-history-toggle', function() {
+                const $body = $panel.find('.client-history-body');
+                const $chevron = $panel.find('.client-history-chevron');
+                $body.toggleClass('hidden');
+                $chevron.toggleClass('rotate-180');
+            });
+        }
+
+        $.ajax({
+            url: "{{ route('admin.jobs.client-history') }}",
+            method: 'GET',
+            data: { client_id: clientId, exclude_job_id: jobId || 0 },
+            headers: { Accept: 'application/json' },
+            success: function(data) {
+                $panel.find('.client-history-loading').addClass('hidden');
+
+                if (data.accounting_level) {
+                    $panel.find('.client-history-accounting')
+                        .removeClass('hidden')
+                        .text(data.accounting_level);
+                    // tabbed banner
+                    $panel.find('.client-history-level-name').text(data.accounting_level);
+                    $panel.find('.client-history-level-banner').css('display', 'flex');
+                }
+
+                const hasAny = (data.service_history && data.service_history.length) ||
+                               (data.mower_remarks && data.mower_remarks.length);
+
+                if (!hasAny) {
+                    $panel.find('.client-history-empty').css('display', 'flex');
+                    $panel.find('.client-history-service-section, .client-history-remarks-section, .client-history-level-banner').addClass('hidden').css('display', '');
+                    $panel.find('.client-history-content').removeClass('hidden');
+                    return;
+                }
+                $panel.find('.client-history-empty').css('display', 'none');
+
+                // ── Service history (date + status + notes grouped per job) ──
+                const $service = $panel.find('.client-history-service');
+                const $serviceSection = $panel.find('.client-history-service-section');
+                $service.empty();
+                if (data.service_history && data.service_history.length) {
+                    const jobBaseUrl = "{{ url('admin/jobs') }}";
+                    data.service_history.forEach(function(j) {
+                        const hasNotes = !!(j.special_remarks || j.internal_notes);
+                        const notesId  = 'chn-' + (++_chSeq);
+
+                        let notesBodyHtml = '';
+                        if (hasNotes) {
+                            notesBodyHtml += '<div id="' + notesId + '" class="hidden space-y-2 border-t border-slate-100 px-3 pb-2.5 pt-2">';
+                            if (j.special_remarks) {
+                                notesBodyHtml += '<div>' +
+                                    '<span class="mb-0.5 inline-block rounded bg-violet-100 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-violet-600">Remarks</span>' +
+                                    clampable(j.special_remarks, 'text-slate-700') +
+                                '</div>';
+                            }
+                            if (j.internal_notes) {
+                                notesBodyHtml += '<div>' +
+                                    '<span class="mb-0.5 inline-block rounded bg-sky-100 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-sky-600">Notes</span>' +
+                                    clampable(j.internal_notes, 'text-slate-600') +
+                                '</div>';
+                            }
+                            notesBodyHtml += '</div>';
+                        }
+
+                        const toggleBtn = hasNotes
+                            ? '<button type="button" class="ch-section-toggle shrink-0 rounded p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600" data-target="' + notesId + '" aria-label="Toggle notes">' +
+                                '<svg class="ch-chevron h-3.5 w-3.5 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m19 9-7 7-7-7"/></svg>' +
+                              '</button>'
+                            : '';
+
+                        $service.append(
+                            '<div class="overflow-hidden rounded-lg bg-white text-xs ring-1 ring-slate-200">' +
+                                '<div class="flex items-center gap-1 pr-1">' +
+                                    '<a href="' + jobBaseUrl + '/' + j.id + '" target="_blank" rel="noopener"' +
+                                        ' class="group flex min-w-0 flex-1 items-center gap-2 px-3 py-2 transition-colors hover:bg-emerald-50">' +
+                                        '<svg class="h-3 w-3 shrink-0 text-slate-400 group-hover:text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"/></svg>' +
+                                        '<span class="font-medium text-slate-700 group-hover:text-emerald-700">' + esc(j.date) + '</span>' +
+                                        statusBadge(j.status) +
+                                        '<span class="ml-auto truncate text-slate-400" style="max-width:100px;">' + esc(j.done_by) + '</span>' +
+                                        '<svg class="h-3 w-3 shrink-0 text-slate-300 group-hover:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>' +
+                                    '</a>' +
+                                    toggleBtn +
+                                '</div>' +
+                                notesBodyHtml +
+                            '</div>'
+                        );
+                    });
+                    $serviceSection.removeClass('hidden');
+                } else {
+                    $serviceSection.addClass('hidden');
+                }
+
+                // ── Mower remarks ──────────────────────────────────────────────────
+                const $remarks = $panel.find('.client-history-remarks');
+                const $remarksSection = $panel.find('.client-history-remarks-section');
+                $remarks.empty();
+                if (data.mower_remarks && data.mower_remarks.length) {
+                    data.mower_remarks.forEach(function(r) {
+                        $remarks.append(
+                            '<div class="overflow-hidden rounded-lg bg-white text-xs ring-1 ring-slate-200">' +
+                                '<div class="px-3 py-2.5">' +
+                                    '<div class="mb-1 flex items-center justify-between gap-2">' +
+                                        '<span class="font-medium text-slate-600">' + esc(r.created_by) + '</span>' +
+                                        '<span class="text-[10px] text-slate-400">' + esc(r.created_at) + '</span>' +
+                                    '</div>' +
+                                    clampable(r.description, 'text-slate-700') +
+                                '</div>' +
+                            '</div>'
+                        );
+                    });
+                    $remarksSection.removeClass('hidden');
+                } else {
+                    $remarksSection.addClass('hidden');
+                }
+
+                $panel.find('.client-history-content').removeClass('hidden');
+
+                // Hide "Show more" on items whose text fits within 2 lines
+                hideToggleIfNotClamped($panel);
+
+                // Show dot indicator on the history tab button
+                const dotModalId = panelId === 'assign-client-history' ? 'assign-job-modal' : 'schedule-job-modal';
+                $('#' + dotModalId + ' .job-tab-btn[data-tab="history"] .job-history-dot').removeClass('hidden');
+            },
+            error: function() {
+                $panel.find('.client-history-loading').addClass('hidden');
+            }
+        });
+    }
+
     $(document).on('click', '.assign-job', function() {
         const $btn        = $(this);
         const doneBy      = $btn.data('done-by');
         const employeeIds = $btn.data('employee-ids') || [];
+        const jobId       = Number($btn.data('id'));
+        const clientId    = $btn.data('client-id') || '';
 
         $('#assign-job-form')[0].reset();
-        markModalBulkContext($('#assign-job-form'), [Number($btn.data('id'))], 'Assignment');
+        markModalBulkContext($('#assign-job-form'), [jobId], 'Assignment');
 
-        // Restore mower widget state
         if (typeof window.mcaReset_assign === 'function') {
             window.mcaReset_assign(
                 doneBy ? String(doneBy) : null,
@@ -184,6 +446,12 @@
             );
         }
 
+        // Store context for lazy history load; reset history state
+        $('#assign-job-modal').data({ 'client-id': clientId, 'job-id': jobId, 'history-loaded': false });
+        resetHistoryPanel('assign-client-history');
+        resetModalTabs('assign-job-modal');
+        // Show history tab only for single jobs
+        $('#assign-job-modal .job-tab-btn[data-tab="history"]').toggleClass('hidden', !clientId);
         openModal('assign-job-modal');
     });
 
@@ -198,6 +466,9 @@
             window.mcaReset_assign(null, []);
         }
 
+        $('#assign-job-modal').data({ 'client-id': '', 'job-id': 0, 'history-loaded': false });
+        resetModalTabs('assign-job-modal');
+        $('#assign-job-modal .job-tab-btn[data-tab="history"]').addClass('hidden');
         openModal('assign-job-modal');
     });
 
@@ -262,10 +533,16 @@
     });
 
     $(document).on('click', '.schedule-job', function() {
-        const $btn = $(this);
-        markModalBulkContext($('#schedule-job-form'), [Number($btn.data('id'))], 'Reschedule');
+        const $btn     = $(this);
+        const jobId    = Number($btn.data('id'));
+        const clientId = $btn.data('client-id') || '';
+        markModalBulkContext($('#schedule-job-form'), [jobId], 'Reschedule');
         $('#schedule-job-form').find('[name="scheduled_date"]').val($btn.data('scheduled-date') || '');
         $('#schedule-job-form').find('[name="scheduled_time"]').val($btn.data('scheduled-time') || '');
+        $('#schedule-job-modal').data({ 'client-id': clientId, 'job-id': jobId, 'history-loaded': false });
+        resetHistoryPanel('schedule-client-history');
+        resetModalTabs('schedule-job-modal');
+        $('#schedule-job-modal .job-tab-btn[data-tab="history"]').toggleClass('hidden', !clientId);
         openModal('schedule-job-modal');
     });
 
@@ -275,6 +552,9 @@
         markModalBulkContext($('#schedule-job-form'), ids, 'Reschedule');
         $('#schedule-job-form').find('[name="scheduled_date"]').val('');
         $('#schedule-job-form').find('[name="scheduled_time"]').val('');
+        $('#schedule-job-modal').data({ 'client-id': '', 'job-id': 0, 'history-loaded': false });
+        resetModalTabs('schedule-job-modal');
+        $('#schedule-job-modal .job-tab-btn[data-tab="history"]').addClass('hidden');
         openModal('schedule-job-modal');
     });
 

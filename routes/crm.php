@@ -5,29 +5,30 @@
  */
 
 use App\Http\Controllers\Admin\ActivityLogController;
-use App\Http\Controllers\Admin\Masters\EquipmentTypeController;
-use App\Http\Controllers\Admin\Masters\SafetyTypeController;
-use App\Http\Controllers\Admin\Masters\ServiceTypeController;
-use App\Http\Controllers\Admin\Masters\RecurrenceController;
-use App\Http\Controllers\Admin\Masters\AccountingLevelController;
-use App\Http\Controllers\Admin\Masters\JobLevelController;
-use App\Http\Controllers\Admin\Masters\ChecklistController;
-use App\Http\Controllers\Admin\Masters\ZoneController;
-use App\Http\Controllers\Mower\ChecklistController as MowerChecklistController;
 use App\Http\Controllers\Admin\ClientManagementController;
+use App\Http\Controllers\Admin\DiscussionController;
+use App\Http\Controllers\Admin\EmployeeBonusController;
 use App\Http\Controllers\Admin\JobManagementController;
 use App\Http\Controllers\Admin\LeadManagementController;
 use App\Http\Controllers\Admin\MapRoutingController;
+use App\Http\Controllers\Admin\Masters\AccountingLevelController;
+use App\Http\Controllers\Admin\Masters\ChecklistController;
+use App\Http\Controllers\Admin\Masters\EquipmentTypeController;
+use App\Http\Controllers\Admin\Masters\JobLevelController;
+use App\Http\Controllers\Admin\Masters\RecurrenceController;
+use App\Http\Controllers\Admin\Masters\SafetyTypeController;
+use App\Http\Controllers\Admin\Masters\ServiceTypeController;
+use App\Http\Controllers\Admin\Masters\ZoneController;
 use App\Http\Controllers\Admin\RolePermissionController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\UserManagementController;
-use App\Http\Controllers\Admin\DiscussionController;
-use App\Http\Controllers\Admin\EmployeeBonusController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Mower\ChecklistController as MowerChecklistController;
 use App\Http\Controllers\Mower\MowerDashboardController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Report\MowerReportController;
 use App\Support\CrmPermissions;
 use Illuminate\Support\Facades\Route;
 
@@ -177,6 +178,7 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
         Route::get('/admin/jobs/mower-suggestions', [JobManagementController::class, 'mowerSuggestions'])->name('admin.jobs.mower-suggestions');
         Route::get('/admin/jobs/mower-workloads', [JobManagementController::class, 'mowerWorkloads'])->name('admin.jobs.mower-workloads');
         Route::get('/admin/jobs/client-remarks', [JobManagementController::class, 'clientRemarks'])->name('admin.jobs.client-remarks');
+        Route::get('/admin/jobs/client-history', [JobManagementController::class, 'clientHistory'])->name('admin.jobs.client-history');
         Route::post('/admin/jobs', [JobManagementController::class, 'store'])->name('admin.jobs.store');
         Route::get('/admin/jobs/{job}/edit', [JobManagementController::class, 'edit'])->name('admin.jobs.edit');
         Route::patch('/admin/jobs/{job}', [JobManagementController::class, 'update'])->name('admin.jobs.update');
@@ -227,15 +229,15 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
     ]))->group(function (): void {
         Route::prefix('reports')->name('reports.')->group(function (): void {
             Route::prefix('mower')->name('mower.')->group(function (): void {
-                Route::get('/', [\App\Http\Controllers\Report\MowerReportController::class, 'index'])
+                Route::get('/', [MowerReportController::class, 'index'])
                     ->name('index');
-                Route::get('/report', [\App\Http\Controllers\Report\MowerReportController::class, 'report'])
+                Route::get('/report', [MowerReportController::class, 'report'])
                     ->name('report');
-                Route::get('/jobs', [\App\Http\Controllers\Report\MowerReportController::class, 'jobs'])
+                Route::get('/jobs', [MowerReportController::class, 'jobs'])
                     ->name('jobs');
-                Route::get('/export', [\App\Http\Controllers\Report\MowerReportController::class, 'export'])
+                Route::get('/export', [MowerReportController::class, 'export'])
                     ->name('export');
-                Route::get('/export-pdf', [\App\Http\Controllers\Report\MowerReportController::class, 'exportPdf'])
+                Route::get('/export-pdf', [MowerReportController::class, 'exportPdf'])
                     ->name('export-pdf');
             });
         });

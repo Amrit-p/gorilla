@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Enums\JobWorkflowStatus;
 use App\Exports\JobsExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AssignJobRequest;
@@ -11,6 +10,7 @@ use App\Http\Requests\Admin\StoreJobRequest;
 use App\Http\Requests\Admin\UpdateJobRequest;
 use App\Http\Requests\Admin\UpdateJobStatusRequest;
 use App\Http\Requests\Admin\UploadJobImagesRequest;
+use App\Models\Client;
 use App\Models\Job;
 use App\Models\MowerRemark;
 use App\Services\JobImageManagementService;
@@ -68,7 +68,7 @@ class JobManagementController extends Controller
             $request->validated(),
             $request->file('images', [])
         );
-        if (!$job) {
+        if (! $job) {
             return response()->json(['message' => 'Failed to create job. Please try again.'], 500);
         }
         if ($request->expectsJson()) {
@@ -132,7 +132,7 @@ class JobManagementController extends Controller
             $request->validated(),
             $images
         );
-        if($job === null) {
+        if ($job === null) {
             return response()->json(['message' => 'Failed to update job. Please try again.'], 500);
         }
         if ($request->expectsJson()) {
@@ -185,7 +185,7 @@ class JobManagementController extends Controller
 
         $clientId = (int) $request->query('client_id');
 
-        if (!$clientId) {
+        if (! $clientId) {
             return response()->json(['lastRemark' => null, 'allRemarks' => []]);
         }
 
@@ -195,13 +195,66 @@ class JobManagementController extends Controller
             ->get()
             ->map(fn ($r) => [
                 'description' => $r->description,
-                'user_name'   => $r->user?->name ?? 'Unknown',
-                'created_at'  => $r->created_at->format('M j, Y g:i A'),
+                'user_name' => $r->user?->name ?? 'Unknown',
+                'created_at' => $r->created_at->format('M j, Y g:i A'),
             ]);
 
         return response()->json([
             'lastRemark' => $remarks->first(),
             'allRemarks' => $remarks->all(),
+        ]);
+    }
+
+    public function clientHistory(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Job::class);
+
+        $clientId = (int) $request->query('client_id');
+        $excludeJobId = (int) $request->query('exclude_job_id', 0);
+
+        if (! $clientId) {
+            return response()->json([
+                'accounting_level' => null,
+                'service_dates' => [],
+                'notes_history' => [],
+                'remarks' => [],
+            ]);
+        }
+
+        $client = Client::with('accountingLevel')->find($clientId);
+
+        $pastJobs = Job::with('doneByUser:id,name')
+            ->where('client_id', $clientId)
+            ->when($excludeJobId, fn ($q) => $q->where('id', '!=', $excludeJobId))
+            ->whereNotNull('scheduled_date')
+            ->orderByDesc('scheduled_date')
+            ->limit(8)
+            ->get();
+
+        $serviceHistory = $pastJobs->map(fn ($j) => [
+            'id' => $j->id,
+            'date' => $j->scheduled_date->format('d M Y'),
+            'status' => $j->status ?? '—',
+            'done_by' => $j->doneByUser?->name ?? '—',
+            'special_remarks' => $j->special_remarks,
+            'internal_notes' => $j->internal_notes,
+        ])->values()->all();
+
+        $mowerRemarks = MowerRemark::with('user:id,name')
+            ->where('client_id', $clientId)
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(fn ($r) => [
+                'id' => $r->id,
+                'description' => $r->description,
+                'created_by' => $r->user?->name ?? '—',
+                'created_at' => $r->created_at?->format('d M Y'),
+            ])->values()->all();
+
+        return response()->json([
+            'accounting_level' => $client?->accountingLevel?->name,
+            'service_history' => $serviceHistory,
+            'mower_remarks' => $mowerRemarks,
         ]);
     }
 
@@ -219,7 +272,6 @@ class JobManagementController extends Controller
             'attached_images' => $job->fresh()->attached_images,
         ]);
     }
-
 
     public function bulkAssignEmployees(AssignJobRequest $request): JsonResponse
     {
@@ -244,7 +296,6 @@ class JobManagementController extends Controller
         ]);
     }
 
-
     public function bulkUpdateStatus(UpdateJobStatusRequest $request): JsonResponse
     {
         $jobs = $this->jobsForBulkAction($request->validated('job_ids'), 'transitionStatus');
@@ -261,7 +312,6 @@ class JobManagementController extends Controller
             'updated_count' => $updatedJobs->count(),
         ]);
     }
-
 
     public function bulkScheduleJobs(ScheduleJobsRequest $request): JsonResponse
     {
@@ -305,7 +355,7 @@ class JobManagementController extends Controller
 
         $jobs = $this->jobManagementService->exportJobs($this->exportFilters($request));
 
-        return (new JobsExport($jobs))->download('jobs-' . now()->format('Y-m-d') . '.xlsx');
+        return (new JobsExport($jobs))->download('jobs-'.now()->format('Y-m-d').'.xlsx');
     }
 
     public function exportPdf(Request $request): Response
@@ -316,7 +366,7 @@ class JobManagementController extends Controller
 
         return Pdf::loadView('admin.jobs.partials.export-pdf', compact('jobs'))
             ->setPaper('a3', 'landscape')
-            ->download('jobs-' . now()->format('Y-m-d') . '.pdf');
+            ->download('jobs-'.now()->format('Y-m-d').'.pdf');
     }
 
     public function updateRemarks(Request $request, Job $job): JsonResponse
@@ -325,7 +375,7 @@ class JobManagementController extends Controller
 
         $validated = $request->validate([
             'special_remarks' => ['nullable', 'string'],
-            'internal_notes'  => ['nullable', 'string'],
+            'internal_notes' => ['nullable', 'string'],
         ]);
 
         $job->update($validated);
@@ -338,7 +388,7 @@ class JobManagementController extends Controller
         $this->authorize('manage-job-records');
 
         $ids = $request->validate([
-            'ordered_ids'   => ['required', 'array', 'min:1'],
+            'ordered_ids' => ['required', 'array', 'min:1'],
             'ordered_ids.*' => ['required', 'integer', 'exists:service_jobs,id'],
         ])['ordered_ids'];
 
@@ -352,22 +402,22 @@ class JobManagementController extends Controller
     private function exportFilters(Request $request): array
     {
         return [
-            'search'         => $request->string('search')->toString(),
-            'list_scope'     => $request->string('list_scope')->toString(),
-            'status'         => $request->string('status')->toString(),
-            'priority'       => $request->string('priority')->toString(),
-            'zone_id'        => $request->string('zone_id')->toString(),
-            'client_id'      => $request->string('client_id')->toString(),
-            'recurrence_id'  => $request->string('recurrence_id')->toString(),
-            'assignment'     => $request->string('assignment')->toString(),
-            'payment_mode'      => $request->string('payment_mode')->toString(),
-            'payment_status'    => $request->string('payment_status')->toString(),
+            'search' => $request->string('search')->toString(),
+            'list_scope' => $request->string('list_scope')->toString(),
+            'status' => $request->string('status')->toString(),
+            'priority' => $request->string('priority')->toString(),
+            'zone_id' => $request->string('zone_id')->toString(),
+            'client_id' => $request->string('client_id')->toString(),
+            'recurrence_id' => $request->string('recurrence_id')->toString(),
+            'assignment' => $request->string('assignment')->toString(),
+            'payment_mode' => $request->string('payment_mode')->toString(),
+            'payment_status' => $request->string('payment_status')->toString(),
             'equipment_type_id' => $request->string('equipment_type_id')->toString(),
-            'job_level_id'      => $request->string('job_level_id')->toString(),
-            'customer_type'     => $request->string('customer_type')->toString(),
-            'service_type'      => $request->string('service_type')->toString(),
-            'date_range_start'  => $request->input('date_range.start', ''),
-            'date_range_end'    => $request->input('date_range.end', ''),
+            'job_level_id' => $request->string('job_level_id')->toString(),
+            'customer_type' => $request->string('customer_type')->toString(),
+            'service_type' => $request->string('service_type')->toString(),
+            'date_range_start' => $request->input('date_range.start', ''),
+            'date_range_end' => $request->input('date_range.end', ''),
         ];
     }
 

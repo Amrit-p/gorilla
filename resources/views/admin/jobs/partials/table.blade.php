@@ -222,6 +222,7 @@
                         @can('assign-jobs')
                             <button class="assign-job flex w-full items-center gap-2.5 px-3.5 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50"
                                     data-id="{{ $job->id }}"
+                                    data-client-id="{{ $job->client_id ?? '' }}"
                                     data-done-by="{{ $job->done_by_user_id ?? '' }}"
                                     data-employee-ids="{{ json_encode($job->assignedEmployees->pluck('id')) }}">
                                 <svg class="h-3.5 w-3.5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -237,6 +238,7 @@
                             </button>
                             <button class="schedule-job flex w-full items-center gap-2.5 px-3.5 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50"
                                     data-id="{{ $job->id }}"
+                                    data-client-id="{{ $job->client_id ?? '' }}"
                                     data-scheduled-date="{{ $job->scheduled_date?->format('Y-m-d') ?? '' }}"
                                     data-scheduled-time="{{ $job->scheduled_time ?? '' }}">
                                 <svg class="h-3.5 w-3.5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
