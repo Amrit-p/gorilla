@@ -42,6 +42,9 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
     Route::patch('/dashboard/preferences', [DashboardController::class, 'updatePreferences'])
         ->middleware('crm.permission:'.CrmPermissions::VIEW_DASHBOARD)
         ->name('dashboard.preferences.update');
+    Route::get('/dashboard/analytics/charts', [DashboardController::class, 'analyticsCharts'])
+        ->middleware('crm.permission:'.CrmPermissions::VIEW_DASHBOARD)
+        ->name('dashboard.analytics.charts');
 
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 

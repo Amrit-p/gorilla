@@ -36,19 +36,19 @@ class DashboardController extends Controller
         $analytics = $this->dashboardAnalyticsService->forUser($user);
 
         $dashboardType = $analytics['type'] ?? 'admin';
-        $isAdmin       = $dashboardType === 'admin';
+        $isAdmin = $dashboardType === 'admin';
 
         return view('dashboard.index', [
-            'analytics'         => $analytics,
-            'todaysJobs'        => $this->dashboardService->todaysScheduledJobs(),
-            'leadsByStatus'     => $this->dashboardService->leadsByStatus(),
-            'activityLogs'      => $this->dashboardService->recentActivity(),
-            'preferences'       => $this->dashboardService->preferencesFor($user),
+            'analytics' => $analytics,
+            'todaysJobs' => $this->dashboardService->todaysScheduledJobs(),
+            'leadsByStatus' => $this->dashboardService->leadsByStatus(),
+            'activityLogs' => $this->dashboardService->recentActivity(),
+            'preferences' => $this->dashboardService->preferencesFor($user),
             'threeWeekSchedule' => $isAdmin ? $this->dashboardService->threeWeekScheduleSummary() : [],
-            'employees'         => $isAdmin
+            'employees' => $isAdmin
                 ? User::query()->role(CrmRoles::MOWER)->where('is_active', true)->orderBy('name')->get(['id', 'name', 'efficiency'])
                 : collect(),
-            'workflowStatuses'  => $isAdmin ? JobWorkflowStatus::values() : [],
+            'workflowStatuses' => $isAdmin ? JobWorkflowStatus::values() : [],
         ]);
     }
 
@@ -78,6 +78,25 @@ class DashboardController extends Controller
             ->paginate(50);
 
         return response(view('dashboard.partials.daily-jobs-table', compact('jobs')));
+    }
+
+    /**
+     * AJAX: filtered revenue & job-performance chart data for the analytics sidebar.
+     */
+    public function analyticsCharts(Request $request): JsonResponse
+    {
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+        ]);
+
+        $start = $request->input('start_date');
+        $end = $request->input('end_date');
+
+        return response()->json([
+            'revenue' => $this->dashboardAnalyticsService->revenueChartData($start, $end),
+            'jobs' => $this->dashboardAnalyticsService->jobPerformanceChartData($start, $end),
+        ]);
     }
 
     /**

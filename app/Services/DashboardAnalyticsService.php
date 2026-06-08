@@ -5,11 +5,14 @@ namespace App\Services;
 use App\Enums\JobOperationalPaymentStatus;
 use App\Enums\JobWorkflowStatus;
 use App\Enums\LeadStatus;
+use App\Helpers\OptimizationHelper;
 use App\Models\Job;
 use App\Models\Lead;
 use App\Models\User;
-use App\Helpers\OptimizationHelper;
+use App\Support\CrmConstants;
 use App\Support\CrmRoles;
+use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -267,7 +270,7 @@ class DashboardAnalyticsService
         $pendingJobs = Job::query()
             ->where(function ($q) use ($mower): void {
                 $q->whereHas('assignedEmployees', fn ($q) => $q->where('users.id', $mower->id))
-                  ->orWhere('done_by_user_id', $mower->id);
+                    ->orWhere('done_by_user_id', $mower->id);
             })
             ->whereIn('status', [$started, $hold, $pending])
             ->count();
@@ -459,6 +462,119 @@ class DashboardAnalyticsService
         ];
     }
 
+    /**
+     * Revenue chart: current period daily totals vs the equal-length previous period.
+     *
+     * @return array<string, mixed>
+     */
+    public function revenueChartData(string $start, string $end): array
+    {
+        $startDate = Carbon::parse($start);
+        $endDate = Carbon::parse($end);
+        $days = (int) $startDate->diffInDays($endDate) + 1;
+
+        $prevEnd = $startDate->copy()->subDay();
+        $prevStart = $prevEnd->copy()->subDays($days - 1);
+
+        $fetchRevenue = function (string $from, string $to): Collection {
+            return DB::table('service_jobs as sj')
+                ->join('clients as c', 'c.id', '=', 'sj.client_id')
+                ->whereNull('sj.deleted_at')
+                ->where('sj.status', JobWorkflowStatus::COMPLETED->value)
+                ->where('sj.payment_status', JobOperationalPaymentStatus::RECEIVED->value)
+                ->whereBetween('sj.scheduled_date', [$from, $to])
+                ->groupBy('sj.scheduled_date')
+                ->selectRaw('sj.scheduled_date as day, COALESCE(SUM(c.charges), 0) as total')
+                ->pluck('total', 'day');
+        };
+
+        $currentTotals = $fetchRevenue($start, $end);
+        $prevTotals = $fetchRevenue($prevStart->toDateString(), $prevEnd->toDateString());
+
+        $labels = [];
+        $currentData = [];
+        $prevData = [];
+
+        for ($i = 0; $i < $days; $i++) {
+            $date = $startDate->copy()->addDays($i);
+            $prevDate = $prevStart->copy()->addDays($i);
+            $labels[] = $date->format('M j');
+            $currentData[] = (float) ($currentTotals[$date->toDateString()] ?? 0);
+            $prevData[] = (float) ($prevTotals[$prevDate->toDateString()] ?? 0);
+        }
+
+        return [
+            'labels' => $labels,
+            'datasets' => [
+                [
+                    'label' => 'Current period',
+                    'data' => $currentData,
+                    'backgroundColor' => 'rgba(99, 102, 241, 0.75)',
+                    'borderColor' => '#4f46e5',
+                    'borderWidth' => 1,
+                    'borderRadius' => 3,
+                ],
+                [
+                    'label' => 'Previous period',
+                    'data' => $prevData,
+                    'backgroundColor' => 'rgba(148, 163, 184, 0.45)',
+                    'borderColor' => '#94a3b8',
+                    'borderWidth' => 1,
+                    'borderRadius' => 3,
+                ],
+            ],
+            'meta' => [
+                'current_period' => $start.' – '.$end,
+                'prev_period' => $prevStart->toDateString().' – '.$prevEnd->toDateString(),
+            ],
+        ];
+    }
+
+    /**
+     * Job performance chart: total jobs per day in the selected period.
+     *
+     * @return array<string, mixed>
+     */
+    public function jobPerformanceChartData(string $start, string $end): array
+    {
+        $startDate = Carbon::parse($start);
+        $days = (int) $startDate->diffInDays(Carbon::parse($end)) + 1;
+
+        $counts = Job::query()
+            ->where('status', '!=', 'Cancelled')
+            ->whereBetween('scheduled_date', [$start, $end])
+            ->groupBy('scheduled_date')
+            ->selectRaw('scheduled_date as day, COUNT(*) as total')
+            ->pluck('total', 'day');
+
+        $labels = [];
+        $data = [];
+        $totalJobs = 0;
+
+        for ($i = 0; $i < $days; $i++) {
+            $date = $startDate->copy()->addDays($i);
+            $count = (int) ($counts[$date->toDateString()] ?? 0);
+            $labels[] = $date->format('M j');
+            $data[] = $count;
+            $totalJobs += $count;
+        }
+
+        return [
+            'labels' => $labels,
+            'datasets' => [[
+                'label' => 'Total jobs',
+                'data' => $data,
+                'backgroundColor' => 'rgba(14, 165, 233, 0.65)',
+                'borderColor' => '#0284c7',
+                'borderWidth' => 1,
+                'borderRadius' => 3,
+            ]],
+            'meta' => [
+                'total' => $totalJobs,
+            ],
+        ];
+    }
+
     private function cacheKey(string $suffix): string
     {
         return config('mowing.cache_keys.dashboard_stats')
@@ -470,6 +586,6 @@ class DashboardAnalyticsService
 
     private function ttl(): int
     {
-        return \App\Support\CrmConstants::dashboardStatsTtl();
+        return CrmConstants::dashboardStatsTtl();
     }
 }
