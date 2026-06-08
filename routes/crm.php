@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\MapRoutingController;
 use App\Http\Controllers\Admin\RolePermissionController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\Admin\DiscussionController;
 use App\Http\Controllers\Admin\EmployeeBonusController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\DashboardController;
@@ -133,6 +134,13 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
         Route::patch('job-levels/{jobLevel}', [JobLevelController::class, 'update'])->name('job-levels.update');
         Route::patch('job-levels/{jobLevel}/status', [JobLevelController::class, 'updateStatus'])->name('job-levels.status.update');
         Route::delete('job-levels/{jobLevel}', [JobLevelController::class, 'destroy'])->name('job-levels.destroy');
+    });
+
+    Route::middleware('crm.permission:'.CrmPermissions::MANAGE_DISCUSSIONS)->group(function (): void {
+        Route::resource('/admin/discussions', DiscussionController::class)
+            ->names('admin.discussions');
+        Route::post('/admin/discussions/{discussion}/export-pdf', [DiscussionController::class, 'exportPdf'])
+            ->name('admin.discussions.export-pdf');
     });
 
     Route::middleware('crm.permission:'.CrmPermissions::MANAGE_LEADS)->group(function (): void {

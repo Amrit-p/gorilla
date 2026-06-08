@@ -121,6 +121,21 @@
             </div>
         @endcan
 
+        @can('manage-discussions')
+            <p class="sidebar-label mb-2 mt-5 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Internal</p>
+            <div class="sidebar-accordion" data-open="{{ $accordionOpen(['admin.discussions.*']) ? 'true' : 'false' }}">
+                <button type="button" class="sidebar-accordion-trigger {{ $linkClass(['admin.discussions.*']) }} w-full text-left" title="Discussions">
+                    <svg class="h-[18px] w-[18px] shrink-0 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                    <span class="sidebar-text flex-1">Discussions</span>
+                    <svg class="sidebar-accordion-chevron h-4 w-4 shrink-0 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                <div class="sidebar-accordion-panel mt-0.5 space-y-0.5">
+                    <a href="{{ route('admin.discussions.index') }}" class="{{ $linkClass(['admin.discussions.index', 'admin.discussions.edit'], true) }}">All discussions</a>
+                    <a href="{{ route('admin.discussions.create') }}" class="{{ $linkClass(['admin.discussions.create'], true) }}">New discussion</a>
+                </div>
+            </div>
+        @endcan
+
         @can('manage-users')
             <p class="sidebar-label mb-2 mt-5 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Admin</p>
             <div class="sidebar-accordion" data-open="{{ $accordionOpen(['admin.users.*', 'admin.activity-logs.*', 'admin.settings.*', 'admin.rbac.*', 'admin.masters.*', 'admin.employee-bonuses.*']) ? 'true' : 'false' }}">

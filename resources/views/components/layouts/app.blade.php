@@ -18,6 +18,7 @@
 
     {{-- Tailwind CSS by CDN (project rule: no npm build pipeline) --}}
     <script src="https://cdn.tailwindcss.com"></script>
+    @stack('styles')
 
     {{-- jQuery CDN for upcoming AJAX modules --}}
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>

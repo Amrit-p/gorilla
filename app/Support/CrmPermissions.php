@@ -32,6 +32,8 @@ final class CrmPermissions
 
     public const MANAGE_EMPLOYEE_BONUSES = 'manage_employee_bonuses';
 
+    public const MANAGE_DISCUSSIONS = 'manage_discussions';
+
     /**
      * @return array<int, string>
      */
@@ -160,6 +162,11 @@ final class CrmPermissions
     public static function canManageEmployeeBonuses(?User $user): bool
     {
         return $user?->can(self::MANAGE_EMPLOYEE_BONUSES) ?? false;
+    }
+
+    public static function canManageDiscussions(?User $user): bool
+    {
+        return $user?->can(self::MANAGE_DISCUSSIONS) ?? false;
     }
 
     public static function canViewReport(?User $user, string $permission): bool

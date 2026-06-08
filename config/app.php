@@ -123,4 +123,7 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'discussion' => [
+        'attachments_enabled' => env('DISCUSSION_ATTACHMENTS_ENABLED', false),
+    ],
 ];
