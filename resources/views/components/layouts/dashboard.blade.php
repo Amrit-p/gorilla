@@ -94,8 +94,14 @@
 
     <script>
         // ===== MOBILE MENU =====
+        var mql = window.matchMedia && window.matchMedia('(min-width: 1024px)');
         $('#mobile-menu-toggle').on('click', function () {
             $('#sidebar').toggleClass('hidden');
+            // When on mobile ensure collapsed classes are not applied
+            if (!mql || !mql.matches) {
+                $('#sidebar').removeClass('sidebar-collapsed');
+                $('#main-content').removeClass('sidebar-collapsed');
+            }
         });
 
         // ===== ACCORDION (expanded sidebar — click to open/close) =====
@@ -130,9 +136,28 @@
             }
         }
 
-        // Apply initial state without animation, then remove the pre-paint init class
-        applySidebarState();
-        $('html').removeClass('sidebar-init-collapsed');
+        // Only apply collapse behavior on desktop. Listen for viewport changes
+        function handleDesktopChange(e) {
+            var isDesktop = e && typeof e.matches !== 'undefined' ? e.matches : (mql && mql.matches);
+            if (isDesktop) {
+                // apply stored desktop state
+                try { sidebarCollapsed = stored === null ? true : stored === 'true'; } catch (err) {}
+                applySidebarState();
+                // remove the pre-paint class now that layout is set
+                $('html').removeClass('sidebar-init-collapsed');
+            } else {
+                // ensure mobile never shows the collapsed icon-only layout
+                $('#sidebar').removeClass('sidebar-collapsed');
+                $('#main-content').removeClass('sidebar-collapsed');
+            }
+        }
+
+        // initial application based on current viewport
+        handleDesktopChange(mql);
+        if (mql && mql.addEventListener) mql.addEventListener('change', handleDesktopChange);
+        else if (mql && mql.addListener) mql.addListener(handleDesktopChange);
+
+        // Apply initial state without animation handled above, then remove transition lock
         requestAnimationFrame(function () {
             requestAnimationFrame(function () {
                 $('body').removeClass('no-transitions');
@@ -140,6 +165,8 @@
         });
 
         $('#sidebar-collapse-btn').on('click', function () {
+            // Only allow collapse toggle on desktop
+            if (!mql || !mql.matches) return;
             clearFlyout();
             sidebarCollapsed = !sidebarCollapsed;
             localStorage.setItem('sidebarCollapsed', sidebarCollapsed);

@@ -10,8 +10,14 @@
     <script>
         (function () {
             var c = localStorage.getItem('sidebarCollapsed');
-            if (c === null || c === 'true') {
+            // Only apply the pre-collapse layout on desktop widths to avoid
+            // forcing an icon-only sidebar on mobile devices.
+            var isDesktop = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(min-width: 1024px)').matches;
+            if (isDesktop && (c === null || c === 'true')) {
                 document.documentElement.classList.add('sidebar-init-collapsed');
+            } else {
+                // Ensure the init collapse class is not present on mobile
+                document.documentElement.classList.remove('sidebar-init-collapsed');
             }
         }());
     </script>
