@@ -79,6 +79,24 @@
                 @endif
             </dl>
         </section>
+        @if ($job->special_remarks || $job->internal_notes)
+            <section class="rounded-2xl bg-white p-4 shadow-sm">
+                <h2 class="text-sm font-semibold text-slate-900">Job remarks</h2>
+                @if ($job->special_remarks)
+                    <div class="mt-3">
+                        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Special remarks</p>
+                        <p class="mt-1 rounded-lg bg-amber-50 px-3 py-2 text-sm text-slate-800 whitespace-pre-wrap">{{ $job->special_remarks }}</p>
+                    </div>
+                @endif
+                @if ($job->internal_notes)
+                    <div class="mt-3">
+                        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Internal notes</p>
+                        <p class="mt-1 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-800 whitespace-pre-wrap">{{ $job->internal_notes }}</p>
+                    </div>
+                @endif
+            </section>
+        @endif
+
         <section class="rounded-2xl bg-white p-4 shadow-sm">
             <h2 class="text-sm font-semibold text-slate-900">Last visit instructions</h2>
             @if ($lastRemark)

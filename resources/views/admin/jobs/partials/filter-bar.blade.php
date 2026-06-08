@@ -45,7 +45,7 @@
                         onclick="event.stopPropagation()">Reset all</a>
                 @endif
                 <svg id="job-filter-chevron"
-                    class="h-3.5 w-3.5 text-slate-400 transition-transform duration-200 {{ $hasActiveFilters ? 'rotate-180' : '' }}"
+                    class="h-3.5 w-3.5 text-slate-400 transition-transform duration-200 rotate-180"
                     fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                 </svg>
@@ -63,7 +63,7 @@
     </div>
 
     {{-- Collapsible body --}}
-    <form id="job-filter-form" class="{{ $hasActiveFilters ? '' : 'hidden' }} border-t border-slate-100 px-4 py-3">
+    <form id="job-filter-form" class="border-t border-slate-100 px-4 py-3">
 
         @if (isset($listScopes))
             <div class="mb-3 flex flex-wrap gap-1.5">
