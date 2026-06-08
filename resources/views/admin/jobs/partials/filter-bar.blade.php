@@ -81,7 +81,7 @@
             <input type="hidden" name="client_id" value="{{ $clientId }}">
         @endif
 
-        <div class="grid grid-cols-4 gap-x-2.5 gap-y-3">
+        <div class="grid grid-cols-3 lg:grid-cols-4 gap-x-2.5 gap-y-3">
 
             {{-- Row 1 --}}
             <div class="flex flex-col gap-1">
