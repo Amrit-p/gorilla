@@ -182,11 +182,7 @@
                         data-internal-notes="{{ $job->internal_notes ?? '' }}">
                     @if ($job->special_remarks)
                         <p class="truncate text-sm text-slate-700 group-hover/rem:text-emerald-600">{{ $job->special_remarks }}</p>
-                    @endif
-                    @if ($job->internal_notes)
-                        <p class="truncate text-xs text-slate-400 group-hover/rem:text-emerald-500">{{ $job->internal_notes }}</p>
-                    @endif
-                    @if (!$job->special_remarks && !$job->internal_notes)
+                    @else
                         <span class="text-sm text-slate-300 group-hover/rem:text-emerald-400">+ Add</span>
                     @endif
                 </button>
