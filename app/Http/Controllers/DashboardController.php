@@ -2,11 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\JobWorkflowStatus;
 use App\Http\Requests\DashboardPreferenceRequest;
+use App\Models\Job;
+use App\Models\User;
 use App\Services\ActivityLogService;
 use App\Services\DashboardAnalyticsService;
 use App\Services\DashboardService;
+use App\Support\CrmRoles;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -29,13 +35,49 @@ class DashboardController extends Controller
 
         $analytics = $this->dashboardAnalyticsService->forUser($user);
 
+        $dashboardType = $analytics['type'] ?? 'admin';
+        $isAdmin       = $dashboardType === 'admin';
+
         return view('dashboard.index', [
-            'analytics' => $analytics,
-            'todaysJobs' => $this->dashboardService->todaysScheduledJobs(),
-            'leadsByStatus' => $this->dashboardService->leadsByStatus(),
-            'activityLogs' => $this->dashboardService->recentActivity(),
-            'preferences' => $this->dashboardService->preferencesFor($user),
+            'analytics'         => $analytics,
+            'todaysJobs'        => $this->dashboardService->todaysScheduledJobs(),
+            'leadsByStatus'     => $this->dashboardService->leadsByStatus(),
+            'activityLogs'      => $this->dashboardService->recentActivity(),
+            'preferences'       => $this->dashboardService->preferencesFor($user),
+            'threeWeekSchedule' => $isAdmin ? $this->dashboardService->threeWeekScheduleSummary() : [],
+            'employees'         => $isAdmin
+                ? User::query()->role(CrmRoles::MOWER)->where('is_active', true)->orderBy('name')->get(['id', 'name', 'efficiency'])
+                : collect(),
+            'workflowStatuses'  => $isAdmin ? JobWorkflowStatus::values() : [],
         ]);
+    }
+
+    /**
+     * AJAX: server-rendered job table for a given date (used by the 3-week schedule panel).
+     * Returns HTML so the full admin table partial—including all action buttons—is reused.
+     */
+    public function dailyJobsTable(Request $request): Response
+    {
+        $request->validate(['date' => 'required|date']);
+
+        $jobs = Job::query()
+            ->with([
+                'client:id,name,customer_unique_id',
+                'zone:id,name',
+                'equipmentType:id,name,color_code',
+                'jobLevel:id,name,color_code',
+                'doneByUser:id,name',
+                'assignedEmployees:id,name',
+                'recurrence:id,name',
+            ])
+            ->whereDate('scheduled_date', $request->date)
+            ->whereNotIn('status', ['Cancelled'])
+            ->orderBy('numeric_priority')
+            ->orderBy('scheduled_time')
+            ->orderBy('id')
+            ->paginate(50);
+
+        return response(view('dashboard.partials.daily-jobs-table', compact('jobs')));
     }
 
     /**

@@ -32,6 +32,7 @@
 
         @if ($dashboardType === 'admin')
             @include('dashboard.partials.admin-analytics', ['analytics' => $analytics])
+            @include('dashboard.partials.admin-three-week-schedule', ['threeWeekSchedule' => $threeWeekSchedule])
         @elseif ($dashboardType === 'sales')
             @include('dashboard.partials.sales-analytics', ['analytics' => $analytics])
         @else

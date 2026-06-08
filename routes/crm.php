@@ -34,6 +34,9 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->middleware('crm.permission:'.CrmPermissions::VIEW_DASHBOARD)
         ->name('dashboard.index');
+    Route::get('/dashboard/daily-jobs-table', [DashboardController::class, 'dailyJobsTable'])
+        ->middleware('crm.permission:'.CrmPermissions::VIEW_DASHBOARD)
+        ->name('dashboard.daily-jobs-table');
     Route::patch('/dashboard/preferences', [DashboardController::class, 'updatePreferences'])
         ->middleware('crm.permission:'.CrmPermissions::VIEW_DASHBOARD)
         ->name('dashboard.preferences.update');

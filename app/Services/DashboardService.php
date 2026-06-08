@@ -186,4 +186,60 @@ class DashboardService
             ]
         );
     }
+
+    /**
+     * Three-week job schedule summary grouped by day and zone.
+     * Starts from the Sunday of the current week.
+     *
+     * @return array<int, array{label: string, week_number: int, start_date: string, end_date: string, days: list<array>}>
+     */
+    public function threeWeekScheduleSummary(): array
+    {
+        $startDate = now()->startOfWeek(Carbon::SUNDAY);
+        $endDate   = $startDate->copy()->addWeeks(3)->subDay();
+
+        $jobs = Job::query()
+            ->select(['id', 'zone_id', 'scheduled_date', 'status'])
+            ->with('zone:id,name')
+            ->whereBetween('scheduled_date', [$startDate->toDateString(), $endDate->toDateString()])
+            ->whereNotIn('status', ['Cancelled'])
+            ->get();
+
+        $jobsByDate = $jobs->groupBy(fn($job) => $job->scheduled_date->format('Y-m-d'));
+
+        $weeks = [];
+        for ($w = 0; $w < 3; $w++) {
+            $weekStart = $startDate->copy()->addWeeks($w);
+            $days = [];
+            for ($d = 0; $d < 7; $d++) {
+                $day     = $weekStart->copy()->addDays($d);
+                $key     = $day->toDateString();
+                $dayJobs = $jobsByDate->get($key, collect());
+                $zones   = $dayJobs
+                    ->groupBy(fn($j) => $j->zone?->name ?? 'Unassigned')
+                    ->map->count()
+                    ->toArray();
+
+                $days[] = [
+                    'date'       => $key,
+                    'day_name'   => $day->format('l'),
+                    'date_label' => $day->format('d M'),
+                    'is_today'   => $day->isToday(),
+                    'is_past'    => $day->isPast() && !$day->isToday(),
+                    'total'      => $dayJobs->count(),
+                    'zone_count' => count($zones),
+                    'zones'      => $zones,
+                ];
+            }
+            $weeks[] = [
+                'label'       => 'Week ' . ($w + 1),
+                'week_number' => $weekStart->weekOfYear,
+                'start_date'  => $weekStart->format('d M'),
+                'end_date'    => $weekStart->copy()->addDays(6)->format('d M'),
+                'days'        => $days,
+            ];
+        }
+
+        return $weeks;
+    }
 }
