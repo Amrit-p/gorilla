@@ -19,6 +19,7 @@ use App\Services\DashboardAnalyticsService;
 use App\Support\CrmRoles;
 use App\Services\JobImageManagementService;
 use App\Services\MowerDashboardService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -179,6 +180,31 @@ class MowerDashboardController extends Controller
             'message' => 'After photo removed.',
             'images' => $images,
         ]);
+    }
+
+    public function exportPdf(Request $request): \Symfony\Component\HttpFoundation\Response
+    {
+        $this->authorize('viewAny', Job::class);
+
+        $scope = $request->string('scope')->toString() ?: 'today';
+        $scheduleDate = $request->date('schedule_date')?->toDateString() ?? now()->toDateString();
+        $jobs = $this->mowerDashboardService->assignedJobs($request->user(), $scope, $scheduleDate);
+
+        $scopeLabels = [
+            CrmConstants::MOWER_SCOPE_TODAY_SPECIAL => 'Special Jobs',
+            CrmConstants::MOWER_SCOPE_TODAY => 'Today',
+            CrmConstants::MOWER_SCOPE_UPCOMING => 'Upcoming',
+            CrmConstants::MOWER_SCOPE_PENDING => 'Pending',
+            CrmConstants::MOWER_SCOPE_COMPLETED => 'Done',
+        ];
+
+        return Pdf::loadView('mower.export-pdf', [
+            'jobs' => $jobs,
+            'scope' => $scope,
+            'scopeLabel' => $scopeLabels[$scope] ?? ucfirst($scope),
+            'scheduleDate' => $scheduleDate,
+        ])->setPaper('a4', 'portrait')
+            ->download('my_jobs_' . $scheduleDate . '_' . $scope . '.pdf');
     }
 
     public function storeRemark(Request $request, Job $job): JsonResponse

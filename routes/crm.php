@@ -223,6 +223,7 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
                 Route::delete('/jobs/{job}/images/before/{imageId}', [MowerDashboardController::class, 'deleteBefore'])->name('jobs.images.before.destroy');
                 Route::delete('/jobs/{job}/images/after/{imageId}', [MowerDashboardController::class, 'deleteAfter'])->name('jobs.images.after.destroy');
                 Route::post('/jobs/{job}/remark', [MowerDashboardController::class, 'storeRemark'])->name('jobs.remark.store');
+                Route::get('/export-pdf', [MowerDashboardController::class, 'exportPdf'])->name('export-pdf');
             });
         });
     });

@@ -42,6 +42,13 @@
         if (cards.pending_jobs)   $('#mower-analytics-pending').text(cards.pending_jobs.value   || '0');
     }
 
+    function updateExportLink(scope, date) {
+        const base = (window.mowerRoutes || {}).exportPdf;
+        if (!base) return;
+        const url = base + '?scope=' + encodeURIComponent(scope) + '&schedule_date=' + encodeURIComponent(date);
+        $('#mower-export-pdf').attr('href', url);
+    }
+
     function loadScope(scope, date) {
         const targetDate = date || activeDate;
         if (scope === activeScope && targetDate === activeDate && !date) {
@@ -51,6 +58,7 @@
         activeDate = targetDate;
 
         updateScopeButtons(scope);
+        updateExportLink(scope, targetDate);
         hideAlert();
         setLoading(true);
 
@@ -378,6 +386,7 @@
             return $(this).hasClass('bg-emerald-700');
         }).first();
         activeScope = String($active.data('scope') || 'today');
+        updateExportLink(activeScope, activeDate);
     });
 
 }(jQuery));
