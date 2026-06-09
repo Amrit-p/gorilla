@@ -37,8 +37,28 @@
             </div>
         </div>
 
-        {{-- Contracts Section --}}
-        <div class="space-y-3">
+        {{-- Tab Bar --}}
+        <div class="border-b border-slate-200">
+            <nav class="-mb-px flex gap-0" aria-label="Contractor tabs">
+                <button type="button" data-tab="contracts"
+                    class="contractor-tab whitespace-nowrap border-b-2 px-5 py-2.5 text-sm font-medium transition-colors border-slate-900 text-slate-900">
+                    Contracts
+                    @if ($contractor->contracts->isNotEmpty())
+                        <span class="ml-1.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600">{{ $contractor->contracts->count() }}</span>
+                    @endif
+                </button>
+                <button type="button" data-tab="jobs"
+                    class="contractor-tab whitespace-nowrap border-b-2 px-5 py-2.5 text-sm font-medium transition-colors border-transparent text-slate-500 hover:text-slate-700">
+                    Jobs
+                    @if ($jobs->total() > 0)
+                        <span class="ml-1.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600">{{ $jobs->total() }}</span>
+                    @endif
+                </button>
+            </nav>
+        </div>
+
+        {{-- Contracts Tab --}}
+        <div id="tab-pane-contracts" class="space-y-3">
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h3 class="text-base font-semibold text-slate-900">Contracts</h3>
@@ -243,6 +263,23 @@
                 </div>
             @endforelse
         </div>
+
+        {{-- Jobs Tab --}}
+        <div id="tab-pane-jobs" class="hidden space-y-3">
+            @include('admin.jobs.partials.filter-bar', [
+                'filters'        => $filters,
+                'tableContainer' => 'contractor-jobs-container',
+                'filterCallback' => 'loadContractorJobs',
+                'filterUrl'      => route('admin.contractors.jobs', $contractor),
+                'resetUrl'       => route('admin.contractors.detail', $contractor),
+                'excelHref'      => route('admin.jobs.export.excel', ['contractor_id' => $contractor->id]),
+                'pdfHref'        => route('admin.jobs.export.pdf', ['contractor_id' => $contractor->id]),
+            ])
+            <div id="contractor-jobs-container">
+                @include('admin.jobs.partials.table', ['jobs' => $jobs])
+            </div>
+        </div>
+
     </div>
 
     {{-- Edit Contractor Modal --}}
@@ -283,6 +320,10 @@
         </form>
     </x-ui.modal>
 
+    @include('admin.partials.job-modals')
+    @include('admin.partials.dropdown-script')
+    @include('admin.partials.job-actions-script', ['filterCallback' => 'loadContractorJobs'])
+
     <script>
         (function () {
             const contractorId = {{ $contractor->id }};
@@ -291,6 +332,22 @@
             const contractsBase = baseUrl + '/contracts';
 
             let selectedFiles = [];
+
+            // ── Tabs ─────────────────────────────────────────────────────────
+            const tabPanes = { contracts: $('#tab-pane-contracts'), jobs: $('#tab-pane-jobs') };
+            const tabBtns = $('.contractor-tab');
+
+            function activateTab(name) {
+                Object.entries(tabPanes).forEach(([key, $pane]) => $pane.toggleClass('hidden', key !== name));
+                tabBtns.each(function () {
+                    const isActive = $(this).data('tab') === name;
+                    $(this)
+                        .toggleClass('border-slate-900 text-slate-900', isActive)
+                        .toggleClass('border-transparent text-slate-500 hover:text-slate-700', !isActive);
+                });
+            }
+
+            tabBtns.on('click', function () { activateTab($(this).data('tab')); });
 
             // ── Alert ────────────────────────────────────────────────────────
             function showAlert(message, isError = false) {
@@ -308,7 +365,6 @@
 
             // ── Contract toggle ──────────────────────────────────────────────
             $(document).on('click', '.contract-toggle', function (e) {
-                // Don't toggle when clicking action buttons inside the header
                 if ($(e.target).closest('.contract-actions').length) { return; }
 
                 const targetId = $(this).data('target');

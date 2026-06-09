@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\Contractors\UpdateContractorRequest;
 use App\Models\Contractor;
 use App\Repositories\ContractorRepository;
 use App\Services\ContractorService;
+use App\Services\JobManagementService;
 use App\Support\CrmPermissions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,7 +18,8 @@ class ContractorController extends Controller
 {
     public function __construct(
         private readonly ContractorRepository $repository,
-        private readonly ContractorService $service
+        private readonly ContractorService $service,
+        private readonly JobManagementService $jobManagementService,
     ) {}
 
     public function index(Request $request): View|JsonResponse
@@ -68,7 +70,47 @@ class ContractorController extends Controller
 
         $contractor = $this->repository->findWithContracts($contractor);
 
-        return view('admin.contractors.show', compact('contractor'));
+        $filters = $this->jobFiltersFromRequest($request, $contractor->id);
+        $jobs = $this->jobManagementService->paginatedJobs($filters, crm_pagination());
+
+        return view('admin.contractors.show', array_merge(
+            compact('contractor', 'jobs', 'filters'),
+            $this->jobManagementService->formOptions(),
+        ));
+    }
+
+    public function jobs(Request $request, Contractor $contractor): JsonResponse
+    {
+        abort_unless($request->user()?->can(CrmPermissions::MANAGE_CONTRACTORS), 403);
+
+        $filters = $this->jobFiltersFromRequest($request, $contractor->id);
+        $jobs = $this->jobManagementService->paginatedJobs($filters, crm_pagination());
+
+        return crm_ajax_html('admin.jobs.partials.table', compact('jobs'));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function jobFiltersFromRequest(Request $request, int $contractorId): array
+    {
+        return [
+            'contractor_id' => $contractorId,
+            'search' => $request->string('search')->toString(),
+            'list_scope' => $request->string('list_scope')->toString(),
+            'status' => $request->string('status')->toString(),
+            'zone_id' => $request->string('zone_id')->toString(),
+            'recurrence_id' => $request->string('recurrence_id')->toString(),
+            'assignment' => $request->string('assignment')->toString(),
+            'payment_mode' => $request->string('payment_mode')->toString(),
+            'payment_status' => $request->string('payment_status')->toString(),
+            'equipment_type_id' => $request->string('equipment_type_id')->toString(),
+            'job_level_id' => $request->string('job_level_id')->toString(),
+            'customer_type' => $request->string('customer_type')->toString(),
+            'service_type' => $request->string('service_type')->toString(),
+            'date_range_start' => $request->input('date_range.start', ''),
+            'date_range_end' => $request->input('date_range.end', ''),
+        ];
     }
 
     public function update(UpdateContractorRequest $request, Contractor $contractor): JsonResponse

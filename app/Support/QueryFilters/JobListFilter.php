@@ -111,6 +111,10 @@ final class JobListFilter
             $query->whereDate('scheduled_date', '<=', $filters['date_range_end']);
         }
 
+        if (! empty($filters['contractor_id'])) {
+            $query->whereHas('contract', fn (Builder $q) => $q->where('contractor_id', (int) $filters['contractor_id']));
+        }
+
         return $query;
     }
 }

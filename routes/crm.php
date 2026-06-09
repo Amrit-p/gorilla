@@ -150,6 +150,7 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
         Route::get('/', [ContractorController::class, 'index'])->name('index');
         Route::post('/', [ContractorController::class, 'store'])->name('store');
         Route::get('/{contractor}/detail', [ContractorController::class, 'detail'])->name('detail');
+        Route::get('/{contractor}/jobs', [ContractorController::class, 'jobs'])->name('jobs');
         Route::get('/{contractor}', [ContractorController::class, 'show'])->name('show');
         Route::patch('/{contractor}', [ContractorController::class, 'update'])->name('update');
 

@@ -473,6 +473,7 @@ class JobManagementController extends Controller
             'priority' => $request->string('priority')->toString(),
             'zone_id' => $request->string('zone_id')->toString(),
             'client_id' => $request->string('client_id')->toString(),
+            'contractor_id' => $request->string('contractor_id')->toString(),
             'recurrence_id' => $request->string('recurrence_id')->toString(),
             'assignment' => $request->string('assignment')->toString(),
             'payment_mode' => $request->string('payment_mode')->toString(),
