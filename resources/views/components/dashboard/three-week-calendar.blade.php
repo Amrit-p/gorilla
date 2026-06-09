@@ -72,7 +72,7 @@
 {{-- NOTE: intentionally uses `right` animation, NOT `transform`, so that the
      job-actions dropdown (position:fixed) is not trapped by a CSS stacking context. --}}
 <div id="crm-day-panel"
-     class="fixed inset-y-0 right-0 z-50 flex w-full max-w-[90vw] flex-col bg-white shadow-2xl"
+     class="space-y-5 fixed inset-y-0 right-0 z-50 flex w-full max-w-[90vw] flex-col bg-white shadow-2xl"
      style="right: -100%; transition: right 0.28s cubic-bezier(0.4,0,0.2,1);">
 
     {{-- Panel header --}}
@@ -101,7 +101,7 @@
     <div id="job-alert" class="hidden mx-4 mt-3 rounded-md border px-3 py-2 text-sm"></div>
 
     {{-- Panel body --}}
-    <div class="flex-1 overflow-auto">
+    <div class="flex-1 overflow-auto p-2">
 
         {{-- Loader --}}
         <div id="crm-day-loader" class="hidden items-center justify-center py-16">
@@ -285,6 +285,12 @@
         document.getElementById('crm-day-backdrop').classList.add('hidden');
         document.body.style.overflow = '';
         _currentDate = null;
+
+        if (typeof window.clearJobBulkSelection === 'function') {
+            window.clearJobBulkSelection();
+        }
+        var toolbar = document.getElementById('job-bulk-toolbar');
+        if (toolbar) { toolbar.classList.add('hidden'); }
     };
 
     /* ── filter controls ─────────────────────────────── */

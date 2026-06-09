@@ -189,8 +189,8 @@
             </td>
 
             {{-- Remarks --}}
-            <td class="px-4 py-4 max-w-[200px]">
-                <button type="button" class="view-remarks-btn group/rem w-full text-left"
+            <td class="w-36 max-w-0 px-4 py-4">
+                <button type="button" class="view-remarks-btn group/rem w-full overflow-hidden text-left"
                         data-id="{{ $job->id }}"
                         data-special-remarks="{{ $job->special_remarks ?? '' }}"
                         data-internal-notes="{{ $job->internal_notes ?? '' }}">
