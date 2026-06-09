@@ -14,6 +14,8 @@
     <x-dashboard.three-week-calendar
         :weeks="$threeWeekSchedule"
         :daily-jobs-table-url="route('dashboard.daily-jobs-table')"
+        :zones="\App\Models\Zone::orderBy('name')->get(['id','name'])"
+        :workers="\App\Models\User::role(\App\Support\CrmRoles::MOWER)->where('is_active', true)->orderBy('name')->get(['id','name'])"
     />
 
     {{-- Job action modals — same ones used on the jobs index page --}}

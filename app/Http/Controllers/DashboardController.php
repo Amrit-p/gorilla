@@ -59,7 +59,12 @@ class DashboardController extends Controller
      */
     public function dailyJobsTable(Request $request): Response
     {
-        $request->validate(['date' => 'required|date']);
+        $request->validate([
+            'date' => 'required|date',
+            'zone_id' => 'nullable|integer|exists:zones,id',
+            'worker_id' => 'nullable|integer|exists:users,id',
+            'search' => 'nullable|string|max:100',
+        ]);
 
         $jobs = Job::query()
             ->with([
@@ -73,6 +78,16 @@ class DashboardController extends Controller
             ])
             ->whereDate('scheduled_date', $request->date)
             ->whereNotIn('status', ['Cancelled'])
+            ->when($request->zone_id, fn ($q, $id) => $q->where('zone_id', $id))
+            ->when($request->worker_id, fn ($q, $id) => $q->whereHas(
+                'assignedEmployees', fn ($q) => $q->where('users.id', $id)
+            ))
+            ->when($request->search, function ($q, $term) {
+                $q->where(function ($q) use ($term) {
+                    $q->whereHas('client', fn ($q) => $q->where('name', 'like', "%{$term}%"))
+                        ->orWhere('client_address', 'like', "%{$term}%");
+                });
+            })
             ->orderBy('numeric_priority')
             ->orderBy('scheduled_time')
             ->orderBy('id')
@@ -82,11 +97,21 @@ class DashboardController extends Controller
     }
 
     /**
-     * AJAX: re-render the three-week calendar grid after a job action.
+     * AJAX: re-render the three-week calendar grid (optionally filtered).
      */
-    public function threeWeekGrid(): Response
+    public function threeWeekGrid(Request $request): Response
     {
-        $weeks = $this->dashboardService->threeWeekScheduleSummary();
+        $request->validate([
+            'zone_id' => 'nullable|integer|exists:zones,id',
+            'worker_id' => 'nullable|integer|exists:users,id',
+            'search' => 'nullable|string|max:100',
+        ]);
+
+        $weeks = $this->dashboardService->threeWeekScheduleSummary([
+            'zone_id' => $request->integer('zone_id') ?: null,
+            'worker_id' => $request->integer('worker_id') ?: null,
+            'search' => $request->string('search')->toString() ?: null,
+        ]);
 
         return response(view('dashboard.partials.three-week-grid', compact('weeks')));
     }

@@ -1,9 +1,72 @@
 @props([
     'weeks'               => [],
     'dailyJobsTableUrl'   => '',
+    'zones'               => collect(),
+    'workers'             => collect(),
 ])
 
-@include('dashboard.partials.three-week-grid', ['weeks' => $weeks])
+{{-- ── Quick Filters ───────────────────────────────────────────────── --}}
+<div class="mb-4 flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+
+    {{-- Zone --}}
+    <div class="min-w-[140px] flex-1">
+        <label for="cal-filter-zone" class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-slate-500">Zone</label>
+        <select id="cal-filter-zone"
+                class="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+            <option value="">All zones</option>
+            @foreach ($zones as $zone)
+                <option value="{{ $zone->id }}">{{ $zone->name }}</option>
+            @endforeach
+        </select>
+    </div>
+
+    {{-- Worker --}}
+    <div class="min-w-[140px] flex-1">
+        <label for="cal-filter-worker" class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-slate-500">Worker</label>
+        <select id="cal-filter-worker"
+                class="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+            <option value="">All workers</option>
+            @foreach ($workers as $worker)
+                <option value="{{ $worker->id }}">{{ $worker->name }}</option>
+            @endforeach
+        </select>
+    </div>
+
+    {{-- Search (address / client name) --}}
+    <div class="min-w-[180px] flex-[2]">
+        <label for="cal-filter-search" class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-slate-500">Address / Client</label>
+        <input id="cal-filter-search"
+               type="text"
+               placeholder="Search address or client name…"
+               class="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+    </div>
+
+    {{-- Clear --}}
+    <button type="button"
+            id="cal-filter-clear"
+            class="hidden rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100">
+        Clear filters
+    </button>
+
+    {{-- Active indicator --}}
+    <span id="cal-filter-badge"
+          class="hidden inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
+        <span id="cal-filter-badge-text"></span>
+    </span>
+</div>
+
+<div id="three-week-grid-wrap" class="relative">
+    {{-- Grid loading overlay --}}
+    <div id="three-week-grid-loader"
+         class="absolute inset-0 z-10 hidden items-center justify-center rounded-xl bg-white/70 backdrop-blur-[1px]">
+        <svg class="h-6 w-6 animate-spin text-emerald-600" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 12 0 12 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+        </svg>
+    </div>
+
+    @include('dashboard.partials.three-week-grid', ['weeks' => $weeks])
+</div>
 
 {{-- ── Day Jobs Slide-over Panel ─────────────────────────────── --}}
 {{-- NOTE: intentionally uses `right` animation, NOT `transform`, so that the
@@ -67,9 +130,49 @@
 @push('scripts')
 <script>
 (function () {
-    var _tableUrl   = @json($dailyJobsTableUrl);
-    var _gridUrl    = @json(route('dashboard.three-week-grid'));
+    var _tableUrl    = @json($dailyJobsTableUrl);
+    var _gridUrl     = @json(route('dashboard.three-week-grid'));
     var _currentDate = null;
+
+    /* ── filter state ────────────────────────────────── */
+    function getFilters() {
+        return {
+            zone_id:   $('#cal-filter-zone').val()    || '',
+            worker_id: $('#cal-filter-worker').val()  || '',
+            search:    $.trim($('#cal-filter-search').val()),
+        };
+    }
+
+    function hasActiveFilters(f) {
+        return f.zone_id !== '' || f.worker_id !== '' || f.search !== '';
+    }
+
+    function syncFilterUI() {
+        var f     = getFilters();
+        var active = hasActiveFilters(f);
+        var parts = [];
+
+        if (f.zone_id)   { parts.push($('#cal-filter-zone option:selected').text()); }
+        if (f.worker_id) { parts.push($('#cal-filter-worker option:selected').text()); }
+        if (f.search)    { parts.push('"' + f.search + '"'); }
+
+        if (active) {
+            $('#cal-filter-clear').removeClass('hidden');
+            $('#cal-filter-badge').removeClass('hidden');
+            $('#cal-filter-badge-text').text(parts.join(' · '));
+        } else {
+            $('#cal-filter-clear').addClass('hidden');
+            $('#cal-filter-badge').addClass('hidden');
+        }
+    }
+
+    function buildTableUrl(base, date, filters) {
+        var params = { date: date };
+        if (filters.zone_id)   { params.zone_id   = filters.zone_id; }
+        if (filters.worker_id) { params.worker_id = filters.worker_id; }
+        if (filters.search)    { params.search    = filters.search; }
+        return base + '?' + $.param(params);
+    }
 
     /* ── helpers ─────────────────────────────────────── */
     function show(id) {
@@ -100,8 +203,10 @@
 
                 /* Count visible job rows to update subtitle */
                 var count = $content.find('.job-row').length;
+                var filters = getFilters();
+                var suffix  = hasActiveFilters(filters) ? ' (filtered)' : '';
                 document.getElementById('crm-day-panel-subtitle').textContent =
-                    count + ' ' + (count === 1 ? 'job' : 'jobs') + ' scheduled';
+                    count + ' ' + (count === 1 ? 'job' : 'jobs') + ' scheduled' + suffix;
 
                 /* NOTE: do NOT re-call crmDropdown here — it already uses document-level
                    event delegation registered once by job-actions-script, so calling it
@@ -117,12 +222,26 @@
 
     /* ── refresh the calendar grid without a page reload ─────────── */
     function reloadCalendarGrid() {
+        var filters = getFilters();
+        var params  = {};
+        if (filters.zone_id)   { params.zone_id   = filters.zone_id; }
+        if (filters.worker_id) { params.worker_id = filters.worker_id; }
+        if (filters.search)    { params.search    = filters.search; }
+
+        var url = _gridUrl + (Object.keys(params).length ? '?' + $.param(params) : '');
+
+        show('three-week-grid-loader');
+
         $.ajax({
-            url: _gridUrl,
+            url: url,
             method: 'GET',
             headers: { Accept: 'text/html, */*' },
             success: function (html) {
                 $('#three-week-grid').replaceWith(html);
+                hide('three-week-grid-loader');
+            },
+            error: function () {
+                hide('three-week-grid-loader');
             }
         });
     }
@@ -130,7 +249,7 @@
     /* ── reload hook used by job-actions-script after each action ─ */
     window.reloadDayPanelTable = function () {
         if (_currentDate) {
-            loadTable(_tableUrl + '?date=' + encodeURIComponent(_currentDate));
+            loadTable(buildTableUrl(_tableUrl, _currentDate, getFilters()));
             reloadCalendarGrid();
         }
     };
@@ -157,7 +276,7 @@
         document.getElementById('crm-day-backdrop').classList.remove('hidden');
         document.body.style.overflow = 'hidden';
 
-        loadTable(_tableUrl + '?date=' + encodeURIComponent(_currentDate));
+        loadTable(buildTableUrl(_tableUrl, _currentDate, getFilters()));
     };
 
     /* ── close ───────────────────────────────────────── */
@@ -168,10 +287,42 @@
         _currentDate = null;
     };
 
+    /* ── filter controls ─────────────────────────────── */
+    function applyFilters() {
+        syncFilterUI();
+        reloadCalendarGrid();
+        if (_currentDate) {
+            loadTable(buildTableUrl(_tableUrl, _currentDate, getFilters()));
+        }
+    }
+
+    $('#cal-filter-zone, #cal-filter-worker').on('change', function () {
+        applyFilters();
+    });
+
+    var _searchTimer;
+    $('#cal-filter-search').on('input', function () {
+        clearTimeout(_searchTimer);
+        _searchTimer = setTimeout(applyFilters, 350);
+    });
+
+    $('#cal-filter-clear').on('click', function () {
+        $('#cal-filter-zone').val('');
+        $('#cal-filter-worker').val('');
+        $('#cal-filter-search').val('');
+        applyFilters();
+    });
+
     /* ── intercept pagination clicks inside the panel ── */
     $(document).on('click', '#crm-day-content .pagination a', function (e) {
         e.preventDefault();
-        loadTable($(this).attr('href'));
+        /* Preserve filters when paging */
+        var pageUrl = $(this).attr('href');
+        var filters = getFilters();
+        if (filters.zone_id)   { pageUrl += (pageUrl.includes('?') ? '&' : '?') + 'zone_id='   + encodeURIComponent(filters.zone_id); }
+        if (filters.worker_id) { pageUrl += '&worker_id=' + encodeURIComponent(filters.worker_id); }
+        if (filters.search)    { pageUrl += '&search='    + encodeURIComponent(filters.search); }
+        loadTable(pageUrl);
     });
 
     /* ── Escape closes the panel ─────────────────────── */
