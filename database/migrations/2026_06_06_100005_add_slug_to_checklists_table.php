@@ -9,7 +9,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('checklists', function (Blueprint $table): void {
-            $table->string('slug', 120)->unique()->nullable()->after('name');
+            if (! Schema::hasColumn('checklists', 'slug')) {
+                $table->string('slug', 120)->unique()->nullable()->after('name');
+            }
         });
     }
 

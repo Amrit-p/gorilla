@@ -48,4 +48,9 @@ trait ChecksCrmPermissions
     {
         return CrmPermissions::canUploadJobImages($this);
     }
+
+    public function canManageFollowups(): bool
+    {
+        return CrmPermissions::canManageFollowups($this);
+    }
 }

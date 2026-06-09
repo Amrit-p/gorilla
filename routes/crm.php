@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\Contractors\ContractDocumentController;
 use App\Http\Controllers\Admin\Contractors\ContractorController;
 use App\Http\Controllers\Admin\DiscussionController;
 use App\Http\Controllers\Admin\EmployeeBonusController;
+use App\Http\Controllers\Admin\FollowupController;
 use App\Http\Controllers\Admin\JobManagementController;
 use App\Http\Controllers\Admin\LeadManagementController;
 use App\Http\Controllers\Admin\MapRoutingController;
@@ -166,6 +167,15 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
                 Route::delete('/{document}', [ContractDocumentController::class, 'destroy'])->name('destroy');
             });
         });
+    });
+
+    Route::middleware('crm.permission:'.CrmPermissions::MANAGE_FOLLOWUPS)->group(function (): void {
+        Route::get('/admin/followups/form-options', [FollowupController::class, 'formOptionsJson'])
+            ->name('admin.followups.form-options');
+        Route::get('/admin/followups/for-followable', [FollowupController::class, 'forFollowableJson'])
+            ->name('admin.followups.for-followable');
+        Route::resource('/admin/followups', FollowupController::class)
+            ->names('admin.followups');
     });
 
     Route::middleware('crm.permission:'.CrmPermissions::MANAGE_DISCUSSIONS)->group(function (): void {

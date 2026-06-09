@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\Recurrence;
+use App\Traits\HasFollowups;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -38,6 +38,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 ])]
 class Lead extends Model
 {
+    use HasFollowups;
     use SoftDeletes;
 
     protected function casts(): array

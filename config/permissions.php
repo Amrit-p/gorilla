@@ -22,6 +22,7 @@ return [
         'manage_employee_bonuses',
         'manage_discussions',
         'manage_contractors',
+        'manage_followups',
     ],
 
     'roles' => [

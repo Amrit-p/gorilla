@@ -606,6 +606,140 @@
         deleteJobs(ids);
     });
 
+    // ── Follow Up modal ─────────────────────────────────────────────────────
+
+    const FOLLOWUP_STATUS_COLORS = {
+        pending:   'bg-amber-50 text-amber-700 ring-amber-200/60',
+        completed: 'bg-emerald-50 text-emerald-700 ring-emerald-200/60',
+        cancelled: 'bg-slate-100 text-slate-500 ring-slate-200/60',
+    };
+
+    function followupStatusBadge(status, label) {
+        const cls = FOLLOWUP_STATUS_COLORS[status] || 'bg-slate-100 text-slate-600 ring-slate-200/60';
+        return '<span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ' + cls + '">' + esc(label) + '</span>';
+    }
+
+    function resetFollowupForm() {
+        $('#followup-job-form')[0].reset();
+        $('#followup-status-select').val('pending');
+        $('#followup-form-heading').text('New Follow-Up');
+        $('#followup-form-new-btn').hide();
+        $('#followup-form-error').addClass('hidden').text('');
+        $('#followup-history-list .followup-list-item').removeClass('border-emerald-500 bg-emerald-50/60');
+        $('#followup-job-form').removeData('followup-id');
+    }
+
+    function fillFollowupForm(f) {
+        $('#followup-job-form textarea[name="outcome"]').val(f.outcome || '');
+        $('#followup-job-form textarea[name="notes"]').val(f.notes || '');
+        $('#followup-status-select').val(f.status || 'pending');
+        $('#followup-job-form [name="next_followup_at"]').val(f.next_followup_at_input || '');
+        $('#followup-form-heading').text('Follow-Up — ' + (f.created_at || ''));
+        $('#followup-form-new-btn').css('display', 'inline-flex');
+        $('#followup-form-error').addClass('hidden').text('');
+        $('#followup-job-form').data('followup-id', f.id || null);
+    }
+
+    function loadFollowupHistory(type, id) {
+        const $loading = $('#followup-list-scroll .followup-history-loading');
+        const $empty   = $('#followup-list-scroll .followup-history-empty');
+        const $list    = $('#followup-history-list');
+
+        $loading.removeClass('hidden');
+        $empty.addClass('hidden');
+        $list.empty();
+
+        $.ajax({
+            url: "{{ route('admin.followups.for-followable') }}",
+            method: 'GET',
+            data: { type: type, id: id },
+            headers: { Accept: 'application/json' },
+            success: function(res) {
+                $loading.addClass('hidden');
+                const followups = res.followups || [];
+
+                if (!followups.length) {
+                    $empty.removeClass('hidden');
+                    return;
+                }
+
+                followups.forEach(function(f) {
+                    const $item = $(
+                        '<button type="button" class="followup-list-item w-full border-l-[3px] border-transparent px-3 py-3 text-left transition-all hover:bg-white">' +
+                            '<div class="mb-1.5 flex items-center gap-1.5">' +
+                                followupStatusBadge(f.status, f.status_label) +
+                            '</div>' +
+                            '<p class="truncate text-xs font-medium leading-snug text-slate-700">' + esc(f.outcome) + '</p>' +
+                            '<div class="mt-1.5 flex items-center justify-between gap-2">' +
+                                '<p class="text-[10px] text-slate-400">' + esc(f.created_by) + '</p>' +
+                                '<p class="shrink-0 text-[10px] tabular-nums text-slate-400">' + esc(f.created_at) + '</p>' +
+                            '</div>' +
+                        '</button>'
+                    );
+
+                    $item.on('click', function() {
+                        $list.find('.followup-list-item').removeClass('border-emerald-500 bg-emerald-50/60');
+                        $(this).addClass('border-emerald-500 bg-emerald-50/60');
+                        fillFollowupForm(f);
+                    });
+
+                    $list.append($item);
+                });
+            },
+            error: function() {
+                $loading.addClass('hidden');
+                $empty.removeClass('hidden').text('Failed to load.');
+            }
+        });
+    }
+
+    $(document).on('click', '.followup-job', function() {
+        const $btn = $(this);
+        const type = $btn.data('followable-type');
+        const id   = Number($btn.data('followable-id'));
+
+        resetFollowupForm();
+        $('#followup-followable-type').val(type);
+        $('#followup-followable-id').val(id);
+
+        loadFollowupHistory(type, id);
+        openModal('followup-job-modal');
+    });
+
+    $(document).on('click', '#followup-form-new-btn, #followup-sidebar-new-btn', function() {
+        resetFollowupForm();
+    });
+
+    $('#followup-job-form').on('submit', function(e) {
+        e.preventDefault();
+        const $err = $('#followup-form-error');
+        $err.addClass('hidden').text('');
+
+        const followupId = $(this).data('followup-id');
+        const isUpdate   = !!followupId;
+        const url        = isUpdate
+            ? "{{ url('admin/followups') }}/" + followupId
+            : "{{ route('admin.followups.store') }}";
+        const data       = isUpdate
+            ? $(this).serialize() + '&_method=PATCH'
+            : $(this).serialize();
+
+        $.ajax({
+            url: url,
+            method: 'POST',
+            data: data,
+            headers: { Accept: 'application/json' },
+            success: function(res) {
+                closeModal('followup-job-modal');
+                showJobAlert(res.message || (isUpdate ? 'Follow-up updated.' : 'Follow-up saved.'));
+            },
+            error: function(xhr) {
+                const errors = xhr.responseJSON?.errors;
+                $err.removeClass('hidden').text(errors ? Object.values(errors)[0][0] : 'Failed to save follow-up.');
+            }
+        });
+    });
+
     // ── Contractors tab in assign modal ─────────────────────────────────────
 
     let contractsCache = null;

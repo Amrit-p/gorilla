@@ -37,6 +37,8 @@ final class CrmPermissions
 
     public const MANAGE_CONTRACTORS = 'manage_contractors';
 
+    public const MANAGE_FOLLOWUPS = 'manage_followups';
+
     /**
      * @return array<int, string>
      */
@@ -175,6 +177,11 @@ final class CrmPermissions
     public static function canManageContractors(?User $user): bool
     {
         return $user?->can(self::MANAGE_CONTRACTORS) ?? false;
+    }
+
+    public static function canManageFollowups(?User $user): bool
+    {
+        return $user?->can(self::MANAGE_FOLLOWUPS) ?? false;
     }
 
     public static function canViewReport(?User $user, string $permission): bool

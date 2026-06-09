@@ -51,6 +51,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('view-mower-report', static fn ($user) => CrmPermissions::canViewReport($user, CrmPermissions::VIEW_MOWER_REPORT));
         Gate::define('manage-discussions', static fn ($user) => CrmPermissions::canManageDiscussions($user));
         Gate::define('manage-contractors', static fn ($user) => CrmPermissions::canManageContractors($user));
+        Gate::define('manage-followups', static fn ($user) => CrmPermissions::canManageFollowups($user));
 
         // Module 14: Invalidate cheap aggregate caches whenever CRM primitives change.
         $bumpCaches = static function (): void {
