@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -33,6 +34,8 @@ final class CrmPermissions
     public const MANAGE_EMPLOYEE_BONUSES = 'manage_employee_bonuses';
 
     public const MANAGE_DISCUSSIONS = 'manage_discussions';
+
+    public const MANAGE_CONTRACTORS = 'manage_contractors';
 
     /**
      * @return array<int, string>
@@ -169,6 +172,11 @@ final class CrmPermissions
         return $user?->can(self::MANAGE_DISCUSSIONS) ?? false;
     }
 
+    public static function canManageContractors(?User $user): bool
+    {
+        return $user?->can(self::MANAGE_CONTRACTORS) ?? false;
+    }
+
     public static function canViewReport(?User $user, string $permission): bool
     {
         return $user?->can($permission) ?? false;
@@ -230,27 +238,27 @@ final class CrmPermissions
             }
 
             // Drop legacy pivots when the target permission is already assigned (syncRolesAndPermissions may have added it).
-            $roleIdsWithNewPermission = \Illuminate\Support\Facades\DB::table('role_has_permissions')
+            $roleIdsWithNewPermission = DB::table('role_has_permissions')
                 ->where('permission_id', $new->id)
                 ->pluck('role_id');
 
             if ($roleIdsWithNewPermission->isNotEmpty()) {
-                \Illuminate\Support\Facades\DB::table('role_has_permissions')
+                DB::table('role_has_permissions')
                     ->where('permission_id', $old->id)
                     ->whereIn('role_id', $roleIdsWithNewPermission)
                     ->delete();
             }
 
-            \Illuminate\Support\Facades\DB::table('role_has_permissions')
+            DB::table('role_has_permissions')
                 ->where('permission_id', $old->id)
                 ->update(['permission_id' => $new->id]);
 
-            $modelsWithNewPermission = \Illuminate\Support\Facades\DB::table('model_has_permissions')
+            $modelsWithNewPermission = DB::table('model_has_permissions')
                 ->where('permission_id', $new->id)
                 ->get(['model_id', 'model_type']);
 
             if ($modelsWithNewPermission->isNotEmpty()) {
-                \Illuminate\Support\Facades\DB::table('model_has_permissions')
+                DB::table('model_has_permissions')
                     ->where('permission_id', $old->id)
                     ->where(function ($query) use ($modelsWithNewPermission) {
                         foreach ($modelsWithNewPermission as $assignment) {
@@ -263,7 +271,7 @@ final class CrmPermissions
                     ->delete();
             }
 
-            \Illuminate\Support\Facades\DB::table('model_has_permissions')
+            DB::table('model_has_permissions')
                 ->where('permission_id', $old->id)
                 ->update(['permission_id' => $new->id]);
 
@@ -308,11 +316,11 @@ final class CrmPermissions
             return;
         }
 
-        \Illuminate\Support\Facades\DB::table('model_has_roles')
+        DB::table('model_has_roles')
             ->where('role_id', $from->id)
             ->update(['role_id' => $to->id]);
 
-        \Illuminate\Support\Facades\DB::table('role_has_permissions')
+        DB::table('role_has_permissions')
             ->where('role_id', $from->id)
             ->delete();
 

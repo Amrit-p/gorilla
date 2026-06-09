@@ -13,6 +13,14 @@
         </button>
         <button type="button" role="tab" aria-selected="false"
             class="job-tab-btn mr-1 inline-flex items-center gap-1.5 border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-700"
+            data-modal="assign-job-modal" data-tab="contractors">
+            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z"/>
+            </svg>
+            Contractors
+        </button>
+        <button type="button" role="tab" aria-selected="false"
+            class="job-tab-btn mr-1 inline-flex items-center gap-1.5 border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-700"
             data-modal="assign-job-modal" data-tab="history">
             <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"/>
@@ -32,6 +40,29 @@
         </form>
     </div>
 
+    {{-- Contractors tab --}}
+    <div class="job-tab-panel hidden" data-modal="assign-job-modal" data-panel="contractors">
+        <div id="assign-contractors-panel">
+            <p class="mb-3 text-xs text-slate-500">Select an active contract to link to this job. This is optional — mowers can also be assigned without a contract.</p>
+            <div id="assign-contracts-loading" class="flex items-center justify-center py-8 text-slate-400">
+                <svg class="h-5 w-5 animate-spin mr-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                Loading contracts…
+            </div>
+            <div id="assign-contracts-list" class="hidden space-y-2"></div>
+            <p id="assign-contracts-empty" class="hidden py-6 text-center text-sm text-slate-400">No active contracts found.</p>
+            <div id="assign-contracts-actions" class="hidden mt-3 flex items-center gap-2">
+                <button type="button" id="assign-contract-submit"
+                    class="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-700 disabled:opacity-50">
+                    Link Contract
+                </button>
+                <button type="button" id="assign-contract-clear"
+                    class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50">
+                    Remove Contract
+                </button>
+            </div>
+        </div>
+    </div>
+
     {{-- History tab --}}
     <div class="job-tab-panel hidden" data-modal="assign-job-modal" data-panel="history">
         <div id="assign-client-history">
@@ -39,6 +70,47 @@
         </div>
     </div>
 
+</x-ui.modal>
+
+{{-- ── Contractor Details ────────────────────────────────────────────────── --}}
+<x-ui.modal id="contractor-details-modal" title="Contractor Details">
+    <div id="contractor-details-body" class="space-y-4">
+        {{-- Contractor info --}}
+        <div>
+            <h3 class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Contractor</h3>
+            <p id="cd-name" class="text-sm font-semibold text-slate-800"></p>
+            <div class="mt-1.5 space-y-1">
+                <p id="cd-phone-row" class="hidden flex items-center gap-1.5 text-sm text-slate-600">
+                    <svg class="h-3.5 w-3.5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z"/></svg>
+                    <span id="cd-phone"></span>
+                </p>
+                <p id="cd-email-row" class="hidden flex items-center gap-1.5 text-sm text-slate-600">
+                    <svg class="h-3.5 w-3.5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"/></svg>
+                    <a id="cd-email" href="#" class="hover:text-emerald-600 hover:underline"></a>
+                </p>
+            </div>
+        </div>
+        {{-- Contract info --}}
+        <div id="cd-contract-section" class="hidden">
+            <div class="border-t border-slate-100 pt-3">
+                <h3 class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Linked Contract</h3>
+                <p id="cd-contract-name" class="text-sm font-semibold text-slate-800"></p>
+                <div class="mt-1.5 grid grid-cols-2 gap-2">
+                    <div>
+                        <p class="text-xs text-slate-400">Start Date</p>
+                        <p id="cd-contract-start" class="text-sm text-slate-700">—</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-400">End Date</p>
+                        <p id="cd-contract-end" class="text-sm text-slate-700">—</p>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <span id="cd-contract-status" class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"></span>
+                </div>
+            </div>
+        </div>
+    </div>
 </x-ui.modal>
 
 {{-- ── Reschedule ─────────────────────────────────────────────────────────── --}}

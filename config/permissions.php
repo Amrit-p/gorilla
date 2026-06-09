@@ -21,6 +21,7 @@ return [
         'view_mower_report',
         'manage_employee_bonuses',
         'manage_discussions',
+        'manage_contractors',
     ],
 
     'roles' => [

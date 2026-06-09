@@ -452,6 +452,7 @@
         resetModalTabs('assign-job-modal');
         // Show history tab only for single jobs
         $('#assign-job-modal .job-tab-btn[data-tab="history"]').toggleClass('hidden', !clientId);
+        selectedContractId = null;
         openModal('assign-job-modal');
     });
 
@@ -469,6 +470,7 @@
         $('#assign-job-modal').data({ 'client-id': '', 'job-id': 0, 'history-loaded': false });
         resetModalTabs('assign-job-modal');
         $('#assign-job-modal .job-tab-btn[data-tab="history"]').addClass('hidden');
+        selectedContractId = null;
         openModal('assign-job-modal');
     });
 
@@ -602,5 +604,155 @@
         if (!ids.length) return;
         if (!confirm('Delete ' + ids.length + ' selected jobs?')) return;
         deleteJobs(ids);
+    });
+
+    // ── Contractors tab in assign modal ─────────────────────────────────────
+
+    let contractsCache = null;
+    let selectedContractId = null;
+
+    function loadContractsIfNeeded() {
+        if (contractsCache !== null) {
+            renderContractsList(contractsCache);
+            return;
+        }
+        $('#assign-contracts-loading').removeClass('hidden');
+        $('#assign-contracts-list, #assign-contracts-empty, #assign-contracts-actions').addClass('hidden');
+        $.ajax({
+            url: "{{ route('admin.jobs.active-contracts') }}",
+            method: 'GET',
+            headers: { Accept: 'application/json' },
+            success: function(res) {
+                contractsCache = res.contracts || [];
+                renderContractsList(contractsCache);
+            },
+            error: function() {
+                $('#assign-contracts-loading').addClass('hidden');
+                $('#assign-contracts-empty').removeClass('hidden').text('Failed to load contracts.');
+            }
+        });
+    }
+
+    function renderContractsList(contracts) {
+        $('#assign-contracts-loading').addClass('hidden');
+        const $list = $('#assign-contracts-list');
+        $list.empty();
+
+        if (!contracts.length) {
+            $('#assign-contracts-empty').removeClass('hidden');
+            return;
+        }
+
+        contracts.forEach(function(c) {
+            const isSelected = c.id === selectedContractId;
+            const $item = $(`
+                <button type="button" class="assign-contract-item w-full rounded-lg border px-3 py-2.5 text-left transition-colors hover:bg-violet-50 ${isSelected ? 'border-violet-400 bg-violet-50' : 'border-slate-200 bg-white'}"
+                    data-contract-id="${c.id}" data-contract-name="${$('<div>').text(c.name).html()}">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="min-w-0">
+                            <p class="truncate text-sm font-medium ${isSelected ? 'text-violet-700' : 'text-slate-800'}">${$('<div>').text(c.name).html()}</p>
+                            <p class="mt-0.5 text-xs text-slate-500">${$('<div>').text(c.contractor.name).html()}</p>
+                            <p class="mt-0.5 text-xs text-slate-400">${c.start_date || '—'} → ${c.end_date || 'Open'}</p>
+                        </div>
+                        ${isSelected ? '<svg class="h-4 w-4 shrink-0 text-violet-500 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>' : ''}
+                    </div>
+                </button>
+            `);
+            $list.append($item);
+        });
+
+        $list.removeClass('hidden');
+        $('#assign-contracts-actions').removeClass('hidden');
+    }
+
+    $(document).on('click', '.assign-contract-item', function() {
+        selectedContractId = Number($(this).data('contract-id'));
+        renderContractsList(contractsCache);
+    });
+
+    // Load contracts list whenever the tab becomes active
+    $(document).on('click', '[data-modal="assign-job-modal"][data-tab="contractors"]', function() {
+        loadContractsIfNeeded();
+    });
+
+    function submitContractAssignment(contractId) {
+        const jobIds = ($('#assign-job-form').data('jobIds') || []).map(Number).filter(Boolean);
+        if (!jobIds.length) return;
+
+        $.ajax({
+            url: "{{ route('admin.jobs.bulk.contract') }}",
+            method: 'POST',
+            data: { _token: "{{ csrf_token() }}", job_ids: jobIds, contract_id: contractId || '' },
+            headers: { Accept: 'application/json' },
+            success: function(res) {
+                closeModal('assign-job-modal');
+                showJobAlert(res.message || 'Contract updated.');
+                refreshJobsTable();
+            },
+            error: function(xhr) {
+                showJobAlert(Object.values(xhr.responseJSON?.errors || {})[0]?.[0] || 'Failed to update contract.', true);
+            }
+        });
+    }
+
+    $(document).on('click', '#assign-contract-submit', function() {
+        if (!selectedContractId) {
+            showJobAlert('Please select a contract first.', true);
+            return;
+        }
+        submitContractAssignment(selectedContractId);
+    });
+
+    $(document).on('click', '#assign-contract-clear', function() {
+        if (!confirm('Remove the contract from the selected job(s)?')) return;
+        submitContractAssignment(null);
+    });
+
+    // ── Contractor details modal ─────────────────────────────────────────────
+
+    $(document).on('click', '.view-contractor-btn', function() {
+        const $btn = $(this);
+        const contractorName  = $btn.data('contractor-name') || '';
+        const contractorPhone = $btn.data('contractor-phone') || '';
+        const contractorEmail = $btn.data('contractor-email') || '';
+        const contractName    = $btn.data('contract-name') || '';
+        const contractStart   = $btn.data('contract-start') || '—';
+        const contractEnd     = $btn.data('contract-end') || '—';
+        const contractStatus  = $btn.data('contract-status') || '';
+
+        $('#cd-name').text(contractorName);
+
+        if (contractorPhone) {
+            $('#cd-phone').text(contractorPhone);
+            $('#cd-phone-row').removeClass('hidden').addClass('flex');
+        } else {
+            $('#cd-phone-row').addClass('hidden').removeClass('flex');
+        }
+
+        if (contractorEmail) {
+            $('#cd-email').text(contractorEmail).attr('href', 'mailto:' + contractorEmail);
+            $('#cd-email-row').removeClass('hidden').addClass('flex');
+        } else {
+            $('#cd-email-row').addClass('hidden').removeClass('flex');
+        }
+
+        if (contractName) {
+            $('#cd-contract-name').text(contractName);
+            $('#cd-contract-start').text(contractStart);
+            $('#cd-contract-end').text(contractEnd);
+
+            const $badge = $('#cd-contract-status');
+            if (contractStatus === 'active') {
+                $badge.text('Active').attr('class', 'inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700');
+            } else {
+                $badge.text('Inactive').attr('class', 'inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600');
+            }
+
+            $('#cd-contract-section').removeClass('hidden');
+        } else {
+            $('#cd-contract-section').addClass('hidden');
+        }
+
+        openModal('contractor-details-modal');
     });
 </script>

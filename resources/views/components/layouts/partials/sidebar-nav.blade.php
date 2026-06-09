@@ -121,6 +121,14 @@
             </div>
         @endcan
 
+        @can('manage-contractors')
+            <p class="sidebar-label mb-2 mt-5 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Contractors</p>
+            <a href="{{ route('admin.contractors.index') }}" class="{{ $linkClass(['admin.contractors.*']) }}" title="Contractors">
+                <svg class="h-[18px] w-[18px] shrink-0 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                <span class="sidebar-text flex-1">Contractors</span>
+            </a>
+        @endcan
+
         @can('manage-discussions')
             <p class="sidebar-label mb-2 mt-5 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Internal</p>
             <div class="sidebar-accordion" data-open="{{ $accordionOpen(['admin.discussions.*']) ? 'true' : 'false' }}">

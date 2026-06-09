@@ -6,6 +6,9 @@
 
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\ClientManagementController;
+use App\Http\Controllers\Admin\Contractors\ContractController;
+use App\Http\Controllers\Admin\Contractors\ContractDocumentController;
+use App\Http\Controllers\Admin\Contractors\ContractorController;
 use App\Http\Controllers\Admin\DiscussionController;
 use App\Http\Controllers\Admin\EmployeeBonusController;
 use App\Http\Controllers\Admin\JobManagementController;
@@ -143,6 +146,27 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
         Route::delete('job-levels/{jobLevel}', [JobLevelController::class, 'destroy'])->name('job-levels.destroy');
     });
 
+    Route::middleware('crm.permission:'.CrmPermissions::MANAGE_CONTRACTORS)->prefix('admin/contractors')->name('admin.contractors.')->group(function (): void {
+        Route::get('/', [ContractorController::class, 'index'])->name('index');
+        Route::post('/', [ContractorController::class, 'store'])->name('store');
+        Route::get('/{contractor}/detail', [ContractorController::class, 'detail'])->name('detail');
+        Route::get('/{contractor}', [ContractorController::class, 'show'])->name('show');
+        Route::patch('/{contractor}', [ContractorController::class, 'update'])->name('update');
+
+        Route::prefix('{contractor}/contracts')->name('contracts.')->group(function (): void {
+            Route::post('/', [ContractController::class, 'store'])->name('store');
+            Route::get('/{contract}', [ContractController::class, 'show'])->name('show');
+            Route::patch('/{contract}', [ContractController::class, 'update'])->name('update');
+            Route::patch('/{contract}/status', [ContractController::class, 'updateStatus'])->name('status.update');
+
+            Route::prefix('{contract}/documents')->name('documents.')->group(function (): void {
+                Route::post('/', [ContractDocumentController::class, 'store'])->name('store');
+                Route::get('/{document}/download', [ContractDocumentController::class, 'download'])->name('download');
+                Route::delete('/{document}', [ContractDocumentController::class, 'destroy'])->name('destroy');
+            });
+        });
+    });
+
     Route::middleware('crm.permission:'.CrmPermissions::MANAGE_DISCUSSIONS)->group(function (): void {
         Route::resource('/admin/discussions', DiscussionController::class)
             ->names('admin.discussions');
@@ -185,11 +209,13 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
         Route::get('/admin/jobs/mower-workloads', [JobManagementController::class, 'mowerWorkloads'])->name('admin.jobs.mower-workloads');
         Route::get('/admin/jobs/client-remarks', [JobManagementController::class, 'clientRemarks'])->name('admin.jobs.client-remarks');
         Route::get('/admin/jobs/client-history', [JobManagementController::class, 'clientHistory'])->name('admin.jobs.client-history');
+        Route::get('/admin/jobs/active-contracts', [JobManagementController::class, 'activeContracts'])->name('admin.jobs.active-contracts');
         Route::post('/admin/jobs', [JobManagementController::class, 'store'])->name('admin.jobs.store');
         Route::get('/admin/jobs/{job}/edit', [JobManagementController::class, 'edit'])->name('admin.jobs.edit');
         Route::patch('/admin/jobs/{job}', [JobManagementController::class, 'update'])->name('admin.jobs.update');
         Route::patch('/admin/jobs/{job}/remarks', [JobManagementController::class, 'updateRemarks'])->name('admin.jobs.remarks.update');
         Route::post('/admin/jobs/bulk/assign', [JobManagementController::class, 'bulkAssignEmployees'])->name('admin.jobs.bulk.assign');
+        Route::post('/admin/jobs/bulk/contract', [JobManagementController::class, 'bulkAssignContract'])->name('admin.jobs.bulk.contract');
         Route::post('/admin/jobs/bulk/status', [JobManagementController::class, 'bulkUpdateStatus'])->name('admin.jobs.bulk.status.update');
         Route::post('/admin/jobs/bulk/schedule', [JobManagementController::class, 'bulkScheduleJobs'])->name('admin.jobs.bulk.schedule');
         Route::delete('/admin/jobs/bulk', [JobManagementController::class, 'bulkDestroy'])->name('admin.jobs.bulk.destroy');

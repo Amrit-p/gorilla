@@ -187,7 +187,7 @@ class JobManagementService
         Collection $jobs,
         string|int|null $primary_mower_id = null,
         array $helper_mowers = [],
-        bool $notify = true
+        bool $notify = true,
     ): Collection {
         // Validate mowers before opening a transaction so domain exceptions propagate cleanly.
         $helper_mowers = array_values(array_unique(array_map('intval', $helper_mowers)));

@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'zone_id',
     'equipment_type_id',
     'job_level_id',
+    'contract_id',
     'recurrence_id',
     'client_address',
     'latitude',
@@ -113,5 +114,10 @@ class Job extends Model
     public function recurrence(): BelongsTo
     {
         return $this->belongsTo(Recurrence::class);
+    }
+
+    public function contract(): BelongsTo
+    {
+        return $this->belongsTo(Contract::class);
     }
 }

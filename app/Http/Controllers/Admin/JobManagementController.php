@@ -11,7 +11,9 @@ use App\Http\Requests\Admin\UpdateJobRequest;
 use App\Http\Requests\Admin\UpdateJobStatusRequest;
 use App\Http\Requests\Admin\UploadJobImagesRequest;
 use App\Helpers\OptimizationHelper;
+use App\Enums\ContractStatus;
 use App\Models\Client;
+use App\Models\Contract;
 use App\Models\Job;
 use App\Models\MowerRemark;
 use App\Notifications\JobRemarksUpdatedNotification;
@@ -275,6 +277,33 @@ class JobManagementController extends Controller
         ]);
     }
 
+    public function activeContracts(): JsonResponse
+    {
+        $this->authorize('viewAny', Job::class);
+
+        $contracts = Contract::query()
+            ->with('contractor:id,name,phone,email')
+            ->active()
+            ->where(fn ($q) => $q->whereNull('end_date')->orWhere('end_date', '>=', now()))
+            ->orderBy('name')
+            ->get(['id', 'contractor_id', 'name', 'start_date', 'end_date', 'status']);
+
+        return response()->json([
+            'contracts' => $contracts->map(fn (Contract $c) => [
+                'id' => $c->id,
+                'name' => $c->name,
+                'start_date' => $c->start_date?->format('d M Y'),
+                'end_date' => $c->end_date?->format('d M Y'),
+                'contractor' => [
+                    'id' => $c->contractor->id,
+                    'name' => $c->contractor->name,
+                    'phone' => $c->contractor->phone,
+                    'email' => $c->contractor->email,
+                ],
+            ]),
+        ]);
+    }
+
     public function bulkAssignEmployees(AssignJobRequest $request): JsonResponse
     {
         $jobs = $this->jobsForBulkAction($request->validated('job_ids'), 'assign');
@@ -295,6 +324,25 @@ class JobManagementController extends Controller
                 ? 'Mowers assigned successfully.'
                 : 'Mowers assigned to selected jobs successfully.',
             'updated_count' => $updatedJobs->count(),
+        ]);
+    }
+
+    public function bulkAssignContract(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'job_ids'     => ['required', 'array', 'min:1'],
+            'job_ids.*'   => ['integer', 'distinct', 'exists:service_jobs,id'],
+            'contract_id' => ['nullable', 'integer', 'exists:contracts,id'],
+        ]);
+
+        $jobs = $this->jobsForBulkAction($validated['job_ids'], 'assign');
+
+        Job::query()->whereIn('id', $jobs->pluck('id'))->update(['contract_id' => $validated['contract_id']]);
+
+        return response()->json([
+            'message' => $jobs->count() === 1
+                ? 'Contract assigned successfully.'
+                : 'Contract assigned to selected jobs successfully.',
         ]);
     }
 

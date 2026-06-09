@@ -42,6 +42,7 @@ class JobRepository
                 'job_level_id',
                 'special_remarks',
                 'internal_notes',
+                'contract_id',
             ])
             ->with([
                 'client:id,name,address,customer_unique_id,phone,email,customer_type',
@@ -51,6 +52,8 @@ class JobRepository
                 'jobLevel:id,name,color_code',
                 'assignedEmployees:id,name,efficiency',
                 'doneByUser:id,name',
+                'contract:id,contractor_id,name,start_date,end_date,status',
+                'contract.contractor:id,name,phone,email',
             ]);
 
         return $query->paginate($perPage)->withQueryString();
