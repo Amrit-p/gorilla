@@ -13,6 +13,7 @@ use App\Models\Recurrence;
 use App\Models\User;
 use App\Models\Zone;
 use App\Notifications\JobAssignedNotification;
+use App\Notifications\JobRescheduledNotification;
 use App\Notifications\JobStatusChangedNotification;
 use App\Repositories\JobRepository;
 use App\Support\CrmPermissions;
@@ -301,6 +302,21 @@ class JobManagementService
                     'scheduled_time' => $scheduledTime,
                 ]);
             });
+        });
+
+        User::query()->role([CrmRoles::OFFICE_MANAGER])->get()->each(function (User $manager) use ($jobs): void {
+            $jobs->each(function (Job $job) use ($manager): void {
+                $manager->notify(new JobRescheduledNotification($job));
+            });
+            OptimizationHelper::forgetNotificationUnreadCount($manager->id);
+        });
+
+        $jobs->each(function (Job $job): void {
+            $primaryMower = $job->doneByUser;
+            if ($primaryMower) {
+                $primaryMower->notify(new JobRescheduledNotification($job));
+                OptimizationHelper::forgetNotificationUnreadCount($primaryMower->id);
+            }
         });
 
         return $jobs;

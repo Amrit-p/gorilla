@@ -10,9 +10,11 @@ use App\Http\Requests\Admin\StoreJobRequest;
 use App\Http\Requests\Admin\UpdateJobRequest;
 use App\Http\Requests\Admin\UpdateJobStatusRequest;
 use App\Http\Requests\Admin\UploadJobImagesRequest;
+use App\Helpers\OptimizationHelper;
 use App\Models\Client;
 use App\Models\Job;
 use App\Models\MowerRemark;
+use App\Notifications\JobRemarksUpdatedNotification;
 use App\Services\JobImageManagementService;
 use App\Services\JobManagementService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -379,6 +381,21 @@ class JobManagementController extends Controller
         ]);
 
         $job->update($validated);
+
+        $job->load('assignedEmployees', 'doneByUser');
+
+        $notifiedIds = [];
+
+        $job->assignedEmployees->each(function ($employee) use ($job, &$notifiedIds): void {
+            $employee->notify(new JobRemarksUpdatedNotification($job));
+            OptimizationHelper::forgetNotificationUnreadCount($employee->id);
+            $notifiedIds[] = $employee->id;
+        });
+
+        if ($job->doneByUser && ! in_array($job->doneByUser->id, $notifiedIds)) {
+            $job->doneByUser->notify(new JobRemarksUpdatedNotification($job));
+            OptimizationHelper::forgetNotificationUnreadCount($job->doneByUser->id);
+        }
 
         return response()->json(['message' => 'Remarks updated successfully.']);
     }
