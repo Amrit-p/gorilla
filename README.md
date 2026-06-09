@@ -37,6 +37,10 @@ Production-oriented **Laravel + Blade** CRM for lawn / mowing service businesses
 
    Change this immediately in production.
 
+5. **Cron setup**
+   ```bash
+   * * * * * php /path/to/artisan schedule:run >> /dev/null 2>&1
+   ```
 ---
 
 ## Architecture (high level)
