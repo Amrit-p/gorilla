@@ -37,6 +37,7 @@ return [
                 'view_dashboard',
                 'manage_leads',
                 'manage_customers',
+                'manage_jobs',
                 'view_mower_report',
             ],
         ],

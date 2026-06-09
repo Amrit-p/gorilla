@@ -184,6 +184,8 @@ class DashboardAnalyticsService
      */
     private function buildSalesAnalytics(): array
     {
+        $today = now()->toDateString();
+
         $statusCounts = Lead::query()
             ->selectRaw('status, COUNT(*) as total')
             ->groupBy('status')
@@ -197,6 +199,16 @@ class DashboardAnalyticsService
         $conversionRate = $totalLeads > 0
             ? round(($converted / $totalLeads) * 100, 1)
             : 0.0;
+
+        $jobsToday = Job::query()
+            ->whereDate('scheduled_date', $today)
+            ->whereNotIn('status', ['Cancelled'])
+            ->count();
+
+        $completedToday = Job::query()
+            ->whereDate('scheduled_date', $today)
+            ->where('status', JobWorkflowStatus::COMPLETED->value)
+            ->count();
 
         $labels = [];
         $data = [];
@@ -225,6 +237,12 @@ class DashboardAnalyticsService
                     'value' => (string) ($statusCounts[LeadStatus::FOLLOW_UP->value] ?? 0),
                     'subtitle' => 'Active pipeline',
                     'accent' => 'violet',
+                ],
+                'jobs_today' => [
+                    'label' => 'Jobs today',
+                    'value' => (string) $jobsToday,
+                    'subtitle' => $completedToday.' completed today',
+                    'accent' => 'teal',
                 ],
             ],
             'charts' => [

@@ -36,12 +36,12 @@
             @include('dashboard.partials.admin-three-week-schedule', ['threeWeekSchedule' => $threeWeekSchedule])
         @elseif ($dashboardType === 'sales')
             @include('dashboard.partials.sales-analytics', ['analytics' => $analytics])
+            @include('dashboard.partials.admin-three-week-schedule', ['threeWeekSchedule' => $threeWeekSchedule])
         @else
             @include('dashboard.partials.mower-analytics', ['analytics' => $analytics])
         @endif
 
-        @if ($dashboardType !== 'sales')
-            <div class="grid grid-cols-1 gap-5 xl:grid-cols-3">
+        <div class="grid grid-cols-1 gap-5 xl:grid-cols-3">
                 <div class="rounded-lg border border-slate-200 bg-white shadow-sm xl:col-span-2">
                     <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
                         <div>
@@ -113,7 +113,6 @@
                     </div>
                 @endif
             </div>
-        @endif
 
         @if ($preferences->show_activity_timeline && $dashboardType === 'admin')
             <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">

@@ -37,6 +37,7 @@ class DashboardController extends Controller
 
         $dashboardType = $analytics['type'] ?? 'admin';
         $isAdmin = $dashboardType === 'admin';
+        $showSchedule = $isAdmin || $dashboardType === 'sales';
 
         return view('dashboard.index', [
             'analytics' => $analytics,
@@ -44,7 +45,7 @@ class DashboardController extends Controller
             'leadsByStatus' => $this->dashboardService->leadsByStatus(),
             'activityLogs' => $this->dashboardService->recentActivity(),
             'preferences' => $this->dashboardService->preferencesFor($user),
-            'threeWeekSchedule' => $isAdmin ? $this->dashboardService->threeWeekScheduleSummary() : [],
+            'threeWeekSchedule' => $showSchedule ? $this->dashboardService->threeWeekScheduleSummary() : [],
             'employees' => $isAdmin
                 ? User::query()->role(CrmRoles::MOWER)->where('is_active', true)->orderBy('name')->get(['id', 'name', 'efficiency'])
                 : collect(),

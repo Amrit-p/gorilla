@@ -241,7 +241,7 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
             Route::get('/checklist', [MowerChecklistController::class, 'index'])->name('checklist.index');
             Route::post('/checklist', [MowerChecklistController::class, 'submit'])->name('checklist.submit');
 
-            Route::middleware('mower.checklist')->group(function (): void {
+            Route::middleware(['mower.checklist', 'crm.permission:'.CrmPermissions::UPLOAD_JOB_IMAGES])->group(function (): void {
                 Route::get('/', [MowerDashboardController::class, 'index'])->name('index');
                 Route::get('/notifications', [NotificationController::class, 'mowerIndex'])->name('notifications.index');
                 Route::get('/jobs/{job}', [MowerDashboardController::class, 'show'])->name('jobs.show');
