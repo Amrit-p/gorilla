@@ -45,9 +45,12 @@ class NotificationController extends Controller
         return response()->json([
             'unread_count' => $this->rememberUnreadCount($user),
             'items' => $user->unreadNotifications()->latest()->limit(8)->get()->map(function ($notification): array {
+                $jobId = $notification->data['job_id'] ?? null;
+
                 return [
                     'id' => $notification->id,
                     'message' => $notification->data['message'] ?? 'Notification',
+                    'url' => $jobId ? route('admin.jobs.show', $jobId) : null,
                     'created_at' => $notification->created_at?->diffForHumans(),
                 ];
             }),

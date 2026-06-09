@@ -9,11 +9,21 @@
 
         <div class="rounded-lg border border-slate-200 bg-white">
             @forelse ($notifications as $notification)
+                @php
+                    $jobLink = !empty($notification->data['job_id'])
+                        ? route('admin.jobs.show', $notification->data['job_id'])
+                        : null;
+                @endphp
                 <div class="border-b border-slate-100 p-3 last:border-b-0">
                     <div class="flex items-start justify-between gap-3">
-                        <div>
+                        <div class="min-w-0 flex-1">
                             <p class="text-sm font-medium text-slate-800">{{ $notification->data['message'] ?? 'Notification' }}</p>
-                            <p class="text-xs text-slate-500">{{ $notification->created_at?->diffForHumans() }}</p>
+                            <div class="mt-1 flex items-center gap-3">
+                                <p class="text-xs text-slate-500">{{ $notification->created_at?->diffForHumans() }}</p>
+                                @if ($jobLink)
+                                    <a href="{{ $jobLink }}" class="text-xs font-medium text-blue-600 hover:underline">View Job &rarr;</a>
+                                @endif
+                            </div>
                         </div>
                         @if (is_null($notification->read_at))
                             <x-ui.badge type="warning">Unread</x-ui.badge>
