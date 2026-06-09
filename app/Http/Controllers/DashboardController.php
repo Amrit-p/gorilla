@@ -81,6 +81,16 @@ class DashboardController extends Controller
     }
 
     /**
+     * AJAX: re-render the three-week calendar grid after a job action.
+     */
+    public function threeWeekGrid(): Response
+    {
+        $weeks = $this->dashboardService->threeWeekScheduleSummary();
+
+        return response(view('dashboard.partials.three-week-grid', compact('weeks')));
+    }
+
+    /**
      * AJAX: filtered revenue & job-performance chart data for the analytics sidebar.
      */
     public function analyticsCharts(Request $request): JsonResponse
