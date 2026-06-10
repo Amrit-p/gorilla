@@ -63,6 +63,6 @@ class ChecklistReportService implements ChecklistReportInterface
 
     public function export(ChecklistReportRequestDTO $request): Response
     {
-        return $this->excelService->export($this->generate($request));
+        return $this->excelService->export($this->generate($request), $request->start_date, $request->end_date);
     }
 }

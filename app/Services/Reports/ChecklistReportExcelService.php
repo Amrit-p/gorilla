@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Reports;
 
 use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 use Illuminate\Support\Collection;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -45,25 +46,24 @@ class ChecklistReportExcelService
     private const DATA_FONT_SIZE = 10;
 
     private const BASE_COLUMNS = [
-        ['key' => 'name',              'label' => 'Name',             'group' => 'green', 'format' => NumberFormat::FORMAT_TEXT,   'width' => 26, 'align' => 'left'],
-        ['key' => 'total_submissions', 'label' => 'Total Submissions', 'group' => 'green', 'format' => NumberFormat::FORMAT_NUMBER, 'width' => 20, 'align' => 'center'],
-        ['key' => 'days_submitted',    'label' => 'Days Submitted',   'group' => 'green', 'format' => NumberFormat::FORMAT_NUMBER, 'width' => 18, 'align' => 'center'],
+        ['key' => 'name',           'label' => 'Mower',     'group' => 'green', 'format' => NumberFormat::FORMAT_TEXT, 'width' => 26, 'align' => 'left'],
+        ['key' => 'checklist_name', 'label' => 'Checklist', 'group' => 'green', 'format' => NumberFormat::FORMAT_TEXT, 'width' => 30, 'align' => 'left'],
     ];
 
     private array $columns = [];
 
     private array $groups = [];
 
+    private Collection $reportDataStore;
+
     private array $subColors = [
         'green' => ['bg' => self::GREEN_SUB, 'fg' => self::GREEN_SFG],
         'blue' => ['bg' => self::BLUE_SUB,  'fg' => self::BLUE_SFG],
     ];
 
-    private array $numericSumKeys = [];
-
-    public function export(Collection $reportData): StreamedResponse
+    public function export(Collection $reportData, ?Carbon $startDate = null, ?Carbon $endDate = null): StreamedResponse
     {
-        $spreadsheet = $this->buildSpreadsheet($reportData);
+        $spreadsheet = $this->buildSpreadsheet($reportData, $startDate, $endDate);
         $filename = 'checklist_report_'.date('Y_m_d_H_i').'.xlsx';
 
         return new StreamedResponse(function () use ($spreadsheet) {
@@ -76,49 +76,50 @@ class ChecklistReportExcelService
         ]);
     }
 
-    private function setupColumns(Collection $reportData): void
+    private function setupColumns(Collection $reportData, ?Carbon $startDate = null, ?Carbon $endDate = null): void
     {
         $allDates = [];
-        foreach ($reportData as $row) {
-            $arr = is_array($row) ? $row : (array) $row;
-            foreach (array_keys($arr['submissions_by_date'] ?? []) as $date) {
-                $allDates[$date] = true;
+
+        if ($startDate && $endDate) {
+            foreach (CarbonPeriod::create($startDate, $endDate) as $day) {
+                $allDates[$day->toDateString()] = true;
             }
+        } else {
+            foreach ($reportData as $row) {
+                $arr = is_array($row) ? $row : (array) $row;
+                foreach (array_keys($arr['submissions_by_date'] ?? []) as $date) {
+                    $allDates[$date] = true;
+                }
+            }
+            ksort($allDates);
         }
-        ksort($allDates);
 
         $this->columns = self::BASE_COLUMNS;
 
         foreach (array_keys($allDates) as $date) {
             $this->columns[] = [
                 'key' => 'date_'.$date,
-                'label' => Carbon::parse($date)->format('d M, Y'),
+                'label' => Carbon::parse($date)->format('d M'),
                 'group' => 'blue',
-                'format' => NumberFormat::FORMAT_NUMBER,
-                'width' => 16,
+                'format' => NumberFormat::FORMAT_TEXT,
+                'width' => 12,
                 'align' => 'center',
             ];
         }
 
         $this->groups = [
-            ['label' => 'Employee',  'span' => 3,                   'bg' => self::GREEN_BG, 'fg' => self::GREEN_FG],
-            ['label' => 'Checklist Submissions', 'span' => count($allDates), 'bg' => self::BLUE_BG,  'fg' => self::BLUE_FG],
+            ['label' => 'Employee', 'span' => 2, 'bg' => self::GREEN_BG, 'fg' => self::GREEN_FG],
         ];
 
-        // Remove date group if there are no date columns
-        if (count($allDates) === 0) {
-            array_pop($this->groups);
-        }
-
-        $this->numericSumKeys = ['total_submissions', 'days_submitted'];
-        foreach (array_keys($allDates) as $date) {
-            $this->numericSumKeys[] = 'date_'.$date;
+        if (count($allDates) > 0) {
+            $this->groups[] = ['label' => 'Submission Dates', 'span' => count($allDates), 'bg' => self::BLUE_BG, 'fg' => self::BLUE_FG];
         }
     }
 
-    private function buildSpreadsheet(Collection $reportData): Spreadsheet
+    private function buildSpreadsheet(Collection $reportData, ?Carbon $startDate = null, ?Carbon $endDate = null): Spreadsheet
     {
-        $this->setupColumns($reportData);
+        $this->setupColumns($reportData, $startDate, $endDate);
+        $this->reportDataStore = $reportData;
 
         $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();
@@ -188,7 +189,7 @@ class ChecklistReportExcelService
                 'font' => ['name' => self::FONT_NAME, 'size' => 10, 'bold' => true, 'color' => ['argb' => 'FF'.$colors['fg']]],
                 'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF'.$colors['bg']]],
                 'alignment' => [
-                    'horizontal' => $col['align'] === 'right' ? Alignment::HORIZONTAL_RIGHT : ($col['align'] === 'center' ? Alignment::HORIZONTAL_CENTER : Alignment::HORIZONTAL_LEFT),
+                    'horizontal' => $col['align'] === 'center' ? Alignment::HORIZONTAL_CENTER : Alignment::HORIZONTAL_LEFT,
                     'vertical' => Alignment::VERTICAL_CENTER,
                     'wrapText' => true,
                 ],
@@ -201,39 +202,61 @@ class ChecklistReportExcelService
     private function writeData(Worksheet $sheet, Collection $reportData): int
     {
         $excelRow = 4;
+        $grouped = $reportData->groupBy(fn ($r) => is_array($r) ? $r['user_id'] : $r->user_id);
+        $colorIndex = 0;
+        $mergeRanges = [];
 
-        foreach ($reportData as $dto) {
-            $rowData = is_array($dto) ? $dto : (array) $dto;
-            $isAlt = ($excelRow % 2 === 0);
+        foreach ($grouped as $userRows) {
+            $rowCount = $userRows->count();
+            $isAlt = ($colorIndex % 2 !== 0);
+            $startRow = $excelRow;
+            $colorIndex++;
 
-            foreach ($this->columns as $idx => $col) {
-                $colLetter = Coordinate::stringFromColumnIndex($idx + 1);
-                $cell = $colLetter.$excelRow;
-                $colors = $this->subColors[$col['group']];
-                $bgArgb = $isAlt ? ('FF'.$this->lighten($colors['bg'])) : 'FFFFFFFF';
+            foreach ($userRows->values() as $subIndex => $dto) {
+                $rowData = is_array($dto) ? $dto : (array) $dto;
 
-                if (str_starts_with($col['key'], 'date_')) {
-                    $dateKey = substr($col['key'], 5);
-                    $value = $rowData['submissions_by_date'][$dateKey] ?? '';
-                } else {
-                    $value = $rowData[$col['key']] ?? '';
+                foreach ($this->columns as $idx => $col) {
+                    $colLetter = Coordinate::stringFromColumnIndex($idx + 1);
+                    $cell = $colLetter.$excelRow;
+                    $colors = $this->subColors[$col['group']];
+                    $bgArgb = $isAlt ? ('FF'.$this->lighten($colors['bg'])) : 'FFFFFFFF';
+
+                    if ($idx === 0) {
+                        $value = $subIndex === 0 ? ($rowData['name'] ?? '') : '';
+                    } elseif ($col['key'] === 'checklist_name') {
+                        $value = $rowData['checklist_name'] ?? '';
+                    } elseif (str_starts_with($col['key'], 'date_')) {
+                        $dateKey = substr($col['key'], 5);
+                        $value = ($rowData['submissions_by_date'][$dateKey] ?? false) ? '✓' : '';
+                    } else {
+                        $value = $rowData[$col['key']] ?? '';
+                    }
+
+                    $sheet->setCellValue($cell, $value);
+                    $sheet->getStyle($cell)->getNumberFormat()->setFormatCode($col['format']);
+                    $sheet->getStyle($cell)->applyFromArray([
+                        'font' => ['name' => self::FONT_NAME, 'size' => self::DATA_FONT_SIZE],
+                        'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => $bgArgb]],
+                        'alignment' => [
+                            'horizontal' => $col['align'] === 'center' ? Alignment::HORIZONTAL_CENTER : Alignment::HORIZONTAL_LEFT,
+                            'vertical' => Alignment::VERTICAL_CENTER,
+                        ],
+                        'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['argb' => 'FF'.self::BORDER_COLOR]]],
+                    ]);
                 }
 
-                $sheet->setCellValue($cell, $value);
-                $sheet->getStyle($cell)->getNumberFormat()->setFormatCode($col['format']);
-                $sheet->getStyle($cell)->applyFromArray([
-                    'font' => ['name' => self::FONT_NAME, 'size' => self::DATA_FONT_SIZE],
-                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => $bgArgb]],
-                    'alignment' => [
-                        'horizontal' => $col['align'] === 'right' ? Alignment::HORIZONTAL_RIGHT : ($col['align'] === 'center' ? Alignment::HORIZONTAL_CENTER : Alignment::HORIZONTAL_LEFT),
-                        'vertical' => Alignment::VERTICAL_CENTER,
-                    ],
-                    'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['argb' => 'FF'.self::BORDER_COLOR]]],
-                ]);
+                $sheet->getRowDimension($excelRow)->setRowHeight(22);
+                $excelRow++;
             }
 
-            $sheet->getRowDimension($excelRow)->setRowHeight(22);
-            $excelRow++;
+            if ($rowCount > 1) {
+                $mergeRanges[] = 'A'.$startRow.':A'.($excelRow - 1);
+            }
+        }
+
+        foreach ($mergeRanges as $range) {
+            $sheet->mergeCells($range);
+            $sheet->getStyle($range)->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
         }
 
         return $excelRow - 1;
@@ -242,7 +265,6 @@ class ChecklistReportExcelService
     private function writeTotalsRow(Worksheet $sheet, int $lastDataRow): void
     {
         $totalsRow = $lastDataRow + 1;
-        $dataStart = 4;
 
         foreach ($this->columns as $idx => $col) {
             $colLetter = Coordinate::stringFromColumnIndex($idx + 1);
@@ -250,19 +272,25 @@ class ChecklistReportExcelService
 
             if ($idx === 0) {
                 $sheet->setCellValue($cell, 'TOTALS');
-            } elseif (in_array($col['key'], $this->numericSumKeys, true)) {
-                $sheet->setCellValue($cell, "=SUM({$colLetter}{$dataStart}:{$colLetter}{$lastDataRow})");
-                $sheet->getStyle($cell)->getNumberFormat()->setFormatCode($col['format']);
-            }
+            } elseif (str_starts_with($col['key'], 'date_')) {
+                $dateKey = substr($col['key'], 5);
+                $count = $this->reportDataStore->filter(
+                    fn ($r) => (is_array($r) ? $r : (array) $r)['submissions_by_date'][$dateKey] ?? false
+                )->count();
 
-            $halign = $idx === 0
-                ? Alignment::HORIZONTAL_LEFT
-                : ($col['align'] === 'center' ? Alignment::HORIZONTAL_CENTER : Alignment::HORIZONTAL_RIGHT);
+                if ($count > 0) {
+                    $sheet->setCellValue($cell, $count);
+                    $sheet->getStyle($cell)->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_NUMBER);
+                }
+            }
 
             $sheet->getStyle($cell)->applyFromArray([
                 'font' => ['name' => self::FONT_NAME, 'size' => self::DATA_FONT_SIZE, 'bold' => true, 'color' => ['argb' => 'FF'.self::TOTAL_ROW_FG]],
                 'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF'.self::TOTAL_ROW_BG]],
-                'alignment' => ['horizontal' => $halign, 'vertical' => Alignment::VERTICAL_CENTER],
+                'alignment' => [
+                    'horizontal' => $idx === 0 ? Alignment::HORIZONTAL_LEFT : Alignment::HORIZONTAL_CENTER,
+                    'vertical' => Alignment::VERTICAL_CENTER,
+                ],
                 'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_MEDIUM, 'color' => ['argb' => 'FF0F172A']]],
             ]);
         }

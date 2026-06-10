@@ -11,7 +11,7 @@
 
         {{-- Filter Bar --}}
         <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
-            <div class="flex items-center">
+            <div class="flex items-center p-2">
                 <button type="button" id="checklist-filter-toggle" class="flex flex-1 items-center justify-between px-4 py-3 text-left">
                     <div class="flex items-center gap-1.5">
                         <svg class="h-3.5 w-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -24,7 +24,12 @@
                     </svg>
                 </button>
 
-                {{-- Export buttons hidden --}}
+                <x-ui.export-dropdown
+                    :excelHref="route('reports.checklist.export')"
+                    :pdfHref="route('reports.checklist.export-pdf')"
+                    excelId="checklist-excel-btn"
+                    pdfId="checklist-pdf-btn"
+                />
             </div>
 
             <div id="checklist-filter-body" class="border-t border-slate-100 px-4 py-4">

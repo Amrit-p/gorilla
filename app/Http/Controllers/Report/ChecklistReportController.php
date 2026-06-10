@@ -70,8 +70,11 @@ class ChecklistReportController extends Controller
             $dto = $request->toDTO();
             $reportData = $this->checklistReportService->generate($dto);
 
-            return Pdf::loadView('reports.checklist.export-pdf', compact('reportData'))
-                ->setPaper('a4', 'landscape')
+            return Pdf::loadView('reports.checklist.export-pdf', [
+                'reportData' => $reportData,
+                'startDate' => $dto->start_date,
+                'endDate' => $dto->end_date,
+            ])->setPaper('a4', 'landscape')
                 ->download('checklist_report_'.now()->format('Y_m_d').'.pdf');
         } catch (\Exception $e) {
             report($e);
