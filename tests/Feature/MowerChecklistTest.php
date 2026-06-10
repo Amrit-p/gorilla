@@ -116,15 +116,15 @@ class MowerChecklistTest extends TestCase
             ->assertOk();
     }
 
-    public function test_mower_without_safety_checklist_in_db_bypasses_middleware(): void
+    public function test_mower_without_safety_checklist_in_db_gets_503(): void
     {
         // No Checklist row exists at all
         $this->actingAs($this->mower)
             ->get(route('mower.index'))
-            ->assertOk();
+            ->assertStatus(503);
     }
 
-    public function test_mower_with_checklist_that_has_no_active_points_bypasses_middleware(): void
+    public function test_mower_with_checklist_that_has_no_active_points_gets_503(): void
     {
         $checklist = Checklist::create(['name' => 'Safety Checklist']);
         // Archive the only point so no active points remain
@@ -138,7 +138,7 @@ class MowerChecklistTest extends TestCase
 
         $this->actingAs($this->mower)
             ->get(route('mower.index'))
-            ->assertOk();
+            ->assertStatus(503);
     }
 
     public function test_mower_who_completed_all_points_today_bypasses_middleware(): void

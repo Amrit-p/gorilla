@@ -43,14 +43,14 @@
                                                     @if ($point->text)
                                                         <button type="button"
                                                             class="more-btn shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 hover:bg-emerald-50"
-                                                            aria-expanded="true">
-                                                            Less
+                                                            aria-expanded="false">
+                                                            More
                                                         </button>
                                                     @endif
                                                 </span>
                                             @endif
                                             @if ($point->text)
-                                                <span class="point-text text-xs text-slate-500">{{ $point->text }}</span>
+                                                <span class="point-text hidden text-xs text-slate-500">{{ $point->text }}</span>
                                             @endif
                                         </label>
                                     </li>

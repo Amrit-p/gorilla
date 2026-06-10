@@ -3,7 +3,6 @@
 namespace App\Http\Middleware;
 
 use App\Models\Checklist;
-use App\Models\ChecklistPoint;
 use App\Models\MowerChecklistSubmission;
 use App\Support\CrmRoles;
 use Closure;
@@ -21,10 +20,14 @@ class EnsureMowerChecklistComplete
         }
         $checklist = Checklist::safetyChecklist();
 
-        $activePointIds = $checklist ? $checklist->points->pluck('id') : collect();
+        if (! $checklist) {
+            abort(503, 'Safety checklist is not configured.');
+        }
+
+        $activePointIds = $checklist->points->pluck('id');
 
         if ($activePointIds->isEmpty()) {
-            return $next($request);
+            abort(503, 'Safety checklist has no active points configured.');
         }
 
         $today = now()->toDateString();

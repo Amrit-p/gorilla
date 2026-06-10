@@ -37,7 +37,7 @@ class AuthenticatedSessionController extends Controller
         $user = auth()->user();
 
         if ($user->hasRole(CrmRoles::MOWER)) {
-            return redirect()->intended(route('mower.index'));
+            return redirect()->intended(route('mower.checklist.index'));
         }
 
         return redirect()->intended(route('dashboard.index'));
