@@ -153,9 +153,9 @@
             const id = $(this).data('id');
             const status = $(this).data('status');
             $.ajax({
-                url: "{{ url('/admin/jobs') }}/" + id + "/status",
+                url: "{{ route('admin.jobs.bulk.status.update') }}",
                 method: 'POST',
-                data: { _token: "{{ csrf_token() }}", status: status },
+                data: { _token: "{{ csrf_token() }}", job_ids: [id], status: status },
                 headers: { Accept: 'application/json' },
                 success: function () { window.location.reload(); },
                 error: function (xhr) {
