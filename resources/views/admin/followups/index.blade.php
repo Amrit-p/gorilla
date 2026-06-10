@@ -74,9 +74,16 @@
                         <li class="flex flex-wrap items-start gap-4 px-5 py-4">
                             <div class="min-w-0 flex-1">
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <span class="text-sm font-semibold text-slate-900">
-                                        {{ class_basename($followup->followable_type) }} #{{ $followup->followable_id }}
-                                    </span>
+                                    @php $followableUrl = $followup->followableUrl(); @endphp
+                                    @if ($followableUrl)
+                                        <a href="{{ $followableUrl }}" class="text-sm font-semibold text-slate-900 hover:underline">
+                                            {{ class_basename($followup->followable_type) }} #{{ $followup->followable_id }}
+                                        </a>
+                                    @else
+                                        <span class="text-sm font-semibold text-slate-900">
+                                            {{ class_basename($followup->followable_type) }} #{{ $followup->followable_id }}
+                                        </span>
+                                    @endif
                                     <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{ $followup->status->badgeClass() }}">
                                         {{ $followup->status->label() }}
                                     </span>

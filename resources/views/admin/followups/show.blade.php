@@ -36,7 +36,14 @@
                 <div>
                     <dt class="text-xs font-medium text-slate-500">Target</dt>
                     <dd class="mt-1 text-sm font-semibold text-slate-900">
-                        {{ class_basename($followup->followable_type) }} #{{ $followup->followable_id }}
+                        @php $followableUrl = $followup->followableUrl(); @endphp
+                        @if ($followableUrl)
+                            <a href="{{ $followableUrl }}" class="text-blue-600 hover:underline">
+                                {{ class_basename($followup->followable_type) }} #{{ $followup->followable_id }}
+                            </a>
+                        @else
+                            {{ class_basename($followup->followable_type) }} #{{ $followup->followable_id }}
+                        @endif
                     </dd>
                 </div>
                 <div>

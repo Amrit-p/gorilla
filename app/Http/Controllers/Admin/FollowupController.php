@@ -35,6 +35,19 @@ class FollowupController extends Controller
         ]);
     }
 
+    public function searchFollowableJson(Request $request): JsonResponse
+    {
+        abort_unless(auth()->user()->can(CrmPermissions::MANAGE_FOLLOWUPS), 403);
+
+        $type = (string) $request->query('type', '');
+
+        abort_unless(in_array($type, FollowupService::ALLOWED_FOLLOWABLE_TYPES, true), 422);
+
+        return response()->json([
+            'results' => $this->followupService->searchFollowable($type, (string) $request->query('q', '')),
+        ]);
+    }
+
     public function forFollowableJson(Request $request): JsonResponse
     {
         abort_unless(auth()->user()->can(CrmPermissions::MANAGE_FOLLOWUPS), 403);

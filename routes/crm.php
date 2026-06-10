@@ -175,6 +175,8 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
             ->name('admin.followups.form-options');
         Route::get('/admin/followups/for-followable', [FollowupController::class, 'forFollowableJson'])
             ->name('admin.followups.for-followable');
+        Route::get('/admin/followups/search-followable', [FollowupController::class, 'searchFollowableJson'])
+            ->name('admin.followups.search-followable');
         Route::resource('/admin/followups', FollowupController::class)
             ->names('admin.followups');
     });

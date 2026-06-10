@@ -118,4 +118,89 @@ class FollowupService
             'followableTypes' => self::ALLOWED_FOLLOWABLE_TYPES,
         ];
     }
+
+    /**
+     * @return array<int, array{id: int, label: string}>
+     */
+    public function searchFollowable(string $type, string $query): array
+    {
+        return match ($type) {
+            Job::class => $this->searchJobs($query),
+            Lead::class => $this->searchLeads($query),
+            Contractor::class => $this->searchContractors($query),
+            default => [],
+        };
+    }
+
+    /**
+     * @return array<int, array{id: int, label: string}>
+     */
+    private function searchJobs(string $query): array
+    {
+        return Job::query()
+            ->with('client:id,name')
+            ->when($query !== '', fn ($q) => $q->where(fn ($q2) => $q2
+                ->where('id', 'like', "%{$query}%")
+                ->orWhere('client_address', 'like', "%{$query}%")
+                ->orWhereHas('client', fn ($cq) => $cq->where('name', 'like', "%{$query}%"))
+            ))
+            ->latest()
+            ->limit(15)
+            ->get()
+            ->map(fn (Job $job) => [
+                'id' => $job->id,
+                'label' => "#{$job->id}"
+                    .($job->client ? " – {$job->client->name}" : '')
+                    .($job->client_address ? " ({$job->client_address})" : ''),
+            ])
+            ->all();
+    }
+
+    /**
+     * @return array<int, array{id: int, label: string}>
+     */
+    private function searchLeads(string $query): array
+    {
+        return Lead::query()
+            ->when($query !== '', fn ($q) => $q->where(fn ($q2) => $q2
+                ->where('id', 'like', "%{$query}%")
+                ->orWhere('client_name', 'like', "%{$query}%")
+                ->orWhere('email', 'like', "%{$query}%")
+                ->orWhere('mobile_number', 'like', "%{$query}%")
+            ))
+            ->latest()
+            ->limit(15)
+            ->get()
+            ->map(fn (Lead $lead) => [
+                'id' => $lead->id,
+                'label' => "#{$lead->id}"
+                    .($lead->client_name ? " – {$lead->client_name}" : '')
+                    .($lead->email ? " ({$lead->email})" : ''),
+            ])
+            ->all();
+    }
+
+    /**
+     * @return array<int, array{id: int, label: string}>
+     */
+    private function searchContractors(string $query): array
+    {
+        return Contractor::query()
+            ->when($query !== '', fn ($q) => $q->where(fn ($q2) => $q2
+                ->where('id', 'like', "%{$query}%")
+                ->orWhere('name', 'like', "%{$query}%")
+                ->orWhere('email', 'like', "%{$query}%")
+                ->orWhere('phone', 'like', "%{$query}%")
+            ))
+            ->latest()
+            ->limit(15)
+            ->get()
+            ->map(fn (Contractor $contractor) => [
+                'id' => $contractor->id,
+                'label' => "#{$contractor->id}"
+                    .($contractor->name ? " – {$contractor->name}" : '')
+                    .($contractor->email ? " ({$contractor->email})" : ''),
+            ])
+            ->all();
+    }
 }
