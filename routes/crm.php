@@ -32,6 +32,7 @@ use App\Http\Controllers\Mower\ChecklistController as MowerChecklistController;
 use App\Http\Controllers\Mower\MowerDashboardController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Report\ChecklistReportController;
 use App\Http\Controllers\Report\MowerReportController;
 use App\Support\CrmPermissions;
 use Illuminate\Support\Facades\Route;
@@ -287,4 +288,20 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
         });
     });
 
+    Route::middleware('crm.any_permission:'.implode(',', [
+        CrmPermissions::VIEW_CHECKLIST_REPORT,
+    ]))->group(function (): void {
+        Route::prefix('reports')->name('reports.')->group(function (): void {
+            Route::prefix('checklist')->name('checklist.')->group(function (): void {
+                Route::get('/', [ChecklistReportController::class, 'index'])
+                    ->name('index');
+                Route::get('/report', [ChecklistReportController::class, 'report'])
+                    ->name('report');
+                Route::get('/export', [ChecklistReportController::class, 'export'])
+                    ->name('export');
+                Route::get('/export-pdf', [ChecklistReportController::class, 'exportPdf'])
+                    ->name('export-pdf');
+            });
+        });
+    });
 });

@@ -31,6 +31,8 @@ final class CrmPermissions
 
     public const VIEW_MOWER_REPORT = 'view_mower_report';
 
+    public const VIEW_CHECKLIST_REPORT = 'view_checklist_report';
+
     public const MANAGE_EMPLOYEE_BONUSES = 'manage_employee_bonuses';
 
     public const MANAGE_DISCUSSIONS = 'manage_discussions';

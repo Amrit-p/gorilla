@@ -49,6 +49,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('manage-masters', static fn ($user) => CrmPermissions::canManageMasters($user));
         Gate::define('upload-job-images', static fn ($user) => CrmPermissions::canUploadJobImages($user));
         Gate::define('view-mower-report', static fn ($user) => CrmPermissions::canViewReport($user, CrmPermissions::VIEW_MOWER_REPORT));
+        Gate::define('view-checklist-report', static fn ($user) => CrmPermissions::canViewReport($user, CrmPermissions::VIEW_CHECKLIST_REPORT));
         Gate::define('manage-discussions', static fn ($user) => CrmPermissions::canManageDiscussions($user));
         Gate::define('manage-contractors', static fn ($user) => CrmPermissions::canManageContractors($user));
         Gate::define('manage-followups', static fn ($user) => CrmPermissions::canManageFollowups($user));
