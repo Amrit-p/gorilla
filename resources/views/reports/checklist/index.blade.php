@@ -29,20 +29,16 @@
 
             <div id="checklist-filter-body" class="border-t border-slate-100 px-4 py-4">
                 <form id="checklist-filter-form" class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                    {{-- Date range start --}}
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-slate-500">From Date</label>
-                        <input type="date" name="date_range[start]"
-                               value="{{ $filters['start_date'] ?? '' }}"
-                               class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-300">
-                    </div>
-
-                    {{-- Date range end --}}
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-slate-500">To Date</label>
-                        <input type="date" name="date_range[end]"
-                               value="{{ $filters['end_date'] ?? '' }}"
-                               class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-300">
+                    {{-- Date range --}}
+                    <div class="lg:col-span-2">
+                        <label class="mb-1 block text-xs font-medium text-slate-500">Date Range</label>
+                        <x-ui.daterange-picker
+                            name="date_range"
+                            placeholder="Select date range"
+                            :startDate="$filters['start_date'] ?? ''"
+                            :endDate="$filters['end_date'] ?? ''"
+                            :showRanges="true"
+                        />
                     </div>
 
                     {{-- Employee --}}

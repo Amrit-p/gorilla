@@ -40,7 +40,11 @@ class ChecklistReportController extends Controller
             $reportData = $this->checklistReportService->generate($dto);
 
             return response()->json([
-                'html' => view('reports.checklist.partials.table', compact('reportData'))->render(),
+                'html' => view('reports.checklist.partials.table', [
+                    'reportData' => $reportData,
+                    'startDate' => $dto->start_date,
+                    'endDate' => $dto->end_date,
+                ])->render(),
             ]);
         } catch (\Exception $e) {
             report($e);
