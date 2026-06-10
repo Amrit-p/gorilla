@@ -2,7 +2,10 @@
 
 namespace App\Console\Commands;
 
-use App\Enums\JobWorkflowStatus;
+use App\Enums\{
+    JobWorkflowStatus,
+    JobOperationalPaymentStatus,
+};
 use App\Helpers\OptimizationHelper;
 use App\Models\Job;
 use App\Models\User;
@@ -19,7 +22,10 @@ class SendPendingJobFollowUpReminders extends Command
     public function handle(): int
     {
         $staleJobs = Job::query()
-            ->where('status', JobWorkflowStatus::PENDING->value)
+            ->where(function ($query) {
+                $query->whereIn('status', [JobWorkflowStatus::PENDING->value, JobWorkflowStatus::HOLD->value])
+                    ->orWhereIn('payment_status', [JobOperationalPaymentStatus::PENDING->value]);
+            })
             ->where('updated_at', '<=', now()->subDays(2))
             ->get();
 
