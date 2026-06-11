@@ -40,6 +40,7 @@ return [
                 'manage_leads',
                 'manage_customers',
                 'manage_jobs',
+                'assign_jobs',
                 'view_mower_report',
             ],
         ],
