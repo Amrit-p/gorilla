@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\LeadManagementController;
 use App\Http\Controllers\Admin\MapRoutingController;
 use App\Http\Controllers\Admin\Masters\AccountingLevelController;
 use App\Http\Controllers\Admin\Masters\ChecklistController;
+use App\Http\Controllers\Admin\Masters\ClientRatingController;
 use App\Http\Controllers\Admin\Masters\EquipmentTypeController;
 use App\Http\Controllers\Admin\Masters\JobLevelController;
 use App\Http\Controllers\Admin\Masters\RecurrenceController;
@@ -146,6 +147,13 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
         Route::patch('job-levels/{jobLevel}', [JobLevelController::class, 'update'])->name('job-levels.update');
         Route::patch('job-levels/{jobLevel}/status', [JobLevelController::class, 'updateStatus'])->name('job-levels.status.update');
         Route::delete('job-levels/{jobLevel}', [JobLevelController::class, 'destroy'])->name('job-levels.destroy');
+
+        Route::get('client-ratings', [ClientRatingController::class, 'index'])->name('client-ratings.index');
+        Route::post('client-ratings', [ClientRatingController::class, 'store'])->name('client-ratings.store');
+        Route::get('client-ratings/{clientRating}', [ClientRatingController::class, 'show'])->name('client-ratings.show');
+        Route::patch('client-ratings/{clientRating}', [ClientRatingController::class, 'update'])->name('client-ratings.update');
+        Route::patch('client-ratings/{clientRating}/status', [ClientRatingController::class, 'updateStatus'])->name('client-ratings.status.update');
+        Route::delete('client-ratings/{clientRating}', [ClientRatingController::class, 'destroy'])->name('client-ratings.destroy');
     });
 
     Route::middleware('crm.permission:'.CrmPermissions::MANAGE_CONTRACTORS)->prefix('admin/contractors')->name('admin.contractors.')->group(function (): void {

@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'lead_id',
     'zone_id',
     'accounting_level_id',
+    'client_rating_id',
     'job_level_id',
     'equipment_type_id',
     'name',
@@ -84,6 +85,11 @@ class Client extends Model
     public function jobLevel(): BelongsTo
     {
         return $this->belongsTo(JobLevel::class);
+    }
+
+    public function clientRating(): BelongsTo
+    {
+        return $this->belongsTo(ClientRating::class);
     }
 
     public function lead(): BelongsTo

@@ -7,6 +7,7 @@ use App\Models\ActivityLog;
 use App\Models\Job;
 use App\Support\QueryFilters\JobListFilter;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 class JobRepository
@@ -45,7 +46,8 @@ class JobRepository
                 'contract_id',
             ])
             ->with([
-                'client:id,name,address,customer_unique_id,phone,email,customer_type',
+                'client:id,name,address,customer_unique_id,phone,email,customer_type,client_rating_id',
+                'client.clientRating:id,name,description',
                 'zone:id,name',
                 'recurrence:id,name',
                 'equipmentType:id,name,color_code',
@@ -90,15 +92,15 @@ class JobRepository
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Builder<Job>
+     * @return Builder<Job>
      */
-    private function baseListQuery(array $filters): \Illuminate\Database\Eloquent\Builder
+    private function baseListQuery(array $filters): Builder
     {
         $query = Job::query()
             ->orderBy('scheduled_date', 'desc')
             ->orderBy('scheduled_time', 'desc')
             ->orderByRaw('CASE WHEN numeric_priority IS NULL THEN 1 ELSE 0 END ASC, numeric_priority ASC')
-            ->orderByRaw("CASE status WHEN ? THEN 1 WHEN ? THEN 2 WHEN ? THEN 3 WHEN ? THEN 4 ELSE 5 END ASC", [
+            ->orderByRaw('CASE status WHEN ? THEN 1 WHEN ? THEN 2 WHEN ? THEN 3 WHEN ? THEN 4 ELSE 5 END ASC', [
                 JobWorkflowStatus::PENDING->value,
                 JobWorkflowStatus::STARTED->value,
                 JobWorkflowStatus::HOLD->value,
@@ -122,5 +124,4 @@ class JobRepository
             ->limit($limit)
             ->get();
     }
-
 }

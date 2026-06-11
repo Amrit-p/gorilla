@@ -23,6 +23,10 @@
                 <dd class="text-slate-800">{{ $client->accountingLevel?->name ?? '—' }}</dd>
             </div>
             <div class="flex justify-between gap-4">
+                <dt class="text-slate-500">Customer rating</dt>
+                <dd class="text-slate-800">{{ $client->clientRating?->name ?? '—' }}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
                 <dt class="text-slate-500">Zone</dt>
                 <dd class="text-slate-800">{{ $client->zone?->name ?? '—' }}</dd>
             </div>

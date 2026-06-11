@@ -95,6 +95,9 @@
                     if ($form.find('[name="color_code"]').length) {
                         $form.find('[name="color_code"]').val(record.color_code || '#64748b');
                     }
+                    if ($form.find('[name="description"]').length) {
+                        $form.find('[name="description"]').val(record.description ?? '');
+                    }
                     $form.find('[name="sort_order"]').val(record.sort_order ?? 0);
                     $form.find('[name="is_active"]').val(record.is_active ? '1' : '0');
                     openModal('master-form-modal');

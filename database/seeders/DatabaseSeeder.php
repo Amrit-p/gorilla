@@ -19,11 +19,18 @@ class DatabaseSeeder extends Seeder
             ZoneSeeder::class,
             ChecklistSeeder::class,
             AccountingLevelSeeder::class,
+            ClientRatingSeeder::class,
             JobLevelSeeder::class,
             RecurrenceSeeder::class,
-            LeadSeeder::class,
-            ClientSeeder::class,
-            JobSeeder::class,
         ]);
+
+        // Only seed sample/demo data in non-production environments.
+        if (app()->environment(['development', 'dev', 'local'])) {
+            $this->call([
+                LeadSeeder::class,
+                ClientSeeder::class,
+                JobSeeder::class,
+            ]);
+        }
     }
 }

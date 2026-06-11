@@ -13,6 +13,7 @@ use App\Enums\LeadStatus;
 use App\Enums\LeadWeedSpray;
 use App\Models\Client;
 use App\Models\ClientDocument;
+use App\Models\ClientRating;
 use App\Models\EquipmentType;
 use App\Models\Job;
 use App\Models\Lead;
@@ -56,6 +57,33 @@ class CustomerManagementTest extends TestCase
         $this->assertNotNull($client);
         $this->assertSame(2001, $client->customer_unique_id);
         $this->assertSame(ClientCustomerType::HARD->value, $client->customer_type);
+    }
+
+    public function test_customer_can_be_created_with_client_rating(): void
+    {
+        $rating = ClientRating::create(['name' => 'Excellent', 'is_active' => true, 'sort_order' => 1]);
+
+        $payload = array_merge($this->validCustomerPayload(), [
+            'client_rating_id' => $rating->id,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.clients.store'), $payload)
+            ->assertRedirect();
+
+        $client = Client::query()->where('address', $payload['address'])->firstOrFail();
+        $this->assertSame($rating->id, $client->client_rating_id);
+    }
+
+    public function test_customer_creation_rejects_invalid_client_rating(): void
+    {
+        $payload = array_merge($this->validCustomerPayload(), [
+            'client_rating_id' => 999999,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.clients.store'), $payload)
+            ->assertSessionHasErrors('client_rating_id');
     }
 
     public function test_lead_conversion_sets_customer_fields(): void

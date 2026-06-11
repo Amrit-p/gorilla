@@ -40,6 +40,7 @@ trait ValidatesClientIntake
             'special_remarks' => ['nullable', 'string', 'max:5000'],
             'zone_id' => ['nullable', 'exists:zones,id'],
             'accounting_level_id' => ['nullable', 'exists:accounting_levels,id'],
+            'client_rating_id' => ['nullable', 'exists:client_ratings,id'],
             'job_level_id' => ['nullable', 'exists:job_levels,id'],
             'documents' => ['nullable', 'array', 'max:20'],
             'documents.*' => ['file', 'mimes:pdf,doc,docx,xls,xlsx,png,jpg,jpeg,webp', 'max:10240'],

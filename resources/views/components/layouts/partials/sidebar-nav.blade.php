@@ -175,6 +175,7 @@
                     @can('manage-masters')
                         <a href="{{ route('admin.masters.checklists.index') }}" class="{{ $linkClass(['admin.masters.checklists.*'], true) }}">Checklists</a>
                         <a href="{{ route('admin.masters.accounting-levels.index') }}" class="{{ $linkClass(['admin.masters.accounting-levels.*'], true) }}">Accounting levels</a>
+                        <a href="{{ route('admin.masters.client-ratings.index') }}" class="{{ $linkClass(['admin.masters.client-ratings.*'], true) }}">Client ratings</a>
                         <a href="{{ route('admin.masters.job-levels.index') }}" class="{{ $linkClass(['admin.masters.job-levels.*'], true) }}">Job levels</a>
                         <a href="{{ route('admin.masters.zones.index') }}" class="{{ $linkClass(['admin.masters.zones.*'], true) }}">Zones</a>
                         <a href="{{ route('admin.masters.recurrences.index') }}" class="{{ $linkClass(['admin.masters.recurrences.*'], true) }}">Recurrences</a>

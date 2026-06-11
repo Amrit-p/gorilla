@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Helpers\OptimizationHelper;
 use App\Models\AccountingLevel;
+use App\Models\ClientRating;
 use App\Models\EquipmentType;
 use App\Models\JobLevel;
 use App\Models\Recurrence;
@@ -33,6 +34,8 @@ final class MasterCatalog
 
     public const JOB_LEVELS = 'job_levels';
 
+    public const CLIENT_RATINGS = 'client_ratings';
+
     /**
      * @return class-string<Model>
      */
@@ -46,6 +49,7 @@ final class MasterCatalog
             self::RECURRENCES => Recurrence::class,
             self::ACCOUNTING_LEVELS => AccountingLevel::class,
             self::JOB_LEVELS => JobLevel::class,
+            self::CLIENT_RATINGS => ClientRating::class,
             default => throw new \InvalidArgumentException("Unknown catalog: {$catalog}"),
         };
     }

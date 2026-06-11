@@ -87,6 +87,23 @@
             </div>
         @endisset
 
+        @isset($clientRatings)
+            <div>
+                <label class="mb-1 block text-sm font-medium text-slate-700">Customer rating</label>
+                <select id="client-rating-select" name="client_rating_id" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    <option value="" data-description="">Select customer rating</option>
+                    @foreach ($clientRatings as $clientRating)
+                        <option
+                            value="{{ $clientRating->id }}"
+                            data-description="{{ $clientRating->description }}"
+                            @selected((string) old('client_rating_id', $clientModel?->client_rating_id) === (string) $clientRating->id)
+                        >{{ $clientRating->name }}</option>
+                    @endforeach
+                </select>
+                <p id="client-rating-desc" class="mt-1 min-h-[1.25rem] text-xs text-slate-500 italic"></p>
+            </div>
+        @endisset
+
         @isset($jobLevels)
             <div>
                 <label class="mb-1 block text-sm font-medium text-slate-700">Job level</label>
@@ -169,6 +186,24 @@
 
         select.addEventListener('change', syncDesc);
         syncDesc(); // populate on page load (edit form pre-selection)
+    })();
+</script>
+@endisset
+
+@isset($clientRatings)
+<script>
+    (function () {
+        var select = document.getElementById('client-rating-select');
+        var desc   = document.getElementById('client-rating-desc');
+        if (!select || !desc) return;
+
+        function syncDesc() {
+            var opt = select.options[select.selectedIndex];
+            desc.textContent = (opt && opt.dataset.description) ? opt.dataset.description : '';
+        }
+
+        select.addEventListener('change', syncDesc);
+        syncDesc();
     })();
 </script>
 @endisset

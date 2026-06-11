@@ -12,6 +12,7 @@ use App\Jobs\GeocodeClientAddressJob;
 use App\Models\AccountingLevel;
 use App\Models\Client;
 use App\Models\ClientDocument;
+use App\Models\ClientRating;
 use App\Models\JobLevel;
 use App\Models\Recurrence;
 use App\Models\User;
@@ -87,6 +88,7 @@ class ClientManagementService
             'equipmentTypes' => EquipmentTypes::selectOptions(),
             'zones' => Zone::active()->ordered()->get(['id', 'name']),
             'accountingLevels' => AccountingLevel::active()->ordered()->get(['id', 'name', 'description']),
+            'clientRatings' => ClientRating::active()->ordered()->get(['id', 'name', 'description']),
             'jobLevels' => JobLevel::active()->ordered()->get(['id', 'name', 'description']),
             'clientTypes' => ['Regular', 'On-Call', 'New'],
             'jobStatuses' => ['Pending', 'Assigned', 'En Route', 'On Site', 'Completed', 'Cancelled'],

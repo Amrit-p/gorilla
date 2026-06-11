@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\AccountingLevel;
+use App\Models\ClientRating;
 use App\Models\EquipmentType;
 use App\Models\JobLevel;
 use App\Models\Recurrence;
@@ -293,6 +294,63 @@ class MasterCatalogTest extends TestCase
         $record->refresh();
         $this->assertFalse($record->is_active);
         $this->assertNotContains('Gold', MasterCatalog::activeNames(MasterCatalog::ACCOUNTING_LEVELS));
+    }
+
+    public function test_client_rating_crud_with_description(): void
+    {
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.masters.client-ratings.store'), [
+                'name' => 'Excellent',
+                'description' => 'Reliable client.',
+                'sort_order' => 1,
+                'is_active' => true,
+            ])
+            ->assertOk();
+
+        $this->assertContains('Excellent', MasterCatalog::activeNames(MasterCatalog::CLIENT_RATINGS));
+
+        $record = ClientRating::query()->where('name', 'Excellent')->firstOrFail();
+        $this->assertSame('Reliable client.', $record->description);
+
+        $this->actingAs($this->admin)
+            ->patchJson(route('admin.masters.client-ratings.update', $record), [
+                'name' => 'Top Tier',
+                'description' => 'Updated note.',
+                'sort_order' => 2,
+                'is_active' => true,
+            ])
+            ->assertOk();
+
+        $this->assertDatabaseHas('client_ratings', ['name' => 'Top Tier', 'description' => 'Updated note.']);
+    }
+
+    public function test_duplicate_client_rating_name_is_rejected(): void
+    {
+        ClientRating::create(['name' => 'Average', 'is_active' => true, 'sort_order' => 1]);
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.masters.client-ratings.store'), [
+                'name' => 'Average',
+                'sort_order' => 1,
+                'is_active' => true,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['name']);
+    }
+
+    public function test_client_rating_status_toggle_deactivates_record(): void
+    {
+        $record = ClientRating::create(['name' => 'Poor', 'is_active' => true, 'sort_order' => 1]);
+
+        $this->actingAs($this->admin)
+            ->patchJson(route('admin.masters.client-ratings.status.update', $record), [
+                'is_active' => false,
+            ])
+            ->assertOk();
+
+        $record->refresh();
+        $this->assertFalse($record->is_active);
+        $this->assertNotContains('Poor', MasterCatalog::activeNames(MasterCatalog::CLIENT_RATINGS));
     }
 
     public function test_job_level_requires_valid_color_code(): void
