@@ -14,7 +14,7 @@ use App\Models\Job;
 use App\Models\JobLevel;
 use App\Models\Recurrence;
 use App\Models\User;
-use App\Support\CrmPermissions;
+use App\Notifications\JobVerifiedNotification;
 use App\Support\CrmRoles;
 use App\Support\ServiceTypes;
 use Database\Seeders\JobLevelSeeder;
@@ -22,6 +22,7 @@ use Database\Seeders\MasterCatalogSeeder;
 use Database\Seeders\RecurrenceSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class JobManagementTest extends TestCase
@@ -229,6 +230,94 @@ class JobManagementTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_admin_can_verify_a_job(): void
+    {
+        $job = $this->createVerifiableJob();
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.jobs.verify', $job), ['verified' => 1])
+            ->assertOk()
+            ->assertJsonPath('verified', true)
+            ->assertJsonPath('message', 'Job verified successfully.');
+
+        $job->refresh();
+        $this->assertNotNull($job->verified_at);
+        $this->assertSame($this->admin->id, $job->verified_by);
+    }
+
+    public function test_job_cannot_be_verified_unless_completed(): void
+    {
+        $job = $this->createVerifiableJob();
+        $job->update(['status' => JobWorkflowStatus::STARTED->value]);
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.jobs.verify', $job), ['verified' => 1])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Cannot verify until the job status is Completed.');
+
+        $this->assertNull($job->refresh()->verified_at);
+    }
+
+    public function test_job_cannot_be_verified_unless_payment_received(): void
+    {
+        $job = $this->createVerifiableJob();
+        $job->update(['payment_status' => JobOperationalPaymentStatus::PENDING->value]);
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.jobs.verify', $job), ['verified' => 1])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Cannot verify until the payment status is Received.');
+
+        $this->assertNull($job->refresh()->verified_at);
+    }
+
+    public function test_verifying_a_job_notifies_other_office_managers(): void
+    {
+        Notification::fake();
+
+        $otherManager = User::factory()->create(['is_active' => true]);
+        $otherManager->assignRole(CrmRoles::OFFICE_MANAGER);
+
+        $job = $this->createVerifiableJob();
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.jobs.verify', $job), ['verified' => 1])
+            ->assertOk();
+
+        Notification::assertSentTo($otherManager, JobVerifiedNotification::class);
+        Notification::assertNotSentTo($this->admin, JobVerifiedNotification::class);
+    }
+
+    public function test_admin_can_remove_job_verification(): void
+    {
+        $job = $this->createJob();
+        $job->forceFill([
+            'verified_at' => now(),
+            'verified_by' => $this->admin->id,
+        ])->save();
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.jobs.verify', $job), ['verified' => 0])
+            ->assertOk()
+            ->assertJsonPath('verified', false)
+            ->assertJsonPath('message', 'Job verification removed.');
+
+        $job->refresh();
+        $this->assertNull($job->verified_at);
+        $this->assertNull($job->verified_by);
+    }
+
+    public function test_mower_cannot_verify_a_job(): void
+    {
+        $job = $this->createJob();
+
+        $this->actingAs($this->mower)
+            ->postJson(route('admin.jobs.verify', $job), ['verified' => 1])
+            ->assertForbidden();
+
+        $this->assertNull($job->refresh()->verified_at);
+    }
+
     private function createJob(): Job
     {
         $client = Client::query()->create($this->clientPayload());
@@ -236,6 +325,17 @@ class JobManagementTest extends TestCase
         return Job::query()->create(array_merge($this->jobPayload($client->id), [
             'created_by' => $this->admin->id,
         ]));
+    }
+
+    private function createVerifiableJob(): Job
+    {
+        $job = $this->createJob();
+        $job->update([
+            'status' => JobWorkflowStatus::COMPLETED->value,
+            'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+        ]);
+
+        return $job;
     }
 
     /**

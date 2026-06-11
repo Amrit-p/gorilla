@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\JobOperationalPaymentStatus;
+use App\Enums\JobWorkflowStatus;
 use App\Exports\JobsExport;
+use App\Helpers\OptimizationHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AssignJobRequest;
 use App\Http\Requests\Admin\ScheduleJobsRequest;
@@ -10,8 +13,6 @@ use App\Http\Requests\Admin\StoreJobRequest;
 use App\Http\Requests\Admin\UpdateJobRequest;
 use App\Http\Requests\Admin\UpdateJobStatusRequest;
 use App\Http\Requests\Admin\UploadJobImagesRequest;
-use App\Helpers\OptimizationHelper;
-use App\Enums\ContractStatus;
 use App\Models\Client;
 use App\Models\Contract;
 use App\Models\Job;
@@ -330,8 +331,8 @@ class JobManagementController extends Controller
     public function bulkAssignContract(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'job_ids'     => ['required', 'array', 'min:1'],
-            'job_ids.*'   => ['integer', 'distinct', 'exists:service_jobs,id'],
+            'job_ids' => ['required', 'array', 'min:1'],
+            'job_ids.*' => ['integer', 'distinct', 'exists:service_jobs,id'],
             'contract_id' => ['nullable', 'integer', 'exists:contracts,id'],
         ]);
 
@@ -446,6 +447,37 @@ class JobManagementController extends Controller
         }
 
         return response()->json(['message' => 'Remarks updated successfully.']);
+    }
+
+    public function verify(Request $request, Job $job): JsonResponse
+    {
+        $this->authorize('verify', $job);
+
+        $verified = $request->boolean('verified', true);
+
+        if ($verified) {
+            $unmet = [];
+            if ($job->status !== JobWorkflowStatus::COMPLETED->value) {
+                $unmet[] = 'the job status is Completed';
+            }
+            if ($job->payment_status !== JobOperationalPaymentStatus::RECEIVED->value) {
+                $unmet[] = 'the payment status is Received';
+            }
+            if ($unmet !== []) {
+                return response()->json([
+                    'message' => 'Cannot verify until '.implode(' and ', $unmet).'.',
+                ], 422);
+            }
+        }
+
+        $this->jobManagementService->setJobVerification($request->user(), $job, $verified);
+
+        return response()->json([
+            'message' => $verified ? 'Job verified successfully.' : 'Job verification removed.',
+            'verified' => $verified,
+            'verified_by' => $job->verifier?->name,
+            'verified_at' => $job->verified_at?->format('d M Y g:i A'),
+        ]);
     }
 
     public function reorder(Request $request): JsonResponse

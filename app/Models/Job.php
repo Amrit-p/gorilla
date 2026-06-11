@@ -46,6 +46,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'internal_notes',
     'created_by',
     'numeric_priority',
+    'verified_at',
+    'verified_by',
 ])]
 class Job extends Model
 {
@@ -68,6 +70,7 @@ class Job extends Model
             'numeric_priority' => 'integer',
             'charges' => 'decimal:2',
             'incentive_percentage' => 'decimal:2',
+            'verified_at' => 'datetime',
         ];
     }
 
@@ -104,6 +107,16 @@ class Job extends Model
     public function doneByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'done_by_user_id');
+    }
+
+    public function verifier(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'verified_by');
+    }
+
+    public function isVerified(): bool
+    {
+        return $this->verified_at !== null;
     }
 
     public function assignedEmployees(): BelongsToMany

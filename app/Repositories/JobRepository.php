@@ -44,6 +44,8 @@ class JobRepository
                 'special_remarks',
                 'internal_notes',
                 'contract_id',
+                'verified_at',
+                'verified_by',
             ])
             ->with([
                 'client:id,name,address,customer_unique_id,phone,email,customer_type,client_rating_id',
@@ -54,6 +56,7 @@ class JobRepository
                 'jobLevel:id,name,color_code',
                 'assignedEmployees:id,name,efficiency',
                 'doneByUser:id,name',
+                'verifier:id,name',
                 'contract:id,contractor_id,name,start_date,end_date,status',
                 'contract.contractor:id,name,phone,email',
             ]);

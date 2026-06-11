@@ -44,6 +44,11 @@ class JobPolicy
         return CrmPermissions::canAssignJobs($user);
     }
 
+    public function verify(User $user, Job $job): bool
+    {
+        return CrmPermissions::canManageJobRecords($user);
+    }
+
     public function uploadImages(User $user, Job $job): bool
     {
         if (! CrmPermissions::canUploadJobImages($user)) {

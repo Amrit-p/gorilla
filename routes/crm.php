@@ -237,6 +237,7 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
         Route::get('/admin/jobs/{job}/edit', [JobManagementController::class, 'edit'])->name('admin.jobs.edit');
         Route::patch('/admin/jobs/{job}', [JobManagementController::class, 'update'])->name('admin.jobs.update');
         Route::patch('/admin/jobs/{job}/remarks', [JobManagementController::class, 'updateRemarks'])->name('admin.jobs.remarks.update');
+        Route::post('/admin/jobs/{job}/verify', [JobManagementController::class, 'verify'])->name('admin.jobs.verify');
         Route::post('/admin/jobs/bulk/assign', [JobManagementController::class, 'bulkAssignEmployees'])->name('admin.jobs.bulk.assign');
         Route::post('/admin/jobs/bulk/contract', [JobManagementController::class, 'bulkAssignContract'])->name('admin.jobs.bulk.contract');
         Route::post('/admin/jobs/bulk/status', [JobManagementController::class, 'bulkUpdateStatus'])->name('admin.jobs.bulk.status.update');

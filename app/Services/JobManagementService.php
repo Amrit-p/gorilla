@@ -2,10 +2,14 @@
 
 namespace App\Services;
 
+use App\Enums\JobCustomerType;
+use App\Enums\JobOperationalPaymentMode;
 use App\Enums\JobOperationalPaymentStatus;
+use App\Enums\JobParkingStatus;
 use App\Enums\JobWorkflowStatus;
 use App\Helpers\OptimizationHelper;
 use App\Jobs\GeocodeJobAddressJob;
+use App\Models\ActivityLog;
 use App\Models\Client;
 use App\Models\Job;
 use App\Models\JobLevel;
@@ -15,6 +19,7 @@ use App\Models\Zone;
 use App\Notifications\JobAssignedNotification;
 use App\Notifications\JobRescheduledNotification;
 use App\Notifications\JobStatusChangedNotification;
+use App\Notifications\JobVerifiedNotification;
 use App\Repositories\JobRepository;
 use App\Support\CrmPermissions;
 use App\Support\CrmRoles;
@@ -53,7 +58,7 @@ class JobManagementService
     }
 
     /**
-     * @return Collection<int, \App\Models\ActivityLog>
+     * @return Collection<int, ActivityLog>
      */
     public function jobTimeline(Job $job, int $limit = 30): Collection
     {
@@ -67,8 +72,8 @@ class JobManagementService
     {
         $selectedClient = $selectedClientId
             ? Client::query()
-            ->with(['equipmentType:id,name,color_code', 'lead.equipmentType:id,name,color_code'])
-            ->find($selectedClientId, ['id', 'name', 'address', 'latitude', 'longitude', 'zone_id', 'recurrence_id', 'payment_mode', 'payment_status', 'service_types', 'parking_status', 'customer_type', 'pet_warning', 'additional_site_instructions', 'equipment_type_id', 'lead_id'])
+                ->with(['equipmentType:id,name,color_code', 'lead.equipmentType:id,name,color_code'])
+                ->find($selectedClientId, ['id', 'name', 'address', 'latitude', 'longitude', 'zone_id', 'recurrence_id', 'payment_mode', 'payment_status', 'service_types', 'parking_status', 'customer_type', 'pet_warning', 'additional_site_instructions', 'equipment_type_id', 'lead_id'])
             : null;
 
         return [
@@ -82,9 +87,9 @@ class JobManagementService
                 ->orderBy('name')
                 ->get(['id', 'name', 'efficiency']),
             'serviceTypes' => ServiceTypes::all(),
-            'parkingStatuses' => \App\Enums\JobParkingStatus::values(),
-            'customerTypes' => \App\Enums\JobCustomerType::values(),
-            'paymentModes' => \App\Enums\JobOperationalPaymentMode::values(),
+            'parkingStatuses' => JobParkingStatus::values(),
+            'customerTypes' => JobCustomerType::values(),
+            'paymentModes' => JobOperationalPaymentMode::values(),
             'paymentStatuses' => JobOperationalPaymentStatus::values(),
             'recurrences' => Recurrence::query()->orderBy('name')->get(['id', 'name']),
             'equipmentTypes' => EquipmentTypes::selectOptions(),
@@ -122,7 +127,7 @@ class JobManagementService
      * @param  array<string, mixed>  $data
      * @param  array<int, UploadedFile>  $images
      */
-    public function createJob(User $actor, array $data, array $images = []): Job|null
+    public function createJob(User $actor, array $data, array $images = []): ?Job
     {
         try {
             DB::beginTransaction();
@@ -139,10 +144,12 @@ class JobManagementService
 
             $this->activityLogService->log($actor, 'job.created', 'Job created.', ['job_id' => $job->id]);
             DB::commit();
+
             return $job->fresh(['client', 'assignedEmployees', 'doneByUser']);
         } catch (\Throwable $th) {
             DB::rollBack();
             report($th);
+
             return null;
         }
     }
@@ -169,14 +176,15 @@ class JobManagementService
             $this->activityLogService->log($actor, 'job.updated', 'Job updated.', ['job_id' => $job->id]);
 
             DB::commit();
+
             return $job->fresh(['client', 'assignedEmployees', 'doneByUser']);
         } catch (\Throwable $th) {
             DB::rollBack();
             report($th);
+
             return null;
         }
     }
-
 
     /**
      * @param  Collection<int, Job>  $jobs
@@ -230,6 +238,7 @@ class JobManagementService
         } catch (\Throwable $th) {
             DB::rollBack();
             report($th);
+
             return collect();
         }
 
@@ -250,18 +259,40 @@ class JobManagementService
         return $freshJobs;
     }
 
+    public function setJobVerification(User $actor, Job $job, bool $verified): Job
+    {
+        $job->verified_at = $verified ? now() : null;
+        $job->verified_by = $verified ? $actor->id : null;
+        $job->save();
 
-    /**
-     * @param  Collection<int, Job>  $jobs
-     * @return Collection<int, Job>
-     */
+        $this->activityLogService->log(
+            $actor,
+            $verified ? 'job.verified' : 'job.verification_removed',
+            $verified ? 'Job verified.' : 'Job verification removed.',
+            ['job_id' => $job->id],
+        );
+
+        if ($verified) {
+            User::query()
+                ->role([CrmRoles::OFFICE_MANAGER])
+                ->where('id', '!=', $actor->id)
+                ->get()
+                ->each(function (User $manager) use ($job, $actor): void {
+                    $manager->notify(new JobVerifiedNotification($job, $actor));
+                    OptimizationHelper::forgetNotificationUnreadCount($manager->id);
+                });
+        }
+
+        return $job->load('verifier');
+    }
+
     public function updateJobsStatus(User $actor, Collection $jobs, string $status): Collection
     {
         DB::transaction(function () use ($actor, $jobs, $status): void {
             $jobs->each(function (Job $job) use ($actor, $status): void {
                 $job->status = $status;
                 $job->save();
-                $this->activityLogService->log($actor, 'job.status_updated', 'Job status updated to ' . $status . '.', [
+                $this->activityLogService->log($actor, 'job.status_updated', 'Job status updated to '.$status.'.', [
                     'job_id' => $job->id,
                     'status' => $status,
                 ]);
@@ -296,7 +327,7 @@ class JobManagementService
                     $job->scheduled_time = $scheduledTime;
                 }
                 $job->save();
-                $this->activityLogService->log($actor, 'job.rescheduled', 'Job rescheduled to ' . $scheduledDate . '.', [
+                $this->activityLogService->log($actor, 'job.rescheduled', 'Job rescheduled to '.$scheduledDate.'.', [
                     'job_id' => $job->id,
                     'scheduled_date' => $scheduledDate,
                     'scheduled_time' => $scheduledTime,

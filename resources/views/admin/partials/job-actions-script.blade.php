@@ -594,6 +594,27 @@
         });
     });
 
+    $(document).on('click', '.verify-job', function() {
+        const $btn     = $(this);
+        const id       = Number($btn.data('id'));
+        const verified = String($btn.data('verified')) === '1';
+        if (verified && !confirm('Remove verification from this job?')) return;
+
+        $.ajax({
+            url: "{{ url('admin/jobs') }}/" + id + '/verify',
+            method: 'POST',
+            data: { _token: "{{ csrf_token() }}", verified: verified ? 0 : 1 },
+            headers: { Accept: 'application/json' },
+            success: function(res) {
+                showJobAlert(res.message || 'Job verification updated.');
+                refreshJobsTable();
+            },
+            error: function(xhr) {
+                showJobAlert(xhr.responseJSON?.message || 'Failed to update job verification.', true);
+            }
+        });
+    });
+
     $(document).on('click', '.delete-job', function() {
         if (!confirm('Delete this job?')) return;
         deleteJobs([Number($(this).data('id'))]);

@@ -1,10 +1,5 @@
 @php
     $canReorder = auth()->user()?->can('manage-job-records');
-    $headers = ['<input id="job-select-all" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" aria-label="Select all jobs">'];
-    if ($canReorder) {
-        $headers[] = '';
-    }
-    $headers = array_merge($headers, ['Customer / Address', 'Zone', 'Schedule', 'Services', 'Recurrence', 'Payment', 'Mowers', 'Remarks', 'Actions']);
 @endphp
 
 <div id="job-bulk-toolbar" class="fixed bottom-5 left-1/2 z-40 hidden w-[min(calc(100vw-2rem),64rem)] -translate-x-1/2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-xl shadow-slate-900/10 ring-1 ring-slate-900/5">
@@ -64,11 +59,44 @@
     </div>
 </div>
 
-<x-ui.table :headers="$headers">
+<div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <table class="min-w-full text-left text-sm">
+        <thead>
+            {{-- Grouped header row --}}
+            <tr class="divide-x divide-slate-200">
+                <th rowspan="2" class="w-8 px-2 py-3 text-center align-middle bg-slate-100">
+                    <input id="job-select-all" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" aria-label="Select all jobs">
+                </th>
+                @if ($canReorder)
+                    <th rowspan="2" class="w-8 px-2 py-3 bg-slate-100"></th>
+                @endif
+                <th colspan="2" class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide bg-green-100 text-green-800">Customer</th>
+                <th colspan="3" class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide bg-yellow-100 text-yellow-800">Schedule</th>
+                <th colspan="2" class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide bg-blue-100 text-blue-800">Payment &amp; Crew</th>
+                <th colspan="1" class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide bg-purple-100 text-purple-800">Notes</th>
+                <th colspan="1" class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide bg-slate-100 text-slate-700">Actions</th>
+            </tr>
+            {{-- Sub-header row --}}
+            <tr class="divide-x divide-slate-200 border-t border-slate-200">
+                {{-- Customer --}}
+                <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider bg-green-50 text-green-700">Customer / Address</th>
+                <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider bg-green-50 text-green-700">Zone</th>
+                {{-- Schedule --}}
+                <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider bg-yellow-50 text-yellow-700">Date &amp; Status</th>
+                <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider bg-yellow-50 text-yellow-700">Services</th>
+                <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider bg-yellow-50 text-yellow-700">Recurrence</th>
+                {{-- Payment & Crew --}}
+                <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider bg-blue-50 text-blue-700">Payment</th>
+                <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider bg-blue-50 text-blue-700">Mowers</th>
+                {{-- Notes --}}
+                <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider bg-purple-50 text-purple-700">Remarks</th>
+                {{-- Actions --}}
+                <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider bg-slate-50 text-slate-600">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
     @forelse ($jobs as $job)
-        @php $jobLevelColor = $job->jobLevel?->color_code; @endphp
-        <tr class="job-row group divide-x divide-slate-100 transition-colors hover:bg-slate-50/70 data-[selected=true]:bg-emerald-50/70 data-[selected=true]:shadow-[inset_3px_0_0_#10b981] data-[bulk-mode=true]:cursor-pointer" data-job-id="{{ $job->id }}" data-selected="false" data-bulk-mode="false"
-            @if ($jobLevelColor) style="background-color: {{ $jobLevelColor }}20" @endif>
+        <tr class="job-row group divide-x divide-slate-100 transition-colors data-[selected=true]:bg-emerald-50/70 data-[selected=true]:shadow-[inset_3px_0_0_#10b981] data-[bulk-mode=true]:cursor-pointer {{ job_row_color_class($job) }}" data-job-id="{{ $job->id }}" data-selected="false" data-bulk-mode="false">
 
                 <td class="w-8 px-2 py-4">
                 <input type="checkbox" class="job-select-checkbox h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" data-job-id="{{ $job->id }}" aria-label="Select job">
@@ -146,6 +174,13 @@
                     @endif
                 </p>
                 <div class="mt-1"><x-jobs.status-badge :status="$job->status" /></div>
+                @if ($job->isVerified())
+                    <span class="mt-1 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700"
+                        title="Verified{{ $job->verifier ? ' by '.$job->verifier->name : '' }} on {{ $job->verified_at->format('d M Y g:i A') }}">
+                        <svg class="h-3 w-3 shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd"/></svg>
+                        Verified{{ $job->verifier ? ' · '.$job->verifier->name : '' }}
+                    </span>
+                @endif
             </td>
 
             {{-- Services --}}
@@ -238,6 +273,21 @@
                                 </svg>
                                 Edit
                             </a>
+                            <button class="verify-job flex w-full items-center gap-2.5 px-3.5 py-2 text-sm {{ $job->isVerified() ? 'text-amber-600' : 'text-emerald-700' }} transition-colors hover:bg-slate-50"
+                                    data-id="{{ $job->id }}"
+                                    data-verified="{{ $job->isVerified() ? '1' : '0' }}">
+                                @if ($job->isVerified())
+                                    <svg class="h-3.5 w-3.5 shrink-0 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+                                    </svg>
+                                    Unverify
+                                @else
+                                    <svg class="h-3.5 w-3.5 shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+                                    </svg>
+                                    Verify
+                                @endif
+                            </button>
                         @endcan
                         @can('assign-jobs')
                             <button class="assign-job flex w-full items-center gap-2.5 px-3.5 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50"
@@ -298,7 +348,9 @@
             <td colspan="{{ $canReorder ? 11 : 10 }}" class="px-4 py-10 text-center text-sm text-slate-400">No jobs found.</td>
         </tr>
     @endforelse
-</x-ui.table>
+        </tbody>
+    </table>
+</div>
 <script>
     (function () {
         if (typeof window.cleanupJobBulkSelection === 'function') {
