@@ -2,17 +2,16 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\JobWorkflowStatus;
+use App\Exports\ClientsExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreClientRequest;
 use App\Http\Requests\Admin\UpdateClientRequest;
-use App\Exports\ClientsExport;
 use App\Models\Client;
+use App\Models\ClientDocument;
 use App\Models\User;
-use App\Enums\JobWorkflowStatus;
-use App\Services\{
-    ClientManagementService,
-    JobManagementService,
-};
+use App\Services\ClientManagementService;
+use App\Services\JobManagementService;
 use App\Support\CrmRoles;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
@@ -68,7 +67,7 @@ class ClientManagementController extends Controller
 
         $clients = $this->clientManagementService->exportClients($this->exportFilters($request));
 
-        return (new ClientsExport($clients))->download('customers-' . now()->format('Y-m-d') . '.xlsx');
+        return (new ClientsExport($clients))->download('customers-'.now()->format('Y-m-d').'.xlsx');
     }
 
     public function exportPdf(Request $request): Response
@@ -79,23 +78,23 @@ class ClientManagementController extends Controller
 
         return Pdf::loadView('admin.clients.partials.export-pdf', compact('clients'))
             ->setPaper('a3', 'landscape')
-            ->download('customers-' . now()->format('Y-m-d') . '.pdf');
+            ->download('customers-'.now()->format('Y-m-d').'.pdf');
     }
 
     private function exportFilters(Request $request): array
     {
         return [
-            'search'              => $request->string('search')->toString(),
-            'zone_id'             => $request->string('zone_id')->toString(),
+            'search' => $request->string('search')->toString(),
+            'zone_id' => $request->string('zone_id')->toString(),
             'accounting_level_id' => $request->string('accounting_level_id')->toString(),
-            'job_level_id'        => $request->string('job_level_id')->toString(),
-            'job_type'            => $request->string('job_type')->toString(),
-            'customer_type'       => $request->string('customer_type')->toString(),
-            'parking_status'      => $request->string('parking_status')->toString(),
-            'payment_status'      => $request->string('payment_status')->toString(),
-            'client_type'         => $request->string('client_type')->toString(),
-            'from_lead'           => $request->string('from_lead')->toString(),
-            'recurrence_id'       => $request->string('recurrence_id')->toString(),
+            'job_level_id' => $request->string('job_level_id')->toString(),
+            'job_type' => $request->string('job_type')->toString(),
+            'customer_type' => $request->string('customer_type')->toString(),
+            'parking_status' => $request->string('parking_status')->toString(),
+            'payment_status' => $request->string('payment_status')->toString(),
+            'client_type' => $request->string('client_type')->toString(),
+            'from_lead' => $request->string('from_lead')->toString(),
+            'recurrence_id' => $request->string('recurrence_id')->toString(),
         ];
     }
 
@@ -130,7 +129,7 @@ class ClientManagementController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'efficiency']);
 
-        $jobs_filters =  [
+        $jobs_filters = [
             'search' => $request->string('search')->toString(),
             'list_scope' => $request->string('list_scope')->toString(),
             'status' => $request->string('status')->toString(),
@@ -138,6 +137,7 @@ class ClientManagementController extends Controller
             'zone_id' => $request->string('zone_id')->toString(),
             'client_id' => $request->string('client_id')->toString(),
         ];
+
         return view('admin.clients.show', array_merge(
             [
                 'filters' => $jobs_filters,
@@ -174,7 +174,7 @@ class ClientManagementController extends Controller
             'stats' => $jobStats,
         ]);
     }
-    
+
     public function edit(Client $client): View
     {
         $this->authorize('update', $client);
@@ -193,6 +193,19 @@ class ClientManagementController extends Controller
         return redirect()
             ->route('admin.clients.show', $client)
             ->with('success', 'Customer updated successfully.');
+    }
+
+    public function downloadDocument(Client $client, ClientDocument $document): StreamedResponse
+    {
+        $this->authorize('view', $client);
+        abort_unless($document->client_id === $client->id, 404);
+        abort_unless(ClientDocument::disk()->exists($document->file_path), 404);
+
+        return ClientDocument::disk()->response(
+            $document->file_path,
+            $document->original_name,
+            ['Content-Disposition' => 'attachment; filename="'.$document->original_name.'"']
+        );
     }
 
     public function destroy(Request $request, Client $client): JsonResponse

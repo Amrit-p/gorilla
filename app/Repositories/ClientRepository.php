@@ -82,6 +82,7 @@ class ClientRepository
             ->with([
                 'creator:id,name',
                 'lead:id,client_name,status,converted_at',
+                'documents' => fn ($q) => $q->latest(),
             ])
             ->withCount([
                 'jobs',
@@ -89,6 +90,7 @@ class ClientRepository
             ])
             ->find($clientId);
     }
+
     /**
      * @deprecated This method is no longer used and will be removed in a future release. use JobRepository::paginatedList instead.
      */
@@ -129,5 +131,4 @@ class ClientRepository
 
         return $query->paginate($perPage)->withQueryString();
     }
-
 }

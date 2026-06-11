@@ -4,14 +4,15 @@ namespace Tests\Feature;
 
 use App\Enums\ClientCustomerType;
 use App\Enums\ClientPaymentStatus;
+use App\Enums\JobCustomerType;
+use App\Enums\JobParkingStatus;
 use App\Enums\LeadJobType;
 use App\Enums\LeadPaymentMode;
 use App\Enums\LeadReCompletionDays;
 use App\Enums\LeadStatus;
 use App\Enums\LeadWeedSpray;
-use App\Enums\JobCustomerType;
-use App\Enums\JobParkingStatus;
 use App\Models\Client;
+use App\Models\ClientDocument;
 use App\Models\EquipmentType;
 use App\Models\Job;
 use App\Models\Lead;
@@ -23,6 +24,8 @@ use Database\Seeders\MasterCatalogSeeder;
 use Database\Seeders\RecurrenceSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class CustomerManagementTest extends TestCase
@@ -185,6 +188,66 @@ class CustomerManagementTest extends TestCase
             ->assertOk()
             ->assertSee('Total jobs')
             ->assertSee('Completed');
+    }
+
+    public function test_customer_creation_stores_uploaded_documents(): void
+    {
+        Storage::fake(ClientDocument::DISK);
+
+        $payload = array_merge($this->validCustomerPayload(), [
+            'documents' => [
+                UploadedFile::fake()->create('contract.pdf', 120, 'application/pdf'),
+                UploadedFile::fake()->image('site.jpg'),
+            ],
+        ]);
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.clients.store'), $payload)
+            ->assertRedirect();
+
+        $client = Client::query()->where('address', $payload['address'])->firstOrFail();
+        $this->assertCount(2, $client->documents);
+
+        foreach ($client->documents as $document) {
+            Storage::disk(ClientDocument::DISK)->assertExists($document->file_path);
+            $this->assertSame($this->admin->id, $document->uploaded_by);
+        }
+    }
+
+    public function test_uploaded_document_can_be_downloaded(): void
+    {
+        Storage::fake(ClientDocument::DISK);
+
+        $payload = array_merge($this->validCustomerPayload(), [
+            'documents' => [UploadedFile::fake()->create('manual.pdf', 50, 'application/pdf')],
+        ]);
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.clients.store'), $payload)
+            ->assertRedirect();
+
+        $client = Client::query()->where('address', $payload['address'])->firstOrFail();
+        $document = $client->documents()->firstOrFail();
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.clients.documents.download', [$client, $document]))
+            ->assertOk()
+            ->assertHeader('content-disposition', 'attachment; filename="manual.pdf"');
+    }
+
+    public function test_customer_creation_rejects_disallowed_document_types(): void
+    {
+        Storage::fake(ClientDocument::DISK);
+
+        $payload = array_merge($this->validCustomerPayload(), [
+            'documents' => [UploadedFile::fake()->create('malware.exe', 10)],
+        ]);
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.clients.store'), $payload)
+            ->assertSessionHasErrors('documents.0');
+
+        $this->assertSame(0, ClientDocument::query()->count());
     }
 
     /**

@@ -70,9 +70,6 @@
                     @if ($client->parking_status)
                         <span class="rounded-md bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500">{{ $client->parking_status }}</span>
                     @endif
-                    @if ($client->payment_status)
-                        <span class="rounded-md bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500">{{ $client->payment_status }}</span>
-                    @endif
                 </div>
             </td>
 

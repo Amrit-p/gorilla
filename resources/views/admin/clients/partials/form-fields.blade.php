@@ -106,6 +106,7 @@
 
         <x-ui.input label="Charges" name="charges" type="number" step="0.01" min="0" :value="old('charges', $clientModel?->charges)" />
         <x-ui.input label="Estimate time" name="estimated_time" :value="old('estimated_time', $clientModel?->estimated_time)" />
+        <x-ui.input label="Schedule date" name="schedule_date" type="date" :value="old('schedule_date', $clientModel?->schedule_date?->format('Y-m-d'))" />
         <x-ui.input label="Mobile number" name="phone" :value="old('phone', $clientModel?->phone)" />
         <x-ui.input label="Email" name="email" type="email" :value="old('email', $clientModel?->email)" />
 
@@ -121,20 +122,6 @@
 
         <input type="hidden" name="remarks_type" value="{{ old('remarks_type', $clientModel?->remarks_type) }}" />
 
-        <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">Payment status</label>
-            <select name="payment_status" id="client-payment-status" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                <option value="">Select payment status</option>
-                @foreach ($paymentStatuses as $paymentStatus)
-                    <option value="{{ $paymentStatus }}" @selected(old('payment_status', $clientModel?->payment_status) === $paymentStatus)>{{ $paymentStatus }}</option>
-                @endforeach
-            </select>
-        </div>
-
-        <div id="client-payment-reason-wrap" class="hidden sm:col-span-2">
-            <x-ui.input label="Reason (type)" name="payment_status_reason" :value="old('payment_status_reason', $clientModel?->payment_status_reason)" />
-        </div>
-
         <div class="sm:col-span-2">
             <label class="mb-1 block text-sm font-medium text-slate-700">Additional instructions</label>
             <textarea name="additional_site_instructions" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" rows="2">{{ old('additional_site_instructions', $clientModel?->additional_site_instructions) }}</textarea>
@@ -144,6 +131,14 @@
             <label class="mb-1 block text-sm font-medium text-slate-700">Remarks</label>
             <textarea name="special_remarks" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" rows="2">{{ old('special_remarks', $clientModel?->special_remarks) }}</textarea>
         </div>
+
+        <x-ui.file
+            class="sm:col-span-2"
+            label="Documents"
+            name="documents"
+            :multiple="true"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp"
+        />
     </div>
 
     <div class="lg:sticky lg:top-4 lg:self-start">

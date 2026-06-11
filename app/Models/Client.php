@@ -4,7 +4,6 @@ namespace App\Models;
 
 use App\Support\CustomerUniqueIdGenerator;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -29,6 +28,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'safety_other', // This field is not being stored because it is not currently being used in the application.
     'charges',
     'estimated_time',
+    'schedule_date',
     'payment_mode',
     'remarks_type',
     'payment_status',
@@ -64,6 +64,7 @@ class Client extends Model
             'service_types' => 'array',
             'safety_concerns' => 'array',
             'charges' => 'decimal:2',
+            'schedule_date' => 'date',
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
             'customer_unique_id' => 'integer',
@@ -103,6 +104,11 @@ class Client extends Model
     public function jobs(): HasMany
     {
         return $this->hasMany(Job::class);
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(ClientDocument::class);
     }
 
     protected function getTotalChargesAttribute(): float

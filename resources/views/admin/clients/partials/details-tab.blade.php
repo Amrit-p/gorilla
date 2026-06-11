@@ -55,6 +55,10 @@
                 <dd class="text-slate-800">{{ $client->recurrence?->name ?? '—' }}</dd>
             </div>
             <div class="flex justify-between gap-4">
+                <dt class="text-slate-500">Schedule date</dt>
+                <dd class="text-slate-800">{{ $client->schedule_date?->format('M j, Y') ?? '—' }}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
                 <dt class="text-slate-500">Job / customer type</dt>
                 <dd class="text-slate-800">{{ $client->job_type ?: '—' }} / {{ $client->client_type ?: '—' }}</dd>
             </div>
@@ -86,5 +90,27 @@
                 </div>
             @endif
         </dl>
+    </div>
+
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 lg:col-span-2">
+        <h3 class="text-sm font-semibold text-slate-900">Documents</h3>
+        @if ($client->documents->isNotEmpty())
+            <ul class="mt-4 max-h-60 space-y-2 overflow-y-auto">
+                @foreach ($client->documents as $document)
+                    <li class="flex items-center justify-between gap-3 rounded-md border border-slate-200 px-3 py-2 text-sm">
+                        <div class="min-w-0">
+                            <p class="truncate font-medium text-slate-700">{{ $document->original_name }}</p>
+                            <p class="text-xs text-slate-400">{{ strtoupper($document->file_type) }} • {{ number_format($document->file_size / 1024, 1) }} KB</p>
+                        </div>
+                        <a
+                            href="{{ route('admin.clients.documents.download', [$client, $document]) }}"
+                            class="shrink-0 rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                        >Download</a>
+                    </li>
+                @endforeach
+            </ul>
+        @else
+            <p class="mt-4 text-sm text-slate-500">No documents uploaded.</p>
+        @endif
     </div>
 </div>

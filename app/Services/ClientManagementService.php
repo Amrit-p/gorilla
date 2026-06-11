@@ -5,12 +5,16 @@ namespace App\Services;
 use App\Enums\ClientCustomerType;
 use App\Enums\ClientPaymentStatus;
 use App\Enums\JobParkingStatus;
+use App\Enums\LeadJobType;
+use App\Enums\LeadPaymentMode;
+use App\Enums\LeadWeedSpray;
 use App\Jobs\GeocodeClientAddressJob;
+use App\Models\AccountingLevel;
 use App\Models\Client;
+use App\Models\ClientDocument;
+use App\Models\JobLevel;
 use App\Models\Recurrence;
 use App\Models\User;
-use App\Models\AccountingLevel;
-use App\Models\JobLevel;
 use App\Models\Zone;
 use App\Repositories\ClientRepository;
 use App\Support\EquipmentTypes;
@@ -18,6 +22,7 @@ use App\Support\SafetyTypes;
 use App\Support\ServiceTypes;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 
 class ClientManagementService
@@ -53,7 +58,6 @@ class ClientManagementService
 
     /**
      * @deprecated This method is no longer used and will be removed in a future release. use JobManagementService::paginatedJobs instead.
-     * @return LengthAwarePaginator
      */
     public function paginatedCustomerJobs(Client $client, array $filters, int $perPage): LengthAwarePaginator
     {
@@ -72,11 +76,11 @@ class ClientManagementService
     {
         return [
             'serviceTypes' => ServiceTypes::all(),
-            'weedSprayOptions' => \App\Enums\LeadWeedSpray::values(),
+            'weedSprayOptions' => LeadWeedSpray::values(),
             'recurrenceOptions' => Recurrence::all(),
-            'jobTypes' => \App\Enums\LeadJobType::values(),
+            'jobTypes' => LeadJobType::values(),
             'safetyOptions' => SafetyTypes::all(),
-            'paymentModes' => \App\Enums\LeadPaymentMode::values(),
+            'paymentModes' => LeadPaymentMode::values(),
             'paymentStatuses' => ClientPaymentStatus::values(),
             'customerTypes' => ClientCustomerType::values(),
             'parkingStatuses' => JobParkingStatus::values(),
@@ -91,8 +95,10 @@ class ClientManagementService
 
     public function createClient(User $actor, array $data): Client
     {
+        $documents = $this->pullDocuments($data);
         $data['created_by'] = $actor->id;
         $client = Client::query()->create($this->prepareClientData($data));
+        $this->storeClientDocuments($actor, $client, $documents);
         GeocodeClientAddressJob::dispatch($client->id);
 
         $this->activityLogService->log($actor, 'client.created', 'Customer created.', ['client_id' => $client->id]);
@@ -102,8 +108,10 @@ class ClientManagementService
 
     public function updateClient(User $actor, Client $client, array $data): Client
     {
+        $documents = $this->pullDocuments($data);
         $client->fill($this->prepareClientData($data, $client));
         $client->save();
+        $this->storeClientDocuments($actor, $client, $documents);
 
         GeocodeClientAddressJob::dispatch($client->id);
         $this->activityLogService->log($actor, 'client.updated', 'Customer updated.', ['client_id' => $client->id]);
@@ -142,10 +150,54 @@ class ClientManagementService
             $data['safety_other'] = null;
         }
 
-        if (($data['payment_status'] ?? null) !== ClientPaymentStatus::PENDING->value) {
-            $data['payment_status_reason'] = null;
+        return $data;
+    }
+
+    /**
+     * Pull the uploaded document files out of the request payload.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<int, UploadedFile>
+     */
+    private function pullDocuments(array &$data): array
+    {
+        $documents = $data['documents'] ?? [];
+        unset($data['documents']);
+
+        return array_values(array_filter(
+            is_array($documents) ? $documents : [$documents],
+            static fn ($file): bool => $file instanceof UploadedFile
+        ));
+    }
+
+    /**
+     * @param  array<int, UploadedFile>  $files
+     */
+    private function storeClientDocuments(User $actor, Client $client, array $files): void
+    {
+        foreach ($files as $file) {
+            $path = $file->store("client-documents/{$client->id}", ClientDocument::DISK);
+
+            $client->documents()->create([
+                'original_name' => $file->getClientOriginalName(),
+                'file_path' => $path,
+                'file_size' => $file->getSize(),
+                'file_type' => $this->resolveDocumentType((string) $file->getMimeType()),
+                'uploaded_by' => $actor->id,
+            ]);
+        }
+    }
+
+    private function resolveDocumentType(string $mime): string
+    {
+        if (str_starts_with($mime, 'image/')) {
+            return 'image';
         }
 
-        return $data;
+        if ($mime === 'application/pdf') {
+            return 'pdf';
+        }
+
+        return 'document';
     }
 }

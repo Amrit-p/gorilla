@@ -20,7 +20,7 @@
                 </ul>
             </div>
         @endif
-        <form method="POST" action="{{ route('admin.clients.update', $client) }}" novalidate class="js-validate-form grid grid-cols-1 gap-4 rounded-2xl border border-slate-200 bg-white p-6 sm:grid-cols-2" data-validate="client">
+        <form method="POST" action="{{ route('admin.clients.update', $client) }}" enctype="multipart/form-data" novalidate class="js-validate-form grid grid-cols-1 gap-4 rounded-2xl border border-slate-200 bg-white p-6 sm:grid-cols-2" data-validate="client">
             @csrf
             @method('PATCH')
             @include('admin.clients.partials.form-fields', ['client' => $client])
@@ -31,14 +31,3 @@
         </form>
     </div>
 </x-layouts.dashboard>
-
-<script>
-    function toggleClientPaymentReason() {
-        $('#client-payment-reason-wrap').toggleClass('hidden', $('#client-payment-status').val() !== 'Pending');
-    }
-    $('#client-payment-status').on('change', function () {
-        toggleClientPaymentReason();
-        $('[name="payment_status_reason"]').valid();
-    });
-    toggleClientPaymentReason();
-</script>
