@@ -74,14 +74,15 @@ class DashboardAnalyticsService
     /**
      * @return array<string, mixed>
      */
-    public function mower(User $mower, ?string $scheduleDate = null): array
+    public function mower(User $mower, ?string $scheduleStart = null, ?string $scheduleEnd = null): array
     {
-        $date = $scheduleDate ?? now()->toDateString();
+        $start = $scheduleStart ?? now()->toDateString();
+        $end = $scheduleEnd ?? $start;
 
         return Cache::remember(
-            $this->cacheKey('mower.'.$mower->id.'.'.$date),
+            $this->cacheKey('mower.'.$mower->id.'.'.$start.'.'.$end),
             $this->ttl(),
-            fn (): array => $this->buildMowerAnalytics($mower, $date)
+            fn (): array => $this->buildMowerAnalytics($mower, $start, $end)
         );
     }
 
@@ -262,7 +263,7 @@ class DashboardAnalyticsService
     /**
      * @return array<string, mixed>
      */
-    private function buildMowerAnalytics(User $mower, string $date): array
+    private function buildMowerAnalytics(User $mower, string $start, string $end): array
     {
         $today = now()->toDateString();
         $weekStart = now()->startOfWeek()->toDateString();
@@ -271,17 +272,18 @@ class DashboardAnalyticsService
         $hold = JobWorkflowStatus::HOLD->value;
         $pending = JobWorkflowStatus::PENDING->value;
 
+        // stats across the requested range
         $stats = DB::table('job_user_assignments as jua')
             ->join('service_jobs as sj', function ($join): void {
                 $join->on('sj.id', '=', 'jua.job_id')->whereNull('sj.deleted_at');
             })
             ->where('jua.user_id', $mower->id)
             ->selectRaw(
-                'SUM(CASE WHEN sj.scheduled_date = ? THEN 1 ELSE 0 END) as todays_jobs, '
-                .'SUM(CASE WHEN sj.scheduled_date = ? AND sj.status = ? THEN 1 ELSE 0 END) as completed_today, '
-                .'SUM(CASE WHEN sj.scheduled_date = ? AND sj.status = ? THEN COALESCE(sj.consumed_time_minutes, 0) ELSE 0 END) as minutes_today, '
+                'SUM(CASE WHEN sj.scheduled_date BETWEEN ? AND ? THEN 1 ELSE 0 END) as range_jobs, '
+                .'SUM(CASE WHEN sj.scheduled_date BETWEEN ? AND ? AND sj.status = ? THEN 1 ELSE 0 END) as completed_in_range, '
+                .'SUM(CASE WHEN sj.scheduled_date BETWEEN ? AND ? AND sj.status = ? THEN COALESCE(sj.consumed_time_minutes, 0) ELSE 0 END) as minutes_in_range, '
                 .'SUM(CASE WHEN sj.scheduled_date BETWEEN ? AND ? AND sj.status = ? THEN COALESCE(sj.consumed_time_minutes, 0) ELSE 0 END) as minutes_week',
-                [$date, $date, $completed, $date, $completed, $weekStart, $today, $completed]
+                [$start, $end, $start, $end, $completed, $start, $end, $completed, $weekStart, $today, $completed]
             )
             ->first();
 
@@ -293,30 +295,39 @@ class DashboardAnalyticsService
             ->whereIn('status', [$started, $hold, $pending])
             ->count();
 
-        $todaysJobs = (int) ($stats->todays_jobs ?? 0);
-        $completedToday = (int) ($stats->completed_today ?? 0);
-        $completedMinutesToday = (int) ($stats->minutes_today ?? 0);
+        $upcomingJobs = Job::query()
+            ->where(function ($q) use ($mower): void {
+                $q->whereHas('assignedEmployees', fn ($q) => $q->where('users.id', $mower->id))
+                    ->orWhere('done_by_user_id', $mower->id);
+            })
+            ->whereDate('scheduled_date', '>', $today)
+            ->whereNotIn('status', ['Completed', 'Cancelled'])
+            ->count();
+
+        $rangeJobs = (int) ($stats->range_jobs ?? 0);
+        $completedInRange = (int) ($stats->completed_in_range ?? 0);
+        $completedMinutesInRange = (int) ($stats->minutes_in_range ?? 0);
         $completedWeekMinutes = (int) ($stats->minutes_week ?? 0);
 
         return [
             'type' => 'mower',
             'cards' => [
-                'todays_jobs' => [
-                    'label' => "Today's jobs",
-                    'value' => (string) $completedToday,
-                    'subtitle' => $todaysJobs.' total scheduled today',
+                'range_jobs' => [
+                    'label' => $start === $end ? "Today's jobs" : 'Scheduled jobs',
+                    'value' => (string) $completedInRange,
+                    'subtitle' => $rangeJobs.' total scheduled in range',
                     'accent' => 'emerald',
                 ],
                 'completed_hours' => [
-                    'label' => 'Completed hours (today)',
-                    'value' => number_format($completedMinutesToday / 60, 1).'h',
+                    'label' => $start === $end ? 'Completed hours (today)' : 'Completed hours (range)',
+                    'value' => number_format($completedMinutesInRange / 60, 1).'h',
                     'subtitle' => number_format($completedWeekMinutes / 60, 1).'h this week',
                     'accent' => 'sky',
                 ],
-                'pending_jobs' => [
-                    'label' => 'Pending jobs',
-                    'value' => (string) $pendingJobs,
-                    'subtitle' => 'Started or on hold',
+                'upcoming_jobs' => [
+                    'label' => 'Total upcoming',
+                    'value' => (string) $upcomingJobs,
+                    'subtitle' => 'Scheduled after today',
                     'accent' => 'amber',
                 ],
             ],

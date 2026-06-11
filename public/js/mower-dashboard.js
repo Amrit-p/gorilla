@@ -1,10 +1,13 @@
 (function ($) {
     'use strict';
 
-    const INDEX_URL = (window.mowerRoutes || {}).index || '';
-    let activeScope = null;
-    let activeDate = window.mowerInitialDate || new Date().toISOString().slice(0, 10);
+    let INDEX_URL = '';
+    const filters = {
+        scope: 'today',
+        date_range: null,
+    };
 
+    let currentRequest = null;
     let alertTimeout = null;
 
     function showAlert(message, isError) {
@@ -23,80 +26,163 @@
     }
 
     function setLoading(loading) {
-        $('#mower-job-list').css('opacity', loading ? '0.5' : '1');
+        const $list = $('#mower-job-list');
+        $list.css('opacity', loading ? '0.5' : '1');
+
+        const overlayId = 'mower-loading-overlay';
+        if (loading) {
+            if ($list.css('position') === 'static') { $list.css('position', 'relative'); }
+            if (!document.getElementById(overlayId)) {
+                const $overlay = $('<div>')
+                    .attr('id', overlayId)
+                    .css({
+                        position: 'absolute',
+                        inset: '0',
+                        display: 'flex',
+                        'align-items': 'center',
+                        'justify-content': 'center',
+                        'background': 'rgba(255,255,255,0.6)',
+                        'backdrop-filter': 'blur(2px)',
+                        'z-index': 999,
+                    });
+                const $spinner = $('<div>').css({
+                    width: '36px',
+                    height: '36px',
+                    'border-radius': '50%',
+                    border: '4px solid #e5e7eb',
+                    'border-top-color': '#059669',
+                    animation: 'mower-spin 1s linear infinite'
+                });
+
+                $overlay.append($spinner);
+                $list.prepend($overlay);
+
+                // add keyframes if not present
+                if (!document.getElementById('mower-loading-style')) {
+                    const style = document.createElement('style');
+                    style.id = 'mower-loading-style';
+                    style.innerHTML = '@keyframes mower-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }';
+                    document.head.appendChild(style);
+                }
+            }
+        } else {
+            $('#' + overlayId).remove();
+        }
     }
 
-    function updateScopeButtons(scope) {
+    function updateScopeButtons(filters = {}) {
+        if (typeof filters !== 'object') {
+            console.error("filters must be object given ", typeof filters);
+            return;
+        }
+
         $('.mower-scope').each(function () {
             const $btn = $(this);
-            const isActive = $btn.data('scope') === scope;
+            const isActive = $btn.data('scope') === filters.scope;
             $btn.toggleClass('bg-emerald-700 text-white', isActive)
                 .toggleClass('bg-white text-slate-600 shadow-sm', !isActive);
         });
     }
 
-    function updateAnalyticsCards(cards) {
+    function updateAnalyticsCards(cards, opts) {
+        opts = opts || {};
         if (!cards) return;
-        if (cards.todays_jobs)    $('#mower-analytics-completed').text(cards.todays_jobs.value    || '0');
+        if (cards.range_jobs) $('#mower-analytics-completed').text(cards.range_jobs.value || '0');
         if (cards.completed_hours) $('#mower-analytics-hours').text(cards.completed_hours.value || '0h');
-        if (cards.pending_jobs)   $('#mower-analytics-pending').text(cards.pending_jobs.value   || '0');
+        // Only update upcoming card when not suppressed (e.g., when date-range change shouldn't affect it)
+        if (!opts.suppressUpcoming && cards.upcoming_jobs) {
+            $('#mower-analytics-upcoming').text(cards.upcoming_jobs.value || '0');
+        }
     }
 
-    function updateExportLink(scope, date) {
+    function updateExportLink(filters) {
+        filters = filters || {};
         const base = (window.mowerRoutes || {}).exportPdf;
         if (!base) return;
-        const url = base + '?scope=' + encodeURIComponent(scope) + '&schedule_date=' + encodeURIComponent(date);
-        $('#mower-export-pdf').attr('href', url);
+        const params = new URLSearchParams();
+        params.set('scope', filters.scope || 'today');
+        const dr = filters.date_range;
+        const today = moment ? moment().format('YYYY-MM-DD') : new Date().toISOString().slice(0, 10);
+        params.set('date_range[start]', (dr && dr.start) ? dr.start : today);
+        params.set('date_range[end]', (dr && dr.end) ? dr.end : today);
+        $('#mower-export-pdf').attr('href', base + '?' + params.toString());
     }
 
-    function loadScope(scope, date) {
-        const targetDate = date || activeDate;
-        if (scope === activeScope && targetDate === activeDate && !date) {
-            return;
-        }
-        activeScope = scope;
-        activeDate = targetDate;
-
-        updateScopeButtons(scope);
-        updateExportLink(scope, targetDate);
+    function loadScope(filters) {
+        filters = filters || {};
+        updateScopeButtons(filters);
+        updateExportLink(filters);
         hideAlert();
         setLoading(true);
 
-        $.ajax({
+        const data = { scope: filters.scope };
+        const dr = filters.date_range;
+        if (dr && dr.start) {
+            data.date_range = { start: dr.start, end: dr.end || dr.start };
+        }
+
+        if (currentRequest && typeof currentRequest.abort === 'function') {
+            try { currentRequest.abort(); } catch (e) { /* ignore */ }
+        }
+
+        currentRequest = $.ajax({
             url: INDEX_URL,
             method: 'GET',
-            data: { scope: scope, schedule_date: targetDate },
+            data: data,
             dataType: 'json',
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
         })
             .done(function (response) {
-                $('#mower-job-list').html(response.html || '');
-                updateAnalyticsCards(response.analytics || null);
+                try {
+                    const html = response && response.html ? response.html : '<div class="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">No jobs in this list.</div>';
+                    $('#mower-job-list').html(html);
+                    updateAnalyticsCards(response && response.analytics ? response.analytics : null, {});
+                } catch (err) {
+                    console.error('Failed to render mower jobs response', err, response);
+                    $('#mower-job-list').html('<div class="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">Error loading jobs.</div>');
+                }
             })
-            .fail(function () {
+            .fail(function (xhr, textStatus) {
+                if (textStatus === 'abort') return;
                 showAlert('Failed to load jobs. Please try again.', true);
             })
             .always(function () {
                 setLoading(false);
+                currentRequest = null;
             });
     }
 
     $(document).on('click', '.mower-scope', function () {
         const scope = String($(this).data('scope') || '');
-        if (scope) {
-            loadScope(scope);
+        if (!scope) return;
+
+        if (scope === 'today' || scope === 'upcoming') {
+            const today = moment ? moment().format('YYYY-MM-DD') : new Date().toISOString().slice(0, 10);
+            filters.date_range = { start: today, end: today };
+            const $pickerInput = $('#mower-schedule-date');
+            const picker = $pickerInput.data('daterangepicker');
+            if (picker) {
+                picker.setStartDate(today);
+                picker.setEndDate(today);
+            }
+            $pickerInput.val(today + ' – ' + today);
+            $pickerInput.siblings('button').removeClass('hidden');
         }
+
+        filters.scope = scope;
+        loadScope({ ...filters });
     });
 
     $(document).on('change', '#mower-schedule-date', function () {
-        const date = $(this).val();
-        if (!date) return;
-        activeScope = null;
-        loadScope('today', date);
-        // Switch the Today button to active state immediately
-        updateScopeButtons('today');
+        const start = $('#mower-schedule-date-start').val();
+        const end = $('#mower-schedule-date-end').val();
+        if (start && end) {
+            filters.date_range = { start: start, end: end };
+        } else {
+            filters.date_range = null;
+        }
+        loadScope({ ...filters });
     });
-
     // ─── Job detail: gallery ────────────────────────────────────────────────
 
     function renderGallery(galleryId, kind, images, deleteUrlTemplate) {
@@ -126,131 +212,143 @@
     }
 
     // ─── Job detail: save status ────────────────────────────────────────────
-
-    $(document).on('click', '#mower-save-status', function () {
+    function saveStatusAction(button) {
         const routes = window.mowerJobRoutes || {};
-        if (!routes.status) return;
+        if (!routes.status) return $.Deferred().resolve();
         const status = $('#mower-status').val();
-        const $btn = $(this).prop('disabled', true).text('Saving…');
+        const $btn = button ? $(button).prop('disabled', true).text('Saving…') : null;
 
-        $.ajax({
+        const jq = $.ajax({
             url: routes.status,
             method: 'PATCH',
             data: { status: status, _token: $('meta[name="csrf-token"]').attr('content') },
             dataType: 'json',
         })
-        .done(function (response) {
-            showAlert(response.message || 'Status updated.', false);
-        })
-        .fail(function (xhr) {
-            const errs = xhr.responseJSON?.errors;
-            const msg = errs ? Object.values(errs).flat().join(' ') : (xhr.responseJSON?.message || 'Failed to update status.');
-            showAlert(msg, true);
-        })
-        .always(function () {
-            $btn.prop('disabled', false).text('Save status');
-        });
-    });
+            .done(function (response) {
+                showAlert(response.message || 'Status updated.', false);
+            })
+            .fail(function (xhr) {
+                const errs = xhr.responseJSON?.errors;
+                const msg = errs ? Object.values(errs).flat().join(' ') : (xhr.responseJSON?.message || 'Failed to update status.');
+                showAlert(msg, true);
+            })
+            .always(function () {
+                if ($btn) { $btn.prop('disabled', false).text('Save status'); }
+            });
+
+        return jq;
+    }
+
 
     // ─── Job detail: payment reason visibility ──────────────────────────────
 
     function togglePaymentReason() {
         const val = $('#mower-payment-status').val();
-        const needsReason = val === 'Pending' || val === 'Partial';
+        const isPending = val === 'Pending';
         const isPartial = val === 'Partial';
-        $('#mower-payment-reason-wrap').toggleClass('hidden', !needsReason);
+        $('#mower-payment-reason-wrap').toggleClass('hidden', !isPending);
         $('#mower-paid-amount-wrap').toggleClass('hidden', !isPartial);
     }
 
     $(document).on('change', '#mower-payment-status', togglePaymentReason);
 
-    // ─── Job detail: save payment ───────────────────────────────────────────
 
-    $(document).on('click', '#mower-save-payment', function () {
+    // ─── Job detail: save payment ───────────────────────────────────────────
+    function savePaymentAction(button) {
         const routes = window.mowerJobRoutes || {};
-        if (!routes.payment) return;
+        if (!routes.payment) return $.Deferred().resolve();
         const status = $('#mower-payment-status').val();
         const reason = String($('#mower-payment-reason').val()).trim();
-        const paidAmount = String($('#mower-paid-amount').val()).trim();
-        const needsReason = status === 'Pending' || status === 'Partial';
+        const firstPayment = String($('#mower-first-payment').val()).trim();
+        const secondPayment = String($('#mower-second-payment').val()).trim();
+        const isPending = status === 'Pending';
         const isPartial = status === 'Partial';
 
-        if (needsReason && !reason) {
-            showAlert('Please enter a reason for ' + status + ' payment.', true);
-            return;
+        if (isPending && !reason) {
+            showAlert('Please enter a reason for pending payment.', true);
+            return $.Deferred().reject();
         }
-        if (isPartial && !paidAmount) {
-            showAlert('Please enter the amount received from the customer.', true);
-            return;
+        if (isPartial && !firstPayment) {
+            showAlert('Please enter the First Payment amount.', true);
+            return $.Deferred().reject();
+        }
+        if (isPartial && !secondPayment) {
+            showAlert('Please enter the Second Payment details.', true);
+            return $.Deferred().reject();
         }
 
-        const $btn = $(this).prop('disabled', true).text('Saving…');
+        const $btn = button ? $(button).prop('disabled', true).text('Saving…') : null;
 
-        $.ajax({
+        const jq = $.ajax({
             url: routes.payment,
             method: 'PATCH',
             data: {
                 payment_status: status,
-                payment_pending_reason: needsReason ? reason : '',
-                paid_amount: isPartial ? paidAmount : '',
+                payment_pending_reason: isPending ? reason : '',
+                first_payment: isPartial ? firstPayment : '',
+                second_payment: isPartial ? secondPayment : '',
                 _token: $('meta[name="csrf-token"]').attr('content'),
             },
             dataType: 'json',
         })
-        .done(function (response) {
-            showAlert(response.message || 'Payment updated.', false);
-        })
-        .fail(function (xhr) {
-            const errs = xhr.responseJSON?.errors;
-            const msg = errs ? Object.values(errs).flat().join(' ') : (xhr.responseJSON?.message || 'Failed to save payment.');
-            showAlert(msg, true);
-        })
-        .always(function () {
-            $btn.prop('disabled', false).text('Save payment');
-        });
-    });
+            .done(function (response) {
+                showAlert(response.message || 'Payment updated.', false);
+            })
+            .fail(function (xhr) {
+                const errs = xhr.responseJSON?.errors;
+                const msg = errs ? Object.values(errs).flat().join(' ') : (xhr.responseJSON?.message || 'Failed to save payment.');
+                showAlert(msg, true);
+            })
+            .always(function () {
+                if ($btn) { $btn.prop('disabled', false).text('Save payment'); }
+            });
+
+        return jq;
+    }
+
 
     // ─── Job detail: log time on site ──────────────────────────────────────
-
-    $(document).on('click', '#mower-save-time', function () {
+    function saveTimeAction(button) {
         const routes = window.mowerJobRoutes || {};
-        if (!routes.consumedTime) return;
+        if (!routes.consumedTime) return $.Deferred().resolve();
         const minutes = parseInt($('#mower-consumed-time').val(), 10);
 
         if (!minutes || minutes < 1) {
             showAlert('Please enter a valid number of minutes.', true);
-            return;
+            return $.Deferred().reject();
         }
 
-        const $btn = $(this).prop('disabled', true).text('Saving…');
+        const $btn = button ? $(button).prop('disabled', true).text('Saving…') : null;
 
-        $.ajax({
+        const jq = $.ajax({
             url: routes.consumedTime,
             method: 'PATCH',
             data: { consumed_time_minutes: minutes, _token: $('meta[name="csrf-token"]').attr('content') },
             dataType: 'json',
         })
-        .done(function (response) {
-            showAlert(response.message || 'Time logged.', false);
-        })
-        .fail(function (xhr) {
-            const errs = xhr.responseJSON?.errors;
-            const msg = errs ? Object.values(errs).flat().join(' ') : (xhr.responseJSON?.message || 'Failed to log time.');
-            showAlert(msg, true);
-        })
-        .always(function () {
-            $btn.prop('disabled', false).text('Log time');
-        });
-    });
+            .done(function (response) {
+                showAlert(response.message || 'Time logged.', false);
+            })
+            .fail(function (xhr) {
+                const errs = xhr.responseJSON?.errors;
+                const msg = errs ? Object.values(errs).flat().join(' ') : (xhr.responseJSON?.message || 'Failed to log time.');
+                showAlert(msg, true);
+            })
+            .always(function () {
+                if ($btn) { $btn.prop('disabled', false).text('Log time'); }
+            });
 
-    // ─── Job detail: upload photos ──────────────────────────────────────────
+        return jq;
+    }
+
+
 
     function setUploadLoading(kind, loading, count) {
         const labelId = 'mower-' + kind + '-label';
-        const textId  = 'mower-' + kind + '-upload-text';
+        const textId = 'mower-' + kind + '-upload-text';
         const inputId = 'mower-' + kind + '-input';
-        const $label  = $('#' + labelId);
-        const $text   = $('#' + textId);
+        const $label = $('#' + labelId);
+        const $text = $('#' + textId);
 
         if (loading) {
             $label.addClass('opacity-50 pointer-events-none cursor-wait');
@@ -285,30 +383,30 @@
             contentType: false,
             dataType: 'json',
         })
-        .done(function (response) {
-            const images = response.images || [];
-            renderGallery(galleryId, kind, images, routes[deleteTemplateKey]);
-            showAlert(
-                images.length
-                    ? (response.message || (count + ' photo' + (count !== 1 ? 's' : '') + ' uploaded.'))
-                    : 'No images returned — please try again.',
-                images.length === 0
-            );
-            const $gallery = document.getElementById(galleryId);
-            if ($gallery) {
-                $gallery.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }
-        })
-        .fail(function (xhr) {
-            const errs = xhr.responseJSON?.errors;
-            const msg = errs ? Object.values(errs).flat().join(' ') : (xhr.responseJSON?.message || 'Upload failed. Please try again.');
-            showAlert(msg, true);
-            const $label = document.getElementById('mower-' + kind + '-label');
-            if ($label) { $label.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
-        })
-        .always(function () {
-            setUploadLoading(kind, false, 0);
-        });
+            .done(function (response) {
+                const images = response.images || [];
+                renderGallery(galleryId, kind, images, routes[deleteTemplateKey]);
+                showAlert(
+                    images.length
+                        ? (response.message || (count + ' photo' + (count !== 1 ? 's' : '') + ' uploaded.'))
+                        : 'No images returned — please try again.',
+                    images.length === 0
+                );
+                const $gallery = document.getElementById(galleryId);
+                if ($gallery) {
+                    $gallery.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            })
+            .fail(function (xhr) {
+                const errs = xhr.responseJSON?.errors;
+                const msg = errs ? Object.values(errs).flat().join(' ') : (xhr.responseJSON?.message || 'Upload failed. Please try again.');
+                showAlert(msg, true);
+                const $label = document.getElementById('mower-' + kind + '-label');
+                if ($label) { $label.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+            })
+            .always(function () {
+                setUploadLoading(kind, false, 0);
+            });
     }
 
     $(document).on('change', '#mower-before-input', function () {
@@ -318,8 +416,6 @@
     $(document).on('change', '#mower-after-input', function () {
         uploadImages('mower-after-input', 'mower-after-gallery', 'after', 'after', 'deleteAfterTemplate');
     });
-
-    // ─── Job detail: delete photo ───────────────────────────────────────────
 
     $(document).on('click', '.mower-delete-image', function () {
         const routes = window.mowerJobRoutes || {};
@@ -338,31 +434,30 @@
             data: { _token: $('meta[name="csrf-token"]').attr('content') },
             dataType: 'json',
         })
-        .done(function (response) {
-            renderGallery(galleryId, kind, response.images || [], template);
-            showAlert(response.message || 'Photo deleted.', false);
-        })
-        .fail(function (xhr) {
-            $item.css('opacity', '1');
-            showAlert(xhr.responseJSON?.message || 'Failed to delete photo.', true);
-        });
+            .done(function (response) {
+                renderGallery(galleryId, kind, response.images || [], template);
+                showAlert(response.message || 'Photo deleted.', false);
+            })
+            .fail(function (xhr) {
+                $item.css('opacity', '1');
+                showAlert(xhr.responseJSON?.message || 'Failed to delete photo.', true);
+            });
     });
 
-    // ─── Job detail: next visit instructions ───────────────────────────────
 
-    $(document).on('click', '#mower-save-remark', function () {
+    function saveRemarkAction(button) {
         const routes = window.mowerJobRoutes || {};
-        if (!routes.remark) return;
+        if (!routes.remark) return $.Deferred().resolve();
 
         const description = String($('#mower-remark-text').val()).trim();
         if (!description) {
             showAlert('Please enter instructions before saving.', true);
-            return;
+            return $.Deferred().reject();
         }
 
-        const $btn = $(this).prop('disabled', true).text('Saving…');
+        const $btn = button ? $(button).prop('disabled', true).text('Saving…') : null;
 
-        $.ajax({
+        const jq = $.ajax({
             url: routes.remark,
             method: 'POST',
             data: { description: description, _token: $('meta[name="csrf-token"]').attr('content') },
@@ -377,16 +472,93 @@
                 showAlert(msg, true);
             })
             .always(function () {
-                $btn.prop('disabled', false).text('Save instructions');
+                if ($btn) { $btn.prop('disabled', false).text('Save instructions'); }
+            });
+
+        return jq;
+    }
+
+
+
+    $(document).on('click', '#mower-save-all', function () {
+        if (window.mowerJobIsVerified) return;
+        const routes = window.mowerJobRoutes || {};
+        if (!routes.update) return;
+
+        const paymentStatus = $('#mower-payment-status').val();
+        const isPendingPayment = paymentStatus === 'Pending';
+        const isPartial = paymentStatus === 'Partial';
+        const reason = String($('#mower-payment-reason').val()).trim();
+        const firstPayment = String($('#mower-first-payment').val()).trim();
+        const secondPayment = String($('#mower-second-payment').val()).trim();
+
+        if (isPendingPayment && !reason) {
+            showAlert('Please enter a reason for pending payment.', true);
+            return;
+        }
+        if (isPartial && !firstPayment) {
+            showAlert('Please enter the First Payment amount.', true);
+            return;
+        }
+        if (isPartial && !secondPayment) {
+            showAlert('Please enter the Second Payment details.', true);
+            return;
+        }
+
+        const minutes = parseInt($('#mower-consumed-time').val(), 10) || 0;
+        const description = String($('#mower-remark-text').val()).trim();
+
+        const $btn = $(this).prop('disabled', true).text('Saving…');
+
+        const data = {
+            status: $('#mower-status').val(),
+            payment_status: paymentStatus,
+            payment_pending_reason: isPendingPayment ? reason : '',
+            first_payment: isPartial ? firstPayment : '',
+            second_payment: isPartial ? secondPayment : '',
+            consumed_time_minutes: minutes || '',
+            description: description,
+            _token: $('meta[name="csrf-token"]').attr('content'),
+        };
+
+        $.ajax({
+            url: routes.update,
+            method: 'PATCH',
+            data: data,
+            dataType: 'json',
+        })
+            .done(function (response) {
+                showAlert(response.message || 'Changes saved.', false);
+                if (description) {
+                    $('#mower-remark-text').val('');
+                }
+            })
+            .fail(function (xhr) {
+                const errs = xhr.responseJSON?.errors;
+                const msg = errs ? Object.values(errs).flat().join(' ') : (xhr.responseJSON?.message || 'Failed to save changes.');
+                showAlert(msg, true);
+            })
+            .always(function () {
+                $btn.prop('disabled', false).text('Save changes');
             });
     });
 
     $(function () {
-        const $active = $('.mower-scope').filter(function () {
-            return $(this).hasClass('bg-emerald-700');
-        }).first();
-        activeScope = String($active.data('scope') || 'today');
-        updateExportLink(activeScope, activeDate);
+        INDEX_URL = (window.mowerRoutes || {}).index || '';
+
+        filters.scope = window.mowerInitialScope
+            || ($('.mower-scope.bg-emerald-700').first().data('scope'))
+            || 'today';
+
+        if (window.mowerInitialDate) {
+            filters.date_range = {
+                start: window.mowerInitialDate,
+                end: window.mowerInitialEndDate || window.mowerInitialDate,
+            };
+        }
+
+        updateScopeButtons(filters);
+        updateExportLink(filters);
     });
 
 }(jQuery));

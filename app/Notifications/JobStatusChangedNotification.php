@@ -31,9 +31,11 @@ class JobStatusChangedNotification extends Notification
      */
     public function toMail(object $notifiable): MailMessage
     {
+        $client = $this->job->client?->name ?? "#{$this->job->id}";
+
         return (new MailMessage)
-            ->subject('Job Status Updated')
-            ->line("Job #{$this->job->id} status changed to {$this->job->status}.")
+            ->subject('Job Marked as Completed')
+            ->line("The job for {$client} has been marked as Completed.")
             ->action('Open Job Scheduling', route('admin.jobs.index'));
     }
 
@@ -44,9 +46,11 @@ class JobStatusChangedNotification extends Notification
      */
     public function toArray(object $notifiable): array
     {
+        $client = $this->job->client?->name ?? "#{$this->job->id}";
+
         return [
             'job_id' => $this->job->id,
-            'message' => "Job #{$this->job->id} moved to {$this->job->status}.",
+            'message' => "Job for {$client} has been marked as Completed.",
             'status' => $this->job->status,
         ];
     }

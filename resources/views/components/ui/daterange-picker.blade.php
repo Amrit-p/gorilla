@@ -27,15 +27,15 @@
             .daterangepicker {
                 font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
                 font-size: 0.75rem;        /* text-xs */
-                color: #334155;            /* slate-700 */
-                background: #ffffff;
-                border: 1px solid #e2e8f0; /* slate-200 */
+                color: var(--drp-font-color, #334155);
+                background: var(--drp-bg, #ffffff);
+                border: 1px solid var(--drp-border, #e2e8f0);
                 border-radius: 0.75rem;    /* rounded-xl */
                 box-shadow: 0 4px 24px 0 rgba(15,23,42,.10), 0 1px 4px 0 rgba(15,23,42,.06);
                 padding: 0;
             }
             .daterangepicker::before,
-            .daterangepicker::after { border-bottom-color: #e2e8f0; }
+            .daterangepicker::after { border-bottom-color: var(--drp-border, #e2e8f0); }
 
             /* ── Calendar header (month/year selects + nav arrows) ──────── */
             .daterangepicker .drp-calendar { padding: 12px 14px; }
@@ -45,57 +45,57 @@
             .daterangepicker th.month {
                 font-size: 0.75rem;
                 font-weight: 600;
-                color: #1e293b; /* slate-800 */
+                color: var(--drp-heading, #1e293b);
             }
             .daterangepicker select.monthselect,
             .daterangepicker select.yearselect {
                 font-size: 0.7rem;
-                border: 1px solid #e2e8f0;
+                border: 1px solid var(--drp-border, #e2e8f0);
                 border-radius: 0.4rem;
-                background: #f8fafc;
-                color: #334155;
+                background: var(--drp-footer-bg, #f8fafc);
+                color: var(--drp-font-color, #334155);
                 padding: 2px 4px;
             }
             .daterangepicker select.monthselect:focus,
             .daterangepicker select.yearselect:focus {
                 outline: none;
-                border-color: #818cf8; /* indigo-400 */
-                box-shadow: 0 0 0 2px #e0e7ff; /* indigo-100 */
+                border-color: var(--drp-focus, #818cf8);
+                box-shadow: 0 0 0 2px var(--drp-focus-100, #e0e7ff);
             }
 
             /* nav arrows */
             .daterangepicker .prev span,
             .daterangepicker .next span {
-                border-color: #94a3b8; /* slate-400 */
+                border-color: var(--drp-muted-2, #94a3b8);
             }
             .daterangepicker th.prev:hover,
             .daterangepicker th.next:hover {
-                background: #f1f5f9; /* slate-100 */
+                background: var(--drp-hover-bg, #f1f5f9);
                 border-radius: 0.375rem;
             }
 
             /* ── Day cells ──────────────────────────────────────────────── */
             .daterangepicker td.available { border-radius: 0.375rem; }
             .daterangepicker td.available:hover {
-                background: #eef2ff; /* indigo-50 */
-                color: #4f46e5;      /* indigo-600 */
+                background: var(--drp-primary-50, #eef2ff);
+                color: var(--drp-primary, #4f46e5);
             }
             .daterangepicker td.off,
             .daterangepicker td.off.in-range,
             .daterangepicker td.off.start-date,
-            .daterangepicker td.off.end-date { color: #cbd5e1; } /* slate-300 */
+            .daterangepicker td.off.end-date { color: var(--drp-off, #cbd5e1); }
 
             .daterangepicker td.in-range {
-                background: #eef2ff; /* indigo-50 */
-                color: #4338ca;      /* indigo-700 */
+                background: var(--drp-primary-50, #eef2ff);
+                color: var(--drp-primary-700, #4338ca);
                 border-radius: 0;
             }
             .daterangepicker td.start-date,
             .daterangepicker td.end-date,
             .daterangepicker td.active,
             .daterangepicker td.active:hover {
-                background: #4f46e5; /* indigo-600 */
-                color: #ffffff;
+                background: var(--drp-primary, #4f46e5);
+                color: var(--drp-foreground, #ffffff);
                 border-radius: 0.375rem;
             }
             .daterangepicker td.start-date.end-date { border-radius: 0.375rem; }
@@ -103,12 +103,12 @@
             .daterangepicker td.end-date   { border-radius: 0 0.375rem 0.375rem 0; }
 
             .daterangepicker td.today::after {
-                border-bottom-color: #4f46e5;
+                border-bottom-color: var(--drp-primary, #4f46e5);
             }
 
             /* day-of-week header */
             .daterangepicker th.week,
-            .daterangepicker td.week { color: #94a3b8; font-size: 0.65rem; }
+            .daterangepicker td.week { color: var(--drp-muted-2, #94a3b8); font-size: 0.65rem; }
             .daterangepicker .calendar-table th {
                 color: #94a3b8; /* slate-400 */
                 font-size: 0.65rem;
@@ -119,41 +119,41 @@
 
             /* ── Footer (selected display + buttons) ────────────────────── */
             .daterangepicker .drp-buttons {
-                border-top: 1px solid #f1f5f9; /* slate-100 */
+                border-top: 1px solid var(--drp-hover-bg, #f1f5f9);
                 padding: 8px 14px;
-                background: #f8fafc;            /* slate-50 */
+                background: var(--drp-footer-bg, #f8fafc);
                 border-radius: 0 0 0.75rem 0.75rem;
             }
             .daterangepicker .drp-selected {
                 font-size: 0.7rem;
-                color: #64748b; /* slate-500 */
+                color: var(--drp-muted, #64748b);
             }
             .daterangepicker .cancelBtn {
                 font-size: 0.7rem;
                 font-weight: 500;
                 background: transparent;
-                border: 1px solid #e2e8f0;
-                color: #475569;       /* slate-600 */
+                border: 1px solid var(--drp-border, #e2e8f0);
+                color: var(--drp-cancel-color, #475569);
                 border-radius: 0.5rem;
                 padding: 4px 12px;
                 transition: background 0.15s;
             }
             .daterangepicker .cancelBtn:hover {
-                background: #f1f5f9;
-                border-color: #cbd5e1;
+                background: var(--drp-hover-bg, #f1f5f9);
+                border-color: var(--drp-border-hover, #cbd5e1);
             }
             .daterangepicker .applyBtn {
                 font-size: 0.7rem;
                 font-weight: 500;
-                background: #4f46e5; /* indigo-600 */
+                background: var(--drp-primary, #4f46e5);
                 border: none;
-                color: #ffffff;
+                color: var(--drp-foreground, #ffffff);
                 border-radius: 0.5rem;
                 padding: 4px 14px;
                 transition: background 0.15s;
             }
             .daterangepicker .applyBtn:hover,
-            .daterangepicker .applyBtn:focus { background: #4338ca; } /* indigo-700 */
+            .daterangepicker .applyBtn:focus { background: var(--drp-primary-700, #4338ca); }
 
             /* ── Preset ranges panel ────────────────────────────────────── */
             .daterangepicker .ranges ul { padding: 6px; margin: 0; }
@@ -164,23 +164,23 @@
                 padding: 5px 12px;
                 transition: background 0.12s;
             }
-            .daterangepicker .ranges li:hover { background: #eef2ff; color: #4f46e5; }
+            .daterangepicker .ranges li:hover { background: var(--drp-primary-50, #eef2ff); color: var(--drp-primary, #4f46e5); }
             .daterangepicker .ranges li.active {
-                background: #4f46e5;
-                color: #ffffff;
+                background: var(--drp-primary, #4f46e5);
+                color: var(--drp-foreground, #ffffff);
             }
 
             /* separator between range panel and calendars */
-            .daterangepicker.show-ranges .drp-calendar.left { border-left: 1px solid #f1f5f9; }
+            .daterangepicker.show-ranges .drp-calendar.left { border-left: 1px solid var(--drp-hover-bg, #f1f5f9); }
         </style>
     @endpush
 @endonce
 
 @php
-    $pickerId = 'drp-' . uniqid();
+    $pickerId = $attributes->get('id') ?: 'drp-' . uniqid();
 @endphp
 
-<div class="relative">
+<div {{ $attributes->only('style') }} class="relative">
     <div class="flex items-center rounded-lg border border-slate-200 bg-slate-50 focus-within:border-indigo-400 focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-100">
         <span class="pointer-events-none flex items-center pl-2.5">
             <svg class="h-3.5 w-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -193,7 +193,7 @@
             type="text"
             readonly
             placeholder="{{ $placeholder }}"
-            {{ $attributes->merge(['class' => 'w-full cursor-pointer bg-transparent px-2.5 py-2 text-xs text-slate-700 placeholder-slate-400 outline-none']) }}
+            {{ $attributes->except(['style', 'id'])->merge(['class' => 'w-full cursor-pointer bg-transparent px-2.5 py-2 text-xs text-slate-700 placeholder-slate-400 outline-none']) }}
         >
 
         <button

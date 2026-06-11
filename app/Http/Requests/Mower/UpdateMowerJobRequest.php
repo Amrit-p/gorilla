@@ -3,10 +3,11 @@
 namespace App\Http\Requests\Mower;
 
 use App\Enums\JobOperationalPaymentStatus;
+use App\Enums\JobWorkflowStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class UpdateMowerJobPaymentRequest extends FormRequest
+class UpdateMowerJobRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -19,6 +20,7 @@ class UpdateMowerJobPaymentRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'status' => ['required', Rule::in(JobWorkflowStatus::values())],
             'payment_status' => ['required', Rule::in(JobOperationalPaymentStatus::values())],
             'payment_pending_reason' => [
                 'nullable',
@@ -38,6 +40,8 @@ class UpdateMowerJobPaymentRequest extends FormRequest
                 'string',
                 'max:255',
             ],
+            'consumed_time_minutes' => ['nullable', 'integer', 'min:0', 'max:1440'],
+            'description' => ['nullable', 'string', 'max:1000'],
         ];
     }
 }

@@ -4,32 +4,36 @@
         <div class="grid grid-cols-3 gap-2">
             <div class="rounded-xl bg-white p-3 text-center shadow-sm">
                 <p class="text-[10px] font-medium uppercase tracking-wide text-slate-500">Completed</p>
-                <p id="mower-analytics-completed" class="mt-1 text-xl font-bold text-emerald-800">{{ $cards['todays_jobs']['value'] ?? '0' }}</p>
+                <p id="mower-analytics-completed" class="mt-1 text-xl font-bold text-emerald-800">{{ $cards['range_jobs']['value'] ?? '0' }}</p>
             </div>
             <div class="rounded-xl bg-white p-3 text-center shadow-sm">
                 <p class="text-[10px] font-medium uppercase tracking-wide text-slate-500">Hours</p>
                 <p id="mower-analytics-hours" class="mt-1 text-xl font-bold text-sky-800">{{ $cards['completed_hours']['value'] ?? '0h' }}</p>
             </div>
             <div class="rounded-xl bg-white p-3 text-center shadow-sm">
-                <p class="text-[10px] font-medium uppercase tracking-wide text-slate-500">Total Pending</p>
-                <p id="mower-analytics-pending" class="mt-1 text-xl font-bold text-amber-800">{{ $cards['pending_jobs']['value'] ?? '0' }}</p>
+                <p class="text-[10px] font-medium uppercase tracking-wide text-slate-500">Total Upcoming</p>
+                <p id="mower-analytics-upcoming" class="mt-1 text-xl font-bold text-amber-800">{{ $cards['upcoming_jobs']['value'] ?? '0' }}</p>
             </div>
         </div>
 
         <div class="rounded-2xl bg-white p-4 shadow-sm">
             <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Assigned to you</p>
-            <input
-                type="date"
+            <x-ui.daterange-picker
                 id="mower-schedule-date"
-                value="{{ $scheduleDate }}"
-                class="mt-1 w-full rounded-lg border-0 bg-transparent p-0 text-lg font-semibold text-slate-900 focus:ring-0"
-            >
+                :startDate="$scheduleStart"
+                :endDate="$scheduleEnd"
+                placeholder="{{ __('Schedule date') }}"
+                style="--drp-primary:#059669; --drp-primary-700:#047857; --drp-primary-50:#ecfdf5; --drp-primary-100:#d1fae8; --drp-font-color:#064e3b; --drp-border:#d1fae8; --drp-footer-bg:#ecfdf5; --drp-hover-bg:#ecfdf5; --drp-muted:#065f46; --drp-muted-2:#6ee7b7;"
+            />
         </div>
 
         <div id="mower-alert" class="hidden rounded-xl px-4 py-3 text-sm" style="position:fixed;top:1rem;left:50%;transform:translateX(-50%);z-index:9999;min-width:280px;max-width:90vw;"></div>
 
         <div class="grid grid-cols-3 gap-2">
             @foreach ($listScopes as $key => $label)
+                @if ($key === \App\Support\CrmConstants::MOWER_SCOPE_PENDING)
+                    @continue
+                @endif
                 <button
                     type="button"
                     data-scope="{{ $key }}"
@@ -40,10 +44,10 @@
             @endforeach
         </div>
 
-        <div class="flex justify-end">
+            <div class="flex justify-end">
             <a
                 id="mower-export-pdf"
-                href="{{ route('mower.export-pdf', ['scope' => $scope, 'schedule_date' => $scheduleDate]) }}"
+                    href="{{ route('mower.export-pdf', ['scope' => $scope, 'date_range[start]' => $scheduleStart, 'date_range[end]' => $scheduleEnd]) }}"
                 target="_blank"
                 class="inline-flex items-center gap-1.5 rounded-full bg-slate-800 px-4 py-2 text-xs font-semibold text-white shadow-sm active:bg-slate-900"
             >
@@ -66,7 +70,9 @@
                 index: @json(route('mower.index')),
                 exportPdf: @json(route('mower.export-pdf')),
             };
-            window.mowerInitialDate = @json($scheduleDate);
+            window.mowerInitialDate = @json($scheduleStart);
+            window.mowerInitialEndDate = @json($scheduleEnd);
+            window.mowerInitialScope = @json($scope);
         </script>
     @endpush
 </x-layouts.mower>

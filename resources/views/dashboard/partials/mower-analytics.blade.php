@@ -17,10 +17,10 @@
         :accent="$cards['completed_hours']['accent']"
     />
     <x-dashboard.stat-card
-        :label="$cards['pending_jobs']['label']"
-        :value="$cards['pending_jobs']['value']"
-        :subtitle="$cards['pending_jobs']['subtitle']"
-        :accent="$cards['pending_jobs']['accent']"
+        :label="$cards['upcoming_jobs']['label']"
+        :value="$cards['upcoming_jobs']['value']"
+        :subtitle="$cards['upcoming_jobs']['subtitle']"
+        :accent="$cards['upcoming_jobs']['accent']"
     />
 </div>
 

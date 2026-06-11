@@ -33,7 +33,7 @@
                         <option value="{{ $status }}" @selected($job->status === $status)>{{ $status }}</option>
                     @endforeach
                 </select>
-                <button type="button" id="mower-save-status" class="mower-touch mt-2 w-full rounded-xl bg-emerald-700 px-4 py-3 text-sm font-semibold text-white">
+                <button type="button" id="mower-save-status" class="mower-touch mt-2 w-full rounded-xl bg-emerald-700 px-4 py-3 text-sm font-semibold text-white hidden">
                     Save status
                 </button>
             </div>
@@ -127,7 +127,7 @@
                         <option value="{{ $status }}" @selected($job->payment_status === $status)>{{ $status }}</option>
                     @endforeach
                 </select>
-                <div id="mower-payment-reason-wrap" class="{{ in_array($job->payment_status, ['Pending', 'Partial']) ? '' : 'hidden' }}">
+                <div id="mower-payment-reason-wrap" class="{{ $job->payment_status === 'Pending' ? '' : 'hidden' }}">
                     <label for="mower-payment-reason" class="mb-1 block text-sm text-slate-600">Reason</label>
                     <input
                         type="text"
@@ -135,10 +135,34 @@
                         maxlength="255"
                         value="{{ $job->payment_pending_reason }}"
                         class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base"
-                        placeholder="Why is payment pending or partial?"
+                        placeholder="Why is payment pending?"
                     >
                 </div>
-                <button type="button" id="mower-save-payment" class="mower-touch w-full rounded-xl bg-slate-800 px-4 py-3 text-sm font-semibold text-white">
+                <div id="mower-paid-amount-wrap" class="{{ $job->payment_status === 'Partial' ? '' : 'hidden' }} space-y-3">
+                    <div>
+                        <label for="mower-first-payment" class="mb-1 block text-sm text-slate-600">First Payment</label>
+                        <input
+                            type="number"
+                            id="mower-first-payment"
+                            min="0"
+                            step="0.01"
+                            value="{{ $job->first_payment }}"
+                            class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base"
+                            placeholder="0.00"
+                        >
+                    </div>
+                    <div>
+                        <label for="mower-second-payment" class="mb-1 block text-sm text-slate-600">Second Payment</label>
+                        <textarea
+                            id="mower-second-payment"
+                            rows="3"
+                            maxlength="255"
+                            class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base resize-none"
+                            placeholder="e.g. Remaining $30 on Friday"
+                        >{{ $job->second_payment }}</textarea>
+                    </div>
+                </div>
+                <button type="button" id="mower-save-payment" class="mower-touch w-full rounded-xl bg-slate-800 px-4 py-3 text-sm font-semibold text-white hidden">
                     Save payment
                 </button>
             </div>
@@ -157,7 +181,7 @@
                     class="mower-touch min-w-0 flex-1 rounded-xl border border-slate-300 px-3 py-3 text-base"
                     placeholder="Minutes"
                 >
-                <button type="button" id="mower-save-time" class="mower-touch shrink-0 rounded-xl bg-emerald-700 px-4 py-3 text-sm font-semibold text-white">
+                <button type="button" id="mower-save-time" class="mower-touch shrink-0 rounded-xl bg-emerald-700 px-4 py-3 text-sm font-semibold text-white hidden">
                     Log time
                 </button>
             </div>
@@ -193,11 +217,20 @@
                     class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base resize-none"
                     placeholder="e.g. Gate code is 1234, dog is friendly, avoid the rose bed..."
                 ></textarea>
-                <button type="button" id="mower-save-remark" class="mower-touch w-full rounded-xl bg-emerald-700 px-4 py-3 text-sm font-semibold text-white">
+                <button type="button" id="mower-save-remark" class="mower-touch w-full rounded-xl bg-emerald-700 px-4 py-3 text-sm font-semibold text-white hidden">
                     Save instructions
                 </button>
             </div>
         </section>
+    </div>
+
+    <div id="mower-fixed-save" class="fixed inset-x-0 bottom-4 z-50 flex justify-center pointer-events-none">
+        <button id="mower-save-all" type="button"
+            @if($job->isVerified()) disabled @endif
+            class="pointer-events-auto mower-touch w-11/12 max-w-lg rounded-full px-5 py-3 text-sm font-semibold text-white shadow-lg
+                {{ $job->isVerified() ? 'bg-slate-400 cursor-not-allowed' : 'bg-emerald-700' }}">
+            {{ $job->isVerified() ? 'Job verified — read only' : 'Save changes' }}
+        </button>
     </div>
 
     </div>
@@ -206,7 +239,9 @@
         <script src="{{ asset('js/mower-dashboard.js') }}?v={{ filemtime(public_path('js/mower-dashboard.js')) }}"></script>
         <script>
             window.mowerRoutes = { index: @json(route('mower.index')) };
+            window.mowerJobIsVerified = @json($job->isVerified());
             window.mowerJobRoutes = {
+                update: @json(route('mower.jobs.update', $job)),
                 status: @json(route('mower.jobs.status.update', $job)),
                 payment: @json(route('mower.jobs.payment.update', $job)),
                 consumedTime: @json(route('mower.jobs.consumed-time.update', $job)),

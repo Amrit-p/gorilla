@@ -105,7 +105,12 @@
 
 <div class="title-block">
     <h1>MY JOBS <span class="filter-badge">{{ strtoupper($scopeLabel) }}</span></h1>
-    <p>Date: {{ \Carbon\Carbon::parse($scheduleDate)->format('d M Y') }} &nbsp;&bull;&nbsp; Generated: {{ now()->format('d M Y, H:i') }} &nbsp;&bull;&nbsp; Total: {{ $jobs->count() }} job(s)</p>
+    @php
+        $startLabel = \Carbon\Carbon::parse($scheduleStart)->format('d M Y');
+        $endLabel = \Carbon\Carbon::parse($scheduleEnd)->format('d M Y');
+        $dateLabel = $startLabel === $endLabel ? $startLabel : $startLabel.' – '.$endLabel;
+    @endphp
+    <p>Date: {{ $dateLabel }} &nbsp;&bull;&nbsp; Generated: {{ now()->format('d M Y, H:i') }} &nbsp;&bull;&nbsp; Total: {{ $jobs->count() }} job(s)</p>
 </div>
 
 @if ($jobs->isEmpty())

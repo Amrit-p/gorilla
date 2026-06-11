@@ -45,10 +45,17 @@
 
                 <div class="space-y-3">
                     @foreach ($weekJobs as $job)
-                        <a
-                            href="{{ route('mower.jobs.show', $job) }}"
-                            class="block rounded-2xl border border-slate-200 bg-white p-4 shadow-sm active:bg-slate-50"
-                        >
+                        @php
+                            $isUpcoming = \Carbon\Carbon::parse($job->scheduled_date)->startOfDay()->gt(\Carbon\Carbon::today());
+                        @endphp
+                        @if ($isUpcoming)
+                            <div class="block rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                        @else
+                            <a
+                                href="{{ route('mower.jobs.show', $job) }}"
+                                class="block rounded-2xl border border-slate-200 bg-white p-4 shadow-sm active:bg-slate-50"
+                            >
+                        @endif
                             <div class="flex items-start justify-between gap-2">
                                 <div class="min-w-0">
                                     <p class="truncate font-semibold text-slate-900">
@@ -71,7 +78,11 @@
                             @if ($job->payment_status)
                                 <p class="mt-2 text-xs text-slate-500">Payment: {{ $job->payment_status }}</p>
                             @endif
-                        </a>
+                        @if ($isUpcoming)
+                            </div>
+                        @else
+                            </a>
+                        @endif
                     @endforeach
                 </div>
             </div>

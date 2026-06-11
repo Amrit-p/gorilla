@@ -8,15 +8,18 @@ use App\Enums\JobOperationalPaymentStatus;
 use App\Enums\JobParkingStatus;
 use App\Enums\JobWorkflowStatus;
 use App\Enums\UserEfficiency;
+use App\Http\Middleware\EnsureMowerChecklistComplete;
 use App\Models\Client;
 use App\Models\Job;
 use App\Models\User;
+use App\Notifications\JobStatusChangedNotification;
 use App\Support\CrmRoles;
 use App\Support\ServiceTypes;
 use Database\Seeders\MasterCatalogSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -33,6 +36,7 @@ class MowerDashboardTest extends TestCase
         parent::setUp();
         $this->seed(RoleAndPermissionSeeder::class);
         $this->seed(MasterCatalogSeeder::class);
+        $this->withoutMiddleware(EnsureMowerChecklistComplete::class);
 
         $this->mower = User::factory()->create([
             'is_active' => true,
@@ -114,6 +118,63 @@ class MowerDashboardTest extends TestCase
         $this->assertSame(JobWorkflowStatus::HOLD->value, $job->status);
         $this->assertSame(JobOperationalPaymentStatus::PENDING->value, $job->payment_status);
         $this->assertSame(75, $job->consumed_time_minutes);
+    }
+
+    public function test_partial_payment_saves_first_and_second_payment(): void
+    {
+        $job = $this->createAssignedJob($this->mower);
+
+        $this->actingAs($this->mower)
+            ->patchJson(route('mower.jobs.payment.update', $job), [
+                'payment_status' => JobOperationalPaymentStatus::PARTIAL->value,
+                'first_payment' => 50.00,
+                'second_payment' => 'Remaining $30 on Friday',
+            ])
+            ->assertOk()
+            ->assertJsonPath('payment_status', JobOperationalPaymentStatus::PARTIAL->value);
+
+        $job->refresh();
+        $this->assertSame(JobOperationalPaymentStatus::PARTIAL->value, $job->payment_status);
+        $this->assertNull($job->payment_pending_reason);
+        $this->assertSame('50.00', $job->first_payment);
+        $this->assertSame('Remaining $30 on Friday', $job->second_payment);
+    }
+
+    public function test_partial_payment_amounts_cleared_when_status_changes(): void
+    {
+        $job = $this->createAssignedJob($this->mower);
+        $job->update(['first_payment' => 50.00, 'second_payment' => 'Remaining $30 on Friday', 'payment_status' => JobOperationalPaymentStatus::PARTIAL->value]);
+
+        $this->actingAs($this->mower)
+            ->patchJson(route('mower.jobs.payment.update', $job), [
+                'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+            ])
+            ->assertOk();
+
+        $job->refresh();
+        $this->assertNull($job->first_payment);
+        $this->assertNull($job->second_payment);
+    }
+
+    public function test_verified_job_blocks_all_mower_actions(): void
+    {
+        $job = $this->createAssignedJob($this->mower);
+        $job->update(['verified_at' => now(), 'verified_by' => $this->mower->id]);
+
+        $this->actingAs($this->mower)
+            ->patchJson(route('mower.jobs.status.update', $job), ['status' => JobWorkflowStatus::COMPLETED->value])
+            ->assertForbidden()
+            ->assertJsonPath('message', 'This job has been verified and cannot be modified.');
+
+        $this->actingAs($this->mower)
+            ->patchJson(route('mower.jobs.payment.update', $job), [
+                'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($this->mower)
+            ->get(route('mower.jobs.show', $job))
+            ->assertOk();
     }
 
     public function test_mower_can_upload_before_and_after_images(): void
@@ -204,6 +265,150 @@ class MowerDashboardTest extends TestCase
         $this->actingAs($this->mower)
             ->get(route('employee.mobile.index'))
             ->assertRedirect(route('mower.index'));
+    }
+
+    public function test_save_all_updates_status_payment_and_time_in_one_request(): void
+    {
+        $job = $this->createAssignedJob($this->mower);
+
+        $this->actingAs($this->mower)
+            ->patchJson(route('mower.jobs.update', $job), [
+                'status' => JobWorkflowStatus::COMPLETED->value,
+                'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+                'consumed_time_minutes' => 45,
+            ])
+            ->assertOk()
+            ->assertJsonPath('message', 'Changes saved.');
+
+        $job->refresh();
+        $this->assertSame(JobWorkflowStatus::COMPLETED->value, $job->status);
+        $this->assertSame(JobOperationalPaymentStatus::RECEIVED->value, $job->payment_status);
+        $this->assertSame(45, $job->consumed_time_minutes);
+    }
+
+    public function test_save_all_creates_remark_when_description_provided(): void
+    {
+        $job = $this->createAssignedJob($this->mower);
+
+        $this->actingAs($this->mower)
+            ->patchJson(route('mower.jobs.update', $job), [
+                'status' => JobWorkflowStatus::STARTED->value,
+                'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+                'description' => 'Gate was unlocked.',
+            ])
+            ->assertOk();
+
+        $this->assertDatabaseHas('mower_remarks', [
+            'client_id' => $job->client_id,
+            'description' => 'Gate was unlocked.',
+        ]);
+    }
+
+    public function test_save_all_skips_remark_when_no_description(): void
+    {
+        $job = $this->createAssignedJob($this->mower);
+
+        $this->actingAs($this->mower)
+            ->patchJson(route('mower.jobs.update', $job), [
+                'status' => JobWorkflowStatus::STARTED->value,
+                'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+            ])
+            ->assertOk();
+
+        $this->assertDatabaseMissing('mower_remarks', ['client_id' => $job->client_id]);
+    }
+
+    public function test_save_all_requires_reason_for_pending_payment(): void
+    {
+        $job = $this->createAssignedJob($this->mower);
+
+        $this->actingAs($this->mower)
+            ->patchJson(route('mower.jobs.update', $job), [
+                'status' => JobWorkflowStatus::STARTED->value,
+                'payment_status' => JobOperationalPaymentStatus::PENDING->value,
+            ])
+            ->assertUnprocessable();
+    }
+
+    public function test_save_all_blocked_for_unassigned_mower(): void
+    {
+        $job = $this->createAssignedJob($this->otherMower);
+
+        $this->actingAs($this->mower)
+            ->patchJson(route('mower.jobs.update', $job), [
+                'status' => JobWorkflowStatus::STARTED->value,
+                'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+            ])
+            ->assertForbidden();
+    }
+
+    public function test_save_all_blocked_for_verified_job(): void
+    {
+        $job = $this->createAssignedJob($this->mower);
+        $job->update(['verified_at' => now(), 'verified_by' => $this->mower->id]);
+
+        $this->actingAs($this->mower)
+            ->patchJson(route('mower.jobs.update', $job), [
+                'status' => JobWorkflowStatus::COMPLETED->value,
+                'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+            ])
+            ->assertForbidden();
+    }
+
+    public function test_show_page_disables_save_button_for_verified_job(): void
+    {
+        $job = $this->createAssignedJob($this->mower);
+        $job->update(['verified_at' => now(), 'verified_by' => $this->mower->id]);
+
+        $this->actingAs($this->mower)
+            ->get(route('mower.jobs.show', $job))
+            ->assertOk()
+            ->assertSee('disabled', false)
+            ->assertSee('Job verified — read only');
+    }
+
+    public function test_completing_job_notifies_sales_and_office_managers(): void
+    {
+        Notification::fake();
+
+        $salesManager = User::factory()->create(['is_active' => true]);
+        $salesManager->assignRole(CrmRoles::SALES_MANAGER);
+
+        $officeManager = User::factory()->create(['is_active' => true]);
+        $officeManager->assignRole(CrmRoles::OFFICE_MANAGER);
+
+        $job = $this->createAssignedJob($this->mower);
+
+        $this->actingAs($this->mower)
+            ->patch(route('mower.jobs.status.update', $job), [
+                'status' => JobWorkflowStatus::COMPLETED->value,
+            ])
+            ->assertOk();
+
+        Notification::assertSentTo($salesManager, JobStatusChangedNotification::class);
+        Notification::assertSentTo($officeManager, JobStatusChangedNotification::class);
+    }
+
+    public function test_non_completed_status_does_not_notify_managers(): void
+    {
+        Notification::fake();
+
+        $salesManager = User::factory()->create(['is_active' => true]);
+        $salesManager->assignRole(CrmRoles::SALES_MANAGER);
+
+        $officeManager = User::factory()->create(['is_active' => true]);
+        $officeManager->assignRole(CrmRoles::OFFICE_MANAGER);
+
+        $job = $this->createAssignedJob($this->mower);
+
+        $this->actingAs($this->mower)
+            ->patch(route('mower.jobs.status.update', $job), [
+                'status' => JobWorkflowStatus::STARTED->value,
+            ])
+            ->assertOk();
+
+        Notification::assertNotSentTo($salesManager, JobStatusChangedNotification::class);
+        Notification::assertNotSentTo($officeManager, JobStatusChangedNotification::class);
     }
 
     /**

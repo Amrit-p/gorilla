@@ -5,9 +5,10 @@ namespace App\Services;
 use App\Enums\JobImageKind;
 use App\Enums\JobOperationalPaymentStatus;
 use App\Enums\JobWorkflowStatus;
+use App\Helpers\OptimizationHelper;
 use App\Models\Job;
-use App\Models\JobLevel;
 use App\Models\User;
+use App\Notifications\JobStatusChangedNotification;
 use App\Support\CrmRoles;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
@@ -36,7 +37,7 @@ class MowerDashboardService
     /**
      * @return Collection<int, Job>
      */
-    public function assignedJobs(User $mower, ?string $scope = 'today', ?string $scheduleDate = null): Collection
+    public function assignedJobs(User $mower, ?string $scope = 'today', ?string $scheduleDate = null, ?string $scheduleEndDate = null): Collection
     {
         $query = Job::query()
             ->select([
@@ -58,31 +59,31 @@ class MowerDashboardService
             ])
             ->where(function ($q) use ($mower) {
                 $q->whereHas('assignedEmployees', fn ($q) => $q->where('users.id', $mower->id))
-                  ->orWhere('done_by_user_id', $mower->id);
+                    ->orWhere('done_by_user_id', $mower->id);
             });
 
         $today = now()->toDateString();
-        $targetDate = $scheduleDate ?? $today;
+        $startDate = $scheduleDate ?? $today;
+        $endDate = $scheduleEndDate ?? $startDate;
 
         match ($scope) {
             'upcoming' => $query->whereDate('scheduled_date', '>', $today)
                 ->where('status', '!=', JobWorkflowStatus::COMPLETED->value),
-            'completed' => $query->where('status', JobWorkflowStatus::COMPLETED->value),
-            'hold' => $query->where('status', JobWorkflowStatus::HOLD->value),
-            'pending' => $query->whereIn('status', [JobWorkflowStatus::STARTED->value, JobWorkflowStatus::HOLD->value, JobWorkflowStatus::PENDING->value])
-                ->whereDate('scheduled_date', '<=', $today),
+            'completed' => $query->whereBetween('scheduled_date', [$startDate, $endDate])
+                ->where('status', JobWorkflowStatus::COMPLETED->value),
             'started' => $query->where('status', JobWorkflowStatus::STARTED->value),
-            'today-special' => $query->whereDate('scheduled_date', $targetDate)
+            'today-special' => $query->whereDate('scheduled_date', $startDate)
                 ->whereHas('jobLevel', fn ($q) => $q->where('name', 'Special')),
-            'today' => $query->whereDate('scheduled_date', $targetDate),
+            'today' => $query->whereBetween('scheduled_date', [$startDate, $endDate]),
             default => $query->whereDate('scheduled_date', '<=', $today)
                 ->whereNotIn('status', [JobWorkflowStatus::COMPLETED->value]),
         };
+
         return $query
             ->orderBy('scheduled_date', 'desc')
             ->orderBy('scheduled_time', 'desc')
             ->orderByRaw('CASE WHEN numeric_priority IS NULL THEN 1 ELSE 0 END ASC, numeric_priority ASC')
-            ->orderByRaw("CASE status WHEN ? THEN 1 WHEN ? THEN 2 WHEN ? THEN 3 WHEN ? THEN 4 ELSE 5 END ASC", [
+            ->orderByRaw('CASE status WHEN ? THEN 1 WHEN ? THEN 2 WHEN ? THEN 3 WHEN ? THEN 4 ELSE 5 END ASC', [
                 JobWorkflowStatus::PENDING->value,
                 JobWorkflowStatus::STARTED->value,
                 JobWorkflowStatus::HOLD->value,
@@ -124,6 +125,15 @@ class MowerDashboardService
             'status' => $status,
         ]);
 
+        if ($status === JobWorkflowStatus::COMPLETED->value) {
+            $job->loadMissing('client');
+            User::query()->role([CrmRoles::SALES_MANAGER, CrmRoles::OFFICE_MANAGER])->get()
+                ->each(function (User $manager) use ($job): void {
+                    $manager->notify(new JobStatusChangedNotification($job));
+                    OptimizationHelper::forgetNotificationUnreadCount($manager->id);
+                });
+        }
+
         return $job;
     }
 
@@ -136,8 +146,10 @@ class MowerDashboardService
 
         $job->payment_status = $data['payment_status'];
         $isPartial = $data['payment_status'] === JobOperationalPaymentStatus::PARTIAL->value;
-        $needsReason = $isPartial || $data['payment_status'] === JobOperationalPaymentStatus::PENDING->value;
-        $job->payment_pending_reason = $needsReason ? ($data['payment_pending_reason'] ?? null) : null;
+        $isPending = $data['payment_status'] === JobOperationalPaymentStatus::PENDING->value;
+        $job->payment_pending_reason = $isPending ? ($data['payment_pending_reason'] ?? null) : null;
+        $job->first_payment = $isPartial ? ($data['first_payment'] ?? null) : null;
+        $job->second_payment = $isPartial ? ($data['second_payment'] ?? null) : null;
         $job->save();
 
         $this->activityLogService->log($mower, 'mower.payment_updated', 'Mower updated job payment status.', [

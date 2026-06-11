@@ -31,6 +31,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Mower\ChecklistController as MowerChecklistController;
 use App\Http\Controllers\Mower\MowerDashboardController;
+use App\Http\Controllers\Mower\MowerDiscussionController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Report\ChecklistReportController;
@@ -269,7 +270,10 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
             Route::middleware(['mower.checklist', 'crm.permission:'.CrmPermissions::UPLOAD_JOB_IMAGES])->group(function (): void {
                 Route::get('/', [MowerDashboardController::class, 'index'])->name('index');
                 Route::get('/notifications', [NotificationController::class, 'mowerIndex'])->name('notifications.index');
+                Route::get('/discussions', [MowerDiscussionController::class, 'index'])->name('discussions.index');
+                Route::get('/discussions/{discussion}', [MowerDiscussionController::class, 'show'])->name('discussions.show');
                 Route::get('/jobs/{job}', [MowerDashboardController::class, 'show'])->name('jobs.show');
+                Route::patch('/jobs/{job}', [MowerDashboardController::class, 'update'])->name('jobs.update');
                 Route::patch('/jobs/{job}/status', [MowerDashboardController::class, 'updateStatus'])->name('jobs.status.update');
                 Route::patch('/jobs/{job}/payment', [MowerDashboardController::class, 'updatePayment'])->name('jobs.payment.update');
                 Route::patch('/jobs/{job}/consumed-time', [MowerDashboardController::class, 'updateConsumedTime'])->name('jobs.consumed-time.update');
