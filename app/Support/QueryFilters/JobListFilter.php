@@ -39,7 +39,11 @@ final class JobListFilter
                 ->whereDate('scheduled_date', '>', $today)
                 ->where('status', '!=', JobWorkflowStatus::COMPLETED->value),
             CrmConstants::JOB_LIST_SCOPE_DONE => $query->where('status', JobWorkflowStatus::COMPLETED->value),
+            CrmConstants::JOB_LIST_SCOPE_COMPLETED_UNVERIFIED => $query
+                ->where('status', JobWorkflowStatus::COMPLETED->value)
+                ->whereNull('verified_at'),
             CrmConstants::JOB_LIST_SCOPE_HOLD => $query->where('status', JobWorkflowStatus::HOLD->value),
+            CrmConstants::JOB_LIST_SCOPE_DELETED => $query->onlyTrashed(),
             default => null,
         };
 

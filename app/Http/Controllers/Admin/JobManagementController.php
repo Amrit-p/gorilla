@@ -20,6 +20,8 @@ use App\Models\MowerRemark;
 use App\Notifications\JobRemarksUpdatedNotification;
 use App\Services\JobImageManagementService;
 use App\Services\JobManagementService;
+use App\Support\CrmConstants;
+use App\Support\CrmPermissions;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -41,6 +43,13 @@ class JobManagementController extends Controller
         $this->authorize('viewAny', Job::class);
 
         $filters = $this->exportFilters($request);
+
+        // The "Deleted jobs" scope (soft-deleted records) is restricted to office managers.
+        if ($filters['list_scope'] === CrmConstants::JOB_LIST_SCOPE_DELETED
+            && ! CrmPermissions::isOfficeManager($request->user())) {
+            $filters['list_scope'] = '';
+        }
+
         $jobs = $this->jobManagementService->paginatedJobs(
             $filters,
             (int) config('mowing.default_pagination', 15)
@@ -400,6 +409,42 @@ class JobManagementController extends Controller
         ]);
     }
 
+    public function bulkRestore(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'job_ids' => ['required', 'array', 'min:1'],
+            'job_ids.*' => ['integer', 'distinct'],
+        ]);
+
+        $jobs = $this->jobsForBulkAction($validated['job_ids'], 'restore', withTrashed: true);
+        $restoredCount = $this->jobManagementService->restoreJobs($request->user(), $jobs);
+
+        return response()->json([
+            'message' => $restoredCount === 1
+                ? 'Job restored successfully.'
+                : 'Selected jobs restored successfully.',
+            'restored_count' => $restoredCount,
+        ]);
+    }
+
+    public function bulkForceDestroy(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'job_ids' => ['required', 'array', 'min:1'],
+            'job_ids.*' => ['integer', 'distinct'],
+        ]);
+
+        $jobs = $this->jobsForBulkAction($validated['job_ids'], 'forceDelete', withTrashed: true);
+        $deletedCount = $this->jobManagementService->forceDeleteJobs($request->user(), $jobs);
+
+        return response()->json([
+            'message' => $deletedCount === 1
+                ? 'Job permanently deleted.'
+                : 'Selected jobs permanently deleted.',
+            'deleted_count' => $deletedCount,
+        ]);
+    }
+
     public function exportExcel(Request $request): StreamedResponse
     {
         $this->authorize('viewAny', Job::class);
@@ -449,34 +494,48 @@ class JobManagementController extends Controller
         return response()->json(['message' => 'Remarks updated successfully.']);
     }
 
-    public function verify(Request $request, Job $job): JsonResponse
+    // single-job verify removed; use bulkVerify for single and bulk operations
+
+    public function bulkVerify(Request $request): JsonResponse
     {
-        $this->authorize('verify', $job);
+        $validated = $request->validate([
+            'job_ids' => ['required', 'array', 'min:1'],
+            'job_ids.*' => ['integer', 'distinct'],
+            'verified' => ['sometimes', 'boolean'],
+        ]);
 
         $verified = $request->boolean('verified', true);
 
+        $jobs = $this->jobsForBulkAction($validated['job_ids'], 'verify');
+
         if ($verified) {
-            $unmet = [];
-            if ($job->status !== JobWorkflowStatus::COMPLETED->value) {
-                $unmet[] = 'the job status is Completed';
-            }
-            if ($job->payment_status !== JobOperationalPaymentStatus::RECEIVED->value) {
-                $unmet[] = 'the payment status is Received';
-            }
-            if ($unmet !== []) {
+            $eligible = $jobs->filter(fn (Job $job): bool => $this->jobVerificationErrors($job) === [])->values();
+
+            if ($eligible->isEmpty()) {
                 return response()->json([
-                    'message' => 'Cannot verify until '.implode(' and ', $unmet).'.',
+                    'message' => 'None of the selected jobs can be verified. Jobs must be Completed with payment Received.',
                 ], 422);
             }
+
+            $this->jobManagementService->verifyJobs($request->user(), $eligible, true);
+        } else {
+            // Un-verify selected jobs (no precondition checks)
+            $eligible = $jobs;
+            $this->jobManagementService->verifyJobs($request->user(), $jobs, false);
         }
 
-        $this->jobManagementService->setJobVerification($request->user(), $job, $verified);
+        $skipped = $jobs->count() - $eligible->count();
+        $message = $eligible->count() === 1
+            ? ($verified ? 'Job verified successfully.' : 'Job verification removed.')
+            : ($verified ? $eligible->count().' jobs verified successfully.' : $eligible->count().' job verifications removed.');
+        if ($skipped > 0 && $verified) {
+            $message .= ' '.$skipped.' skipped (not Completed or payment not Received).';
+        }
 
         return response()->json([
-            'message' => $verified ? 'Job verified successfully.' : 'Job verification removed.',
-            'verified' => $verified,
-            'verified_by' => $job->verifier?->name,
-            'verified_at' => $job->verified_at?->format('d M Y g:i A'),
+            'message' => $message,
+            'verified_count' => $eligible->count(),
+            'skipped_count' => $skipped,
         ]);
     }
 
@@ -520,14 +579,35 @@ class JobManagementController extends Controller
     }
 
     /**
+     * Unmet verification preconditions for a job, as human-readable phrases.
+     *
+     * @return array<int, string>
+     */
+    private function jobVerificationErrors(Job $job): array
+    {
+        $unmet = [];
+
+        if ($job->status !== JobWorkflowStatus::COMPLETED->value) {
+            $unmet[] = 'the job status is Completed';
+        }
+
+        if ($job->payment_status !== JobOperationalPaymentStatus::RECEIVED->value) {
+            $unmet[] = 'the payment status is Received';
+        }
+
+        return $unmet;
+    }
+
+    /**
      * @param  array<int, int>  $jobIds
      * @return Collection<int, Job>
      */
-    private function jobsForBulkAction(array $jobIds, string $ability): Collection
+    private function jobsForBulkAction(array $jobIds, string $ability, bool $withTrashed = false): Collection
     {
         $jobIds = array_values(array_unique(array_map('intval', $jobIds)));
 
         $jobs = Job::query()
+            ->when($withTrashed, fn ($query) => $query->onlyTrashed())
             ->whereIn('id', $jobIds)
             ->get()
             ->keyBy('id');

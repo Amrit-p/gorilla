@@ -235,9 +235,9 @@ class JobManagementTest extends TestCase
         $job = $this->createVerifiableJob();
 
         $this->actingAs($this->admin)
-            ->postJson(route('admin.jobs.verify', $job), ['verified' => 1])
+            ->postJson(route('admin.jobs.bulk.verify'), ['job_ids' => [$job->id], 'verified' => 1])
             ->assertOk()
-            ->assertJsonPath('verified', true)
+            ->assertJsonPath('verified_count', 1)
             ->assertJsonPath('message', 'Job verified successfully.');
 
         $job->refresh();
@@ -251,9 +251,9 @@ class JobManagementTest extends TestCase
         $job->update(['status' => JobWorkflowStatus::STARTED->value]);
 
         $this->actingAs($this->admin)
-            ->postJson(route('admin.jobs.verify', $job), ['verified' => 1])
+            ->postJson(route('admin.jobs.bulk.verify'), ['job_ids' => [$job->id], 'verified' => 1])
             ->assertStatus(422)
-            ->assertJsonPath('message', 'Cannot verify until the job status is Completed.');
+            ->assertJsonPath('message', 'None of the selected jobs can be verified. Jobs must be Completed with payment Received.');
 
         $this->assertNull($job->refresh()->verified_at);
     }
@@ -264,9 +264,9 @@ class JobManagementTest extends TestCase
         $job->update(['payment_status' => JobOperationalPaymentStatus::PENDING->value]);
 
         $this->actingAs($this->admin)
-            ->postJson(route('admin.jobs.verify', $job), ['verified' => 1])
+            ->postJson(route('admin.jobs.bulk.verify'), ['job_ids' => [$job->id], 'verified' => 1])
             ->assertStatus(422)
-            ->assertJsonPath('message', 'Cannot verify until the payment status is Received.');
+            ->assertJsonPath('message', 'None of the selected jobs can be verified. Jobs must be Completed with payment Received.');
 
         $this->assertNull($job->refresh()->verified_at);
     }
@@ -281,7 +281,7 @@ class JobManagementTest extends TestCase
         $job = $this->createVerifiableJob();
 
         $this->actingAs($this->admin)
-            ->postJson(route('admin.jobs.verify', $job), ['verified' => 1])
+            ->postJson(route('admin.jobs.bulk.verify'), ['job_ids' => [$job->id], 'verified' => 1])
             ->assertOk();
 
         Notification::assertSentTo($otherManager, JobVerifiedNotification::class);
@@ -297,9 +297,9 @@ class JobManagementTest extends TestCase
         ])->save();
 
         $this->actingAs($this->admin)
-            ->postJson(route('admin.jobs.verify', $job), ['verified' => 0])
+            ->postJson(route('admin.jobs.bulk.verify'), ['job_ids' => [$job->id], 'verified' => 0])
             ->assertOk()
-            ->assertJsonPath('verified', false)
+            ->assertJsonPath('verified_count', 1)
             ->assertJsonPath('message', 'Job verification removed.');
 
         $job->refresh();
@@ -307,15 +307,163 @@ class JobManagementTest extends TestCase
         $this->assertNull($job->verified_by);
     }
 
+    public function test_bulk_verify_verifies_eligible_jobs_and_skips_others(): void
+    {
+        $eligible = $this->createVerifiableJob();
+        $ineligible = $this->createJob();
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.jobs.bulk.verify'), [
+                'job_ids' => [$eligible->id, $ineligible->id],
+            ])
+            ->assertOk()
+            ->assertJsonPath('verified_count', 1)
+            ->assertJsonPath('skipped_count', 1);
+
+        $this->assertNotNull($eligible->refresh()->verified_at);
+        $this->assertNull($ineligible->refresh()->verified_at);
+    }
+
+    public function test_bulk_verify_fails_when_no_jobs_eligible(): void
+    {
+        $job = $this->createJob();
+
+        $this->withoutExceptionHandling();
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.jobs.bulk.verify'), [
+                'job_ids' => [$job->id],
+            ])
+            ->assertStatus(422);
+
+        $this->assertNull($job->refresh()->verified_at);
+    }
+
+    public function test_mower_cannot_bulk_verify_jobs(): void
+    {
+        $job = $this->createVerifiableJob();
+
+        $this->actingAs($this->mower)
+            ->postJson(route('admin.jobs.bulk.verify'), [
+                'job_ids' => [$job->id],
+            ])
+            ->assertForbidden();
+
+        $this->assertNull($job->refresh()->verified_at);
+    }
+
     public function test_mower_cannot_verify_a_job(): void
     {
         $job = $this->createJob();
 
         $this->actingAs($this->mower)
-            ->postJson(route('admin.jobs.verify', $job), ['verified' => 1])
+            ->postJson(route('admin.jobs.bulk.verify'), ['job_ids' => [$job->id], 'verified' => 1])
             ->assertForbidden();
 
         $this->assertNull($job->refresh()->verified_at);
+    }
+
+    public function test_bulk_delete_soft_deletes_jobs(): void
+    {
+        $job = $this->createJob();
+
+        $this->actingAs($this->admin)
+            ->deleteJson(route('admin.jobs.bulk.destroy'), ['job_ids' => [$job->id]])
+            ->assertOk()
+            ->assertJsonPath('deleted_count', 1);
+
+        $this->assertNotNull(Job::withTrashed()->find($job->id)->deleted_at);
+        $this->assertNull(Job::query()->find($job->id));
+    }
+
+    public function test_completed_unverified_scope_returns_only_completed_jobs_without_verification(): void
+    {
+        $unverified = $this->createVerifiableJob();
+        $verified = $this->createVerifiableJob();
+        $verified->forceFill(['verified_at' => now(), 'verified_by' => $this->admin->id])->save();
+        $pending = $this->createJob();
+
+        $response = $this->actingAs($this->admin)
+            ->getJson(route('admin.jobs.index', ['list_scope' => 'completed_unverified']))
+            ->assertOk();
+
+        $html = (string) $response->json('html');
+        $this->assertStringContainsString('data-job-id="'.$unverified->id.'"', $html);
+        $this->assertStringNotContainsString('data-job-id="'.$verified->id.'"', $html);
+        $this->assertStringNotContainsString('data-job-id="'.$pending->id.'"', $html);
+    }
+
+    public function test_office_manager_can_view_deleted_jobs_scope(): void
+    {
+        $activeJob = $this->createJob();
+        $deletedJob = $this->createJob();
+        $deletedJob->delete();
+
+        $response = $this->actingAs($this->admin)
+            ->getJson(route('admin.jobs.index', ['list_scope' => 'deleted']))
+            ->assertOk();
+
+        $html = (string) $response->json('html');
+        $this->assertStringContainsString('data-job-id="'.$deletedJob->id.'"', $html);
+        $this->assertStringNotContainsString('data-job-id="'.$activeJob->id.'"', $html);
+    }
+
+    public function test_mower_cannot_view_deleted_jobs_scope(): void
+    {
+        $activeJob = $this->createJob();
+        $deletedJob = $this->createJob();
+        $deletedJob->delete();
+
+        $response = $this->actingAs($this->mower)
+            ->getJson(route('admin.jobs.index', ['list_scope' => 'deleted']))
+            ->assertOk();
+
+        $html = (string) $response->json('html');
+        $this->assertStringContainsString('data-job-id="'.$activeJob->id.'"', $html);
+        $this->assertStringNotContainsString('data-job-id="'.$deletedJob->id.'"', $html);
+    }
+
+    public function test_office_manager_can_restore_a_deleted_job(): void
+    {
+        $job = $this->createJob();
+        $job->delete();
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.jobs.bulk.restore'), ['job_ids' => [$job->id]])
+            ->assertOk()
+            ->assertJsonPath('restored_count', 1);
+
+        $this->assertDatabaseHas('service_jobs', ['id' => $job->id, 'deleted_at' => null]);
+    }
+
+    public function test_office_manager_can_permanently_delete_a_job(): void
+    {
+        $job = $this->createJob();
+        $job->delete();
+
+        $this->actingAs($this->admin)
+            ->deleteJson(route('admin.jobs.bulk.force-destroy'), ['job_ids' => [$job->id]])
+            ->assertOk()
+            ->assertJsonPath('deleted_count', 1);
+
+        $this->assertDatabaseMissing('service_jobs', ['id' => $job->id]);
+    }
+
+    public function test_mower_cannot_restore_or_force_delete_jobs(): void
+    {
+        $job = $this->createJob();
+        $job->delete();
+
+        $this->actingAs($this->mower)
+            ->postJson(route('admin.jobs.bulk.restore'), ['job_ids' => [$job->id]])
+            ->assertForbidden();
+
+        $this->actingAs($this->mower)
+            ->deleteJson(route('admin.jobs.bulk.force-destroy'), ['job_ids' => [$job->id]])
+            ->assertForbidden();
+
+        $this->assertNotNull(Job::withTrashed()->find($job->id)->deleted_at);
+        $this->assertDatabaseHas('service_jobs', ['id' => $job->id]);
     }
 
     private function createJob(): Job

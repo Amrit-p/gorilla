@@ -96,12 +96,15 @@ class JobManagementService
             'jobLevels' => JobLevel::query()->active()->ordered()->get(['id', 'name', 'color_code']),
             'zones' => Zone::query()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(['id', 'name']),
             'workflowStatuses' => JobWorkflowStatus::values(),
-            'listScopes' => [
+            'listScopes' => array_merge([
                 'today' => 'Today',
                 'upcoming' => 'Upcoming',
                 'done' => 'Done',
+                'completed_unverified' => 'Completed but not verified',
                 'hold' => 'Hold',
-            ],
+            ], CrmPermissions::isOfficeManager(auth()->user()) ? [
+                'deleted' => 'Deleted jobs',
+            ] : []),
             'selectedClient' => $selectedClient,
             'mowerWorkloads' => $this->mowerAssignmentService->mowerWorkloads(now()->toDateString()),
         ];
@@ -259,32 +262,59 @@ class JobManagementService
         return $freshJobs;
     }
 
-    public function setJobVerification(User $actor, Job $job, bool $verified): Job
+    /**
+     * Verify or unverify a collection of jobs.
+     *
+     * @param  Collection<int, Job>  $jobs
+     */
+    public function verifyJobs(User $actor, Collection $jobs, bool $verified = true): Collection
     {
-        $job->verified_at = $verified ? now() : null;
-        $job->verified_by = $verified ? $actor->id : null;
-        $job->save();
+        if ($jobs->isEmpty()) {
+            return $jobs;
+        }
 
-        $this->activityLogService->log(
-            $actor,
-            $verified ? 'job.verified' : 'job.verification_removed',
-            $verified ? 'Job verified.' : 'Job verification removed.',
-            ['job_id' => $job->id],
-        );
+        DB::transaction(function () use ($actor, $jobs, $verified): void {
+            $jobs->each(function (Job $job) use ($actor, $verified): void {
+                $job->verified_at = $verified ? now() : null;
+                $job->verified_by = $verified ? $actor->id : null;
+                $job->save();
+
+                $this->activityLogService->log(
+                    $actor,
+                    $verified ? 'job.verified' : 'job.verification_removed',
+                    $verified ? 'Job verified.' : 'Job verification removed.',
+                    ['job_id' => $job->id],
+                );
+            });
+        });
 
         if ($verified) {
             User::query()
                 ->role([CrmRoles::OFFICE_MANAGER])
                 ->where('id', '!=', $actor->id)
                 ->get()
-                ->each(function (User $manager) use ($job, $actor): void {
-                    $manager->notify(new JobVerifiedNotification($job, $actor));
+                ->each(function (User $manager) use ($jobs, $actor): void {
+                    $jobs->each(function (Job $job) use ($manager, $actor): void {
+                        $manager->notify(new JobVerifiedNotification($job, $actor));
+                    });
                     OptimizationHelper::forgetNotificationUnreadCount($manager->id);
                 });
         }
 
-        return $job->load('verifier');
+        // Reload jobs as an Eloquent collection with `verifier` relation,
+        // preserving the original ordering of the provided collection.
+        $ids = $jobs->pluck('id')->all();
+        $fresh = Job::with('verifier')->whereIn('id', $ids)->get()->keyBy('id');
+        $ordered = collect($ids)->map(fn (int $id) => $fresh->get($id));
+
+        return $ordered;
     }
+
+    /**
+     * @param  Collection<int, Job>  $jobs
+     * @return Collection<int, Job>
+     */
+    
 
     public function updateJobsStatus(User $actor, Collection $jobs, string $status): Collection
     {
@@ -366,6 +396,43 @@ class JobManagementService
     {
         DB::transaction(function () use ($actor, $jobs): void {
             $jobs->each(fn (Job $job) => $this->deleteJob($actor, $job));
+        });
+
+        return $jobs->count();
+    }
+
+    public function restoreJob(User $actor, Job $job): void
+    {
+        $job->restore();
+        $this->activityLogService->log($actor, 'job.restored', 'Job restored.', ['job_id' => $job->id]);
+    }
+
+    /**
+     * @param  Collection<int, Job>  $jobs
+     */
+    public function restoreJobs(User $actor, Collection $jobs): int
+    {
+        DB::transaction(function () use ($actor, $jobs): void {
+            $jobs->each(fn (Job $job) => $this->restoreJob($actor, $job));
+        });
+
+        return $jobs->count();
+    }
+
+    public function forceDeleteJob(User $actor, Job $job): void
+    {
+        $jobId = $job->id;
+        $job->forceDelete();
+        $this->activityLogService->log($actor, 'job.force_deleted', 'Job permanently deleted.', ['job_id' => $jobId]);
+    }
+
+    /**
+     * @param  Collection<int, Job>  $jobs
+     */
+    public function forceDeleteJobs(User $actor, Collection $jobs): int
+    {
+        DB::transaction(function () use ($actor, $jobs): void {
+            $jobs->each(fn (Job $job) => $this->forceDeleteJob($actor, $job));
         });
 
         return $jobs->count();

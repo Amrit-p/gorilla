@@ -17,6 +17,10 @@ final class CrmConstants
 
     public const JOB_LIST_SCOPE_HOLD = 'hold';
 
+    public const JOB_LIST_SCOPE_COMPLETED_UNVERIFIED = 'completed_unverified';
+
+    public const JOB_LIST_SCOPE_DELETED = 'deleted';
+
     public const MOWER_SCOPE_TODAY = 'today';
 
     public const MOWER_SCOPE_UPCOMING = 'upcoming';

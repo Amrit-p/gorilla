@@ -34,6 +34,16 @@ class JobPolicy
         return CrmPermissions::canManageJobRecords($user);
     }
 
+    public function restore(User $user, Job $job): bool
+    {
+        return CrmPermissions::canManageJobRecords($user);
+    }
+
+    public function forceDelete(User $user, Job $job): bool
+    {
+        return CrmPermissions::canManageJobRecords($user);
+    }
+
     public function assign(User $user, Job $job): bool
     {
         return CrmPermissions::canAssignJobs($user);

@@ -237,12 +237,14 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
         Route::get('/admin/jobs/{job}/edit', [JobManagementController::class, 'edit'])->name('admin.jobs.edit');
         Route::patch('/admin/jobs/{job}', [JobManagementController::class, 'update'])->name('admin.jobs.update');
         Route::patch('/admin/jobs/{job}/remarks', [JobManagementController::class, 'updateRemarks'])->name('admin.jobs.remarks.update');
-        Route::post('/admin/jobs/{job}/verify', [JobManagementController::class, 'verify'])->name('admin.jobs.verify');
         Route::post('/admin/jobs/bulk/assign', [JobManagementController::class, 'bulkAssignEmployees'])->name('admin.jobs.bulk.assign');
         Route::post('/admin/jobs/bulk/contract', [JobManagementController::class, 'bulkAssignContract'])->name('admin.jobs.bulk.contract');
         Route::post('/admin/jobs/bulk/status', [JobManagementController::class, 'bulkUpdateStatus'])->name('admin.jobs.bulk.status.update');
+        Route::post('/admin/jobs/bulk/verify', [JobManagementController::class, 'bulkVerify'])->name('admin.jobs.bulk.verify');
         Route::post('/admin/jobs/bulk/schedule', [JobManagementController::class, 'bulkScheduleJobs'])->name('admin.jobs.bulk.schedule');
         Route::delete('/admin/jobs/bulk', [JobManagementController::class, 'bulkDestroy'])->name('admin.jobs.bulk.destroy');
+        Route::post('/admin/jobs/bulk/restore', [JobManagementController::class, 'bulkRestore'])->name('admin.jobs.bulk.restore');
+        Route::delete('/admin/jobs/bulk/force', [JobManagementController::class, 'bulkForceDestroy'])->name('admin.jobs.bulk.force-destroy');
         Route::post('/admin/jobs/reorder', [JobManagementController::class, 'reorder'])->name('admin.jobs.reorder');
         Route::post('/admin/jobs/{job}/images', [JobManagementController::class, 'uploadImages'])
             ->middleware('crm.permission:'.CrmPermissions::UPLOAD_JOB_IMAGES)

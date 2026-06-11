@@ -113,11 +113,25 @@
 <script>
     if (typeof crmDropdown === 'function') crmDropdown('.job-actions-btn', '.job-actions-menu');
 
+    let jobAlertTimer;
+
     function showJobAlert(message, isError = false) {
         const baseClass = isError ?
-            'rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700' :
-            'rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700';
-        $('#job-alert').removeClass('hidden').attr('class', baseClass).text(message);
+            'rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 shadow-lg' :
+            'rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 shadow-lg';
+        const $box = $('#job-alert-box');
+        if ($box.length) {
+            // Fixed top-right toast: style the inner box so the container keeps its positioning.
+            $box.attr('class', baseClass).text(message);
+            $('#job-alert').removeClass('hidden');
+        } else {
+            // Legacy inline alert (no inner box).
+            $('#job-alert').removeClass('hidden').attr('class', baseClass).text(message);
+        }
+        clearTimeout(jobAlertTimer);
+        jobAlertTimer = setTimeout(function() {
+            $('#job-alert').addClass('hidden');
+        }, 4000);
     }
 
     function openModal(id) {
@@ -507,6 +521,38 @@
         });
     }
 
+    function restoreJobs(ids) {
+        $.ajax({
+            url: "{{ route('admin.jobs.bulk.restore') }}",
+            method: 'POST',
+            data: { _token: "{{ csrf_token() }}", job_ids: ids },
+            headers: { Accept: 'application/json' },
+            success: function(res) {
+                showJobAlert(res.message || (ids.length > 1 ? 'Restored selected jobs.' : 'Job restored.'));
+                refreshJobsTable();
+            },
+            error: function() {
+                showJobAlert('Failed to restore job' + (ids.length > 1 ? 's' : '') + '.', true);
+            }
+        });
+    }
+
+    function forceDeleteJobs(ids) {
+        $.ajax({
+            url: "{{ route('admin.jobs.bulk.force-destroy') }}",
+            method: 'POST',
+            data: { _token: "{{ csrf_token() }}", _method: 'DELETE', job_ids: ids },
+            headers: { Accept: 'application/json' },
+            success: function(res) {
+                showJobAlert(res.message || (ids.length > 1 ? 'Permanently deleted selected jobs.' : 'Job permanently deleted.'));
+                refreshJobsTable();
+            },
+            error: function() {
+                showJobAlert('Failed to permanently delete job' + (ids.length > 1 ? 's' : '') + '.', true);
+            }
+        });
+    }
+
     $('#assign-job-form').on('submit', function(e) {
         e.preventDefault();
         const ids = $(this).data('jobIds') || [];
@@ -514,26 +560,32 @@
             ids.length > 1 ? 'Assigned selected jobs.' : 'Job assigned.', 'Failed to assign.');
     });
 
-    $(document).on('click', '.status-job', function() {
-        markModalBulkContext($('#status-job-form'), [Number($(this).data('id'))], 'Status update');
-        $('#status-job-form').find('[name="status"]').val($(this).data('status') || 'Started');
-        openModal('status-job-modal');
-    });
+    function verifyJobs(ids, verified = 1) {
+        if (!ids || !ids.length) return;
 
-    $(document).on('click', '#job-bulk-status', function() {
-        const ids = selectedJobIds();
-        if (!ids.length) return;
-        markModalBulkContext($('#status-job-form'), ids, 'Status update');
-        openModal('status-job-modal');
-    });
+        $.ajax({
+            url: "{{ route('admin.jobs.bulk.verify') }}",
+            method: 'POST',
+            data: { _token: "{{ csrf_token() }}", job_ids: ids, verified: verified },
+            headers: { Accept: 'application/json' },
+            success: function(res) {
+                showJobAlert(res.message || (ids.length > 1 ? 'Selected jobs verified.' : 'Job verification updated.'));
+                refreshJobsTable();
+            },
+            error: function(xhr) {
+                showJobAlert(xhr.responseJSON?.message || 'Failed to verify selected jobs.', true);
+            }
+        });
+    }
 
-    $('#status-job-form').on('submit', function(e) {
-        e.preventDefault();
-        const ids = $(this).data('jobIds') || [];
-        submitBulkForm($(this), "{{ route('admin.jobs.bulk.status.update') }}", 'status-job-modal',
-            ids.length > 1 ? 'Updated selected job statuses.' : 'Job status updated.', 'Failed to update status.');
-    });
+    $(document).on('click', '.verify-job', function() {
+        const $btn     = $(this);
+        const id       = Number($btn.data('id'));
+        const verified = String($btn.data('verified')) === '1';
+        if (verified && !confirm('Remove verification from this job?')) return;
 
+        verifyJobs([id], verified ? 0 : 1);
+    });
     $(document).on('click', '.schedule-job', function() {
         const $btn     = $(this);
         const jobId    = Number($btn.data('id'));
@@ -625,6 +677,38 @@
         if (!ids.length) return;
         if (!confirm('Delete ' + ids.length + ' selected jobs?')) return;
         deleteJobs(ids);
+    });
+
+    $(document).on('click', '#job-bulk-verify', function() {
+        const ids = selectedJobIds();
+        if (!ids.length) return;
+        if (!confirm('Verify ' + ids.length + ' selected job' + (ids.length > 1 ? 's' : '') + '?')) return;
+
+        verifyJobs(ids, 1);
+    });
+
+    $(document).on('click', '.restore-job', function() {
+        if (!confirm('Restore this job?')) return;
+        restoreJobs([Number($(this).data('id'))]);
+    });
+
+    $(document).on('click', '#job-bulk-restore', function() {
+        const ids = selectedJobIds();
+        if (!ids.length) return;
+        if (!confirm('Restore ' + ids.length + ' selected jobs?')) return;
+        restoreJobs(ids);
+    });
+
+    $(document).on('click', '.force-delete-job', function() {
+        if (!confirm('Permanently delete this job? This cannot be undone.')) return;
+        forceDeleteJobs([Number($(this).data('id'))]);
+    });
+
+    $(document).on('click', '#job-bulk-force-delete', function() {
+        const ids = selectedJobIds();
+        if (!ids.length) return;
+        if (!confirm('Permanently delete ' + ids.length + ' selected jobs? This cannot be undone.')) return;
+        forceDeleteJobs(ids);
     });
 
     // ── Follow Up modal ─────────────────────────────────────────────────────
