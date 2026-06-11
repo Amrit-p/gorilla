@@ -11,14 +11,17 @@ use App\Enums\LeadPaymentStatus;
 use App\Enums\LeadStatus;
 use App\Enums\LeadWeedSpray;
 use App\Enums\UserEfficiency;
+use App\Models\Checklist;
 use App\Models\Client;
 use App\Models\EquipmentType;
 use App\Models\Job;
 use App\Models\Lead;
+use App\Models\MowerChecklistSubmission;
 use App\Models\User;
 use App\Services\DashboardAnalyticsService;
 use App\Support\CrmRoles;
 use App\Support\ServiceTypes;
+use Database\Seeders\ChecklistSeeder;
 use Database\Seeders\MasterCatalogSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -35,6 +38,7 @@ class DashboardAnalyticsTest extends TestCase
         parent::setUp();
         $this->seed(RoleAndPermissionSeeder::class);
         $this->seed(MasterCatalogSeeder::class);
+        $this->seed(ChecklistSeeder::class);
         $this->admin = User::query()->where('email', 'admin@mowingcrm.test')->firstOrFail();
     }
 
@@ -110,13 +114,15 @@ class DashboardAnalyticsTest extends TestCase
             ->assertOk()
             ->assertSee('Today', false)
             ->assertSee('Completed hours', false)
-            ->assertSee('Pending jobs', false);
+            ->assertSee('Total upcoming', false);
+
+        $this->completeChecklistForMower($mower);
 
         $this->actingAs($mower)
             ->get(route('mower.index'))
             ->assertOk()
             ->assertSee('Hours', false)
-            ->assertSee('Pending', false);
+            ->assertSee('Total Upcoming', false);
     }
 
     public function test_analytics_service_caches_admin_payload(): void
@@ -126,6 +132,20 @@ class DashboardAnalyticsTest extends TestCase
         $second = $service->admin();
 
         $this->assertSame($first['cards']['jobs_today']['value'], $second['cards']['jobs_today']['value']);
+    }
+
+    private function completeChecklistForMower(User $mower): void
+    {
+        $checklist = Checklist::safetyChecklist();
+        $today = now()->toDateString();
+
+        foreach ($checklist->points as $point) {
+            MowerChecklistSubmission::create([
+                'user_id' => $mower->id,
+                'checklist_point_id' => $point->id,
+                'date' => $today,
+            ]);
+        }
     }
 
     private function userWithRole(string $roleLabel): User

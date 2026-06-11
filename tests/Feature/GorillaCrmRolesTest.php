@@ -2,9 +2,16 @@
 
 namespace Tests\Feature;
 
+use App\Enums\JobWorkflowStatus;
+use App\Models\Checklist;
+use App\Models\Client;
+use App\Models\Job;
+use App\Models\MowerChecklistSubmission;
 use App\Models\User;
 use App\Support\CrmPermissions;
 use App\Support\CrmRoles;
+use Database\Seeders\ChecklistSeeder;
+use Database\Seeders\MasterCatalogSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
@@ -18,7 +25,21 @@ class GorillaCrmRolesTest extends TestCase
     {
         parent::setUp();
         $this->seed(RoleAndPermissionSeeder::class);
-        $this->seed(\Database\Seeders\MasterCatalogSeeder::class);
+        $this->seed(MasterCatalogSeeder::class);
+        $this->seed(ChecklistSeeder::class);
+    }
+
+    private function completeChecklistForMower(User $user): void
+    {
+        $checklist = Checklist::safetyChecklist();
+
+        foreach ($checklist->points as $point) {
+            MowerChecklistSubmission::create([
+                'user_id' => $user->id,
+                'checklist_point_id' => $point->id,
+                'date' => now()->toDateString(),
+            ]);
+        }
     }
 
     private function userWithRole(string $roleLabel): User
@@ -96,6 +117,7 @@ class GorillaCrmRolesTest extends TestCase
     public function test_mower_can_view_jobs_and_mobile_but_not_create_jobs(): void
     {
         $user = $this->userWithRole(CrmRoles::MOWER);
+        $this->completeChecklistForMower($user);
 
         $this->actingAs($user)->get(route('dashboard.index'))->assertOk();
         $this->actingAs($user)->get(route('admin.jobs.index'))->assertOk();
@@ -136,7 +158,7 @@ class GorillaCrmRolesTest extends TestCase
     public function test_job_policy_upload_images_for_mower(): void
     {
         $mower = $this->userWithRole(CrmRoles::MOWER);
-        $client = \App\Models\Client::query()->create([
+        $client = Client::query()->create([
             'name' => 'Test Client',
             'address' => '1 Test St',
             'service_types' => ['Mulching'],
@@ -147,14 +169,14 @@ class GorillaCrmRolesTest extends TestCase
             'payment_mode' => 'Cash',
             'payment_status' => 'Pending',
         ]);
-        $job = \App\Models\Job::query()->create([
+        $job = Job::query()->create([
             'client_id' => $client->id,
             'client_address' => '1 Test St',
             'scheduled_date' => now()->addDay()->toDateString(),
             'scheduled_time' => '09:00',
             'estimated_duration_minutes' => 60,
             'required_services' => ['Mulching'],
-            'status' => \App\Enums\JobWorkflowStatus::STARTED->value,
+            'status' => JobWorkflowStatus::STARTED->value,
             'priority' => 'Medium',
             'payment_mode' => 'Cash',
             'payment_status' => 'Received',

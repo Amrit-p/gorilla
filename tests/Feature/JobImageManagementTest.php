@@ -3,17 +3,21 @@
 namespace Tests\Feature;
 
 use App\Enums\JobCustomerType;
+use App\Enums\JobImageKind;
 use App\Enums\JobOperationalPaymentMode;
 use App\Enums\JobOperationalPaymentStatus;
 use App\Enums\JobParkingStatus;
 use App\Enums\JobWorkflowStatus;
 use App\Enums\UserEfficiency;
+use App\Models\Checklist;
 use App\Models\Client;
 use App\Models\Job;
+use App\Models\MowerChecklistSubmission;
 use App\Models\User;
 use App\Services\JobImageManagementService;
 use App\Support\CrmRoles;
 use App\Support\ServiceTypes;
+use Database\Seeders\ChecklistSeeder;
 use Database\Seeders\MasterCatalogSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -36,6 +40,7 @@ class JobImageManagementTest extends TestCase
         parent::setUp();
         $this->seed(RoleAndPermissionSeeder::class);
         $this->seed(MasterCatalogSeeder::class);
+        $this->seed(ChecklistSeeder::class);
 
         $this->admin = User::query()->where('email', 'admin@mowingcrm.test')->firstOrFail();
         $this->mower = User::factory()->create([
@@ -49,6 +54,9 @@ class JobImageManagementTest extends TestCase
             'efficiency' => UserEfficiency::GOOD->value,
         ]);
         $this->otherMower->assignRole(CrmRoles::MOWER);
+
+        $this->completeChecklistForMower($this->mower);
+        $this->completeChecklistForMower($this->otherMower);
     }
 
     public function test_upload_stores_compressed_full_and_thumbnail_under_jobs_path(): void
@@ -161,7 +169,7 @@ class JobImageManagementTest extends TestCase
         $job = $this->createAssignedJob($this->mower);
 
         $service = app(JobImageManagementService::class);
-        $images = $service->upload($job, \App\Enums\JobImageKind::AFTER, [
+        $images = $service->upload($job, JobImageKind::AFTER, [
             UploadedFile::fake()->image('after.jpg'),
         ], $this->mower);
 
@@ -182,7 +190,7 @@ class JobImageManagementTest extends TestCase
 
         app(JobImageManagementService::class)->upload(
             $job,
-            \App\Enums\JobImageKind::BEFORE,
+            JobImageKind::BEFORE,
             [UploadedFile::fake()->image('present.jpg')],
             $this->mower
         );
@@ -192,6 +200,19 @@ class JobImageManagementTest extends TestCase
         $this->assertCount(1, $presented['before']);
         $this->assertArrayHasKey('url', $presented['before'][0]);
         $this->assertArrayHasKey('thumb_url', $presented['before'][0]);
+    }
+
+    private function completeChecklistForMower(User $user): void
+    {
+        $checklist = Checklist::safetyChecklist();
+
+        foreach ($checklist->points as $point) {
+            MowerChecklistSubmission::create([
+                'user_id' => $user->id,
+                'checklist_point_id' => $point->id,
+                'date' => now()->toDateString(),
+            ]);
+        }
     }
 
     /**

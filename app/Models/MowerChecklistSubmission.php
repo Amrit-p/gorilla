@@ -16,7 +16,7 @@ class MowerChecklistSubmission extends Model
     protected function casts(): array
     {
         return [
-            'date' => 'date',
+            'date' => 'date:Y-m-d',
         ];
     }
 

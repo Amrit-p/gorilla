@@ -3,13 +3,16 @@
 namespace Tests\Feature;
 
 use App\Enums\JobCustomerType;
+use App\Enums\JobImageKind;
 use App\Enums\JobOperationalPaymentMode;
 use App\Enums\JobOperationalPaymentStatus;
 use App\Enums\JobParkingStatus;
 use App\Enums\JobWorkflowStatus;
 use App\Enums\UserEfficiency;
+use App\Models\Checklist;
 use App\Models\Client;
 use App\Models\Job;
+use App\Models\MowerChecklistSubmission;
 use App\Models\User;
 use App\Services\DashboardAnalyticsService;
 use App\Services\JobImageManagementService;
@@ -19,6 +22,7 @@ use App\Support\CrmRoles;
 use App\Support\JobStoredImage;
 use App\Support\QueryFilters\JobListFilter;
 use App\Support\ServiceTypes;
+use Database\Seeders\ChecklistSeeder;
 use Database\Seeders\MasterCatalogSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -37,6 +41,7 @@ class CrmOptimizationTest extends TestCase
         parent::setUp();
         $this->seed(RoleAndPermissionSeeder::class);
         $this->seed(MasterCatalogSeeder::class);
+        $this->seed(ChecklistSeeder::class);
         $this->admin = User::query()->where('email', 'admin@mowingcrm.test')->firstOrFail();
     }
 
@@ -134,7 +139,7 @@ class CrmOptimizationTest extends TestCase
         $second = $service->mower($mower);
 
         $this->assertArrayHasKey('cards', $first);
-        $this->assertSame($first['cards']['todays_jobs']['value'], $second['cards']['todays_jobs']['value']);
+        $this->assertSame($first['cards']['range_jobs']['value'], $second['cards']['range_jobs']['value']);
     }
 
     public function test_job_show_renders_readonly_field_photos(): void
@@ -153,7 +158,7 @@ class CrmOptimizationTest extends TestCase
             ],
         ])->save();
 
-        $presented = app(JobImageManagementService::class)->presentForJob($job->fresh(), \App\Enums\JobImageKind::BEFORE);
+        $presented = app(JobImageManagementService::class)->presentForJob($job->fresh(), JobImageKind::BEFORE);
         $this->assertNotEmpty($presented);
 
         $this->actingAs($this->admin)
@@ -167,6 +172,7 @@ class CrmOptimizationTest extends TestCase
     public function test_mower_status_validation_rejects_invalid_status(): void
     {
         $mower = $this->mowerUser();
+        $this->completeChecklistForMower($mower);
         $job = Job::query()->create($this->jobPayload($this->createClient()->id));
         $job->assignedEmployees()->sync([$mower->id]);
 
@@ -191,6 +197,7 @@ class CrmOptimizationTest extends TestCase
     public function test_mower_layout_uses_mobile_max_width(): void
     {
         $mower = $this->mowerUser();
+        $this->completeChecklistForMower($mower);
 
         $this->actingAs($mower)
             ->get(route('mower.index'))
@@ -207,6 +214,20 @@ class CrmOptimizationTest extends TestCase
 
         $sql = $query->toSql();
         $this->assertStringContainsString('scheduled_date', $sql);
+    }
+
+    private function completeChecklistForMower(User $mower): void
+    {
+        $checklist = Checklist::safetyChecklist();
+        $today = now()->toDateString();
+
+        foreach ($checklist->points as $point) {
+            MowerChecklistSubmission::create([
+                'user_id' => $mower->id,
+                'checklist_point_id' => $point->id,
+                'date' => $today,
+            ]);
+        }
     }
 
     private function mowerUser(): User

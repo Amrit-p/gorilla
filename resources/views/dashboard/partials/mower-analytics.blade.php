@@ -5,10 +5,10 @@
 
 <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
     <x-dashboard.stat-card
-        :label="$cards['todays_jobs']['label']"
-        :value="$cards['todays_jobs']['value']"
-        :subtitle="$cards['todays_jobs']['subtitle']"
-        :accent="$cards['todays_jobs']['accent']"
+        :label="$cards['range_jobs']['label']"
+        :value="$cards['range_jobs']['value']"
+        :subtitle="$cards['range_jobs']['subtitle']"
+        :accent="$cards['range_jobs']['accent']"
     />
     <x-dashboard.stat-card
         :label="$cards['completed_hours']['label']"

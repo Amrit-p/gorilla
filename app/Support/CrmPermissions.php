@@ -134,7 +134,7 @@ final class CrmPermissions
             return false;
         }
 
-        return $user->can(self::MANAGE_JOBS) && $user->can(self::ASSIGN_JOBS);
+        return $user->can(self::MANAGE_JOBS) && $user->can(self::MANAGE_USERS);
     }
 
     public static function canAssignJobs(?User $user): bool
