@@ -104,7 +104,6 @@
         </div>
 
         <x-ui.input label="Date" name="lead_date" type="date" :value="old('lead_date', $leadModel?->lead_date?->format('Y-m-d'))" />
-        <x-ui.input label="Time" name="lead_time" type="time" :value="old('lead_time', $leadModel?->lead_time ? substr((string) $leadModel->lead_time, 0, 5) : null)" />
 
         @isset($salesUsers)
             <div class="sm:col-span-2 border-t border-slate-200 pt-4">

@@ -28,7 +28,6 @@ trait ValidatesLeadIntake
             'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:latitude'],
             'lead_date' => ['nullable', 'date'],
-            'lead_time' => ['nullable', 'date_format:H:i'],
             'service_types' => ['required', 'array', 'min:1'],
             'service_types.*' => ServiceTypes::itemRules(),
             'weed_spray' => ['required', Rule::in(LeadWeedSpray::values())],
