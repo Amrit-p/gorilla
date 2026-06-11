@@ -30,25 +30,6 @@
     />
 </div>
 
-<div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
-    <x-dashboard.chart-panel
-        title="Revenue trend"
-        subtitle="Last 7 days — completed & received"
-        chart-id="admin-revenue-chart"
-        type="bar"
-        :labels="$charts['revenue_trend']['labels'] ?? []"
-        :datasets="$charts['revenue_trend']['datasets'] ?? []"
-    />
-    <x-dashboard.chart-panel
-        title="Jobs by status"
-        subtitle="Scheduled in the last 30 days"
-        chart-id="admin-jobs-status-chart"
-        type="doughnut"
-        :labels="$charts['jobs_by_status']['labels'] ?? []"
-        :datasets="$charts['jobs_by_status']['datasets'] ?? []"
-    />
-</div>
-
 <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
     <h3 class="text-sm font-semibold text-slate-900">Mower performance (MTD)</h3>
     <p class="mt-0.5 text-xs text-slate-500">Completed jobs and logged hours by crew member</p>

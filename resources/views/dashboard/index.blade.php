@@ -28,15 +28,29 @@
 
         <div id="dashboard-alert" class="hidden"></div>
 
+        @if (in_array($dashboardType, ['admin', 'sales']))
+            @include('dashboard.partials.admin-three-week-schedule', ['threeWeekSchedule' => $threeWeekSchedule])
+        @endif
+
         @include('dashboard.partials.quick-actions')
 
         @if ($dashboardType === 'admin')
             @include('dashboard.partials.admin-analytics', ['analytics' => $analytics])
-            @include('dashboard.partials.analytics-tabs')
-            @include('dashboard.partials.admin-three-week-schedule', ['threeWeekSchedule' => $threeWeekSchedule])
+            <div class="grid grid-cols-1 gap-4 xl:grid-cols-3">
+                <div class="xl:col-span-2">
+                    @include('dashboard.partials.analytics-tabs')
+                </div>
+                <x-dashboard.chart-panel
+                    title="Jobs by status"
+                    subtitle="Scheduled in the last 30 days"
+                    chart-id="admin-jobs-status-chart"
+                    type="doughnut"
+                    :labels="$analytics['charts']['jobs_by_status']['labels'] ?? []"
+                    :datasets="$analytics['charts']['jobs_by_status']['datasets'] ?? []"
+                />
+            </div>
         @elseif ($dashboardType === 'sales')
             @include('dashboard.partials.sales-analytics', ['analytics' => $analytics])
-            @include('dashboard.partials.admin-three-week-schedule', ['threeWeekSchedule' => $threeWeekSchedule])
         @else
             @include('dashboard.partials.mower-analytics', ['analytics' => $analytics])
         @endif
@@ -114,24 +128,6 @@
                 @endif
             </div>
 
-        @if ($preferences->show_activity_timeline && $dashboardType === 'admin')
-            <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-                <h2 class="mb-3 text-base font-semibold text-slate-900">Recent activity</h2>
-                <div class="space-y-2">
-                    @forelse ($activityLogs as $activity)
-                        <div class="rounded-md border border-slate-200 p-2">
-                            <p class="text-sm font-medium text-slate-800">{{ $activity->action }}</p>
-                            @if ($activity->description)
-                                <p class="mt-0.5 text-xs text-slate-600">{{ $activity->description }}</p>
-                            @endif
-                            <p class="mt-1 text-xs text-slate-500">{{ $activity->user?->name ?? 'System' }} • {{ $activity->created_at?->diffForHumans() }}</p>
-                        </div>
-                    @empty
-                        <p class="text-sm text-slate-500">No recent activity yet.</p>
-                    @endforelse
-                </div>
-            </div>
-        @endif
     </div>
 
     <x-ui.modal id="dashboard-preferences-modal" title="Dashboard Preferences">
