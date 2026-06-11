@@ -26,7 +26,7 @@ class StoreFollowupRequest extends FormRequest
             'outcome' => ['required', 'string', 'max:5000'],
             'notes' => ['nullable', 'string', 'max:5000'],
             'status' => ['required', Rule::in(FollowupStatus::values())],
-            'next_followup_at' => ['nullable', 'date', 'after:now'],
+            'next_followup_at' => ['nullable', 'date', 'after_or_equal:today'],
         ];
     }
 }

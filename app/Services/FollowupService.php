@@ -46,7 +46,7 @@ class FollowupService
                 'status' => $f->status->value,
                 'status_label' => $f->status->label(),
                 'next_followup_at' => $f->next_followup_at?->format('d M Y H:i'),
-                'next_followup_at_input' => $f->next_followup_at?->format('Y-m-d\TH:i'),
+                'next_followup_at_input' => $f->next_followup_at?->format('Y-m-d'),
                 'created_by' => $f->createdBy?->name,
                 'created_at' => $f->created_at->format('d M Y H:i'),
             ])

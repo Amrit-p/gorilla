@@ -275,7 +275,7 @@
                         </div>
                         <div>
                             <label class="mb-1.5 block text-sm font-medium text-slate-700">Next Follow-Up</label>
-                            <input type="datetime-local" name="next_followup_at"
+                            <input type="date" name="next_followup_at"
                                    class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
                         </div>
                     </div>
