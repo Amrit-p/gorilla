@@ -7,6 +7,7 @@ use App\Enums\JobWorkflowStatus;
 use App\Exports\JobsExport;
 use App\Helpers\OptimizationHelper;
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\EnsureJobIsNotVerified;
 use App\Http\Requests\Admin\AssignJobRequest;
 use App\Http\Requests\Admin\ScheduleJobsRequest;
 use App\Http\Requests\Admin\StoreJobRequest;
@@ -36,7 +37,14 @@ class JobManagementController extends Controller
     public function __construct(
         private readonly JobManagementService $jobManagementService,
         private readonly JobImageManagementService $jobImageManagementService
-    ) {}
+    ) {
+        $this->middleware(EnsureJobIsNotVerified::class)->only([
+            'edit',
+            'update',
+            'updateRemarks',
+            'uploadImages',
+        ]);
+    }
 
     public function index(Request $request): View|JsonResponse
     {
@@ -318,14 +326,20 @@ class JobManagementController extends Controller
     {
         $jobs = $this->jobsForBulkAction($request->validated('job_ids'), 'assign');
 
+        $eligible = $jobs->reject(fn (Job $job): bool => $job->isVerified())->values();
+
+        if ($eligible->isEmpty()) {
+            return response()->json(['message' => 'The selected job(s) have been verified and employees cannot be assigned.'], 422);
+        }
+
         $updatedJobs = $this->jobManagementService->assignEmployeesToJobs(
             $request->user(),
-            $jobs,
+            $eligible,
             $request->validated('done_by_user_id', null),
             $request->validated('employee_ids', []),
         );
 
-        if ($updatedJobs->count() !== $jobs->count()) {
+        if ($updatedJobs->count() !== $eligible->count()) {
             return response()->json(['message' => 'Failed to assign selected jobs.'], 500);
         }
 
@@ -347,10 +361,16 @@ class JobManagementController extends Controller
 
         $jobs = $this->jobsForBulkAction($validated['job_ids'], 'assign');
 
-        Job::query()->whereIn('id', $jobs->pluck('id'))->update(['contract_id' => $validated['contract_id']]);
+        $eligible = $jobs->reject(fn (Job $job): bool => $job->isVerified())->values();
+
+        if ($eligible->isEmpty()) {
+            return response()->json(['message' => 'The selected job(s) have been verified and a contract cannot be assigned.'], 422);
+        }
+
+        Job::query()->whereIn('id', $eligible->pluck('id'))->update(['contract_id' => $validated['contract_id']]);
 
         return response()->json([
-            'message' => $jobs->count() === 1
+            'message' => $eligible->count() === 1
                 ? 'Contract assigned successfully.'
                 : 'Contract assigned to selected jobs successfully.',
         ]);
@@ -359,9 +379,16 @@ class JobManagementController extends Controller
     public function bulkUpdateStatus(UpdateJobStatusRequest $request): JsonResponse
     {
         $jobs = $this->jobsForBulkAction($request->validated('job_ids'), 'transitionStatus');
+
+        $eligible = $jobs->reject(fn (Job $job): bool => $job->isVerified())->values();
+
+        if ($eligible->isEmpty()) {
+            return response()->json(['message' => 'The selected job(s) have been verified and their status cannot be changed.'], 422);
+        }
+
         $updatedJobs = $this->jobManagementService->updateJobsStatus(
             $request->user(),
-            $jobs,
+            $eligible,
             $request->validated('status')
         );
 
@@ -376,9 +403,16 @@ class JobManagementController extends Controller
     public function bulkScheduleJobs(ScheduleJobsRequest $request): JsonResponse
     {
         $jobs = $this->jobsForBulkAction($request->validated('job_ids'), 'update');
+
+        $eligible = $jobs->reject(fn (Job $job): bool => $job->isVerified())->values();
+
+        if ($eligible->isEmpty()) {
+            return response()->json(['message' => 'The selected job(s) have been verified and cannot be rescheduled.'], 422);
+        }
+
         $updatedJobs = $this->jobManagementService->scheduleJobs(
             $request->user(),
-            $jobs,
+            $eligible,
             $request->validated('scheduled_date'),
             $request->validated('scheduled_time'),
         );
@@ -399,7 +433,14 @@ class JobManagementController extends Controller
         ]);
 
         $jobs = $this->jobsForBulkAction($validated['job_ids'], 'delete');
-        $deletedCount = $this->jobManagementService->deleteJobs($request->user(), $jobs);
+
+        $eligible = $jobs->reject(fn (Job $job): bool => $job->isVerified())->values();
+
+        if ($eligible->isEmpty()) {
+            return response()->json(['message' => 'The selected job(s) have been verified and cannot be deleted.'], 422);
+        }
+
+        $deletedCount = $this->jobManagementService->deleteJobs($request->user(), $eligible);
 
         return response()->json([
             'message' => $deletedCount === 1
@@ -435,7 +476,14 @@ class JobManagementController extends Controller
         ]);
 
         $jobs = $this->jobsForBulkAction($validated['job_ids'], 'forceDelete', withTrashed: true);
-        $deletedCount = $this->jobManagementService->forceDeleteJobs($request->user(), $jobs);
+
+        $eligible = $jobs->reject(fn (Job $job): bool => $job->isVerified())->values();
+
+        if ($eligible->isEmpty()) {
+            return response()->json(['message' => 'The selected job(s) have been verified and cannot be permanently deleted.'], 422);
+        }
+
+        $deletedCount = $this->jobManagementService->forceDeleteJobs($request->user(), $eligible);
 
         return response()->json([
             'message' => $deletedCount === 1

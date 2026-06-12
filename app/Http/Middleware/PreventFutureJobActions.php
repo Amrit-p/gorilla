@@ -17,14 +17,6 @@ class PreventFutureJobActions
         $job = $request->route('job');
 
         if ($job) {
-            if ($job->isVerified() && ! $request->isMethod('GET')) {
-                if ($request->expectsJson() || $request->ajax()) {
-                    return response()->json(['message' => 'This job has been verified and cannot be modified.'], 403);
-                }
-
-                return redirect()->route('mower.index')->with('error', 'This job has been verified and cannot be modified.');
-            }
-
             if (isset($job->scheduled_date)) {
                 try {
                     $scheduled = Carbon::parse($job->scheduled_date)->startOfDay();

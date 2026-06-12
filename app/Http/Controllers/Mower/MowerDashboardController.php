@@ -6,6 +6,7 @@ use App\Enums\JobOperationalPaymentStatus;
 use App\Enums\JobWorkflowStatus;
 use App\Helpers\OptimizationHelper;
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\EnsureJobIsNotVerified;
 use App\Http\Middleware\PreventFutureJobActions;
 use App\Http\Requests\Mower\UpdateMowerConsumedTimeRequest;
 use App\Http\Requests\Mower\UpdateMowerJobPaymentRequest;
@@ -35,19 +36,21 @@ class MowerDashboardController extends Controller
         private readonly JobImageManagementService $jobImageManagementService,
         private readonly DashboardAnalyticsService $dashboardAnalyticsService
     ) {
-        $this->middleware(PreventFutureJobActions::class)
-            ->only([
-                'show',
-                'update',
-                'updateStatus',
-                'updatePayment',
-                'updateConsumedTime',
-                'uploadBefore',
-                'uploadAfter',
-                'deleteBefore',
-                'deleteAfter',
-                'storeRemark',
-            ]);
+        $jobActions = [
+            'show',
+            'update',
+            'updateStatus',
+            'updatePayment',
+            'updateConsumedTime',
+            'uploadBefore',
+            'uploadAfter',
+            'deleteBefore',
+            'deleteAfter',
+            'storeRemark',
+        ];
+
+        $this->middleware(EnsureJobIsNotVerified::class)->only($jobActions);
+        $this->middleware(PreventFutureJobActions::class)->only($jobActions);
     }
 
     public function index(Request $request): View|JsonResponse
