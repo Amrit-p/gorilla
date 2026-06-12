@@ -24,6 +24,7 @@ return [
         'manage_discussions',
         'manage_contractors',
         'manage_followups',
+        'verify_jobs',
     ],
 
     'roles' => [
@@ -42,6 +43,9 @@ return [
                 'manage_jobs',
                 'assign_jobs',
                 'view_mower_report',
+                'verify_jobs',
+                'manage_followups',
+                'manage_discussions',
             ],
         ],
         'mower' => [

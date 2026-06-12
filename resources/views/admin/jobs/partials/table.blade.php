@@ -61,13 +61,15 @@
                         Schedule
                     </button>
                 @endcan
-                @can('manage-job-records')
+                @can('verify-jobs')
                     <button type="button" id="job-bulk-verify" class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-50">
                         <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
                         </svg>
                         Verify
                     </button>
+                @endcan
+                @can('manage-job-records')
                     <button type="button" id="job-bulk-delete" class="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50">
                         <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166M4.772 5.79c.34-.059.68-.114 1.022-.165m13.434.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.667 48.667 0 0 0-14.456 0M8.25 5.25V4.875c0-1.036.84-1.875 1.875-1.875h3.75c1.036 0 1.875.84 1.875 1.875v.375"/>
@@ -325,6 +327,8 @@
                                 </svg>
                                 Edit
                             </a>
+                        @endcan
+                        @can('verify-jobs')
                             <button class="verify-job flex w-full items-center gap-2.5 px-3.5 py-2 text-sm {{ $job->isVerified() ? 'text-amber-600' : 'text-emerald-700' }} transition-colors hover:bg-slate-50"
                                     data-id="{{ $job->id }}"
                                     data-verified="{{ $job->isVerified() ? '1' : '0' }}">

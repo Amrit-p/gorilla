@@ -41,6 +41,8 @@ final class CrmPermissions
 
     public const MANAGE_FOLLOWUPS = 'manage_followups';
 
+    public const VERIFY_JOBS = 'verify_jobs';
+
     /**
      * @return array<int, string>
      */
@@ -184,6 +186,11 @@ final class CrmPermissions
     public static function canManageFollowups(?User $user): bool
     {
         return $user?->can(self::MANAGE_FOLLOWUPS) ?? false;
+    }
+
+    public static function canVerifyJobs(?User $user): bool
+    {
+        return $user?->can(self::VERIFY_JOBS) ?? false;
     }
 
     public static function canViewReport(?User $user, string $permission): bool

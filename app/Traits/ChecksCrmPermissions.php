@@ -53,4 +53,9 @@ trait ChecksCrmPermissions
     {
         return CrmPermissions::canManageFollowups($this);
     }
+
+    public function canVerifyJobs(): bool
+    {
+        return CrmPermissions::canVerifyJobs($this);
+    }
 }

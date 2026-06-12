@@ -619,6 +619,29 @@
             ids.length > 1 ? 'Rescheduled selected jobs.' : 'Job rescheduled.', 'Failed to reschedule.');
     });
 
+    $(document).on('click', '.status-job', function() {
+        const $btn = $(this);
+        const jobId = Number($btn.data('id'));
+        const currentStatus = $btn.data('status') || '';
+        markModalBulkContext($('#status-job-form'), [jobId], 'Status update');
+        $('#status-job-form').find('[name="status"]').val(currentStatus);
+        openModal('status-job-modal');
+    });
+
+    $(document).on('click', '#job-bulk-status', function() {
+        const ids = selectedJobIds();
+        if (!ids.length) return;
+        markModalBulkContext($('#status-job-form'), ids, 'Status update');
+        openModal('status-job-modal');
+    });
+
+    $('#status-job-form').on('submit', function(e) {
+        e.preventDefault();
+        const ids = $(this).data('jobIds') || [];
+        submitBulkForm($(this), "{{ route('admin.jobs.bulk.status.update') }}", 'status-job-modal',
+            ids.length > 1 ? 'Selected job statuses updated.' : 'Job status updated.', 'Failed to update status.');
+    });
+
     $(document).on('click', '.view-remarks-btn', function() {
         const $btn = $(this);
         $('#remarks-job-form').data('jobId', $btn.data('id'));
@@ -646,26 +669,7 @@
         });
     });
 
-    $(document).on('click', '.verify-job', function() {
-        const $btn     = $(this);
-        const id       = Number($btn.data('id'));
-        const verified = String($btn.data('verified')) === '1';
-        if (verified && !confirm('Remove verification from this job?')) return;
 
-        $.ajax({
-            url: "{{ url('admin/jobs') }}/" + id + '/verify',
-            method: 'POST',
-            data: { _token: "{{ csrf_token() }}", verified: verified ? 0 : 1 },
-            headers: { Accept: 'application/json' },
-            success: function(res) {
-                showJobAlert(res.message || 'Job verification updated.');
-                refreshJobsTable();
-            },
-            error: function(xhr) {
-                showJobAlert(xhr.responseJSON?.message || 'Failed to update job verification.', true);
-            }
-        });
-    });
 
     $(document).on('click', '.delete-job', function() {
         if (!confirm('Delete this job?')) return;

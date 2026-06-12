@@ -300,7 +300,7 @@
             <label class="mb-1 block text-sm font-medium text-slate-700">Special Remarks</label>
             <textarea name="special_remarks" rows="5" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500" placeholder="No special remarks."></textarea>
         </div>
-        @can('manage-job-records')
+        @can('assign-jobs')
             @unless(auth()->user()?->hasRole(\App\Support\CrmRoles::MOWER))
                 <x-ui.button type="submit">Save Remarks</x-ui.button>
             @endunless

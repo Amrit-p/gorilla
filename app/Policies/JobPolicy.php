@@ -26,7 +26,7 @@ class JobPolicy
 
     public function update(User $user, Job $job): bool
     {
-        return CrmPermissions::canManageJobRecords($user);
+        return CrmPermissions::canManageJobRecords($user) || CrmPermissions::canAssignJobs($user);
     }
 
     public function delete(User $user, Job $job): bool
@@ -56,7 +56,7 @@ class JobPolicy
 
     public function verify(User $user, Job $job): bool
     {
-        return CrmPermissions::canManageJobRecords($user);
+        return CrmPermissions::canVerifyJobs($user);
     }
 
     public function uploadImages(User $user, Job $job): bool
