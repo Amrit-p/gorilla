@@ -253,20 +253,7 @@ class JobManagementTest extends TestCase
         $this->actingAs($this->admin)
             ->postJson(route('admin.jobs.bulk.verify'), ['job_ids' => [$job->id], 'verified' => 1])
             ->assertStatus(422)
-            ->assertJsonPath('message', 'None of the selected jobs can be verified. Jobs must be Completed with payment Received.');
-
-        $this->assertNull($job->refresh()->verified_at);
-    }
-
-    public function test_job_cannot_be_verified_unless_payment_received(): void
-    {
-        $job = $this->createVerifiableJob();
-        $job->update(['payment_status' => JobOperationalPaymentStatus::PENDING->value]);
-
-        $this->actingAs($this->admin)
-            ->postJson(route('admin.jobs.bulk.verify'), ['job_ids' => [$job->id], 'verified' => 1])
-            ->assertStatus(422)
-            ->assertJsonPath('message', 'None of the selected jobs can be verified. Jobs must be Completed with payment Received.');
+            ->assertJsonPath('message', 'None of the selected jobs can be verified. Jobs must be Completed.');
 
         $this->assertNull($job->refresh()->verified_at);
     }

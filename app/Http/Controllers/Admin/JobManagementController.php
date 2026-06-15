@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Enums\JobOperationalPaymentStatus;
 use App\Enums\JobWorkflowStatus;
 use App\Exports\JobsExport;
 use App\Helpers\OptimizationHelper;
@@ -561,7 +560,7 @@ class JobManagementController extends Controller
 
             if ($eligible->isEmpty()) {
                 return response()->json([
-                    'message' => 'None of the selected jobs can be verified. Jobs must be Completed with payment Received.',
+                    'message' => 'None of the selected jobs can be verified. Jobs must be Completed.',
                 ], 422);
             }
 
@@ -577,7 +576,7 @@ class JobManagementController extends Controller
             ? ($verified ? 'Job verified successfully.' : 'Job verification removed.')
             : ($verified ? $eligible->count().' jobs verified successfully.' : $eligible->count().' job verifications removed.');
         if ($skipped > 0 && $verified) {
-            $message .= ' '.$skipped.' skipped (not Completed or payment not Received).';
+            $message .= ' '.$skipped.' skipped (not Completed).';
         }
 
         return response()->json([
@@ -637,10 +636,6 @@ class JobManagementController extends Controller
 
         if ($job->status !== JobWorkflowStatus::COMPLETED->value) {
             $unmet[] = 'the job status is Completed';
-        }
-
-        if ($job->payment_status !== JobOperationalPaymentStatus::RECEIVED->value) {
-            $unmet[] = 'the payment status is Received';
         }
 
         return $unmet;
