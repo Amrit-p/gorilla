@@ -53,18 +53,6 @@ class LeadManagementTest extends TestCase
         $this->assertSame($payload['equipment_type_id'], $lead->equipment_type_id);
     }
 
-    public function test_remarks_required_when_payment_status_pending(): void
-    {
-        $payload = $this->validLeadPayload();
-        $payload['payment_status'] = LeadPaymentStatus::PENDING->value;
-        unset($payload['remarks']);
-
-        $this->actingAs($this->admin)
-            ->postJson(route('admin.leads.store'), $payload)
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors(['remarks']);
-    }
-
     public function test_lead_status_mature_converts_to_client_in_transaction(): void
     {
         $lead = Lead::query()->create($this->validLeadPayload());
@@ -188,7 +176,6 @@ class LeadManagementTest extends TestCase
             'mobile_number' => '555-0100',
             'email' => 'gorilla@example.com',
             'payment_mode' => LeadPaymentMode::CASH->value,
-            'payment_status' => LeadPaymentStatus::DONE->value,
             'remarks' => 'Side gate',
             'lead_date' => now()->toDateString(),
             'lead_time' => '09:00',

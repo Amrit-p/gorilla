@@ -18,6 +18,7 @@ use App\Models\Lead;
 use App\Models\Recurrence;
 use App\Models\Zone;
 use App\Services\LeadManagementService;
+use App\Support\CrmRoles;
 use App\Support\ServiceTypes;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -71,7 +72,11 @@ class LeadManagementController extends Controller
     public function store(StoreLeadRequest $request): JsonResponse|RedirectResponse
     {
         $this->authorize('create', Lead::class);
-        $lead = $this->leadManagementService->createLead($request->user(), $request->validated());
+        $validated = $request->validated();
+        if ($request->user()->hasRole(CrmRoles::SALES_MANAGER)) {
+            $validated['assigned_sales_user_id'] = $request->user()->id;
+        }
+        $lead = $this->leadManagementService->createLead($request->user(), $validated);
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -121,7 +126,11 @@ class LeadManagementController extends Controller
     public function update(UpdateLeadRequest $request, Lead $lead): JsonResponse|RedirectResponse
     {
         $this->authorize('update', $lead);
-        $lead = $this->leadManagementService->updateLead($request->user(), $lead, $request->validated());
+        $validated = $request->validated();
+        if ($request->user()->hasRole(CrmRoles::SALES_MANAGER)) {
+            $validated['assigned_sales_user_id'] = $request->user()->id;
+        }
+        $lead = $this->leadManagementService->updateLead($request->user(), $lead, $validated);
 
         if ($request->expectsJson()) {
             return response()->json([

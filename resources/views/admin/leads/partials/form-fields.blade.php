@@ -93,31 +93,23 @@
             </select>
         </div>
 
-        <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">Payment status</label>
-            <select name="payment_status" id="lead-payment-status" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                <option value="">Select payment status</option>
-                @foreach ($paymentStatuses as $paymentStatus)
-                    <option value="{{ $paymentStatus }}" @selected(old('payment_status', $leadModel?->payment_status ?? 'Pending') === $paymentStatus)>{{ $paymentStatus }}</option>
-                @endforeach
-            </select>
-        </div>
-
         <x-ui.input label="Date" name="lead_date" type="date" :value="old('lead_date', $leadModel?->lead_date?->format('Y-m-d'))" />
 
         @isset($salesUsers)
-            <div class="sm:col-span-2 border-t border-slate-200 pt-4">
-                <label class="mb-1 block text-sm font-medium text-slate-700">Assigned sales manager</label>
-                <select name="assigned_sales_user_id" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                    <option value="">Unassigned</option>
-                    @foreach ($salesUsers as $salesUser)
-                        <option value="{{ $salesUser->id }}" @selected((string) old('assigned_sales_user_id', $leadModel?->assigned_sales_user_id) === (string) $salesUser->id)>
-                            {{ $salesUser->name }}
-                        </option>
-                    @endforeach
-                </select>
-                <p class="mt-1 text-xs text-slate-500">Only users with the Sales Manager role appear here.</p>
-            </div>
+            @unless(auth()->user()?->hasRole(\App\Support\CrmRoles::SALES_MANAGER))
+                <div class="sm:col-span-2 border-t border-slate-200 pt-4">
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Assigned sales manager</label>
+                    <select name="assigned_sales_user_id" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                        <option value="">Unassigned</option>
+                        @foreach ($salesUsers as $salesUser)
+                            <option value="{{ $salesUser->id }}" @selected((string) old('assigned_sales_user_id', $leadModel?->assigned_sales_user_id) === (string) $salesUser->id)>
+                                {{ $salesUser->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <p class="mt-1 text-xs text-slate-500">Only users with the Sales Manager role appear here.</p>
+                </div>
+            @endunless
         @endisset
 
         @isset($zones)
