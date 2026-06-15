@@ -189,14 +189,14 @@ class DashboardService
 
     /**
      * Three-week job schedule summary grouped by day and zone.
-     * Starts from the Sunday of the current week.
+     * Starts from the Monday of the current week.
      *
      * @param  array{zone_id?: int|null, worker_id?: int|null, search?: string|null}  $filters
      * @return array<int, array{label: string, week_number: int, start_date: string, end_date: string, days: list<array>}>
      */
     public function threeWeekScheduleSummary(array $filters = []): array
     {
-        $startDate = now()->startOfWeek(Carbon::SUNDAY);
+        $startDate = now()->startOfWeek(Carbon::MONDAY);
         $endDate = $startDate->copy()->addWeeks(3)->subDay();
 
         $jobs = Job::query()
