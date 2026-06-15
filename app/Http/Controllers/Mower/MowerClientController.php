@@ -50,7 +50,7 @@ class MowerClientController extends Controller
             'site_instructions' => $client->additional_site_instructions,
             'special_remarks' => $client->special_remarks,
             'done_by_user_id' => $actor->id,
-            'employee_ids' => [$actor->id],
+            // 'employee_ids' => [$actor->id],
         ];
 
         $job = $this->jobManagementService->createJob($actor, $jobData);
