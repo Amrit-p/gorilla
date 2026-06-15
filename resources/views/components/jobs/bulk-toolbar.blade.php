@@ -13,7 +13,10 @@
                 </svg>
             </span>
             <div class="min-w-0">
-                <p class="text-sm font-semibold text-slate-800"><span id="job-bulk-count">0</span> selected</p>
+                <div class="flex items-baseline gap-2">
+                    <p class="text-sm font-semibold text-slate-800"><span id="job-bulk-count">0</span> selected</p>
+                    <span id="job-bulk-total" class="hidden text-xs font-semibold text-emerald-600"></span>
+                </div>
                 <p class="text-xs text-slate-500">{{ $selectionHint }}</p>
             </div>
         </div>

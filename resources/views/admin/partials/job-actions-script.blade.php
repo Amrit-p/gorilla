@@ -216,7 +216,14 @@
         $form.data('jobIds', ids);
 
         if (ids.length > 1) {
-            $context.removeClass('hidden').text(action + ' will apply to ' + ids.length + ' selected jobs.');
+            let msg = action + ' will apply to ' + ids.length + ' selected jobs.';
+            if (window.crmJobSelection) {
+                const totalMins = window.crmJobSelection.getTotalEstimatedMinutes();
+                if (totalMins !== null) {
+                    msg += ' Total estimated: ' + window.crmJobSelection.formatMinutes(totalMins) + '.';
+                }
+            }
+            $context.removeClass('hidden').text(msg);
         } else {
             $context.addClass('hidden').text('');
         }

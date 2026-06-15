@@ -44,7 +44,7 @@
         </thead>
         <tbody class="divide-y divide-slate-100">
     @forelse ($jobs as $job)
-        <tr class="job-row group divide-x divide-slate-100 transition-colors data-[selected=true]:bg-emerald-50/70 data-[selected=true]:shadow-[inset_3px_0_0_#10b981] data-[bulk-mode=true]:cursor-pointer {{ job_row_color_class($job) }}" data-job-id="{{ $job->id }}" data-selected="false" data-bulk-mode="false">
+        <tr class="job-row group divide-x divide-slate-100 transition-colors data-[selected=true]:bg-emerald-50/70 data-[selected=true]:shadow-[inset_3px_0_0_#10b981] data-[bulk-mode=true]:cursor-pointer {{ job_row_color_class($job) }}" data-job-id="{{ $job->id }}" data-est-minutes="{{ $job->estimated_duration_minutes ?? '' }}" data-selected="false" data-bulk-mode="false">
 
                 <td class="w-8 px-2 py-4">
                 <input type="checkbox" class="job-select-checkbox h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" data-job-id="{{ $job->id }}" aria-label="Select job">
@@ -326,6 +326,30 @@
         </tr>
     @endforelse
         </tbody>
+        @php
+            $totalEstMins = $jobs->sum('estimated_duration_minutes');
+            $estHours     = intdiv($totalEstMins, 60);
+            $estMins      = $totalEstMins % 60;
+            $estFormatted = $estHours > 0
+                ? ($estMins > 0 ? "{$estHours}h {$estMins}m" : "{$estHours}h")
+                : "{$estMins}m";
+        @endphp
+        @if ($totalEstMins > 0)
+        <tfoot>
+            <tr class="border-t-2 border-slate-200 bg-slate-50">
+                <td colspan="{{ $canReorder ? 4 : 3 }}" class="px-4 py-2.5 text-xs font-medium text-slate-400 uppercase tracking-wide">Page total</td>
+                <td class="whitespace-nowrap px-4 py-2.5">
+                    <span class="inline-flex items-center gap-1 text-xs font-semibold text-slate-700">
+                        <svg class="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+                        </svg>
+                        {{ $estFormatted }} estimated
+                    </span>
+                </td>
+                <td colspan="{{ $canReorder ? 6 : 6 }}" class="px-4 py-2.5"></td>
+            </tr>
+        </tfoot>
+        @endif
     </table>
 </div>
 <script>
