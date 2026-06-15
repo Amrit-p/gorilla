@@ -63,7 +63,8 @@
                             <p class="text-xs text-slate-500">{{ now()->format('l, d M Y') }}</p>
                         </div>
                         @can('view-jobs')
-                            <a href="{{ route('admin.jobs.index') }}" class="text-xs font-medium text-emerald-700 hover:text-emerald-800">View all jobs →</a>
+                            <a href="{{ route('admin.jobs.index', ['date_range' => ['start' => now()->toDateString(), 'end' => now()->toDateString()]]) }}"
+                               class="text-xs font-medium text-emerald-700 hover:text-emerald-800">View all jobs →</a>
                         @endcan
                     </div>
                     <div class="overflow-x-auto">

@@ -1,3 +1,7 @@
+@php
+    $threeWeekStart = now()->startOfWeek(\Illuminate\Support\Carbon::MONDAY)->toDateString();
+    $threeWeekEnd   = now()->startOfWeek(\Illuminate\Support\Carbon::MONDAY)->addWeeks(3)->subDay()->toDateString();
+@endphp
 <div>
     <div class="mb-4 flex items-center justify-between">
         <div>
@@ -5,7 +9,8 @@
             <p class="text-xs text-slate-500">Click any day count to view and manage jobs inline</p>
         </div>
         @can('view-jobs')
-            <a href="{{ route('admin.jobs.index') }}" class="text-xs font-medium text-emerald-700 hover:text-emerald-800">
+            <a href="{{ route('admin.jobs.index', ['date_range' => ['start' => $threeWeekStart, 'end' => $threeWeekEnd]]) }}"
+               class="text-xs font-medium text-emerald-700 hover:text-emerald-800">
                 View all jobs →
             </a>
         @endcan
