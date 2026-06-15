@@ -30,6 +30,7 @@ use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Mower\ChecklistController as MowerChecklistController;
+use App\Http\Controllers\Mower\MowerClientController;
 use App\Http\Controllers\Mower\MowerDashboardController;
 use App\Http\Controllers\Mower\MowerDiscussionController;
 use App\Http\Controllers\NotificationController;
@@ -272,6 +273,8 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
                 Route::get('/notifications', [NotificationController::class, 'mowerIndex'])->name('notifications.index');
                 Route::get('/discussions', [MowerDiscussionController::class, 'index'])->name('discussions.index');
                 Route::get('/discussions/{discussion}', [MowerDiscussionController::class, 'show'])->name('discussions.show');
+                Route::get('/clients/create', [MowerClientController::class, 'create'])->name('clients.create');
+                Route::post('/clients', [MowerClientController::class, 'store'])->name('clients.store');
                 Route::get('/jobs/{job}', [MowerDashboardController::class, 'show'])->name('jobs.show');
                 Route::patch('/jobs/{job}', [MowerDashboardController::class, 'update'])->name('jobs.update');
                 Route::patch('/jobs/{job}/status', [MowerDashboardController::class, 'updateStatus'])->name('jobs.status.update');

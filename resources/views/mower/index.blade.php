@@ -1,5 +1,8 @@
 <x-layouts.mower :title="'My Jobs'">
     <div class="space-y-4">
+        @if (session('success'))
+            <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{{ session('success') }}</div>
+        @endif
         @php $cards = $analytics['cards'] ?? []; @endphp
         <div class="grid grid-cols-3 gap-2">
             <div class="rounded-xl bg-white p-3 text-center shadow-sm">
@@ -44,10 +47,19 @@
             @endforeach
         </div>
 
-            <div class="flex justify-end">
+            <div class="flex justify-between gap-2">
+            <a
+                href="{{ route('mower.clients.create') }}"
+                class="inline-flex items-center gap-1.5 rounded-full bg-emerald-700 px-4 py-2 text-xs font-semibold text-white shadow-sm active:bg-emerald-800"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                New Customer
+            </a>
             <a
                 id="mower-export-pdf"
-                    href="{{ route('mower.export-pdf', ['scope' => $scope, 'date_range[start]' => $scheduleStart, 'date_range[end]' => $scheduleEnd]) }}"
+                href="{{ route('mower.export-pdf', ['scope' => $scope, 'date_range[start]' => $scheduleStart, 'date_range[end]' => $scheduleEnd]) }}"
                 target="_blank"
                 class="inline-flex items-center gap-1.5 rounded-full bg-slate-800 px-4 py-2 text-xs font-semibold text-white shadow-sm active:bg-slate-900"
             >
