@@ -3,7 +3,6 @@
 namespace App\Http\Requests\Admin;
 
 use App\Support\CrmPermissions;
-
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -78,6 +77,13 @@ class UpdateSettingsRequest extends FormRequest
                 'max:255',
             ],
             'mail_from_name' => ['nullable', 'string', 'max:120'],
+
+            'backup_schedule' => ['nullable', 'in:weekly,biweekly,monthly'],
+            'backup_disk' => ['nullable', 'in:local,gcs'],
+            'backup_gcs_bucket' => ['nullable', 'string', 'max:255'],
+            'backup_gcs_project' => ['nullable', 'string', 'max:255'],
+            'backup_gcs_key_file' => ['nullable', 'string', 'max:500'],
+            'backup_mysqldump_path' => ['nullable', 'string', 'max:500'],
         ];
     }
 }

@@ -11,3 +11,4 @@ Artisan::command('inspire', function () {
 Schedule::command('app:send-pending-job-reminders')->dailyAt('08:00');
 Schedule::command('followups:notify')->dailyAt('08:00');
 Schedule::command('app:auto-reschedule-jobs')->everyMinute();
+Schedule::command('backup:run')->dailyAt('02:00');

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateSettingsRequest;
+use App\Models\DatabaseBackup;
 use App\Services\SettingsService;
 use App\Support\WebsiteSettings;
 use Illuminate\Http\JsonResponse;
@@ -20,6 +21,7 @@ class SettingsController extends Controller
         return view('admin.settings.index', [
             'settings' => $this->settingsService->allAsArray(),
             'siteLogoUrl' => WebsiteSettings::logoUrl(),
+            'backups' => DatabaseBackup::query()->latest()->limit(20)->get(),
         ]);
     }
 

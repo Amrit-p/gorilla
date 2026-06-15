@@ -5,6 +5,7 @@
  */
 
 use App\Http\Controllers\Admin\ActivityLogController;
+use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\ClientManagementController;
 use App\Http\Controllers\Admin\Contractors\ContractController;
 use App\Http\Controllers\Admin\Contractors\ContractDocumentController;
@@ -81,6 +82,11 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
         Route::get('/admin/activity-logs', [ActivityLogController::class, 'index'])->name('admin.activity-logs.index');
         Route::get('/admin/settings', [SettingsController::class, 'index'])->name('admin.settings.index');
         Route::patch('/admin/settings', [SettingsController::class, 'update'])->name('admin.settings.update');
+
+        Route::get('/admin/settings/backups', [BackupController::class, 'list'])->name('admin.settings.backups.list');
+        Route::post('/admin/settings/backups/trigger', [BackupController::class, 'trigger'])->name('admin.settings.backups.trigger');
+        Route::get('/admin/settings/backups/{databaseBackup}/download', [BackupController::class, 'download'])->name('admin.settings.backups.download');
+        Route::delete('/admin/settings/backups/{databaseBackup}', [BackupController::class, 'destroy'])->name('admin.settings.backups.destroy');
     });
 
     // Mowers can view and export their own bonuses; policy + extractFilters enforce the user_id scope.
