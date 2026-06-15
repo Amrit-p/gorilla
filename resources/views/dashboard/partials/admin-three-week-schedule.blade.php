@@ -8,12 +8,32 @@
             <h2 class="text-base font-semibold text-slate-900">3-Week Schedule</h2>
             <p class="text-xs text-slate-500">Click any day count to view and manage jobs inline</p>
         </div>
-        @can('view-jobs')
-            <a href="{{ route('admin.jobs.index', ['date_range' => ['start' => $threeWeekStart, 'end' => $threeWeekEnd]]) }}"
-               class="text-xs font-medium text-emerald-700 hover:text-emerald-800">
-                View all jobs →
-            </a>
-        @endcan
+        <div class="flex items-center gap-2">
+            <button type="button"
+                    id="three-week-prev-btn"
+                    onclick="crmShiftWeek(-1)"
+                    class="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100">
+                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+                Previous
+            </button>
+            <button type="button"
+                    id="three-week-next-btn"
+                    onclick="crmShiftWeek(1)"
+                    class="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100">
+                Next
+                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </button>
+            @can('view-jobs')
+                <a href="{{ route('admin.jobs.index', ['date_range' => ['start' => $threeWeekStart, 'end' => $threeWeekEnd]]) }}"
+                   class="text-xs font-medium text-emerald-700 hover:text-emerald-800">
+                    View all jobs →
+                </a>
+            @endcan
+        </div>
     </div>
 
     <x-dashboard.three-week-calendar

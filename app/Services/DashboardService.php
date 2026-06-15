@@ -196,7 +196,7 @@ class DashboardService
      */
     public function threeWeekScheduleSummary(array $filters = []): array
     {
-        $startDate = now()->startOfWeek(Carbon::MONDAY);
+        $startDate = now()->startOfWeek(Carbon::MONDAY)->addWeeks($filters['week_offset'] ?? 0);
         $endDate = $startDate->copy()->addWeeks(3)->subDay();
 
         $jobs = Job::query()

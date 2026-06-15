@@ -105,12 +105,14 @@ class DashboardController extends Controller
             'zone_id' => 'nullable|integer|exists:zones,id',
             'worker_id' => 'nullable|integer|exists:users,id',
             'search' => 'nullable|string|max:100',
+            'week_offset' => 'nullable|integer|min:-52|max:52',
         ]);
 
         $weeks = $this->dashboardService->threeWeekScheduleSummary([
             'zone_id' => $request->integer('zone_id') ?: null,
             'worker_id' => $request->integer('worker_id') ?: null,
             'search' => $request->string('search')->toString() ?: null,
+            'week_offset' => $request->integer('week_offset'),
         ]);
 
         return response(view('dashboard.partials.three-week-grid', compact('weeks')));

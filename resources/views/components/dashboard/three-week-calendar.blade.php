@@ -133,6 +133,7 @@
     var _tableUrl    = @json($dailyJobsTableUrl);
     var _gridUrl     = @json(route('dashboard.three-week-grid'));
     var _currentDate = null;
+    var _weekOffset  = 0;
 
     /* ── filter state ────────────────────────────────── */
     function getFilters() {
@@ -221,14 +222,15 @@
     }
 
     /* ── refresh the calendar grid without a page reload ─────────── */
-    function reloadCalendarGrid() {
+    function reloadCalendarGrid(callback) {
         var filters = getFilters();
         var params  = {};
         if (filters.zone_id)   { params.zone_id   = filters.zone_id; }
         if (filters.worker_id) { params.worker_id = filters.worker_id; }
         if (filters.search)    { params.search    = filters.search; }
 
-        var url = _gridUrl + (Object.keys(params).length ? '?' + $.param(params) : '');
+        params.week_offset = _weekOffset;
+        var url = _gridUrl + '?' + $.param(params);
 
         show('three-week-grid-loader');
 
@@ -239,12 +241,29 @@
             success: function (html) {
                 $('#three-week-grid').replaceWith(html);
                 hide('three-week-grid-loader');
+                if (typeof callback === 'function') { callback(); }
             },
             error: function () {
                 hide('three-week-grid-loader');
+                if (typeof callback === 'function') { callback(); }
             }
         });
     }
+
+    /* ── week navigation ─────────────────────────────── */
+    window.crmShiftWeek = function (delta) {
+        _weekOffset += delta;
+
+        var prevBtn = document.getElementById('three-week-prev-btn');
+        var nextBtn = document.getElementById('three-week-next-btn');
+        if (prevBtn) { prevBtn.disabled = true; prevBtn.classList.add('opacity-50', 'cursor-not-allowed'); }
+        if (nextBtn) { nextBtn.disabled = true; nextBtn.classList.add('opacity-50', 'cursor-not-allowed'); }
+
+        reloadCalendarGrid(function () {
+            if (prevBtn) { prevBtn.disabled = false; prevBtn.classList.remove('opacity-50', 'cursor-not-allowed'); }
+            if (nextBtn) { nextBtn.disabled = false; nextBtn.classList.remove('opacity-50', 'cursor-not-allowed'); }
+        });
+    };
 
     /* ── reload hook used by job-actions-script after each action ─ */
     window.reloadDayPanelTable = function () {
