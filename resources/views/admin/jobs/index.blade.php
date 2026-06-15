@@ -16,6 +16,7 @@
 
     @include('admin.partials.job-modals')
     @include('admin.partials.dropdown-script')
+    <script src="{{ asset('js/job-bulk-toolbar.js') }}?v={{ @filemtime(public_path('js/job-bulk-toolbar.js')) ?: 1 }}"></script>
     @include('admin.partials.job-actions-script')
 
     <script>

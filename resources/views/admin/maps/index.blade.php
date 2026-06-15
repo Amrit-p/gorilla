@@ -25,6 +25,7 @@
 
     </div>
 
+    <script src="{{ asset('js/job-bulk-toolbar.js') }}?v={{ @filemtime(public_path('js/job-bulk-toolbar.js')) ?: 1 }}"></script>
     <script src="{{ asset('js/map-job-popup.js') }}?v={{ @filemtime(public_path('js/map-job-popup.js')) ?: 1 }}"></script>
     @php
         $jsMapConfig = array_merge($mapConfig, [
@@ -77,6 +78,31 @@
             });
         })();
         window.crmMapLoad(getFilters());
+    </script>
+
+    <x-jobs.bulk-toolbar
+        :show-select-page="false"
+        selection-hint="Check the box in a popup to select jobs for bulk actions."
+    />
+
+    <script>
+        // Sync checkbox state in any open popup when selection changes externally.
+        window.addEventListener('jobs:selection-changed', function (e) {
+            var ids = new Set(e.detail.ids);
+            document.querySelectorAll('.map-job-checkbox').forEach(function (cb) {
+                var id = Number(cb.dataset.jobId);
+                cb.checked = ids.has(id);
+                var label = cb.closest('label');
+                if (label) {
+                    label.className = label.className
+                        .replace(/bg-emerald-50 border-emerald-300 text-emerald-700|bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100/g, '')
+                        .trim();
+                    label.className += cb.checked
+                        ? ' bg-emerald-50 border-emerald-300 text-emerald-700'
+                        : ' bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100';
+                }
+            });
+        });
     </script>
 
     @include('admin.partials.job-modals')

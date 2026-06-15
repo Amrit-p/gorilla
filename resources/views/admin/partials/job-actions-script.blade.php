@@ -207,6 +207,7 @@
     }
 
     function selectedJobIds() {
+        if (window.crmJobSelection) { return window.crmJobSelection.getIds(); }
         return typeof window.selectedTableIds === 'function' ? window.selectedTableIds() : [];
     }
 

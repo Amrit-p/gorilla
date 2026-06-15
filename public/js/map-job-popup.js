@@ -8,9 +8,10 @@ window.crmBuildMapJobPopup = function (job) {
     const canManage = cfg.canManageJobs;
     const showUrl   = cfg.isMower ? (cfg.mowerJobBaseUrl + '/' + job.id) : job.show_url;
 
-    const employees = (job.assigned_employees || []).length
+    const employees  = (job.assigned_employees || []).length
         ? job.assigned_employees.map(_esc).join(', ')
         : null;
+    const isSelected = window.crmJobSelection ? window.crmJobSelection.has(job.id) : false;
 
     const dateStr    = _formatDate(job.scheduled_date);
     const timeStr    = _formatTime(job.scheduled_time);
@@ -76,7 +77,13 @@ window.crmBuildMapJobPopup = function (job) {
 
     <div class="h-px bg-slate-100 mb-3"></div>
 
-    <div class="flex flex-wrap gap-1.5">
+    <div class="flex flex-wrap items-center gap-1.5">
+        <label class="inline-flex items-center gap-1.5 h-8 sm:h-7 px-3 rounded-md text-[11px] font-semibold cursor-pointer select-none border transition-colors ${isSelected ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'}"
+               title="Select job for bulk actions">
+            <input type="checkbox" class="map-job-checkbox h-3.5 w-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                   data-job-id="${job.id}" ${isSelected ? 'checked' : ''}>
+            Select
+        </label>
         ${canView ? `
         <a href="${showUrl}" target="_blank"
            class="inline-flex items-center justify-center h-8 sm:h-7 px-3 rounded-md text-[11px] font-semibold no-underline bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-colors">View</a>` : ''}
