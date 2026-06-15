@@ -50,7 +50,8 @@ class ClientRepository
                 'jobLevel:id,name,description',
                 'equipmentType:id,name',
                 'recurrence:id,name',
-                'jobs' => fn ($q) => $q->select(['id', 'client_id', 'scheduled_date', 'status'])->latest('scheduled_date'),
+                'previousJobs' => fn ($q) => $q->select(['id', 'client_id', 'scheduled_date', 'status']),
+                'nextJob',
             ])
             ->latest();
 

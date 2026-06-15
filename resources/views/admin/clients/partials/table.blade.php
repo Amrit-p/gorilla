@@ -3,29 +3,30 @@
         <thead>
             {{-- Grouped header row --}}
             <tr class="divide-x divide-slate-200">
-                <th colspan="3" class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide bg-green-100 text-green-800">Customer</th>
-                <th colspan="2" class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide bg-yellow-100 text-yellow-800">Service</th>
-                <th colspan="3" class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide bg-blue-100 text-blue-800">Account</th>
-                <th colspan="1" class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide bg-purple-100 text-purple-800">Jobs</th>
-                <th colspan="1" class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide bg-slate-100 text-slate-700">Actions</th>
+                <th colspan="3" class="px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wide bg-green-100 text-green-800">Customer</th>
+                <th colspan="2" class="px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wide bg-yellow-100 text-yellow-800">Service</th>
+                <th colspan="3" class="px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wide bg-blue-100 text-blue-800">Account</th>
+                <th colspan="2" class="px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wide bg-purple-100 text-purple-800">Jobs</th>
+                <th colspan="1" class="px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wide bg-slate-100 text-slate-700">Actions</th>
             </tr>
             {{-- Sub-header row --}}
             <tr class="divide-x divide-slate-200 border-t border-slate-200">
                 {{-- Customer --}}
-                <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider bg-green-50 text-green-700">Address</th>
-                <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider bg-green-50 text-green-700">Contact</th>
-                <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider bg-green-50 text-green-700">Profile</th>
+                <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider bg-green-50 text-green-700">Address</th>
+                <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider bg-green-50 text-green-700">Contact</th>
+                <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider bg-green-50 text-green-700">Profile</th>
                 {{-- Service --}}
-                <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider bg-yellow-50 text-yellow-700">Recurrence</th>
-                <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider bg-yellow-50 text-yellow-700">Zone</th>
+                <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider bg-yellow-50 text-yellow-700">Recurrence</th>
+                <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider bg-yellow-50 text-yellow-700">Zone</th>
                 {{-- Account --}}
-                <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider bg-blue-50 text-blue-700">Acct. Level</th>
-                <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider bg-blue-50 text-blue-700">Rating</th>
-                <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider bg-blue-50 text-blue-700">Job Level</th>
+                <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider bg-blue-50 text-blue-700">Acct. Level</th>
+                <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider bg-blue-50 text-blue-700">Rating</th>
+                <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider bg-blue-50 text-blue-700">Job Level</th>
                 {{-- Jobs --}}
-                <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider bg-purple-50 text-purple-700">Last Jobs</th>
+                <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider bg-purple-50 text-purple-700">Last Jobs</th>
+                <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider bg-purple-50 text-purple-700 whitespace-nowrap">Next Job</th>
                 {{-- Actions --}}
-                <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider bg-slate-50 text-slate-600">Actions</th>
+                <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider bg-slate-50 text-slate-600">Actions</th>
             </tr>
         </thead>
         <tbody class="divide-y divide-slate-100">
@@ -33,24 +34,24 @@
                 <tr class="divide-x divide-slate-100 transition-colors hover:bg-slate-50/70">
 
                     {{-- Customer --}}
-                    <td class="px-4 py-4">
+                    <td class="px-3 py-3 min-w-[160px] max-w-[200px]">
                         <a href="{{ route('admin.clients.show', $client) }}" class="text-sm font-semibold text-slate-800 leading-snug hover:text-emerald-700 hover:underline">
                             #{{ $client->customer_unique_id }} — {{ $client->name }}
                         </a>
-                        <p class="mt-0.5 text-xs text-slate-500">{{ $client->address ?: '—' }}</p>
+                        <p class="mt-0.5 text-xs text-slate-500 truncate">{{ $client->address ?: '—' }}</p>
                         @if ($client->lead_id)
                             <x-ui.badge type="success" class="mt-1">From lead</x-ui.badge>
                         @endif
                     </td>
 
                     {{-- Contact --}}
-                    <td class="whitespace-nowrap px-4 py-4">
+                    <td class="px-3 py-3 max-w-[160px]">
                         @if ($client->email)
                             <div class="flex items-center gap-1.5">
                                 <svg class="h-3.5 w-3.5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"/>
                                 </svg>
-                                <span class="text-xs text-slate-600">{{ $client->email }}</span>
+                                <span class="text-xs text-slate-600 truncate">{{ $client->email }}</span>
                             </div>
                         @endif
                         @if ($client->phone)
@@ -67,7 +68,7 @@
                     </td>
 
                     {{-- Profile --}}
-                    <td class="whitespace-nowrap px-4 py-4">
+                    <td class="whitespace-nowrap px-3 py-3">
                         <div class="flex flex-wrap items-center gap-1">
                             <span class="text-sm text-slate-700">{{ $client->customer_type ?: "Don't Know" }}</span>
                             @if ($client->job_type || $client->client_type)
@@ -80,12 +81,12 @@
                     </td>
 
                     {{-- Recurrence --}}
-                    <td class="whitespace-nowrap px-4 py-4">
+                    <td class="whitespace-nowrap px-3 py-3">
                         <span class="text-sm text-slate-600">{{ $client->recurrence?->name ?? '—' }}</span>
                     </td>
 
                     {{-- Zone --}}
-                    <td class="whitespace-nowrap px-4 py-4">
+                    <td class="whitespace-nowrap px-3 py-3">
                         @if ($client->zone)
                             <div class="flex items-center gap-1.5">
                                 <svg class="h-3.5 w-3.5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
@@ -100,12 +101,12 @@
                     </td>
 
                     {{-- Accounting Level --}}
-                    <td class="whitespace-nowrap px-4 py-4">
+                    <td class="whitespace-nowrap px-3 py-3">
                         <span class="text-sm text-slate-600" @if(data_get($client, 'accountingLevel.description')) title="{{ data_get($client, 'accountingLevel.description') }}" @endif>{{ data_get($client, 'accountingLevel.name', '—') }}</span>
                     </td>
 
                     {{-- Rating --}}
-                    <td class="whitespace-nowrap px-4 py-4">
+                    <td class="whitespace-nowrap px-3 py-3">
                         @if (data_get($client, 'clientRating.name'))
                             <span class="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700" @if(data_get($client, 'clientRating.description')) title="{{ data_get($client, 'clientRating.description') }}" @endif>{{ data_get($client, 'clientRating.name') }}</span>
                         @else
@@ -114,36 +115,47 @@
                     </td>
 
                     {{-- Job Level --}}
-                    <td class="whitespace-nowrap px-4 py-4">
+                    <td class="whitespace-nowrap px-3 py-3">
                         <span class="text-sm text-slate-600" @if(data_get($client, 'jobLevel.description')) title="{{ data_get($client, 'jobLevel.description') }}" @endif>{{ data_get($client, 'jobLevel.name', '—') }}</span>
                     </td>
 
                     {{-- Last Jobs --}}
-                    <td class="px-4 py-4">
+                    <td class="px-3 py-3 min-w-[120px]">
                         @php
-                            $recentJobs = $client->jobs->take(4);
-                            $totalJobs = $client->jobs->count();
+                            $recentJobs = $client->previousJobs->take(3);
+                            $totalPreviousJobs = $client->previousJobs->count();
                         @endphp
-                        @if ($totalJobs === 0)
+                        @if ($totalPreviousJobs === 0)
                             <span class="text-xs text-slate-400">—</span>
                         @else
-                            <div class="flex flex-wrap gap-1">
+                            <div class="flex flex-col gap-1">
                                 @foreach ($recentJobs as $job)
-                                    <a href="{{ route('admin.jobs.show', $job) }}" target="_blank" class="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-200 hover:text-slate-800">
+                                    <a href="{{ route('admin.jobs.show', $job) }}" target="_blank" class="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-200 hover:text-slate-800 whitespace-nowrap">
                                         {{ $job->scheduled_date?->format('d M y') ?? '—' }}
                                     </a>
                                 @endforeach
-                                @if ($totalJobs > 4)
-                                    <a href="{{ route('admin.clients.show', ['client' => $client, 'tab' => 'jobs']) }}" target="_blank" class="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100">
-                                        +{{ $totalJobs - 4 }} more
+                                @if ($totalPreviousJobs > 3)
+                                    <a href="{{ route('admin.clients.show', ['client' => $client, 'tab' => 'jobs']) }}" target="_blank" class="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100 whitespace-nowrap">
+                                        +{{ $totalPreviousJobs - 3 }} more
                                     </a>
                                 @endif
                             </div>
                         @endif
                     </td>
 
+                    {{-- Next Job --}}
+                    <td class="whitespace-nowrap px-3 py-3">
+                        @if ($client->nextJob)
+                            <a href="{{ route('admin.jobs.show', $client->nextJob) }}" target="_blank" class="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100">
+                                {{ $client->nextJob->scheduled_date?->format('d M y') ?? '—' }}
+                            </a>
+                        @else
+                            <span class="text-xs text-slate-400">—</span>
+                        @endif
+                    </td>
+
                     {{-- Actions --}}
-                    <td class="whitespace-nowrap px-4 py-4">
+                    <td class="whitespace-nowrap px-3 py-3">
                         <div class="relative inline-block">
                             <button class="client-actions-btn inline-flex items-center justify-center rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 focus:outline-none" data-id="{{ $client->id }}" aria-label="Actions">
                                 <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -180,7 +192,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="10" class="px-4 py-10 text-center text-sm text-slate-400">No customers found.</td>
+                    <td colspan="11" class="px-4 py-10 text-center text-sm text-slate-400">No customers found.</td>
                 </tr>
             @endforelse
         </tbody>

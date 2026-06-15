@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable([
@@ -110,6 +111,21 @@ class Client extends Model
     public function jobs(): HasMany
     {
         return $this->hasMany(Job::class);
+    }
+
+    public function previousJobs(): HasMany
+    {
+        return $this->hasMany(Job::class)
+            ->whereDate('scheduled_date', '<', now()->toDateString())
+            ->latest('scheduled_date');
+    }
+
+    public function nextJob(): HasOne
+    {
+        return $this->hasOne(Job::class)->ofMany(
+            ['scheduled_date' => 'min'],
+            fn ($query) => $query->whereDate('scheduled_date', '>=', now()->toDateString())
+        );
     }
 
     public function documents(): HasMany
