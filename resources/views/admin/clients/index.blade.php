@@ -17,7 +17,48 @@
 
     @include('admin.partials.dropdown-script')
 
+    <style>
+        @keyframes clients-spin {
+            to { transform: rotate(360deg); }
+        }
+        #clients-table-container {
+            position: relative;
+        }
+        #clients-loading-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 20;
+            background: rgba(255, 255, 255, 0.72);
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.75rem;
+        }
+        #clients-loading-overlay .clients-spinner {
+            width: 28px;
+            height: 28px;
+            border: 2.5px solid #e0e7ff;
+            border-top-color: #4f46e5;
+            border-radius: 50%;
+            animation: clients-spin 0.7s linear infinite;
+        }
+    </style>
+
     <script>
+        function showClientsLoading() {
+            if ($('#clients-loading-overlay').length) return;
+            $('#clients-table-container').append(
+                '<div id="clients-loading-overlay">' +
+                '<div style="display:flex;flex-direction:column;align-items:center;gap:10px;">' +
+                '<div class="clients-spinner"></div>' +
+                '<span style="font-size:0.7rem;font-weight:500;color:#64748b;letter-spacing:0.05em;">Loading…</span>' +
+                '</div>' +
+                '</div>'
+            );
+        }
+
         function showClientAlert(message, isError = false) {
             const baseClass = isError
                 ? 'rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700'
@@ -26,15 +67,36 @@
         }
 
         function refreshClients(url = "{{ route('admin.clients.index') }}") {
-            $.get(url, $('#client-filter-form').serialize(), function (res) {
-                $('#clients-table-container').html(res.html);
-            }, 'json');
+            showClientsLoading();
+            $.ajax({
+                url: url,
+                method: 'GET',
+                data: $('#client-filter-form').serialize(),
+                dataType: 'json',
+                success: function (res) {
+                    $('#clients-table-container').html(res.html);
+                },
+                error: function () {
+                    $('#clients-loading-overlay').remove();
+                    alert('Failed to load customers. Please try again.');
+                }
+            });
         }
 
         $('#client-filter-form').on('submit', function (e) { e.preventDefault(); refreshClients(); });
         $(document).on('click', '#clients-table-container .pagination a', function (e) { e.preventDefault(); refreshClients($(this).attr('href')); });
 
         crmDropdown('.client-actions-btn', '.client-actions-menu');
+
+        $(document).on('click', '#clients-table-container .sort-column', function () {
+            const col = $(this).data('sort');
+            const currentSort = $('#sort-input').val();
+            const currentDir = $('#direction-input').val();
+            const newDir = (currentSort === col && currentDir === 'asc') ? 'desc' : 'asc';
+            $('#sort-input').val(col);
+            $('#direction-input').val(newDir);
+            refreshClients();
+        });
 
         $(document).on('click', '.delete-client', function () {
             const id = $(this).data('id');

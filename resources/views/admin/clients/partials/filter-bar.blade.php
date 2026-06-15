@@ -51,6 +51,8 @@
 
     {{-- Collapsible filter body --}}
     <form id="client-filter-form" class="{{ $hasActiveFilters ? '' : 'hidden' }} border-t border-slate-100 px-4 py-3">
+        <input type="hidden" name="sort" id="sort-input" value="{{ $filters['sort'] ?? '' }}">
+        <input type="hidden" name="direction" id="direction-input" value="{{ $filters['direction'] ?? '' }}">
         <div class="grid grid-cols-4 gap-2.5">
 
             {{-- Row 1 --}}

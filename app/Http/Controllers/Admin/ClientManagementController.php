@@ -44,6 +44,8 @@ class ClientManagementController extends Controller
             'payment_status' => $request->string('payment_status')->toString(),
             'client_type' => $request->string('client_type')->toString(),
             'from_lead' => $request->string('from_lead')->toString(),
+            'sort' => $request->string('sort')->toString(),
+            'direction' => $request->string('direction')->toString(),
         ];
 
         $clients = $this->clientManagementService->paginatedClients(
@@ -51,12 +53,15 @@ class ClientManagementController extends Controller
             (int) config('mowing.default_pagination', 15)
         );
 
+        $sort = $filters['sort'];
+        $direction = $filters['direction'] ?: 'asc';
+
         if (crm_wants_partial($request)) {
-            return crm_ajax_html('admin.clients.partials.table', compact('clients'));
+            return crm_ajax_html('admin.clients.partials.table', compact('clients', 'sort', 'direction'));
         }
 
         return view('admin.clients.index', array_merge(
-            ['clients' => $clients, 'filters' => $filters],
+            ['clients' => $clients, 'filters' => $filters, 'sort' => $sort, 'direction' => $direction],
             $this->clientManagementService->formOptions()
         ));
     }

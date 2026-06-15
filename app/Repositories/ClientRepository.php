@@ -50,10 +50,37 @@ class ClientRepository
                 'jobLevel:id,name,description',
                 'equipmentType:id,name',
                 'recurrence:id,name',
-                'previousJobs' => fn ($q) => $q->select(['id', 'client_id', 'scheduled_date', 'status']),
+                'previousJobs' => fn ($q) => $q->select(['id', 'client_id', 'scheduled_date']),
                 'nextJob',
-            ])
-            ->latest();
+            ]);
+
+        $sort = $filters['sort'] ?? '';
+        $direction = in_array($filters['direction'] ?? '', ['asc', 'desc']) ? $filters['direction'] : 'asc';
+        $today = now()->toDateString();
+
+        if ($sort === 'last_job') {
+            $query
+                ->orderByRaw(
+                    '(SELECT MAX(scheduled_date) FROM service_jobs WHERE client_id = clients.id AND scheduled_date < ? AND deleted_at IS NULL) IS NULL',
+                    [$today]
+                )
+                ->orderByRaw(
+                    "(SELECT MAX(scheduled_date) FROM service_jobs WHERE client_id = clients.id AND scheduled_date < ? AND deleted_at IS NULL) {$direction}",
+                    [$today]
+                );
+        } elseif ($sort === 'next_job') {
+            $query
+                ->orderByRaw(
+                    '(SELECT MIN(scheduled_date) FROM service_jobs WHERE client_id = clients.id AND scheduled_date >= ? AND deleted_at IS NULL) IS NULL',
+                    [$today]
+                )
+                ->orderByRaw(
+                    "(SELECT MIN(scheduled_date) FROM service_jobs WHERE client_id = clients.id AND scheduled_date >= ? AND deleted_at IS NULL) {$direction}",
+                    [$today]
+                );
+        } else {
+            $query->latest();
+        }
 
         $this->clientListFilter->apply($query, $filters);
 

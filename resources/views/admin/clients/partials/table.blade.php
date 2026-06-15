@@ -23,8 +23,34 @@
                 <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider bg-blue-50 text-blue-700">Rating</th>
                 <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider bg-blue-50 text-blue-700">Job Level</th>
                 {{-- Jobs --}}
-                <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider bg-purple-50 text-purple-700">Last Jobs</th>
-                <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider bg-purple-50 text-purple-700 whitespace-nowrap">Next Job</th>
+                <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider bg-purple-50 text-purple-700 cursor-pointer select-none whitespace-nowrap sort-column" data-sort="last_job">
+                    <div class="flex items-center gap-1">
+                        Last Jobs
+                        @if (($sort ?? '') === 'last_job')
+                            @if (($direction ?? 'asc') === 'desc')
+                                <svg class="h-3 w-3 shrink-0 text-purple-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                            @else
+                                <svg class="h-3 w-3 shrink-0 text-purple-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
+                            @endif
+                        @else
+                            <svg class="h-3 w-3 shrink-0 text-purple-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
+                        @endif
+                    </div>
+                </th>
+                <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider bg-purple-50 text-purple-700 cursor-pointer select-none whitespace-nowrap sort-column" data-sort="next_job">
+                    <div class="flex items-center gap-1">
+                        Next Job
+                        @if (($sort ?? '') === 'next_job')
+                            @if (($direction ?? 'asc') === 'desc')
+                                <svg class="h-3 w-3 shrink-0 text-purple-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                            @else
+                                <svg class="h-3 w-3 shrink-0 text-purple-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
+                            @endif
+                        @else
+                            <svg class="h-3 w-3 shrink-0 text-purple-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
+                        @endif
+                    </div>
+                </th>
                 {{-- Actions --}}
                 <th class="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider bg-slate-50 text-slate-600">Actions</th>
             </tr>
