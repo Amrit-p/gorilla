@@ -36,6 +36,13 @@
 
         @if ($dashboardType === 'admin')
             @include('dashboard.partials.admin-analytics', ['analytics' => $analytics])
+        @elseif ($dashboardType === 'sales')
+            @include('dashboard.partials.sales-analytics', ['analytics' => $analytics])
+        @else
+            @include('dashboard.partials.mower-analytics', ['analytics' => $analytics])
+        @endif
+
+        @if ($dashboardType === 'admin' || $dashboardType === 'sales')
             <div class="grid grid-cols-1 gap-4 xl:grid-cols-3">
                 <div class="xl:col-span-2">
                     @include('dashboard.partials.analytics-tabs')
@@ -43,16 +50,12 @@
                 <x-dashboard.chart-panel
                     title="Jobs by status"
                     subtitle="Scheduled in the last 30 days"
-                    chart-id="admin-jobs-status-chart"
+                    chart-id="dashboard-jobs-status-chart"
                     type="doughnut"
                     :labels="$analytics['charts']['jobs_by_status']['labels'] ?? []"
                     :datasets="$analytics['charts']['jobs_by_status']['datasets'] ?? []"
                 />
             </div>
-        @elseif ($dashboardType === 'sales')
-            @include('dashboard.partials.sales-analytics', ['analytics' => $analytics])
-        @else
-            @include('dashboard.partials.mower-analytics', ['analytics' => $analytics])
         @endif
 
         <div class="grid grid-cols-1 gap-5 xl:grid-cols-3">

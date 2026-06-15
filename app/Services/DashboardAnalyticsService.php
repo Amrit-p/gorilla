@@ -256,6 +256,7 @@ class DashboardAnalyticsService
                     ]],
                 ],
                 'conversion_trend' => $this->leadConversionTrendLastDays(14),
+                'jobs_by_status' => $this->jobsByStatusChart(),
             ],
         ];
     }
