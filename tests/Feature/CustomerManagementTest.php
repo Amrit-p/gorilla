@@ -6,11 +6,13 @@ use App\Enums\ClientCustomerType;
 use App\Enums\ClientPaymentStatus;
 use App\Enums\JobCustomerType;
 use App\Enums\JobParkingStatus;
+use App\Enums\JobWorkflowStatus;
 use App\Enums\LeadJobType;
 use App\Enums\LeadPaymentMode;
 use App\Enums\LeadReCompletionDays;
 use App\Enums\LeadStatus;
 use App\Enums\LeadWeedSpray;
+use App\Exports\ClientsExport;
 use App\Models\Client;
 use App\Models\ClientDocument;
 use App\Models\ClientRating;
@@ -27,6 +29,8 @@ use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Tests\TestCase;
 
 class CustomerManagementTest extends TestCase
@@ -276,6 +280,271 @@ class CustomerManagementTest extends TestCase
             ->assertSessionHasErrors('documents.0');
 
         $this->assertSame(0, ClientDocument::query()->count());
+    }
+
+    public function test_import_sample_file_can_be_downloaded(): void
+    {
+        $this->actingAs($this->admin)
+            ->get(route('admin.clients.import.sample'))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    }
+
+    public function test_import_rejects_non_xlsx_file(): void
+    {
+        $file = UploadedFile::fake()->create('clients.csv', 10, 'text/csv');
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.clients.import'), ['import_file' => $file])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('import_file');
+    }
+
+    public function test_import_creates_customers_from_valid_xlsx(): void
+    {
+        $recurrence = Recurrence::query()->where('is_active', true)->firstOrFail();
+        $equipment = EquipmentType::query()->where('is_active', true)->firstOrFail();
+
+        $file = $this->makeImportXlsx([[
+            '',            // A: #
+            '',            // B: Customer ID
+            'Import Test', // C: Name
+            'importtest@example.com', // D: Email
+            '555-9999',    // E: Phone
+            '99 Import Lane', // F: Address
+            '',            // G: Zone
+            '',            // H: Accounting Level
+            '',            // I: Job Level
+            ServiceTypes::all()[0], // J: Service Types
+            $equipment->name, // K: Equipment Type
+            LeadJobType::REGULAR->value, // L: Job Type
+            '120.00',      // M: Charges ($)
+            LeadPaymentMode::CASH->value, // N: Payment Mode
+            ClientPaymentStatus::PENDING->value, // O: Payment Status
+            ClientCustomerType::DONT_KNOW->value, // P: Customer Type
+            '',            // Q: Client Type (skip)
+            LeadWeedSpray::NO->value, // R: Weed Spray
+            $recurrence->name, // S: Recurrence
+            '',            // T: Property Details
+            '',            // U: Special Remarks
+            '',            // V: Notes
+            '',            // W: Latitude
+            '',            // X: Longitude
+            '',            // Y: Created At
+        ]]);
+
+        $response = $this->actingAs($this->admin)
+            ->postJson(route('admin.clients.import'), ['import_file' => $file])
+            ->assertOk()
+            ->assertJsonPath('imported', 1)
+            ->assertJsonPath('failed', 0)
+            ->assertJsonPath('duplicated', 0);
+
+        $this->assertDatabaseHas('clients', ['email' => 'importtest@example.com']);
+    }
+
+    public function test_import_creates_jobs_when_create_jobs_flag_is_set(): void
+    {
+        $recurrence = Recurrence::query()->where('is_active', true)->firstOrFail();
+        $equipment = EquipmentType::query()->where('is_active', true)->firstOrFail();
+
+        $file = $this->makeImportXlsx([[
+            '',                                    // A: #
+            '',                                    // B: Customer ID
+            'Job Creator',                         // C: Name
+            'jobcreator@example.com',              // D: Email
+            '555-1234',                            // E: Phone
+            '10 Job Street',                       // F: Address
+            '',                                    // G: Zone
+            '',                                    // H: Accounting Level
+            '',                                    // I: Job Level
+            ServiceTypes::all()[0],                // J: Service Types
+            $equipment->name,                      // K: Equipment Type
+            LeadJobType::REGULAR->value,           // L: Job Type
+            '80.00',                               // M: Charges ($)
+            LeadPaymentMode::CASH->value,          // N: Payment Mode
+            ClientPaymentStatus::PENDING->value,   // O: Payment Status
+            ClientCustomerType::DONT_KNOW->value,  // P: Customer Type
+            '',                                    // Q: Client Type (skip)
+            LeadWeedSpray::NO->value,              // R: Weed Spray
+            $recurrence->name,                     // S: Recurrence
+            '',                                    // T: Property Details
+            '',                                    // U: Special Remarks
+            '',                                    // V: Notes
+            '',                                    // W: Latitude
+            '',                                    // X: Longitude
+            '',                                    // Y: Created At
+        ]]);
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.clients.import'), ['import_file' => $file, 'create_jobs' => true])
+            ->assertOk()
+            ->assertJsonPath('imported', 1);
+
+        $client = Client::query()->where('email', 'jobcreator@example.com')->firstOrFail();
+
+        $nextDate = $recurrence->resolve(now());
+
+        if ($nextDate !== null) {
+            $this->assertDatabaseHas('jobs', [
+                'client_id' => $client->id,
+                'scheduled_date' => $nextDate->toDateString(),
+                'status' => JobWorkflowStatus::PENDING->value,
+                'is_recurring' => true,
+            ]);
+        } else {
+            $this->assertDatabaseMissing('jobs', ['client_id' => $client->id]);
+        }
+    }
+
+    public function test_import_does_not_create_jobs_when_flag_is_not_set(): void
+    {
+        $recurrence = Recurrence::query()->where('is_active', true)->firstOrFail();
+        $equipment = EquipmentType::query()->where('is_active', true)->firstOrFail();
+
+        $file = $this->makeImportXlsx([[
+            '', '', 'No Job Customer', 'nojob@example.com', '', '20 No Job Ave', '', '', '',
+            ServiceTypes::all()[0], $equipment->name, LeadJobType::REGULAR->value, '50.00',
+            LeadPaymentMode::CASH->value, ClientPaymentStatus::PENDING->value,
+            ClientCustomerType::DONT_KNOW->value, '', LeadWeedSpray::NO->value, $recurrence->name,
+            '', '', '', '', '', '',
+        ]]);
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.clients.import'), ['import_file' => $file])
+            ->assertOk()
+            ->assertJsonPath('imported', 1);
+
+        $client = Client::query()->where('email', 'nojob@example.com')->firstOrFail();
+        $this->assertDatabaseMissing('jobs', ['client_id' => $client->id]);
+    }
+
+    public function test_import_skips_duplicate_email(): void
+    {
+        $recurrence = Recurrence::query()->where('is_active', true)->firstOrFail();
+
+        Client::query()->create([
+            'name' => 'Existing', 'email' => 'dup@example.com', 'address' => '1 Existing Rd',
+            'service_types' => [ServiceTypes::all()[0]], 'weed_spray' => LeadWeedSpray::NO->value,
+            'job_type' => LeadJobType::REGULAR->value, 'payment_mode' => LeadPaymentMode::CASH->value,
+            'customer_type' => ClientCustomerType::DONT_KNOW->value, 'client_type' => 'Regular',
+            'recurrence_id' => $recurrence->id, 'payment_status' => ClientPaymentStatus::PENDING->value,
+            'created_by' => $this->admin->id,
+        ]);
+
+        $file = $this->makeImportXlsx([[
+            '', '', 'Dup Customer', 'dup@example.com', '', '1 Dup Street', '', '', '',
+            ServiceTypes::all()[0], '', LeadJobType::REGULAR->value, '', LeadPaymentMode::CASH->value,
+            '', ClientCustomerType::DONT_KNOW->value, '', LeadWeedSpray::NO->value, $recurrence->name,
+            '', '', '', '', '', '',
+        ]]);
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.clients.import'), ['import_file' => $file])
+            ->assertOk()
+            ->assertJsonPath('imported', 0)
+            ->assertJsonPath('duplicated', 1);
+    }
+
+    public function test_import_reports_validation_failures(): void
+    {
+        $file = $this->makeImportXlsx([[
+            '', '', 'Bad Customer', 'not-an-email', '', '1 Bad Street', '', '', '',
+            ServiceTypes::all()[0], '', 'InvalidJobType', '', '', '', '', '', '', '',
+            '', '', '', '', '', '',
+        ]]);
+
+        $response = $this->actingAs($this->admin)
+            ->postJson(route('admin.clients.import'), ['import_file' => $file])
+            ->assertOk()
+            ->assertJsonPath('imported', 0)
+            ->assertJsonPath('failed', 1);
+
+        $this->assertNotEmpty($response->json('failures'));
+    }
+
+    public function test_import_fails_when_address_is_missing(): void
+    {
+        $recurrence = Recurrence::query()->where('is_active', true)->firstOrFail();
+
+        $file = $this->makeImportXlsx([[
+            '', '', 'No Address', 'noaddress@example.com', '', '', '', '', '',
+            ServiceTypes::all()[0], '', LeadJobType::REGULAR->value, '', LeadPaymentMode::CASH->value,
+            ClientPaymentStatus::PENDING->value, ClientCustomerType::DONT_KNOW->value, '', LeadWeedSpray::NO->value,
+            $recurrence->name, '', '', '', '', '', '',
+        ]]);
+
+        $response = $this->actingAs($this->admin)
+            ->postJson(route('admin.clients.import'), ['import_file' => $file])
+            ->assertOk()
+            ->assertJsonPath('imported', 0)
+            ->assertJsonPath('failed', 1);
+
+        $this->assertStringContainsString('Address is required', $response->json('failures.0.reason.0'));
+    }
+
+    public function test_import_succeeds_without_email(): void
+    {
+        $recurrence = Recurrence::query()->where('is_active', true)->firstOrFail();
+        $equipment = EquipmentType::query()->where('is_active', true)->firstOrFail();
+
+        $file = $this->makeImportXlsx([[
+            '', '', 'No Email Customer', '', '', '55 No Email Road', '', '', '',
+            ServiceTypes::all()[0], $equipment->name, LeadJobType::REGULAR->value, '60.00',
+            LeadPaymentMode::CASH->value, ClientPaymentStatus::PENDING->value,
+            ClientCustomerType::DONT_KNOW->value, '', LeadWeedSpray::NO->value, $recurrence->name,
+            '', '', '', '', '', '',
+        ]]);
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.clients.import'), ['import_file' => $file])
+            ->assertOk()
+            ->assertJsonPath('imported', 1)
+            ->assertJsonPath('failed', 0);
+
+        $this->assertDatabaseHas('clients', ['address' => '55 No Email Road']);
+    }
+
+    /**
+     * Build an in-memory xlsx with the expected 4-row preamble followed by $dataRows.
+     *
+     * @param  array<int, array<int, mixed>>  $dataRows
+     */
+    private function makeImportXlsx(array $dataRows): UploadedFile
+    {
+        $spreadsheet = new Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Rows 1-3: title / metadata / spacer (content does not matter for import)
+        $sheet->setCellValue('A1', 'Customers Import');
+        $sheet->setCellValue('A2', 'Generated');
+        $sheet->setCellValue('A3', '');
+
+        // Row 4: headers (exactly as defined in ClientsExport::COLUMNS)
+        foreach (ClientsExport::COLUMNS as $letter => $colDef) {
+            $sheet->setCellValue($letter.'4', $colDef['header']);
+        }
+
+        // Row 5+: data
+        $letters = array_keys(ClientsExport::COLUMNS);
+        foreach ($dataRows as $rowIndex => $row) {
+            foreach ($row as $colIndex => $value) {
+                if (isset($letters[$colIndex])) {
+                    $sheet->setCellValue($letters[$colIndex].($rowIndex + 5), $value);
+                }
+            }
+        }
+
+        $path = sys_get_temp_dir().'/test_clients_import_'.uniqid().'.xlsx';
+        (new Xlsx($spreadsheet))->save($path);
+
+        return new UploadedFile(
+            $path,
+            'clients.xlsx',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            null,
+            true,
+        );
     }
 
     /**

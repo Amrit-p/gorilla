@@ -2,18 +2,29 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\ClientCustomerType;
+use App\Enums\ClientPaymentStatus;
 use App\Enums\JobWorkflowStatus;
+use App\Enums\LeadJobType;
+use App\Enums\LeadPaymentMode;
+use App\Enums\LeadWeedSpray;
 use App\Exports\ClientsExport;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\ImportClientsRequest;
 use App\Http\Requests\Admin\StoreClientRequest;
 use App\Http\Requests\Admin\UpdateClientRequest;
 use App\Models\Client;
 use App\Models\ClientDocument;
+use App\Models\EquipmentType;
+use App\Models\Recurrence;
 use App\Models\User;
+use App\Models\Zone;
 use App\Services\ClientManagementService;
 use App\Services\JobManagementService;
 use App\Support\CrmRoles;
+use App\Support\ServiceTypes;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -64,6 +75,73 @@ class ClientManagementController extends Controller
             ['clients' => $clients, 'filters' => $filters, 'sort' => $sort, 'direction' => $direction],
             $this->clientManagementService->formOptions()
         ));
+    }
+
+    public function import(ImportClientsRequest $request): JsonResponse
+    {
+        $this->authorize('create', Client::class);
+
+        try {
+            $result = $this->clientManagementService->importClients(
+                $request->user(),
+                $request->file('import_file'),
+                (bool) $request->boolean('create_jobs'),
+            );
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        $message = "Imported {$result['imported']} customer(s) successfully.";
+        if ($result['failed'] > 0) {
+            $message .= " {$result['failed']} row(s) failed.";
+        }
+        if ($result['duplicated'] > 0) {
+            $message .= " {$result['duplicated']} row(s) skipped as duplicates.";
+        }
+
+        return response()->json([
+            'message' => $message,
+            'imported' => $result['imported'],
+            'imported_rows' => $result['imported_rows'],
+            'failed' => $result['failed'],
+            'failures' => $result['failures'],
+            'duplicated' => $result['duplicated'],
+            'duplicates' => $result['duplicates'],
+        ]);
+    }
+
+    public function downloadImportSample(): StreamedResponse
+    {
+        $this->authorize('create', Client::class);
+
+        $sample = (object) [
+            'customer_unique_id' => null,
+            'name' => 'Sample Customer',
+            'email' => 'customer@example.com',
+            'phone' => '555-0100',
+            'address' => '123 Green Street',
+            'zone' => (object) ['name' => Zone::query()->where('is_active', true)->value('name') ?? 'Zone A'],
+            'accountingLevel' => null,
+            'jobLevel' => null,
+            'service_types' => array_slice(ServiceTypes::all(), 0, 2) ?: ['Mulching'],
+            'equipmentType' => (object) ['name' => EquipmentType::query()->where('is_active', true)->value('name') ?? 'Mower'],
+            'job_type' => LeadJobType::REGULAR->value,
+            'total_charges' => 75.00,
+            'payment_mode' => LeadPaymentMode::CASH->value,
+            'payment_status' => ClientPaymentStatus::PENDING->value,
+            'customer_type' => ClientCustomerType::DONT_KNOW->value,
+            'client_type' => 'Regular',
+            'weed_spray' => LeadWeedSpray::NO->value,
+            'recurrence' => (object) ['name' => Recurrence::query()->where('is_active', true)->value('name') ?? ''],
+            'property_details' => '',
+            'special_remarks' => 'Gate code 1234',
+            'notes' => '',
+            'latitude' => null,
+            'longitude' => null,
+            'created_at' => now(),
+        ];
+
+        return (new ClientsExport(EloquentCollection::make([$sample])))->download('customers-import-sample.xlsx');
     }
 
     public function exportExcel(Request $request): StreamedResponse

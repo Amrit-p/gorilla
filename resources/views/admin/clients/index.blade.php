@@ -15,6 +15,8 @@
         </div>
     </div>
 
+    <x-clients.import-modal />
+
     @include('admin.partials.dropdown-script')
 
     <style>
@@ -47,6 +49,10 @@
     </style>
 
     <script>
+        function openModal(id) { $('#' + id).removeClass('hidden').addClass('flex'); }
+        function closeModal(id) { $('#' + id).addClass('hidden').removeClass('flex'); }
+        $('[data-close-modal]').on('click', function () { closeModal($(this).data('close-modal')); });
+
         function showClientsLoading() {
             if ($('#clients-loading-overlay').length) return;
             $('#clients-table-container').append(

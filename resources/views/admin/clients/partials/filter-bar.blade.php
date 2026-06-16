@@ -44,6 +44,12 @@
                 :pdfHref="route('admin.clients.export.pdf')"
             />
             @can('manage-customers')
+                <button type="button" id="open-client-import-modal" class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm hover:bg-slate-50">
+                    <svg class="h-3.5 w-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"/>
+                    </svg>
+                    Import
+                </button>
                 <a href="{{ route('admin.clients.create') }}" class="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700">Add Customer</a>
             @endcan
         </div>

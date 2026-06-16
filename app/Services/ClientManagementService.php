@@ -8,6 +8,7 @@ use App\Enums\JobParkingStatus;
 use App\Enums\LeadJobType;
 use App\Enums\LeadPaymentMode;
 use App\Enums\LeadWeedSpray;
+use App\Imports\ClientsImport;
 use App\Jobs\GeocodeClientAddressJob;
 use App\Models\AccountingLevel;
 use App\Models\Client;
@@ -125,6 +126,23 @@ class ClientManagementService
     {
         $client->delete();
         $this->activityLogService->log($actor, 'client.deleted', 'Customer deleted.', ['client_id' => $client->id]);
+    }
+
+    /**
+     * @return array{imported: int, failed: int, failures: list<array{row: int, identifier: string, reason: list<string>}>, duplicated: int, duplicates: list<array{row: int, identifier: string, reason: list<string>}>}
+     */
+    public function importClients(User $actor, UploadedFile $file, bool $createJobs = false): array
+    {
+        $result = (new ClientsImport($actor, $this, $createJobs))->import($file);
+
+        $this->activityLogService->log($actor, 'client.imported', 'Customer file import completed.', [
+            'imported_rows' => $result['imported'],
+            'failed_rows' => $result['failed'],
+            'duplicated_rows' => $result['duplicated'],
+            'file' => $file->getClientOriginalName(),
+        ]);
+
+        return $result;
     }
 
     /**
