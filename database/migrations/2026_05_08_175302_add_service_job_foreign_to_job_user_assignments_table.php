@@ -24,8 +24,13 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('job_user_assignments', function (Blueprint $table) {
-            $table->dropForeign(['job_id']);
-        });
+        $fkExists = collect(Schema::getForeignKeys('job_user_assignments'))
+            ->contains('name', 'job_user_assignments_job_id_foreign');
+
+        if ($fkExists) {
+            Schema::table('job_user_assignments', function (Blueprint $table) {
+                $table->dropForeign(['job_id']);
+            });
+        }
     }
 };

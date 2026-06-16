@@ -16,7 +16,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('clients', function (Blueprint $table) {
-            $table->dropForeignIdFor(\App\Models\JobLevel::class);
+            $table->dropForeign(['job_level_id']);
+            $table->dropColumn('job_level_id');
         });
     }
 };

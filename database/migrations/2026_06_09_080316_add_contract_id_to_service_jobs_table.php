@@ -19,7 +19,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('service_jobs', function (Blueprint $table): void {
-            $table->dropForeignIdFor(\App\Models\Contract::class);
+            $table->dropForeign(['contract_id']);
+            $table->dropColumn('contract_id');
         });
     }
 };

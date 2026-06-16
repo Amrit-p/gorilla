@@ -16,7 +16,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('clients', function (Blueprint $table) {
-            $table->dropForeignIdFor(\App\Models\AccountingLevel::class);
+            $table->dropForeign(['accounting_level_id']);
+            $table->dropColumn('accounting_level_id');
         });
     }
 };
