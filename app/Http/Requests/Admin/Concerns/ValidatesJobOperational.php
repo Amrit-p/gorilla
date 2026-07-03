@@ -6,6 +6,7 @@ use App\Enums\JobCustomerType;
 use App\Enums\JobOperationalPaymentMode;
 use App\Enums\JobOperationalPaymentStatus;
 use App\Enums\JobParkingStatus;
+use App\Enums\JobWorkflowStatus;
 use App\Models\User;
 use App\Support\CrmRoles;
 use App\Support\EquipmentTypes;
@@ -24,12 +25,12 @@ trait ValidatesJobOperational
             'recurrence_id' => ['required', 'exists:recurrences,id'],
             'zone_id' => ['nullable', 'exists:zones,id'],
             'equipment_type_id' => EquipmentTypes::idRules(),
-            'job_level_id' => ['required', 'exists:job_levels,id'],
+            'job_level_id' => ['nullable', 'exists:job_levels,id'],
             'client_address' => ['required', 'string', 'max:255'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:latitude'],
             'scheduled_date' => ['required', 'date'],
-            'scheduled_time' => ['required', 'date_format:H:i'],
+            'scheduled_time' => ['nullable', 'date_format:H:i'],
             'estimated_duration_minutes' => ['required', 'integer', 'min:15', 'max:1440'],
             'required_services' => ['required', 'array', 'min:1'],
             'required_services.*' => ServiceTypes::itemRules(),
@@ -49,7 +50,7 @@ trait ValidatesJobOperational
                 },
             ],
             'payment_mode' => ['required', Rule::in(JobOperationalPaymentMode::values())],
-            'payment_status' => ['required', Rule::in(JobOperationalPaymentStatus::values())],
+            'payment_status' => ['nullable', Rule::in(JobOperationalPaymentStatus::values())],
             'payment_pending_reason' => [
                 'nullable',
                 'required_if:payment_status,'.JobOperationalPaymentStatus::PENDING->value,
@@ -79,7 +80,7 @@ trait ValidatesJobOperational
                 },
             ],
             'employee_ids.*' => ['integer'],
-            'status' => ['nullable', Rule::in(\App\Enums\JobWorkflowStatus::values())],
+            'status' => ['nullable', Rule::in(JobWorkflowStatus::values())],
         ];
     }
 

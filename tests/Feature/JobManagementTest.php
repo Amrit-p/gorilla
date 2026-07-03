@@ -63,6 +63,26 @@ class JobManagementTest extends TestCase
         ]);
     }
 
+    public function test_job_can_be_created_without_optional_operational_fields(): void
+    {
+        $client = Client::query()->create($this->clientPayload());
+
+        $payload = $this->jobPayload($client->id);
+        unset($payload['job_level_id'], $payload['scheduled_time'], $payload['payment_status']);
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.jobs.store'), $payload)
+            ->assertCreated()
+            ->assertJsonPath('job.client_id', $client->id);
+
+        $this->assertDatabaseHas('service_jobs', [
+            'client_id' => $client->id,
+            'job_level_id' => null,
+            'scheduled_time' => null,
+            'payment_status' => null,
+        ]);
+    }
+
     public function test_mower_assignment_on_create(): void
     {
         $client = Client::query()->create($this->clientPayload());
