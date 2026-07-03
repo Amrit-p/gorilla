@@ -97,8 +97,10 @@ window.crmBuildMapJobPopup = function (job) {
                 data-id="${job.id}"
                 data-done-by="${job.done_by_user_id || ''}"
                 data-employee-ids='${JSON.stringify(job.helper_employee_ids || [])}'>Assign</button>
+        ${/* NOTE: Status button hidden, not deleted — unsure if still needed. Re-enable by uncommenting.
         <button class="status-job inline-flex items-center justify-center h-8 sm:h-7 px-3 rounded-md text-[11px] font-semibold bg-cyan-600 text-white border-0 cursor-pointer hover:bg-cyan-700 transition-colors"
                 data-id="${job.id}">Status</button>
+        */ ''}
         <button class="delete-job inline-flex items-center justify-center h-8 sm:h-7 px-3 rounded-md text-[11px] font-semibold bg-red-600 text-white border-0 cursor-pointer hover:bg-red-700 transition-colors"
                 data-id="${job.id}">Delete</button>` : ''}
     </div>
