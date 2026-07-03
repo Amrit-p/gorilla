@@ -1,4 +1,11 @@
-<x-layouts.dashboard :title="'Lead Management'" :subtitle="'View, filter, and manage your sales leads in one place.'">
+@php
+    $convertedOnly = $convertedOnly ?? false;
+    $leadsListRoute = $convertedOnly ? route('admin.leads.converted') : route('admin.leads.index');
+@endphp
+<x-layouts.dashboard
+    :title="$convertedOnly ? 'Converted to Customer' : 'Lead Management'"
+    :subtitle="$convertedOnly ? 'Leads that have converted into paying customers.' : 'View, filter, and manage your sales leads in one place.'"
+>
     <div class="space-y-5">
 
         @if (session('success'))
@@ -13,11 +20,11 @@
             :salesUsers="$salesUsers"
             :zones="$zones"
             :recurrences="$recurrences"
-            :resetRoute="route('admin.leads.index')"
+            :resetRoute="$leadsListRoute"
         />
 
         <div id="leads-table-container">
-            @include('admin.leads.partials.table', ['leads' => $leads])
+            @include('admin.leads.partials.table', ['leads' => $leads, 'convertedOnly' => $convertedOnly])
         </div>
     </div>
 
@@ -68,7 +75,7 @@
         function closeModal(id) { $('#' + id).addClass('hidden').removeClass('flex'); }
         $('[data-close-modal]').on('click', function () { closeModal($(this).data('close-modal')); });
 
-        function refreshLeads(url = "{{ route('admin.leads.index') }}") {
+        function refreshLeads(url = "{{ $leadsListRoute }}") {
             $.get(url, $('#lead-filters-form').serialize(), function (response) {
                 $('#leads-table-container').html(response.html);
             });

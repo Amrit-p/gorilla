@@ -47,6 +47,7 @@
                 </button>
                 <div class="sidebar-accordion-panel mt-0.5 space-y-0.5">
                     <a href="{{ route('admin.leads.index') }}" class="{{ $linkClass(['admin.leads.index', 'admin.leads.show', 'admin.leads.edit'], true) }}">All leads</a>
+                    <a href="{{ route('admin.leads.converted') }}" class="{{ $linkClass(['admin.leads.converted'], true) }}">Converted to Customer</a>
                     <a href="{{ route('admin.leads.create') }}" class="{{ $linkClass(['admin.leads.create'], true) }}">Add lead</a>
                 </div>
             </div>

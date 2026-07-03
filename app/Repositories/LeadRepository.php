@@ -13,7 +13,7 @@ class LeadRepository
         private readonly LeadListFilter $leadListFilter
     ) {}
 
-    public function paginatedList(array $filters, int $perPage = 15): LengthAwarePaginator
+    public function paginatedList(array $filters, int $perPage = 15, bool $convertedOnly = false): LengthAwarePaginator
     {
         $query = Lead::query()
             ->select([
@@ -44,6 +44,12 @@ class LeadRepository
                 'recurrence:id,name',
             ])
             ->latest();
+
+        if ($convertedOnly) {
+            $query->whereNotNull('converted_at');
+        } else {
+            $query->whereNull('converted_at');
+        }
 
         $this->leadListFilter->apply($query, $filters);
 

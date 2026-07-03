@@ -53,11 +53,38 @@ class LeadManagementController extends Controller
         );
 
         if (crm_wants_partial($request)) {
-            return crm_ajax_html('admin.leads.partials.table', compact('leads'));
+            return crm_ajax_html('admin.leads.partials.table', ['leads' => $leads, 'convertedOnly' => false]);
         }
 
         return view('admin.leads.index', array_merge(
-            ['leads' => $leads, 'filters' => $filters],
+            ['leads' => $leads, 'filters' => $filters, 'convertedOnly' => false],
+            $this->leadManagementService->formOptions()
+        ));
+    }
+
+    public function converted(Request $request): View|JsonResponse
+    {
+        $this->authorize('viewAny', Lead::class);
+
+        $filters = [
+            'search' => $request->string('search')->toString(),
+            'status' => $request->string('status')->toString(),
+            'assigned_sales_user_id' => $request->string('assigned_sales_user_id')->toString(),
+            'zone_id' => $request->string('zone_id')->toString(),
+            'recurrence_id' => $request->string('recurrence_id')->toString(),
+        ];
+
+        $leads = $this->leadManagementService->paginatedConvertedLeads(
+            $filters,
+            (int) config('mowing.default_pagination', 15)
+        );
+
+        if (crm_wants_partial($request)) {
+            return crm_ajax_html('admin.leads.partials.table', ['leads' => $leads, 'convertedOnly' => true]);
+        }
+
+        return view('admin.leads.index', array_merge(
+            ['leads' => $leads, 'filters' => $filters, 'convertedOnly' => true],
             $this->leadManagementService->formOptions()
         ));
     }
@@ -199,15 +226,15 @@ class LeadManagementController extends Controller
         if ($result['duplicated'] > 0) {
             $message .= " {$result['duplicated']} row(s) skipped as duplicates.";
         }
-        
+
         return response()->json([
-            'message'       => $message,
-            'imported'      => $result['imported'],
+            'message' => $message,
+            'imported' => $result['imported'],
             'imported_rows' => $result['imported_rows'],
-            'failed'        => $result['failed'],
-            'failures'      => $result['failures'],
-            'duplicated'    => $result['duplicated'],
-            'duplicates'    => $result['duplicates'],
+            'failed' => $result['failed'],
+            'failures' => $result['failures'],
+            'duplicated' => $result['duplicated'],
+            'duplicates' => $result['duplicates'],
         ]);
     }
 
@@ -216,29 +243,29 @@ class LeadManagementController extends Controller
         $this->authorize('create', Lead::class);
 
         $sample = (object) [
-            'client_name'       => 'Sample Property',
-            'email'             => 'lead@example.com',
-            'mobile_number'     => '555-0100',
-            'address'           => '123 Green Street',
-            'zone'              => (object) ['name' => Zone::query()->where('is_active', true)->value('name') ?? 'Zone A'],
-            'service_types'     => array_slice(ServiceTypes::all(), 0, 2) ?: ['Mulching'],
-            'equipmentType'     => (object) ['name' => EquipmentType::query()->where('is_active', true)->value('name') ?? 'Mower'],
-            'job_type'          => LeadJobType::REGULAR->value,
-            'charges'           => 75.00,
-            'payment_mode'      => LeadPaymentMode::CASH->value,
-            'payment_status'    => LeadPaymentStatus::PENDING->value,
-            'status'            => LeadStatus::NEW->value,
+            'client_name' => 'Sample Property',
+            'email' => 'lead@example.com',
+            'mobile_number' => '555-0100',
+            'address' => '123 Green Street',
+            'zone' => (object) ['name' => Zone::query()->where('is_active', true)->value('name') ?? 'Zone A'],
+            'service_types' => array_slice(ServiceTypes::all(), 0, 2) ?: ['Mulching'],
+            'equipmentType' => (object) ['name' => EquipmentType::query()->where('is_active', true)->value('name') ?? 'Mower'],
+            'job_type' => LeadJobType::REGULAR->value,
+            'charges' => 75.00,
+            'payment_mode' => LeadPaymentMode::CASH->value,
+            'payment_status' => LeadPaymentStatus::PENDING->value,
+            'status' => LeadStatus::NEW->value,
             'assignedSalesUser' => null,
-            'lead_date'         => now(),
-            'lead_time'         => '09:00',
-            'converted_at'      => null,
-            'weed_spray'        => LeadWeedSpray::NO->value,
-            'recurrence'        => (object) ['name' => Recurrence::query()->where('is_active', true)->value('name') ?? ''],
-            'remarks'           => 'Gate code 1234',
-            'property_details'  => '',
-            'latitude'          => null,
-            'longitude'         => null,
-            'created_at'        => now(),
+            'lead_date' => now(),
+            'lead_time' => '09:00',
+            'converted_at' => null,
+            'weed_spray' => LeadWeedSpray::NO->value,
+            'recurrence' => (object) ['name' => Recurrence::query()->where('is_active', true)->value('name') ?? ''],
+            'remarks' => 'Gate code 1234',
+            'property_details' => '',
+            'latitude' => null,
+            'longitude' => null,
+            'created_at' => now(),
         ];
 
         return (new LeadsExport(EloquentCollection::make([$sample])))->download('leads-import-sample.xlsx');
@@ -250,7 +277,7 @@ class LeadManagementController extends Controller
 
         $leads = $this->leadManagementService->exportLeads($this->exportFilters($request));
 
-        return (new LeadsExport($leads))->download('leads-' . now()->format('Y-m-d') . '.xlsx');
+        return (new LeadsExport($leads))->download('leads-'.now()->format('Y-m-d').'.xlsx');
     }
 
     public function exportPdf(Request $request): Response
@@ -261,16 +288,16 @@ class LeadManagementController extends Controller
 
         return Pdf::loadView('admin.leads.partials.export-pdf', compact('leads'))
             ->setPaper('a3', 'landscape')
-            ->download('leads-' . now()->format('Y-m-d') . '.pdf');
+            ->download('leads-'.now()->format('Y-m-d').'.pdf');
     }
 
     private function exportFilters(Request $request): array
     {
         return [
-            'search'                 => $request->string('search')->toString(),
-            'status'                 => $request->string('status')->toString(),
+            'search' => $request->string('search')->toString(),
+            'status' => $request->string('status')->toString(),
             'assigned_sales_user_id' => $request->string('assigned_sales_user_id')->toString(),
-            'zone_id'                => $request->string('zone_id')->toString(),
+            'zone_id' => $request->string('zone_id')->toString(),
         ];
     }
 }

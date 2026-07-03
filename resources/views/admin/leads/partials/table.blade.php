@@ -1,4 +1,13 @@
-<x-ui.table :headers="['Lead', 'Contact', 'Job & Payment', 'Recurrence', 'Zone', 'Status', 'Assigned', '']">
+@php
+    $convertedOnly = $convertedOnly ?? false;
+    $tableHeaders = ['Lead', 'Contact', 'Job & Payment', 'Recurrence', 'Zone', 'Status', 'Created'];
+    if ($convertedOnly) {
+        $tableHeaders[] = 'Converted';
+    }
+    $tableHeaders[] = 'Assigned';
+    $tableHeaders[] = '';
+@endphp
+<x-ui.table :headers="$tableHeaders">
     @forelse ($leads as $lead)
         <tr class="divide-x divide-slate-100 transition-colors hover:bg-slate-50/70">
 
@@ -94,6 +103,22 @@
                 </div>
             </td>
 
+            {{-- Created --}}
+            <td class="whitespace-nowrap px-4 py-4">
+                <span class="text-xs text-slate-500">{{ $lead->created_at?->format('M d, Y') ?? '—' }}</span>
+            </td>
+
+            @if ($convertedOnly)
+                {{-- Converted --}}
+                <td class="whitespace-nowrap px-4 py-4">
+                    @if ($lead->converted_at)
+                        <span class="text-xs font-medium text-emerald-600">{{ $lead->converted_at->format('M d, Y') }}</span>
+                    @else
+                        <span class="text-xs text-slate-400">—</span>
+                    @endif
+                </td>
+            @endif
+
             {{-- Assigned --}}
             <td class="whitespace-nowrap px-4 py-4">
                 @if ($lead->assignedSalesUser)
@@ -155,7 +180,7 @@
         </tr>
     @empty
         <tr>
-            <td colspan="8" class="px-4 py-10 text-center text-sm text-slate-400">No leads found.</td>
+            <td colspan="{{ count($tableHeaders) }}" class="px-4 py-10 text-center text-sm text-slate-400">No leads found.</td>
         </tr>
     @endforelse
 </x-ui.table>

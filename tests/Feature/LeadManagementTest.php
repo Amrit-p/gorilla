@@ -75,7 +75,7 @@ class LeadManagementTest extends TestCase
         ]);
         $this->assertSame(1, Job::query()->where('lead_id', $lead->id)->count());
         $this->assertDatabaseHas('service_jobs', [
-            'lead_id'   => $lead->id,
+            'lead_id' => $lead->id,
             'client_id' => $client->id,
         ]);
     }
@@ -140,6 +140,30 @@ class LeadManagementTest extends TestCase
             'email' => 'duplicate@example.com',
             'lead_id' => $lead->id,
         ]);
+    }
+
+    public function test_converted_page_only_lists_converted_leads(): void
+    {
+        $convertedLead = Lead::query()->create($this->validLeadPayload());
+        $this->actingAs($this->admin)
+            ->patchJson(route('admin.leads.status.update', $convertedLead), ['status' => LeadStatus::WON->value])
+            ->assertOk();
+
+        $unconvertedPayload = $this->validLeadPayload();
+        $unconvertedPayload['email'] = 'unconverted@example.com';
+        $unconvertedLead = Lead::query()->create($unconvertedPayload);
+
+        $convertedResponse = $this->actingAs($this->admin)->get(route('admin.leads.converted'));
+        $convertedResponse->assertOk();
+        $convertedLeads = $convertedResponse->viewData('leads');
+        $this->assertTrue($convertedLeads->contains('id', $convertedLead->id));
+        $this->assertFalse($convertedLeads->contains('id', $unconvertedLead->id));
+
+        $indexResponse = $this->actingAs($this->admin)->get(route('admin.leads.index'));
+        $indexResponse->assertOk();
+        $indexLeads = $indexResponse->viewData('leads');
+        $this->assertFalse($indexLeads->contains('id', $convertedLead->id));
+        $this->assertTrue($indexLeads->contains('id', $unconvertedLead->id));
     }
 
     public function test_equipment_type_id_must_be_active(): void

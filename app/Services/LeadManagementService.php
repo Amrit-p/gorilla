@@ -2,12 +2,14 @@
 
 namespace App\Services;
 
+use App\Enums\LeadJobType;
+use App\Enums\LeadPaymentMode;
 use App\Enums\LeadPaymentStatus;
 use App\Enums\LeadStatus;
+use App\Enums\LeadWeedSpray;
 use App\Events\LeadConvertedToClient;
 use App\Imports\LeadsImport;
 use App\Jobs\GeocodeLeadAddressJob;
-use App\Models\EquipmentType;
 use App\Models\Lead;
 use App\Models\LeadNote;
 use App\Models\Recurrence;
@@ -37,6 +39,11 @@ class LeadManagementService
         return $this->leadRepository->paginatedList($filters, $perPage);
     }
 
+    public function paginatedConvertedLeads(array $filters, int $perPage): LengthAwarePaginator
+    {
+        return $this->leadRepository->paginatedList($filters, $perPage, convertedOnly: true);
+    }
+
     public function exportLeads(array $filters): Collection
     {
         return $this->leadRepository->exportList($filters);
@@ -55,11 +62,11 @@ class LeadManagementService
                 ->orderBy('name')
                 ->get(['id', 'name']),
             'serviceTypes' => ServiceTypes::all(),
-            'weedSprayOptions' => \App\Enums\LeadWeedSpray::values(),
+            'weedSprayOptions' => LeadWeedSpray::values(),
             'equipmentTypes' => EquipmentTypes::selectOptions(),
             'recurrences' => Recurrence::query()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(['id', 'name']),
-            'jobTypes' => \App\Enums\LeadJobType::values(),
-            'paymentModes' => \App\Enums\LeadPaymentMode::values(),
+            'jobTypes' => LeadJobType::values(),
+            'paymentModes' => LeadPaymentMode::values(),
             'paymentStatuses' => LeadPaymentStatus::values(),
             'googleMapsKey' => GoogleMapsSettings::apiKey(),
             'zones' => Zone::query()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(['id', 'name']),
@@ -148,10 +155,10 @@ class LeadManagementService
         $result = (new LeadsImport($actor, $this, $this->leadConversionService))->import($file);
 
         $this->activityLogService->log($actor, 'lead.imported', 'Lead file import completed.', [
-            'imported_rows'   => $result['imported'],
-            'failed_rows'     => $result['failed'],
+            'imported_rows' => $result['imported'],
+            'failed_rows' => $result['failed'],
             'duplicated_rows' => $result['duplicated'],
-            'file'            => $file->getClientOriginalName(),
+            'file' => $file->getClientOriginalName(),
         ]);
 
         return $result;

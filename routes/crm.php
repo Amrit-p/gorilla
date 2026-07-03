@@ -209,6 +209,7 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
 
     Route::middleware('crm.permission:'.CrmPermissions::MANAGE_LEADS)->group(function (): void {
         Route::get('/admin/leads', [LeadManagementController::class, 'index'])->name('admin.leads.index');
+        Route::get('/admin/leads/converted', [LeadManagementController::class, 'converted'])->name('admin.leads.converted');
         Route::get('/admin/leads/create', [LeadManagementController::class, 'create'])->name('admin.leads.create');
         Route::post('/admin/leads', [LeadManagementController::class, 'store'])->name('admin.leads.store');
         Route::get('/admin/leads/export/excel', [LeadManagementController::class, 'exportExcel'])->name('admin.leads.export.excel');
