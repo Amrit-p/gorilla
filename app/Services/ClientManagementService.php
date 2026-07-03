@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\ClientCustomerType;
 use App\Enums\ClientPaymentStatus;
 use App\Enums\JobParkingStatus;
+use App\Enums\JobWorkflowStatus;
 use App\Enums\LeadJobType;
 use App\Enums\LeadPaymentMode;
 use App\Enums\LeadWeedSpray;
@@ -32,7 +33,8 @@ class ClientManagementService
     public function __construct(
         private readonly ClientRepository $clientRepository,
         private readonly ClientStatisticsService $clientStatisticsService,
-        private readonly ActivityLogService $activityLogService
+        private readonly ActivityLogService $activityLogService,
+        private readonly JobManagementService $jobManagementService
     ) {}
 
     public function paginatedClients(array $filters, int $perPage): LengthAwarePaginator
@@ -111,15 +113,33 @@ class ClientManagementService
 
     public function updateClient(User $actor, Client $client, array $data): Client
     {
+        $originalScheduleDate = $client->schedule_date?->toDateString();
+
         $documents = $this->pullDocuments($data);
         $client->fill($this->prepareClientData($data, $client));
         $client->save();
         $this->storeClientDocuments($actor, $client, $documents);
 
+        if ($client->schedule_date !== null && $client->schedule_date->toDateString() !== $originalScheduleDate) {
+            $this->reschedulePendingJobs($actor, $client);
+        }
+
         GeocodeClientAddressJob::dispatch($client->id);
         $this->activityLogService->log($actor, 'client.updated', 'Customer updated.', ['client_id' => $client->id]);
 
         return $client;
+    }
+
+    private function reschedulePendingJobs(User $actor, Client $client): void
+    {
+        $pendingJobs = $client->jobs()
+            ->where('status', JobWorkflowStatus::PENDING->value)
+            ->whereNull('verified_at')
+            ->get();
+
+        if ($pendingJobs->isNotEmpty()) {
+            $this->jobManagementService->scheduleJobs($actor, $pendingJobs, $client->schedule_date->toDateString());
+        }
     }
 
     public function deleteClient(User $actor, Client $client): void
