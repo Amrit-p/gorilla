@@ -29,7 +29,9 @@
             <div class="mt-4">
                 <label for="mower-status" class="mb-1 block text-sm font-medium text-slate-700">Update status</label>
                 <select id="mower-status" class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base">
+                    {{-- NOTE: 'Started' option hidden, not deleted — unsure if still needed. Remove the @continue below to re-enable. --}}
                     @foreach ($workflowStatuses as $status)
+                        @continue($status === \App\Enums\JobWorkflowStatus::STARTED->value)
                         <option value="{{ $status }}" @selected($job->status === $status)>{{ $status }}</option>
                     @endforeach
                 </select>

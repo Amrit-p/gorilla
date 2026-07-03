@@ -5,6 +5,8 @@ namespace App\Enums;
 enum JobWorkflowStatus: string
 {
     case PENDING = 'Pending';
+
+    #[\Deprecated('STARTED is no longer used in the job status workflow.')]
     case STARTED = 'Started';
     case HOLD = 'Hold';
     case COMPLETED = 'Completed';
