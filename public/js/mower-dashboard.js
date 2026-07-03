@@ -209,6 +209,7 @@
             $item.append($link, $del);
             $gallery.append($item);
         });
+        applyHoldStatusLock();
     }
 
     // ─── Job detail: save status ────────────────────────────────────────────
@@ -251,6 +252,22 @@
     }
 
     $(document).on('change', '#mower-payment-status', togglePaymentReason);
+
+
+    // ─── Job detail: lock other fields while status is Hold ─────────────────
+
+    function applyHoldStatusLock() {
+        if (!document.getElementById('mower-status')) return;
+        const isHold = $('#mower-status').val() === 'Hold';
+
+        $('#mower-payment-status, #mower-payment-reason, #mower-first-payment, #mower-second-payment, #mower-consumed-time, #mower-remark-text, #mower-before-input, #mower-after-input')
+            .prop('disabled', isHold);
+
+        $('#mower-before-label, #mower-after-label').toggleClass('opacity-50 pointer-events-none', isHold);
+        $('.mower-delete-image').toggleClass('opacity-50 pointer-events-none', isHold);
+    }
+
+    $(document).on('change', '#mower-status', applyHoldStatusLock);
 
 
     // ─── Job detail: save payment ───────────────────────────────────────────
@@ -559,6 +576,7 @@
 
         updateScopeButtons(filters);
         updateExportLink(filters);
+        applyHoldStatusLock();
     });
 
 }(jQuery));
