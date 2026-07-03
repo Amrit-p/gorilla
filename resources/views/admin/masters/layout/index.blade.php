@@ -14,10 +14,36 @@
 
         <x-masters.filter-bar :filters="$filters" />
 
-        <div id="master-table-container">
+        <div id="master-table-container" class="relative">
             @include($tablePartial, ['records' => $records])
         </div>
     </div>
+
+    <style>
+        #master-loading-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 20;
+            background: rgba(255, 255, 255, 0.72);
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+        }
+        #master-loading-overlay .master-spinner {
+            width: 28px;
+            height: 28px;
+            border: 2.5px solid #e0e7ff;
+            border-top-color: #4f46e5;
+            border-radius: 50%;
+            animation: master-spin 0.7s linear infinite;
+        }
+        @keyframes master-spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
 
     <x-ui.modal id="master-form-modal" :title="'Add ' . ucfirst($singularLabel)">
         <form id="master-form" class="space-y-3">
@@ -56,9 +82,25 @@
                 closeModal($(this).data('close-modal'));
             });
 
+            function showMasterLoading() {
+                if ($('#master-loading-overlay').length) return;
+                $('#master-table-container').append(
+                    '<div id="master-loading-overlay">' +
+                    '<div style="display:flex;flex-direction:column;align-items:center;gap:10px;">' +
+                    '<div class="master-spinner"></div>' +
+                    '<span style="font-size:0.7rem;font-weight:500;color:#64748b;letter-spacing:0.05em;">Loading…</span>' +
+                    '</div>' +
+                    '</div>'
+                );
+            }
+
             function fetchRecords(url = routes.index) {
+                showMasterLoading();
                 $.get(url, $('#master-filter-form').serialize(), function (response) {
                     $('#master-table-container').html(response.html);
+                }).fail(function () {
+                    $('#master-loading-overlay').remove();
+                    showMasterAlert('Failed to load records. Please try again.', true);
                 });
             }
 
@@ -67,8 +109,16 @@
                 fetchRecords();
             });
 
-            $('#master-filter-form select').on('change', function () {
+            $('#master-filter-form select.filter').on('change', function () {
                 fetchRecords();
+            });
+
+            let masterSearchTimer;
+            $('#master-filter-form').on('input', 'input[type="text"].filter', function () {
+                clearTimeout(masterSearchTimer);
+                masterSearchTimer = setTimeout(function () {
+                    fetchRecords();
+                }, 400);
             });
 
             function resetForm(isEdit = false) {

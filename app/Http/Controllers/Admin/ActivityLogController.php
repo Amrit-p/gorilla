@@ -16,7 +16,7 @@ class ActivityLogController extends Controller
 
     public function index(FilterActivityLogRequest $request): View|JsonResponse
     {
-        $filters = $request->validated();
+        $filters = $request->toFilters();
 
         $logs = $this->activityLogModuleService->paginatedLogs(
             $filters,

@@ -16,7 +16,7 @@
         <form id="contractor-filter-form" class="flex flex-wrap gap-2">
             <input type="text" name="search" value="{{ $filters['search'] }}"
                 placeholder="Search name, phone, email…"
-                class="rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400" />
+                class="filter rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400" />
             <button type="submit"
                 class="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm hover:bg-slate-50">Search</button>
             @if ($filters['search'])
@@ -29,6 +29,35 @@
             @include('admin.contractors.partials.table', ['contractors' => $contractors])
         </div>
     </div>
+
+    <style>
+        #contractors-table-container {
+            position: relative;
+        }
+        #contractors-loading-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 20;
+            background: rgba(255, 255, 255, 0.72);
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+        }
+        #contractors-loading-overlay .contractors-spinner {
+            width: 28px;
+            height: 28px;
+            border: 2.5px solid #e0e7ff;
+            border-top-color: #4f46e5;
+            border-radius: 50%;
+            animation: contractors-spin 0.7s linear infinite;
+        }
+        @keyframes contractors-spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
 
     {{-- Create / Edit Contractor Modal --}}
     <x-ui.modal id="contractor-form-modal" title="Add Contractor">
@@ -66,15 +95,39 @@
 
             $('[data-close-modal]').on('click', function () { closeModal($(this).data('close-modal')); });
 
+            function showContractorsLoading() {
+                if ($('#contractors-loading-overlay').length) return;
+                $('#contractors-table-container').append(
+                    '<div id="contractors-loading-overlay">' +
+                    '<div style="display:flex;flex-direction:column;align-items:center;gap:10px;">' +
+                    '<div class="contractors-spinner"></div>' +
+                    '<span style="font-size:0.7rem;font-weight:500;color:#64748b;letter-spacing:0.05em;">Loading…</span>' +
+                    '</div>' +
+                    '</div>'
+                );
+            }
+
             function fetchContractors(url) {
+                showContractorsLoading();
                 $.get(url || routes.index, $('#contractor-filter-form').serialize(), function (res) {
                     $('#contractors-table-container').html(res.html);
+                }).fail(function () {
+                    $('#contractors-loading-overlay').remove();
+                    showAlert('Failed to load contractors. Please try again.', true);
                 });
             }
 
             $('#contractor-filter-form').on('submit', function (e) {
                 e.preventDefault();
                 fetchContractors();
+            });
+
+            let contractorSearchTimer;
+            $('#contractor-filter-form').on('input', 'input[type="text"].filter', function () {
+                clearTimeout(contractorSearchTimer);
+                contractorSearchTimer = setTimeout(function () {
+                    fetchContractors();
+                }, 400);
             });
 
             function resetForm(isEdit) {

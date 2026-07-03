@@ -64,25 +64,25 @@
                     name="search"
                     value="{{ $filters['search'] ?? '' }}"
                     placeholder="Search name, email, phone…"
-                    class="w-full rounded-lg border border-slate-200 bg-slate-50 pl-8 pr-3 py-2 text-xs text-slate-700 placeholder-slate-400 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+                    class="filter w-full rounded-lg border border-slate-200 bg-slate-50 pl-8 pr-3 py-2 text-xs text-slate-700 placeholder-slate-400 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
                 >
             </div>
 
-            <select name="status" class="cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
+            <select name="status" class="filter cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
                 <option value="">All statuses</option>
                 @foreach ($statuses as $status)
                     <option value="{{ $status }}" @selected(($filters['status'] ?? '') === $status)>{{ $status }}</option>
                 @endforeach
             </select>
 
-            <select name="assigned_sales_user_id" class="cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
+            <select name="assigned_sales_user_id" class="filter cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
                 <option value="">All assignees</option>
                 @foreach ($salesUsers as $salesUser)
                     <option value="{{ $salesUser->id }}" @selected(($filters['assigned_sales_user_id'] ?? '') == $salesUser->id)>{{ $salesUser->name }}</option>
                 @endforeach
             </select>
 
-            <select name="zone_id" class="cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
+            <select name="zone_id" class="filter cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
                 <option value="">All zones</option>
                 @foreach ($zones as $zone)
                     <option value="{{ $zone->id }}" @selected(($filters['zone_id'] ?? '') == $zone->id)>{{ $zone->name }}</option>
@@ -90,7 +90,7 @@
             </select>
 
             {{-- Row 2 --}}
-            <select name="recurrence_id" class="cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
+            <select name="recurrence_id" class="filter cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
                 <option value="">All recurrences</option>
                 @foreach ($recurrences as $recurrence)
                     <option value="{{ $recurrence->id }}" @selected(($filters['recurrence_id'] ?? '') == $recurrence->id)>{{ $recurrence->name }}</option>
@@ -113,8 +113,23 @@
 </div>
 
 <script>
+    var leadSearchTimer;
+
     $('#lead-filter-toggle').on('click', function () {
         $('#lead-filters-form').toggleClass('hidden');
         $('#lead-filter-chevron').toggleClass('rotate-180');
+    });
+
+    {{-- Selects: fire immediately on change --}}
+    $('#lead-filters-form').on('change', 'select.filter', function () {
+        refreshLeads();
+    });
+
+    {{-- Search text input: debounced 400 ms --}}
+    $('#lead-filters-form').on('input', 'input[type="text"].filter', function () {
+        clearTimeout(leadSearchTimer);
+        leadSearchTimer = setTimeout(function () {
+            refreshLeads();
+        }, 400);
     });
 </script>

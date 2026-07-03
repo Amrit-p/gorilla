@@ -17,20 +17,20 @@
         <div id="user-alert" class="hidden"></div>
 
         <form id="filters-form" class="grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-5">
-            <input type="text" name="search" value="{{ $filters['search'] }}" placeholder="Search ID, name, email, phone" class="rounded-md border border-slate-300 px-3 py-2 text-sm lg:col-span-2">
-            <select name="status" class="rounded-md border border-slate-300 px-3 py-2 text-sm">
+            <input type="text" name="search" value="{{ $filters['search'] }}" placeholder="Search ID, name, email, phone" class="filter rounded-md border border-slate-300 px-3 py-2 text-sm lg:col-span-2">
+            <select name="status" class="filter rounded-md border border-slate-300 px-3 py-2 text-sm">
                 <option value="">All statuses</option>
                 @foreach ($statuses as $statusOption)
                     <option value="{{ $statusOption }}" @selected($filters['status'] === $statusOption)>{{ $statusOption }}</option>
                 @endforeach
             </select>
-            <select name="efficiency" class="rounded-md border border-slate-300 px-3 py-2 text-sm">
+            <select name="efficiency" class="filter rounded-md border border-slate-300 px-3 py-2 text-sm">
                 <option value="">All efficiency</option>
                 @foreach ($efficiencies as $efficiencyOption)
                     <option value="{{ $efficiencyOption }}" @selected($filters['efficiency'] === $efficiencyOption)>{{ $efficiencyOption }}</option>
                 @endforeach
             </select>
-            <select name="role" class="rounded-md border border-slate-300 px-3 py-2 text-sm">
+            <select name="role" class="filter rounded-md border border-slate-300 px-3 py-2 text-sm">
                 <option value="">All roles</option>
                 @foreach ($filterRoles as $role)
                     <option value="{{ $role }}" @selected($filters['role'] === $role)>{{ $role }}</option>
@@ -41,10 +41,36 @@
             </button>
         </form>
 
-        <div id="users-table-container">
+        <div id="users-table-container" class="relative">
             @include('admin.users.partials.table', ['users' => $users])
         </div>
     </div>
+
+    <style>
+        #users-loading-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 20;
+            background: rgba(255, 255, 255, 0.72);
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+        }
+        #users-loading-overlay .users-spinner {
+            width: 28px;
+            height: 28px;
+            border: 2.5px solid #e0e7ff;
+            border-top-color: #4f46e5;
+            border-radius: 50%;
+            animation: users-spin 0.7s linear infinite;
+        }
+        @keyframes users-spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
 
     <x-ui.modal id="edit-user-modal" title="Edit User">
         <form id="edit-user-form" class="js-validate-form space-y-3" data-validate="user-edit" novalidate>
@@ -83,9 +109,25 @@
             closeModal($(this).data('close-modal'));
         });
 
+        function showUsersLoading() {
+            if ($('#users-loading-overlay').length) return;
+            $('#users-table-container').append(
+                '<div id="users-loading-overlay">' +
+                '<div style="display:flex;flex-direction:column;align-items:center;gap:10px;">' +
+                '<div class="users-spinner"></div>' +
+                '<span style="font-size:0.7rem;font-weight:500;color:#64748b;letter-spacing:0.05em;">Loading…</span>' +
+                '</div>' +
+                '</div>'
+            );
+        }
+
         function fetchUsers(url = "{{ route('admin.users.index') }}") {
+            showUsersLoading();
             $.get(url, $('#filters-form').serialize(), function (response) {
                 $('#users-table-container').html(response.html);
+            }).fail(function () {
+                $('#users-loading-overlay').remove();
+                showUserAlert('Failed to load users. Please try again.', true);
             });
         }
 
@@ -94,8 +136,16 @@
             fetchUsers();
         });
 
-        $('#filters-form select').on('change', function () {
+        $('#filters-form select.filter').on('change', function () {
             fetchUsers();
+        });
+
+        let userSearchTimer;
+        $('#filters-form').on('input', 'input[type="text"].filter', function () {
+            clearTimeout(userSearchTimer);
+            userSearchTimer = setTimeout(function () {
+                fetchUsers();
+            }, 400);
         });
 
         $(document).on('click', '.edit-user', function () {

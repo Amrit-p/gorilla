@@ -299,8 +299,6 @@ class FollowupTest extends TestCase
         $this->assertContains(Lead::class, FollowupService::ALLOWED_FOLLOWABLE_TYPES);
     }
 
-
-
     // ── Filtering ────────────────────────────────────────────────────────────
 
     public function test_index_filters_by_status(): void
@@ -326,5 +324,23 @@ class FollowupTest extends TestCase
             ->assertOk()
             ->assertSee('Completed follow-up.')
             ->assertDontSee('Pending follow-up.');
+    }
+
+    public function test_ajax_request_returns_partial_html(): void
+    {
+        Followup::query()->create([
+            'followable_type' => Job::class,
+            'followable_id' => 1,
+            'created_by' => $this->admin->id,
+            'outcome' => 'Ajax follow-up.',
+            'status' => FollowupStatus::Pending->value,
+        ]);
+
+        $response = $this->actingAs($this->admin)
+            ->getJson(route('admin.followups.index'))
+            ->assertOk()
+            ->assertJsonStructure(['html']);
+
+        $this->assertStringContainsString('Ajax follow-up.', $response->json('html'));
     }
 }

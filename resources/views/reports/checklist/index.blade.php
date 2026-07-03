@@ -43,6 +43,7 @@
                             :startDate="$filters['start_date'] ?? ''"
                             :endDate="$filters['end_date'] ?? ''"
                             :showRanges="true"
+                            class="filter"
                         />
                     </div>
 
@@ -50,7 +51,7 @@
                     <div>
                         <label class="mb-1 block text-xs font-medium text-slate-500">Employee</label>
                         <select name="user_id"
-                                class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-300">
+                                class="filter w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-300">
                             <option value="">All Employees</option>
                             @foreach ($employees as $employee)
                                 <option value="{{ $employee->id }}" {{ ($filters['user_id'] ?? '') == $employee->id ? 'selected' : '' }}>
@@ -64,7 +65,7 @@
                     <div>
                         <label class="mb-1 block text-xs font-medium text-slate-500">Checklist</label>
                         <select name="checklist_id"
-                                class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-300">
+                                class="filter w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-300">
                             <option value="">All Checklists</option>
                             @foreach ($checklists as $checklist)
                                 <option value="{{ $checklist->id }}" {{ ($filters['checklist_id'] ?? '') == $checklist->id ? 'selected' : '' }}>
@@ -103,6 +104,11 @@
             });
 
             loadChecklistReport();
+
+            // Auto-apply filters on change
+            $('#checklist-filter-form').on('change', 'select.filter, input[readonly].filter', function () {
+                loadChecklistReport();
+            });
         });
 
         function getChecklistFilters() {

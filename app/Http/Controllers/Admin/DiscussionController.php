@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Support\CrmPermissions;
 use App\Support\CrmRoles;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -25,15 +26,26 @@ class DiscussionController extends Controller
         abort_unless(auth()->user()->can(CrmPermissions::MANAGE_DISCUSSIONS), 403);
     }
 
-    public function index(): View
+    public function index(Request $request): View|JsonResponse
     {
         $this->authorizeAdmin();
 
+        $filters = [
+            'search' => $request->string('search')->toString(),
+            'category' => $request->string('category')->toString(),
+        ];
+
         $discussions = Discussion::with(['worker', 'sections.attachments'])
+            ->when($filters['search'], fn ($q) => $q->where('title', 'like', '%'.$filters['search'].'%'))
+            ->when($filters['category'], fn ($q) => $q->where('category', $filters['category']))
             ->orderByDesc('date')
             ->get();
 
-        return view('admin.discussions.index', compact('discussions'));
+        if (crm_wants_partial($request)) {
+            return crm_ajax_html('admin.discussions.partials.list', ['discussions' => $discussions]);
+        }
+
+        return view('admin.discussions.index', compact('discussions', 'filters'));
     }
 
     public function create(): View
@@ -69,40 +81,40 @@ class DiscussionController extends Controller
         $this->authorizeAdmin();
 
         $data = $request->validate([
-            'title'                  => 'required|string|max:255',
-            'category'               => ['required', Rule::in(['worker', 'budget', 'expansion', 'crm_update', 'general'])],
-            'worker_id'              => 'nullable|exists:users,id',
-            'date'                   => 'required|date',
-            'sections'               => 'required|array|min:1',
-            'sections.*.heading'     => 'required|string|max:255',
-            'sections.*.body'        => 'nullable|string',
-            'sections.*.files'       => 'nullable|array|max:10',
-            'sections.*.files.*'     => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:5120',
+            'title' => 'required|string|max:255',
+            'category' => ['required', Rule::in(['worker', 'budget', 'expansion', 'crm_update', 'general'])],
+            'worker_id' => 'nullable|exists:users,id',
+            'date' => 'required|date',
+            'sections' => 'required|array|min:1',
+            'sections.*.heading' => 'required|string|max:255',
+            'sections.*.body' => 'nullable|string',
+            'sections.*.files' => 'nullable|array|max:10',
+            'sections.*.files.*' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:5120',
         ]);
 
         $discussion = Discussion::create([
-            'title'      => $data['title'],
-            'category'   => $data['category'],
-            'worker_id'  => $data['worker_id'] ?? null,
-            'date'       => $data['date'],
+            'title' => $data['title'],
+            'category' => $data['category'],
+            'worker_id' => $data['worker_id'] ?? null,
+            'date' => $data['date'],
             'created_by' => auth()->id(),
         ]);
 
         foreach ($data['sections'] as $index => $sectionData) {
             $section = DiscussionSection::create([
                 'discussion_id' => $discussion->id,
-                'sort_order'    => $index,
-                'heading'       => $sectionData['heading'],
-                'body'          => $sectionData['body'] ?? null,
+                'sort_order' => $index,
+                'heading' => $sectionData['heading'],
+                'body' => $sectionData['body'] ?? null,
             ]);
 
             foreach ($request->file("sections.{$index}.files") ?? [] as $file) {
                 $path = $file->store('discussion-attachments', 'public');
                 DiscussionAttachment::create([
                     'discussion_section_id' => $section->id,
-                    'original_name'         => $file->getClientOriginalName(),
-                    'file_path'             => $path,
-                    'file_type'             => $this->resolveFileType($file->getMimeType()),
+                    'original_name' => $file->getClientOriginalName(),
+                    'file_path' => $path,
+                    'file_type' => $this->resolveFileType($file->getMimeType()),
                 ]);
             }
         }
@@ -133,7 +145,7 @@ class DiscussionController extends Controller
 
         return Pdf::loadView('admin.discussions.export-pdf', compact('discussion', 'sections'))
             ->setPaper('a4', 'portrait')
-            ->download('discussion-' . $discussion->id . '-' . now()->format('Y-m-d') . '.pdf');
+            ->download('discussion-'.$discussion->id.'-'.now()->format('Y-m-d').'.pdf');
     }
 
     public function edit(Discussion $discussion): View
@@ -151,15 +163,15 @@ class DiscussionController extends Controller
         $this->authorizeAdmin();
 
         $data = $request->validate([
-            'title'                  => 'required|string|max:255',
-            'category'               => ['required', Rule::in(['worker', 'budget', 'expansion', 'crm_update', 'general'])],
-            'worker_id'              => 'nullable|exists:users,id',
-            'date'                   => 'required|date',
-            'sections'               => 'required|array|min:1',
-            'sections.*.heading'     => 'required|string|max:255',
-            'sections.*.body'        => 'nullable|string',
-            'sections.*.files'       => 'nullable|array|max:10',
-            'sections.*.files.*'     => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:5120',
+            'title' => 'required|string|max:255',
+            'category' => ['required', Rule::in(['worker', 'budget', 'expansion', 'crm_update', 'general'])],
+            'worker_id' => 'nullable|exists:users,id',
+            'date' => 'required|date',
+            'sections' => 'required|array|min:1',
+            'sections.*.heading' => 'required|string|max:255',
+            'sections.*.body' => 'nullable|string',
+            'sections.*.files' => 'nullable|array|max:10',
+            'sections.*.files.*' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:5120',
         ]);
 
         $oldPaths = $discussion->sections()
@@ -170,10 +182,10 @@ class DiscussionController extends Controller
 
         DB::transaction(function () use ($discussion, $data, $request) {
             $discussion->update([
-                'title'     => $data['title'],
-                'category'  => $data['category'],
+                'title' => $data['title'],
+                'category' => $data['category'],
                 'worker_id' => $data['worker_id'] ?? null,
-                'date'      => $data['date'],
+                'date' => $data['date'],
             ]);
 
             $discussion->sections()->delete();
@@ -181,18 +193,18 @@ class DiscussionController extends Controller
             foreach ($data['sections'] as $index => $sectionData) {
                 $section = DiscussionSection::create([
                     'discussion_id' => $discussion->id,
-                    'sort_order'    => $index,
-                    'heading'       => $sectionData['heading'],
-                    'body'          => $sectionData['body'] ?? null,
+                    'sort_order' => $index,
+                    'heading' => $sectionData['heading'],
+                    'body' => $sectionData['body'] ?? null,
                 ]);
 
                 foreach ($request->file("sections.{$index}.files") ?? [] as $file) {
                     $path = $file->store('discussion-attachments', 'public');
                     DiscussionAttachment::create([
                         'discussion_section_id' => $section->id,
-                        'original_name'         => $file->getClientOriginalName(),
-                        'file_path'             => $path,
-                        'file_type'             => $this->resolveFileType($file->getMimeType()),
+                        'original_name' => $file->getClientOriginalName(),
+                        'file_path' => $path,
+                        'file_type' => $this->resolveFileType($file->getMimeType()),
                     ]);
                 }
             }

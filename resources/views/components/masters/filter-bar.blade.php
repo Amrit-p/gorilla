@@ -15,14 +15,14 @@
                 name="search"
                 value="{{ $filters['search'] ?? '' }}"
                 placeholder="Search by name..."
-                class="w-full rounded-md border border-slate-300 py-2 pl-9 pr-3 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+                class="filter w-full rounded-md border border-slate-300 py-2 pl-9 pr-3 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
             >
         </div>
 
         <div class="sm:w-44">
             <select
                 name="status"
-                class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 shadow-sm transition focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+                class="filter w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 shadow-sm transition focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
             >
                 <option value="">All statuses</option>
                 <option value="1" @selected((string) ($filters['status'] ?? '') === '1')>Active</option>

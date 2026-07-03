@@ -21,94 +21,53 @@
         @endif
 
         {{-- Filters --}}
-        <div class="flex flex-wrap gap-3 rounded-2xl border border-slate-200 bg-white p-4">
-            <input id="discussion-search" type="text" placeholder="Search by title…"
-                   class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm sm:w-64">
-            <select id="discussion-category-filter"
-                    class="rounded-md border border-slate-300 px-3 py-2 text-sm">
+        <form id="discussion-filter-form" class="flex flex-wrap gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+            <input id="discussion-search" name="search" type="text" placeholder="Search by title…"
+                   value="{{ $filters['search'] ?? '' }}"
+                   class="filter w-full rounded-md border border-slate-300 px-3 py-2 text-sm sm:w-64">
+            <select id="discussion-category-filter" name="category"
+                    class="filter rounded-md border border-slate-300 px-3 py-2 text-sm">
                 <option value="">All categories</option>
-                <option value="worker">Worker</option>
-                <option value="budget">Budget</option>
-                <option value="expansion">Expansion</option>
-                <option value="crm_update">CRM Update</option>
-                <option value="general">General</option>
+                <option value="worker" @selected(($filters['category'] ?? '') === 'worker')>Worker</option>
+                <option value="budget" @selected(($filters['category'] ?? '') === 'budget')>Budget</option>
+                <option value="expansion" @selected(($filters['category'] ?? '') === 'expansion')>Expansion</option>
+                <option value="crm_update" @selected(($filters['category'] ?? '') === 'crm_update')>CRM Update</option>
+                <option value="general" @selected(($filters['category'] ?? '') === 'general')>General</option>
             </select>
-        </div>
+        </form>
 
         {{-- List --}}
-        <div class="rounded-2xl border border-slate-200 bg-white">
-            @if ($discussions->isEmpty())
-                <div class="flex flex-col items-center justify-center gap-3 py-16 text-center">
-                    <svg class="h-10 w-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                    </svg>
-                    <p class="text-sm font-medium text-slate-500">No discussions yet.</p>
-                    <a href="{{ route('admin.discussions.create') }}"
-                       class="text-sm font-medium text-slate-900 underline underline-offset-2">
-                        Create your first one
-                    </a>
-                </div>
-            @else
-                <ul id="discussions-list" class="divide-y divide-slate-100">
-                    @foreach ($discussions as $discussion)
-                        @php
-                            $attachmentCount = $discussion->sections->sum(fn ($s) => $s->attachments->count());
-                            $badgeClass = match($discussion->category) {
-                                'budget'     => 'bg-yellow-100 text-yellow-700',
-                                'worker'     => 'bg-blue-100 text-blue-700',
-                                'expansion'  => 'bg-purple-100 text-purple-700',
-                                'crm_update' => 'bg-emerald-100 text-emerald-700',
-                                default      => 'bg-slate-100 text-slate-600',
-                            };
-                            $categoryLabel = match($discussion->category) {
-                                'worker'     => 'Worker',
-                                'budget'     => 'Budget',
-                                'expansion'  => 'Expansion',
-                                'crm_update' => 'CRM Update',
-                                default      => 'General',
-                            };
-                        @endphp
-                        <li class="discussion-item flex flex-wrap items-center gap-4 px-5 py-4"
-                            data-category="{{ $discussion->category }}">
-                            <div class="min-w-0 flex-1">
-                                <p class="discussion-title truncate text-sm font-semibold text-slate-900">
-                                    {{ $discussion->title }}
-                                </p>
-                                <p class="mt-0.5 text-xs text-slate-500">
-                                    {{ $discussion->date->format('d M Y') }}
-                                    &middot;
-                                    {{ $discussion->sections->count() }} {{ Str::plural('section', $discussion->sections->count()) }}
-                                    @if ($attachmentCount > 0)
-                                        &middot; {{ $attachmentCount }} {{ Str::plural('file', $attachmentCount) }}
-                                    @endif
-                                </p>
-                            </div>
-                            <span class="inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{ $badgeClass }}">
-                                {{ $categoryLabel }}
-                            </span>
-                            <div class="flex shrink-0 gap-2">
-                                <a href="{{ route('admin.discussions.show', $discussion) }}"
-                                   class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
-                                    View
-                                </a>
-                                <a href="{{ route('admin.discussions.edit', $discussion) }}"
-                                   class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
-                                    Edit
-                                </a>
-                                <button type="button"
-                                        class="delete-discussion-btn rounded-md border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
-                                        data-action="{{ route('admin.discussions.destroy', $discussion) }}">
-                                    Delete
-                                </button>
-                            </div>
-                        </li>
-                    @endforeach
-                </ul>
-            @endif
+        <div id="discussions-list-container" class="relative rounded-2xl border border-slate-200 bg-white">
+            @include('admin.discussions.partials.list')
         </div>
 
     </div>
+
+    <style>
+        #discussions-loading-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 20;
+            background: rgba(255, 255, 255, 0.72);
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 1rem;
+        }
+        #discussions-loading-overlay .discussions-spinner {
+            width: 28px;
+            height: 28px;
+            border: 2.5px solid #e0e7ff;
+            border-top-color: #4f46e5;
+            border-radius: 50%;
+            animation: discussions-spin 0.7s linear infinite;
+        }
+        @keyframes discussions-spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
 
     {{-- Delete confirmation modal --}}
     <div id="delete-modal"
@@ -151,22 +110,35 @@
             }
         });
 
-        // Client-side search + category filter
-        function applyFilters() {
-            const search = $('#discussion-search').val().toLowerCase().trim();
-            const category = $('#discussion-category-filter').val();
+        // Server-side search + category filter
+        function showDiscussionsLoading() {
+            if ($('#discussions-loading-overlay').length) return;
+            $('#discussions-list-container').append(
+                '<div id="discussions-loading-overlay">' +
+                '<div style="display:flex;flex-direction:column;align-items:center;gap:10px;">' +
+                '<div class="discussions-spinner"></div>' +
+                '<span style="font-size:0.7rem;font-weight:500;color:#64748b;letter-spacing:0.05em;">Loading…</span>' +
+                '</div>' +
+                '</div>'
+            );
+        }
 
-            $('#discussions-list .discussion-item').each(function () {
-                const title = $(this).find('.discussion-title').text().toLowerCase();
-                const cat   = $(this).data('category');
-                const matchesSearch   = !search || title.includes(search);
-                const matchesCategory = !category || cat === category;
-                $(this).toggle(matchesSearch && matchesCategory);
+        function fetchDiscussions() {
+            showDiscussionsLoading();
+            $.get('{{ route('admin.discussions.index') }}', $('#discussion-filter-form').serialize(), function (res) {
+                $('#discussions-list-container').html(res.html);
+            }).fail(function () {
+                $('#discussions-loading-overlay').remove();
             });
         }
 
-        $('#discussion-search').on('keyup input', applyFilters);
-        $('#discussion-category-filter').on('change', applyFilters);
+        let discussionSearchTimer;
+        $('#discussion-filter-form').on('input', 'input[type="text"].filter', function () {
+            clearTimeout(discussionSearchTimer);
+            discussionSearchTimer = setTimeout(fetchDiscussions, 400);
+        });
+        $('#discussion-filter-form').on('change', 'select.filter', fetchDiscussions);
+        $('#discussion-filter-form').on('submit', function (e) { e.preventDefault(); fetchDiscussions(); });
     </script>
     @endpush
 </x-layouts.dashboard>

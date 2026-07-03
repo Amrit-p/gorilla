@@ -15,16 +15,42 @@
         <form id="checklist-filter-form" class="flex flex-wrap gap-2">
             <input type="text" name="search" value="{{ $filters['search'] }}"
                 placeholder="Search by name…"
-                class="rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400" />
+                class="filter rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400" />
             <button type="submit" class="rounded-md bg-slate-800 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700">
                 Search
             </button>
         </form>
 
-        <div id="checklist-table-container">
+        <div id="checklist-table-container" class="relative">
             @include('admin.masters.checklists.partials.table', ['records' => $records])
         </div>
     </div>
+
+    <style>
+        #checklist-loading-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 20;
+            background: rgba(255, 255, 255, 0.72);
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+        }
+        #checklist-loading-overlay .checklist-spinner {
+            width: 28px;
+            height: 28px;
+            border: 2.5px solid #e0e7ff;
+            border-top-color: #4f46e5;
+            border-radius: 50%;
+            animation: checklist-spin 0.7s linear infinite;
+        }
+        @keyframes checklist-spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
 
     <x-ui.modal id="checklist-form-modal" title="Add Checklist" maxWidth="max-w-5xl">
         @include('admin.masters.checklists.partials.form')
@@ -56,9 +82,25 @@
                 $('#checklist-form-modal').addClass('hidden').removeClass('flex');
             }
 
+            function showChecklistsLoading() {
+                if ($('#checklist-loading-overlay').length) return;
+                $('#checklist-table-container').append(
+                    '<div id="checklist-loading-overlay">' +
+                    '<div style="display:flex;flex-direction:column;align-items:center;gap:10px;">' +
+                    '<div class="checklist-spinner"></div>' +
+                    '<span style="font-size:0.7rem;font-weight:500;color:#64748b;letter-spacing:0.05em;">Loading…</span>' +
+                    '</div>' +
+                    '</div>'
+                );
+            }
+
             function fetchChecklists(url = routes.index) {
+                showChecklistsLoading();
                 $.get(url, $('#checklist-filter-form').serialize(), function (res) {
                     $('#checklist-table-container').html(res.html);
+                }).fail(function () {
+                    $('#checklist-loading-overlay').remove();
+                    showAlert('Failed to load checklists. Please try again.', true);
                 });
             }
 
@@ -201,6 +243,14 @@
             $('#checklist-filter-form').on('submit', function (e) {
                 e.preventDefault();
                 fetchChecklists();
+            });
+
+            let checklistSearchTimer;
+            $('#checklist-filter-form').on('input', 'input[type="text"].filter', function () {
+                clearTimeout(checklistSearchTimer);
+                checklistSearchTimer = setTimeout(function () {
+                    fetchChecklists();
+                }, 400);
             });
 
             $(document).on('click', '#checklist-table-container .pagination a', function (e) {

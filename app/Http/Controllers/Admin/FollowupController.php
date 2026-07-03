@@ -65,13 +65,17 @@ class FollowupController extends Controller
         ]);
     }
 
-    public function index(Request $request): View
+    public function index(Request $request): View|JsonResponse
     {
         $this->authorizeAdmin();
 
         $filters = $request->only(['search', 'status', 'followable_type']);
         $followups = $this->followupService->paginatedFollowups($filters);
         $options = $this->followupService->formOptions();
+
+        if (crm_wants_partial($request)) {
+            return crm_ajax_html('admin.followups.partials.list', ['followups' => $followups]);
+        }
 
         return view('admin.followups.index', compact('followups', 'filters', 'options'));
     }

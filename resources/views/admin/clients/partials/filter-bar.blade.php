@@ -73,39 +73,39 @@
                     name="search"
                     value="{{ $filters['search'] }}"
                     placeholder="Search name, ID, email…"
-                    class="w-full rounded-lg border border-slate-200 bg-slate-50 pl-8 pr-3 py-2 text-xs text-slate-700 placeholder-slate-400 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+                    class="filter w-full rounded-lg border border-slate-200 bg-slate-50 pl-8 pr-3 py-2 text-xs text-slate-700 placeholder-slate-400 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
                 >
             </div>
 
-            <select name="zone_id" class="cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
+            <select name="zone_id" class="filter cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
                 <option value="">All zones</option>
                 @foreach ($zones as $zone)
                     <option value="{{ $zone->id }}" @selected($filters['zone_id'] == $zone->id)>{{ $zone->name }}</option>
                 @endforeach
             </select>
 
-            <select name="accounting_level_id" class="cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
+            <select name="accounting_level_id" class="filter cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
                 <option value="">All accounting levels</option>
                 @foreach ($accountingLevels as $level)
                     <option value="{{ $level->id }}" @selected($filters['accounting_level_id'] == $level->id)>{{ $level->name }}</option>
                 @endforeach
             </select>
 
-            <select name="job_level_id" class="cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
+            <select name="job_level_id" class="filter cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
                 <option value="">All job levels</option>
                 @foreach ($jobLevels as $level)
                     <option value="{{ $level->id }}" @selected($filters['job_level_id'] == $level->id)>{{ $level->name }}</option>
                 @endforeach
             </select>
 
-            <select name="recurrence_id" class="cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
+            <select name="recurrence_id" class="filter cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
                 <option value="">All recurrences</option>
                 @foreach ($recurrenceOptions as $recurrence)
                     <option value="{{ $recurrence->id }}" @selected($filters['recurrence_id'] == $recurrence->id)>{{ $recurrence->name }}</option>
                 @endforeach
             </select>
 
-            <select name="customer_type" class="cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
+            <select name="customer_type" class="filter cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
                 <option value="">All types</option>
                 @foreach ($customerTypes as $customerType)
                     <option value="{{ $customerType }}" @selected($filters['customer_type'] === $customerType)>{{ $customerType }}</option>
@@ -113,21 +113,21 @@
             </select>
 
             {{-- Row 2 --}}
-<select name="job_type" class="cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
+<select name="job_type" class="filter cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
                 <option value="">All job types</option>
                 @foreach ($jobTypes as $jobType)
                     <option value="{{ $jobType }}" @selected($filters['job_type'] === $jobType)>{{ $jobType }}</option>
                 @endforeach
             </select>
 
-            <select name="payment_status" class="cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
+            <select name="payment_status" class="filter cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
                 <option value="">All statuses</option>
                 @foreach ($paymentStatuses as $paymentStatus)
                     <option value="{{ $paymentStatus }}" @selected($filters['payment_status'] === $paymentStatus)>{{ $paymentStatus }}</option>
                 @endforeach
             </select>
 
-            <select name="from_lead" class="cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
+            <select name="from_lead" class="filter cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
                 <option value="">All sources</option>
                 <option value="1" @selected($filters['from_lead'] === '1')>From lead</option>
                 <option value="0" @selected($filters['from_lead'] === '0')>Manual only</option>
@@ -148,8 +148,23 @@
 </div>
 
 <script>
+    var clientSearchTimer;
+
     $('#client-filter-toggle').on('click', function () {
         $('#client-filter-form').toggleClass('hidden');
         $('#client-filter-chevron').toggleClass('rotate-180');
+    });
+
+    {{-- Selects: fire immediately on change --}}
+    $('#client-filter-form').on('change', 'select.filter', function () {
+        refreshClients();
+    });
+
+    {{-- Search text input: debounced 400 ms --}}
+    $('#client-filter-form').on('input', 'input[type="text"].filter', function () {
+        clearTimeout(clientSearchTimer);
+        clientSearchTimer = setTimeout(function () {
+            refreshClients();
+        }, 400);
     });
 </script>
