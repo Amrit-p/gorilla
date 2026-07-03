@@ -23,7 +23,7 @@
                 <div class="mt-2"><x-jobs.status-badge :status="$job->status" /></div>
             </div>
             <div class="flex flex-wrap gap-2">
-                @can('manage-job-records')
+                @can('update', $job)
                     <a href="{{ route('admin.jobs.edit', $job) }}" class="rounded-md border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50">Edit</a>
                 @endcan
             </div>

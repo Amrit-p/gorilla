@@ -54,7 +54,7 @@
 
         <div class="flex flex-wrap items-center gap-2 border-l border-slate-100 px-4 py-2.5">
             <x-ui.export-dropdown :excelHref="$excelHref" :pdfHref="$pdfHref" />
-            @can('manage-job-records')
+            @can('create', \App\Models\Job::class)
                 <a href="{{ route('admin.jobs.create') }}"
                     class="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700">Create
                     Job</a>

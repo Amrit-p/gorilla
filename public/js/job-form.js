@@ -328,7 +328,8 @@
     }
 
     function toggleJobPaymentReason() {
-        $('#job-payment-reason-wrap').toggleClass('hidden', $('#job-payment-status').val() !== 'Pending');
+        const status = $('#job-payment-status').val();
+        $('#job-payment-reason-wrap').toggleClass('hidden', !['Pending', 'Partial'].includes(status));
     }
 
     window.jobWizardGoToFirstInvalidStep = function () {

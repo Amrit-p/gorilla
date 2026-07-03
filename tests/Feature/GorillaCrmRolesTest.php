@@ -155,7 +155,7 @@ class GorillaCrmRolesTest extends TestCase
         $this->assertFalse($mower->canManageLeads());
     }
 
-    public function test_sales_manager_can_create_jobs_but_not_edit_or_delete_them(): void
+    public function test_sales_manager_can_create_and_edit_jobs_but_not_delete_them(): void
     {
         $sales = $this->userWithRole(CrmRoles::SALES_MANAGER);
 
@@ -189,8 +189,23 @@ class GorillaCrmRolesTest extends TestCase
         ]);
 
         $this->assertTrue($sales->can('create', Job::class));
+        $this->assertTrue($sales->can('update', $job));
         $this->assertFalse($sales->can('delete', $job));
         $this->assertFalse($sales->can('restore', $job));
+
+        $this->actingAs($sales)
+            ->get(route('admin.jobs.show', $job))
+            ->assertOk()
+            ->assertSee(route('admin.jobs.edit', $job), false);
+
+        $this->actingAs($sales)
+            ->get(route('admin.jobs.edit', $job))
+            ->assertOk();
+
+        $this->actingAs($sales)
+            ->get(route('admin.jobs.index'))
+            ->assertOk()
+            ->assertSee(route('admin.jobs.create'), false);
     }
 
     public function test_job_policy_upload_images_for_mower(): void

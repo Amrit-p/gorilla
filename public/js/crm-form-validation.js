@@ -185,7 +185,7 @@
                 pet_warning: { maxlength: 1000 },
                 payment_pending_reason: {
                     required: function () {
-                        return $('#job-payment-status').val() === 'Pending';
+                        return ['Pending', 'Partial'].includes($('#job-payment-status').val());
                     },
                     maxlength: 255,
                 },
@@ -201,6 +201,12 @@
                 parking_status: { required: true },
                 customer_type: { required: true },
                 payment_mode: { required: true },
+                payment_pending_reason: {
+                    required: function () {
+                        return ['Pending', 'Partial'].includes($('#job-payment-status').val());
+                    },
+                    maxlength: 255,
+                },
                 status: { required: true },
             },
         },

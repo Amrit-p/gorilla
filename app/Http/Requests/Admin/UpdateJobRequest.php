@@ -14,7 +14,7 @@ class UpdateJobRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return CrmPermissions::canManageJobRecords($this->user());
+        return CrmPermissions::canManageJobRecords($this->user()) || CrmPermissions::canAssignJobs($this->user());
     }
 
     /**

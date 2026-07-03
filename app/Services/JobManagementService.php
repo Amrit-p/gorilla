@@ -314,8 +314,6 @@ class JobManagementService
      * @param  Collection<int, Job>  $jobs
      * @return Collection<int, Job>
      */
-    
-
     public function updateJobsStatus(User $actor, Collection $jobs, string $status): Collection
     {
         DB::transaction(function () use ($actor, $jobs, $status): void {
@@ -498,7 +496,10 @@ class JobManagementService
         $data['route_sequence'] ??= 0;
         $data['is_recurring'] ??= false;
 
-        if (($data['payment_status'] ?? null) !== JobOperationalPaymentStatus::PENDING->value) {
+        if (! in_array($data['payment_status'] ?? null, [
+            JobOperationalPaymentStatus::PENDING->value,
+            JobOperationalPaymentStatus::PARTIAL->value,
+        ], true)) {
             $data['payment_pending_reason'] = null;
         }
 

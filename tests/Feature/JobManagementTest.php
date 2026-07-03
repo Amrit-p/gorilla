@@ -83,6 +83,54 @@ class JobManagementTest extends TestCase
         ]);
     }
 
+    public function test_job_creation_requires_pending_reason_when_payment_status_pending_or_partial(): void
+    {
+        $client = Client::query()->create($this->clientPayload());
+
+        foreach ([JobOperationalPaymentStatus::PENDING, JobOperationalPaymentStatus::PARTIAL] as $status) {
+            $payload = array_merge($this->jobPayload($client->id), [
+                'payment_status' => $status->value,
+            ]);
+            unset($payload['payment_pending_reason']);
+
+            $this->actingAs($this->admin)
+                ->postJson(route('admin.jobs.store'), $payload)
+                ->assertJsonValidationErrors(['payment_pending_reason']);
+
+            $this->actingAs($this->admin)
+                ->postJson(route('admin.jobs.store'), array_merge($payload, [
+                    'payment_pending_reason' => 'Waiting on client cheque.',
+                ]))
+                ->assertCreated();
+        }
+    }
+
+    public function test_job_update_requires_pending_reason_when_payment_status_pending_or_partial(): void
+    {
+        $job = $this->createJob();
+
+        $payload = array_merge($this->jobPayload($job->client_id), [
+            'payment_status' => JobOperationalPaymentStatus::PARTIAL->value,
+            'is_recurring' => false,
+            'route_sequence' => 0,
+            'priority' => 'Medium',
+            'status' => JobWorkflowStatus::STARTED->value,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->patchJson(route('admin.jobs.update', $job), $payload)
+            ->assertJsonValidationErrors(['payment_pending_reason']);
+
+        $this->actingAs($this->admin)
+            ->patchJson(route('admin.jobs.update', $job), array_merge($payload, [
+                'payment_pending_reason' => 'Second installment due next week.',
+            ]))
+            ->assertOk();
+
+        $job->refresh();
+        $this->assertSame('Second installment due next week.', $job->payment_pending_reason);
+    }
+
     public function test_mower_assignment_on_create(): void
     {
         $client = Client::query()->create($this->clientPayload());
