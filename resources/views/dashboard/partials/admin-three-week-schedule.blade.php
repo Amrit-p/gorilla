@@ -49,6 +49,9 @@
     {{-- Shared dropdown utility --}}
     @include('admin.partials.dropdown-script')
 
+    {{-- Job selection registry powering #job-bulk-toolbar (count, visibility, selected ids) --}}
+    <script src="{{ asset('js/job-bulk-toolbar.js') }}?v={{ @filemtime(public_path('js/job-bulk-toolbar.js')) ?: 1 }}"></script>
+
     {{-- Job action handlers; filterCallback points to the panel reload fn defined in the component --}}
     @include('admin.partials.job-actions-script', ['filterCallback' => 'reloadDayPanelTable'])
 </div>
