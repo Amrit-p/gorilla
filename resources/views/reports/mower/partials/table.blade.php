@@ -28,7 +28,21 @@
         <tbody class="divide-y divide-slate-200 bg-white">
             @if (isset($reportData))
                 @if (is_countable($reportData) && count($reportData) > 0)
+                    @php
+                        $totals = [
+                            'total_working_hours'  => 0,
+                            'working_days'         => 0,
+                            'total_jobs_completed' => 0,
+                            'completed_earnings'   => 0,
+                            'bonus'                => 0,
+                        ];
+                    @endphp
                     @foreach ($reportData as $mower)
+                        @php
+                            foreach (array_keys($totals) as $k) {
+                                $totals[$k] += data_get($mower, $k, 0);
+                            }
+                        @endphp
                         @php $userId = data_get($mower, 'user_id'); @endphp
                         <tr class="divide-x divide-slate-200">
                             {{-- Mower --}}
@@ -73,6 +87,16 @@
                             @endif
                         </tr>
                     @endforeach
+                    <tr class="divide-x divide-slate-200 bg-slate-800 text-white font-semibold">
+                        <td class="px-4 py-3">TOTALS</td>
+                        <td class="px-4 py-3 text-center">{{ number_format($totals['total_working_hours'], 2) }}</td>
+                        <td class="px-4 py-3 text-center">{{ $totals['working_days'] }}</td>
+                        <td class="px-4 py-3 text-center">{{ $totals['total_jobs_completed'] }}</td>
+                        <td class="px-4 py-3 text-right">${{ number_format($totals['completed_earnings'], 2) }}</td>
+                        @if($showBonus)
+                            <td class="px-4 py-3 text-right">${{ number_format($totals['bonus'], 2) }}</td>
+                        @endif
+                    </tr>
                 @else
                     <tr>
                         <td colspan="{{ $showBonus ? 6 : 5 }}" class="px-4 py-8 text-center text-slate-500">No mower reports available.</td>

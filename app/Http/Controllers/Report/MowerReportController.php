@@ -5,18 +5,15 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Report;
 
 use App\Contracts\Reports\MowerReportInterface;
-use App\Enums\JobOperationalPaymentMode;
-use App\Enums\JobOperationalPaymentStatus;
-use App\Enums\JobWorkflowStatus;
 use App\Http\Controllers\Controller;
-use App\Models\Recurrence;
-use App\Models\Zone;
-use App\Repositories\JobRepository;
-use Illuminate\Http\JsonResponse;
 use App\Http\Requests\Reports\MowerRequestReport;
-use Illuminate\View\View;
+use App\Repositories\JobRepository;
 use App\Services\JobManagementService;
+use App\Support\CrmRoles;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\JsonResponse;
+use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
 
 class MowerReportController extends Controller
 {
@@ -28,30 +25,34 @@ class MowerReportController extends Controller
 
     public function index(MowerRequestReport $request): View
     {
-        $dto  = $request->toDTO();
+        $dto = $request->toDTO();
         $data = [
-            'filters'         => $dto->toArray(),
+            'filters' => $dto->toArray(),
             'hideBonusColumn' => $dto->hideBonusColumn,
-            ...$this->jobManagementService->formOptions()
+            'isMower' => $request->user()->hasRole(CrmRoles::MOWER),
+            ...$this->jobManagementService->formOptions(),
         ];
+
         return view('reports.mower.index', $data);
     }
 
     public function report(MowerRequestReport $request): JsonResponse
     {
         try {
-            $dto        = $request->toDTO();
+            $dto = $request->toDTO();
             $reportData = $this->mowerReportService->generate($dto);
+
             return response()->json([
                 'html' => view('reports.mower.partials.table', [
-                    'reportData'      => $reportData,
+                    'reportData' => $reportData,
                     'hideBonusColumn' => $dto->hideBonusColumn,
-                ])->render()
+                ])->render(),
             ]);
         } catch (\Exception $e) {
             report($e);
+
             return response()->json([
-                'error' => 'Failed to generate mower report.'
+                'error' => 'Failed to generate mower report.',
             ], 500);
         }
     }
@@ -60,7 +61,7 @@ class MowerReportController extends Controller
     {
         $extra = $request->validate([
             'done_by_user_id' => ['required', 'integer'],
-            'page'            => ['nullable', 'integer', 'min:1'],
+            'page' => ['nullable', 'integer', 'min:1'],
         ]);
 
         $filters = array_merge(
@@ -75,33 +76,35 @@ class MowerReportController extends Controller
         ]);
     }
 
-    public function export(MowerRequestReport $request): \Symfony\Component\HttpFoundation\Response
+    public function export(MowerRequestReport $request): Response
     {
         try {
             return $this->mowerReportService->export($request->toDTO());
         } catch (\Exception $e) {
             report($e);
+
             return response()->json([
-                'error' => 'Failed to export mower report.'
+                'error' => 'Failed to export mower report.',
             ], 500);
         }
     }
 
-    public function exportPdf(MowerRequestReport $request): \Symfony\Component\HttpFoundation\Response
+    public function exportPdf(MowerRequestReport $request): Response
     {
         try {
-            $dto        = $request->toDTO();
+            $dto = $request->toDTO();
             $reportData = $this->mowerReportService->generate($dto);
 
             return Pdf::loadView('reports.mower.export-pdf', [
-                'reportData'      => $reportData,
+                'reportData' => $reportData,
                 'hideBonusColumn' => $dto->hideBonusColumn,
             ])->setPaper('a4', 'landscape')
-                ->download('mower_report_' . now()->format('Y_m_d') . '.pdf');
+                ->download('mower_report_'.now()->format('Y_m_d').'.pdf');
         } catch (\Exception $e) {
             report($e);
+
             return response()->json([
-                'error' => 'Failed to export mower report as PDF.'
+                'error' => 'Failed to export mower report as PDF.',
             ], 500);
         }
     }

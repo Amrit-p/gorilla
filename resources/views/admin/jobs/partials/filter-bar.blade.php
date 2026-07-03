@@ -21,6 +21,17 @@
     $pdfHref = $pdfHref ?? route('admin.jobs.export.pdf');
     $filterUrl = $filterUrl ?? route('admin.jobs.index');
     $resetUrl = $resetUrl ?? route('admin.jobs.index');
+    $hideListScope = $hideListScope ?? false;
+    $visibleFilters = $visibleFilters ?? null;
+    $showFilter = fn (string $key): bool => is_null($visibleFilters) || in_array($key, $visibleFilters, true);
+    $filterFieldKeys = ['search', 'zone_id', 'status', 'recurrence_id', 'assignment', 'payment_mode', 'payment_status', 'equipment_type_id', 'job_level_id', 'customer_type', 'service_type', 'date_range'];
+    $visibleFilterCount = count(array_filter($filterFieldKeys, $showFilter));
+    $filterGridClass = match (true) {
+        $visibleFilterCount <= 1 => 'grid-cols-1',
+        $visibleFilterCount === 2 => 'grid-cols-1 sm:grid-cols-2',
+        $visibleFilterCount === 3 => 'grid-cols-1 sm:grid-cols-3',
+        default => 'grid-cols-3 lg:grid-cols-4',
+    };
 @endphp
 
 <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -65,7 +76,7 @@
     {{-- Collapsible body --}}
     <form id="job-filter-form" class="border-t border-slate-100 px-4 py-3">
 
-        @if (isset($listScopes))
+        @if (isset($listScopes) && !$hideListScope)
             <div class="mb-3 flex flex-wrap gap-1.5">
                 @foreach ($listScopes as $scopeKey => $scopeLabel)
                     <button type="button" data-list-scope="{{ $scopeKey }}"
@@ -81,9 +92,10 @@
             <input type="hidden" name="client_id" value="{{ $clientId }}">
         @endif
 
-        <div class="grid grid-cols-3 lg:grid-cols-4 gap-x-2.5 gap-y-3">
+        <div class="grid {{ $filterGridClass }} gap-x-2.5 gap-y-3">
 
             {{-- Row 1 --}}
+            @if ($showFilter('search'))
             <div class="flex flex-col gap-1">
                 <label class="text-[10px] font-medium uppercase tracking-wide text-slate-400">Search</label>
                 <div class="relative">
@@ -99,7 +111,9 @@
                         class="filter w-full rounded-lg border border-slate-200 bg-slate-50 pl-8 pr-3 py-2 text-xs text-slate-700 placeholder-slate-400 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
                 </div>
             </div>
+            @endif
 
+            @if ($showFilter('zone_id'))
             <div class="flex flex-col gap-1">
                 <label class="text-[10px] font-medium uppercase tracking-wide text-slate-400">Zone</label>
                 <select name="zone_id"
@@ -110,7 +124,9 @@
                     @endforeach
                 </select>
             </div>
+            @endif
 
+            @if ($showFilter('status'))
             <div class="flex flex-col gap-1">
                 <label class="text-[10px] font-medium uppercase tracking-wide text-slate-400">Status</label>
                 <select name="status"
@@ -122,7 +138,9 @@
                     @endforeach
                 </select>
             </div>
+            @endif
 
+            @if ($showFilter('recurrence_id'))
             <div class="flex flex-col gap-1">
                 <label class="text-[10px] font-medium uppercase tracking-wide text-slate-400">Recurrence</label>
                 <select name="recurrence_id"
@@ -134,8 +152,10 @@
                     @endforeach
                 </select>
             </div>
+            @endif
 
             {{-- Row 2 --}}
+            @if ($showFilter('assignment'))
             <div class="flex flex-col gap-1">
                 <label class="text-[10px] font-medium uppercase tracking-wide text-slate-400">Assignment</label>
                 <select name="assignment"
@@ -145,7 +165,9 @@
                     <option value="unassigned" @selected(($filters['assignment'] ?? '') === 'unassigned')>Unassigned</option>
                 </select>
             </div>
+            @endif
 
+            @if ($showFilter('payment_mode'))
             <div class="flex flex-col gap-1">
                 <label class="text-[10px] font-medium uppercase tracking-wide text-slate-400">Payment Mode</label>
                 <select name="payment_mode"
@@ -156,7 +178,9 @@
                     @endforeach
                 </select>
             </div>
+            @endif
 
+            @if ($showFilter('payment_status'))
             <div class="flex flex-col gap-1">
                 <label class="text-[10px] font-medium uppercase tracking-wide text-slate-400">Payment Status</label>
                 <select name="payment_status"
@@ -167,7 +191,9 @@
                     @endforeach
                 </select>
             </div>
+            @endif
 
+            @if ($showFilter('equipment_type_id'))
             <div class="flex flex-col gap-1">
                 <label class="text-[10px] font-medium uppercase tracking-wide text-slate-400">Equipment Type</label>
                 <select name="equipment_type_id"
@@ -179,7 +205,9 @@
                     @endforeach
                 </select>
             </div>
+            @endif
 
+            @if ($showFilter('job_level_id'))
             <div class="flex flex-col gap-1">
                 <label class="text-[10px] font-medium uppercase tracking-wide text-slate-400">Job Level</label>
                 <select name="job_level_id"
@@ -190,7 +218,9 @@
                     @endforeach
                 </select>
             </div>
+            @endif
 
+            @if ($showFilter('customer_type'))
             <div class="flex flex-col gap-1">
                 <label class="text-[10px] font-medium uppercase tracking-wide text-slate-400">Customer Type</label>
                 <select name="customer_type"
@@ -201,7 +231,9 @@
                     @endforeach
                 </select>
             </div>
+            @endif
 
+            @if ($showFilter('service_type'))
             <div class="flex flex-col gap-1">
                 <label class="text-[10px] font-medium uppercase tracking-wide text-slate-400">Service Type</label>
                 <select name="service_type"
@@ -212,12 +244,15 @@
                     @endforeach
                 </select>
             </div>
+            @endif
 
+            @if ($showFilter('date_range'))
             <div class="flex flex-col gap-1">
                 <label class="text-[10px] font-medium uppercase tracking-wide text-slate-400">Scheduled Date</label>
                 <x-ui.daterange-picker placeholder="Date range" name="date_range" :startDate="$filters['date_range_start'] ?? null" :endDate="$filters['date_range_end'] ?? null"
                     :show-ranges="true" class="filter" />
             </div>
+            @endif
 
         </div>
 
