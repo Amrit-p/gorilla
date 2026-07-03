@@ -125,28 +125,16 @@ class DashboardAnalyticsService
             ->where('status', JobWorkflowStatus::COMPLETED->value)
             ->count();
 
-        $mowerPerformance = DB::table('job_user_assignments as jua')
-            ->join('service_jobs as sj', 'sj.id', '=', 'jua.job_id')
-            ->join('users as u', 'u.id', '=', 'jua.user_id')
-            ->whereNull('sj.deleted_at')
-            ->where('sj.status', JobWorkflowStatus::COMPLETED->value)
-            ->whereBetween('sj.scheduled_date', [$monthStart, $today])
-            ->groupBy('jua.user_id', 'u.name', 'u.efficiency')
-            ->selectRaw('u.name as mower_name, u.efficiency, COUNT(sj.id) as completed_jobs, COALESCE(SUM(sj.consumed_time_minutes), 0) as minutes')
-            ->orderByDesc('completed_jobs')
-            ->limit(8)
-            ->get()
-            ->map(fn ($row): array => [
-                'name' => $row->mower_name,
-                'efficiency' => $row->efficiency,
-                'completed_jobs' => (int) $row->completed_jobs,
-                'hours' => round(((int) $row->minutes) / 60, 1),
-            ])
-            ->all();
+        $mowerPerformance = $this->mowerPerformanceData($monthStart, $today);
+
+        $leadStatusCounts = Lead::query()
+            ->selectRaw('status, COUNT(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
 
         return [
             'type' => 'admin',
-            'cards' => [
+            'cards' => array_merge([
                 'total_revenue' => [
                     'label' => 'Total revenue (MTD)',
                     'value' => '$'.number_format($revenueMtd, 2),
@@ -171,13 +159,79 @@ class DashboardAnalyticsService
                     'subtitle' => 'Month to date',
                     'accent' => 'teal',
                 ],
-            ],
+            ], $this->leadPipelineCards($leadStatusCounts)),
             'charts' => [
                 'revenue_trend' => $this->revenueTrendLastDays(7),
                 'jobs_by_status' => $this->jobsByStatusChart(),
             ],
             'mower_performance' => $mowerPerformance,
         ];
+    }
+
+    /**
+     * Lead conversion, new leads, and follow-up stat cards shared by the admin and sales dashboards.
+     *
+     * @param  Collection<string, int>  $statusCounts
+     * @return array<string, array<string, mixed>>
+     */
+    private function leadPipelineCards(Collection $statusCounts): array
+    {
+        $totalLeads = (int) $statusCounts->sum();
+        $converted = (int) ($statusCounts[LeadStatus::MATURE->value] ?? 0)
+            + (int) ($statusCounts[LeadStatus::WON->value] ?? 0);
+        $newLeads = (int) ($statusCounts[LeadStatus::NEW->value] ?? 0);
+
+        $conversionRate = $totalLeads > 0
+            ? round(($converted / $totalLeads) * 100, 1)
+            : 0.0;
+
+        return [
+            'conversion_rate' => [
+                'label' => 'Lead conversion rate',
+                'value' => $conversionRate.'%',
+                'subtitle' => $converted.' mature/won of '.$totalLeads.' leads',
+                'accent' => 'emerald',
+            ],
+            'new_leads' => [
+                'label' => 'New leads',
+                'value' => (string) $newLeads,
+                'subtitle' => 'Awaiting follow-up',
+                'accent' => 'sky',
+            ],
+            'follow_up' => [
+                'label' => 'Follow up',
+                'value' => (string) ($statusCounts[LeadStatus::FOLLOW_UP->value] ?? 0),
+                'subtitle' => 'Active pipeline',
+                'accent' => 'violet',
+            ],
+        ];
+    }
+
+    /**
+     * Completed jobs and logged hours per mower within the given date range.
+     *
+     * @return array<int, array{name: string, efficiency: mixed, completed_jobs: int, hours: float}>
+     */
+    public function mowerPerformanceData(string $start, string $end): array
+    {
+        return DB::table('job_user_assignments as jua')
+            ->join('service_jobs as sj', 'sj.id', '=', 'jua.job_id')
+            ->join('users as u', 'u.id', '=', 'jua.user_id')
+            ->whereNull('sj.deleted_at')
+            ->where('sj.status', JobWorkflowStatus::COMPLETED->value)
+            ->whereBetween('sj.scheduled_date', [$start, $end])
+            ->groupBy('jua.user_id', 'u.name', 'u.efficiency')
+            ->selectRaw('u.name as mower_name, u.efficiency, COUNT(sj.id) as completed_jobs, COALESCE(SUM(sj.consumed_time_minutes), 0) as minutes')
+            ->orderByDesc('completed_jobs')
+            ->limit(8)
+            ->get()
+            ->map(fn ($row): array => [
+                'name' => $row->mower_name,
+                'efficiency' => $row->efficiency,
+                'completed_jobs' => (int) $row->completed_jobs,
+                'hours' => round(((int) $row->minutes) / 60, 1),
+            ])
+            ->all();
     }
 
     /**
@@ -191,15 +245,6 @@ class DashboardAnalyticsService
             ->selectRaw('status, COUNT(*) as total')
             ->groupBy('status')
             ->pluck('total', 'status');
-
-        $totalLeads = (int) $statusCounts->sum();
-        $converted = (int) ($statusCounts[LeadStatus::MATURE->value] ?? 0)
-            + (int) ($statusCounts[LeadStatus::WON->value] ?? 0);
-        $newLeads = (int) ($statusCounts[LeadStatus::NEW->value] ?? 0);
-
-        $conversionRate = $totalLeads > 0
-            ? round(($converted / $totalLeads) * 100, 1)
-            : 0.0;
 
         $jobsToday = Job::query()
             ->whereDate('scheduled_date', $today)
@@ -220,32 +265,14 @@ class DashboardAnalyticsService
 
         return [
             'type' => 'sales',
-            'cards' => [
-                'conversion_rate' => [
-                    'label' => 'Lead conversion rate',
-                    'value' => $conversionRate.'%',
-                    'subtitle' => $converted.' mature/won of '.$totalLeads.' leads',
-                    'accent' => 'emerald',
-                ],
-                'new_leads' => [
-                    'label' => 'New leads',
-                    'value' => (string) $newLeads,
-                    'subtitle' => 'Awaiting follow-up',
-                    'accent' => 'sky',
-                ],
-                'follow_up' => [
-                    'label' => 'Follow up',
-                    'value' => (string) ($statusCounts[LeadStatus::FOLLOW_UP->value] ?? 0),
-                    'subtitle' => 'Active pipeline',
-                    'accent' => 'violet',
-                ],
+            'cards' => array_merge($this->leadPipelineCards($statusCounts), [
                 'jobs_today' => [
                     'label' => 'Jobs today',
                     'value' => (string) $jobsToday,
                     'subtitle' => $completedToday.' completed today',
                     'accent' => 'teal',
                 ],
-            ],
+            ]),
             'charts' => [
                 'leads_by_status' => [
                     'labels' => $labels,

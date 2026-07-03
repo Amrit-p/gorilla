@@ -138,6 +138,24 @@ class DashboardController extends Controller
     }
 
     /**
+     * AJAX: re-render the mower performance table for a given date range.
+     */
+    public function mowerPerformanceTable(Request $request): Response
+    {
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+        ]);
+
+        $mowerPerformance = $this->dashboardAnalyticsService->mowerPerformanceData(
+            $request->string('start_date')->toString(),
+            $request->string('end_date')->toString()
+        );
+
+        return response(view('dashboard.partials.mower-performance-table-rows', compact('mowerPerformance')));
+    }
+
+    /**
      * Save dashboard preferences with AJAX.
      */
     public function updatePreferences(DashboardPreferenceRequest $request): JsonResponse

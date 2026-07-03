@@ -56,6 +56,9 @@ class DashboardAnalyticsTest extends TestCase
             'scheduled_date' => now()->toDateString(),
         ]));
 
+        Lead::query()->create($this->leadPayload(LeadStatus::NEW->value));
+        Lead::query()->create($this->leadPayload(LeadStatus::WON->value));
+
         $this->actingAs($this->admin)
             ->get(route('dashboard.index'))
             ->assertOk()
@@ -64,6 +67,9 @@ class DashboardAnalyticsTest extends TestCase
             ->assertSee('Jobs today', false)
             ->assertSee('Completed jobs (MTD)', false)
             ->assertSee('Mower performance', false)
+            ->assertSee('Lead conversion rate', false)
+            ->assertSee('New leads', false)
+            ->assertSee('Follow up', false)
             ->assertSee('$150.00', false);
     }
 
@@ -121,6 +127,50 @@ class DashboardAnalyticsTest extends TestCase
             ->assertOk()
             ->assertSee('Hours', false)
             ->assertSee('Total Upcoming', false);
+    }
+
+    public function test_mower_performance_table_ajax_filters_by_date_range(): void
+    {
+        $mower = $this->userWithRole(CrmRoles::MOWER);
+        $client = $this->createClient(100);
+
+        $inRange = Job::query()->create($this->jobPayload($client->id, [
+            'scheduled_date' => now()->toDateString(),
+            'status' => JobWorkflowStatus::COMPLETED->value,
+            'consumed_time_minutes' => 90,
+        ]));
+        $inRange->assignedEmployees()->attach($mower->id, [
+            'assignment_date' => $inRange->scheduled_date,
+            'assignment_status' => $inRange->status,
+        ]);
+
+        $outOfRange = Job::query()->create($this->jobPayload($client->id, [
+            'scheduled_date' => now()->subMonths(2)->toDateString(),
+            'status' => JobWorkflowStatus::COMPLETED->value,
+            'consumed_time_minutes' => 60,
+        ]));
+        $outOfRange->assignedEmployees()->attach($mower->id, [
+            'assignment_date' => $outOfRange->scheduled_date,
+            'assignment_status' => $outOfRange->status,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->get(route('dashboard.mower-performance-table', [
+                'start_date' => now()->startOfMonth()->toDateString(),
+                'end_date' => now()->toDateString(),
+            ]))
+            ->assertOk()
+            ->assertSee($mower->name)
+            ->assertSee('1.5h', false);
+
+        $this->actingAs($this->admin)
+            ->get(route('dashboard.mower-performance-table', [
+                'start_date' => now()->subMonths(3)->toDateString(),
+                'end_date' => now()->subMonths(3)->toDateString(),
+            ]))
+            ->assertOk()
+            ->assertSee('No completed jobs in this range.', false)
+            ->assertDontSee($mower->name);
     }
 
     public function test_analytics_service_caches_admin_payload(): void

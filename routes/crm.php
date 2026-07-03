@@ -57,6 +57,9 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
     Route::get('/dashboard/analytics/charts', [DashboardController::class, 'analyticsCharts'])
         ->middleware('crm.permission:'.CrmPermissions::VIEW_DASHBOARD)
         ->name('dashboard.analytics.charts');
+    Route::get('/dashboard/mower-performance-table', [DashboardController::class, 'mowerPerformanceTable'])
+        ->middleware('crm.permission:'.CrmPermissions::VIEW_DASHBOARD)
+        ->name('dashboard.mower-performance-table');
 
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 

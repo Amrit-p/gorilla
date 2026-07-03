@@ -28,35 +28,22 @@
         :subtitle="$cards['completed_jobs']['subtitle']"
         :accent="$cards['completed_jobs']['accent']"
     />
-</div>
-
-<div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-    <h3 class="text-sm font-semibold text-slate-900">Mower performance (MTD)</h3>
-    <p class="mt-0.5 text-xs text-slate-500">Completed jobs and logged hours by crew member</p>
-    <div class="mt-3 overflow-x-auto">
-        <table class="min-w-full text-left text-sm">
-            <thead class="bg-slate-50 text-slate-600">
-                <tr>
-                    <th class="px-3 py-2 font-semibold">Mower</th>
-                    <th class="px-3 py-2 font-semibold">Completed</th>
-                    <th class="px-3 py-2 font-semibold">Hours</th>
-                    <th class="px-3 py-2 font-semibold">Efficiency</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-                @forelse ($analytics['mower_performance'] ?? [] as $row)
-                    <tr>
-                        <td class="px-3 py-2 font-medium text-slate-800">{{ $row['name'] }}</td>
-                        <td class="px-3 py-2 text-slate-700">{{ $row['completed_jobs'] }}</td>
-                        <td class="px-3 py-2 text-slate-700">{{ $row['hours'] }}h</td>
-                        <td class="px-3 py-2 text-slate-600">{{ $row['efficiency'] ?? '—' }}</td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="4" class="px-3 py-6 text-center text-slate-500">No completed jobs this month yet.</td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
+    <x-dashboard.stat-card
+        :label="$cards['conversion_rate']['label']"
+        :value="$cards['conversion_rate']['value']"
+        :subtitle="$cards['conversion_rate']['subtitle']"
+        :accent="$cards['conversion_rate']['accent']"
+    />
+    <x-dashboard.stat-card
+        :label="$cards['new_leads']['label']"
+        :value="$cards['new_leads']['value']"
+        :subtitle="$cards['new_leads']['subtitle']"
+        :accent="$cards['new_leads']['accent']"
+    />
+    <x-dashboard.stat-card
+        :label="$cards['follow_up']['label']"
+        :value="$cards['follow_up']['value']"
+        :subtitle="$cards['follow_up']['subtitle']"
+        :accent="$cards['follow_up']['accent']"
+    />
 </div>
