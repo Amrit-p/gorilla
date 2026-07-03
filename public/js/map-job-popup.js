@@ -87,9 +87,11 @@ window.crmBuildMapJobPopup = function (job) {
         ${canView ? `
         <a href="${showUrl}" target="_blank"
            class="inline-flex items-center justify-center h-8 sm:h-7 px-3 rounded-md text-[11px] font-semibold no-underline bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-colors">View</a>` : ''}
-        ${canManage && job.edit_url ? `
+        ${/* NOTE: Edit button hidden, not deleted — unsure if still needed. Re-enable by uncommenting.
+        canManage && job.edit_url ? `
         <a href="${job.edit_url}" target="_blank"
-           class="inline-flex items-center justify-center h-8 sm:h-7 px-3 rounded-md text-[11px] font-semibold no-underline bg-emerald-600 text-white hover:bg-emerald-700 transition-colors">Edit</a>` : ''}
+           class="inline-flex items-center justify-center h-8 sm:h-7 px-3 rounded-md text-[11px] font-semibold no-underline bg-emerald-600 text-white hover:bg-emerald-700 transition-colors">Edit</a>` : ''
+        */ ''}
         ${canManage ? `
         <button class="assign-job inline-flex items-center justify-center h-8 sm:h-7 px-3 rounded-md text-[11px] font-semibold bg-indigo-600 text-white border-0 cursor-pointer hover:bg-indigo-700 transition-colors"
                 data-id="${job.id}"
