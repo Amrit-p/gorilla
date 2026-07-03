@@ -6,7 +6,13 @@ window.crmInitLeafletJobsMap = window.crmInitJobsMap = function (mapConfig) {
     'use strict';
 
     var map, markerLayer;
+    var markersById = {};
+    var SELECTED_COLOR = '#000000';
+    var POPUP_CLOSE_DELAY = 200;
 
+    function isJobSelected(jobId) {
+        return !!(window.crmJobSelection && window.crmJobSelection.has(jobId));
+    }
 
     function svgMarkerIcon(color) {
         var fill = color || '#64748b';
@@ -52,20 +58,40 @@ window.crmInitLeafletJobsMap = window.crmInitJobsMap = function (mapConfig) {
     window.crmMapLoad = function (params, preserveView) {
         $.get(mapConfig.jobsUrl, params || {}, function (response) {
             markerLayer.clearLayers();
+            markersById = {};
 
             var jobs            = response.jobs || [];
             var bounds          = [];
             var highlightMarker = null;
 
             jobs.forEach(function (job) {
-                var marker = L.marker([job.lat, job.lng], { icon: svgMarkerIcon(job.equipment_color) });
+                var baseColor = job.equipment_color || '#64748b';
+                var marker    = L.marker([job.lat, job.lng], {
+                    icon: svgMarkerIcon(isJobSelected(job.id) ? SELECTED_COLOR : baseColor),
+                });
                 marker.bindPopup(
                     typeof window.crmBuildMapJobPopup === 'function'
                         ? window.crmBuildMapJobPopup(job)
                         : '<strong>Job #' + job.id + '</strong>',
                     { maxWidth: 320, closeButton: false }
                 );
+
+                /* Hover to open/close instead of click. */
+                marker.off('click');
+                var closeTimer;
+                var cancelClose   = function () { clearTimeout(closeTimer); };
+                var scheduleClose = function () { closeTimer = setTimeout(function () { marker.closePopup(); }, POPUP_CLOSE_DELAY); };
+                marker.on('mouseover', function () { cancelClose(); marker.openPopup(); });
+                marker.on('mouseout', scheduleClose);
+                marker.on('popupopen', function (e) {
+                    var el = e.popup.getElement();
+                    if (!el) { return; }
+                    el.addEventListener('mouseenter', cancelClose);
+                    el.addEventListener('mouseleave', scheduleClose);
+                });
+
                 markerLayer.addLayer(marker);
+                markersById[job.id] = { marker: marker, color: baseColor };
                 bounds.push([job.lat, job.lng]);
                 if (mapConfig.highlightJob && job.id == mapConfig.highlightJob) {
                     highlightMarker = marker;
@@ -86,6 +112,15 @@ window.crmInitLeafletJobsMap = window.crmInitJobsMap = function (mapConfig) {
             showMapAlert('Unable to load map jobs.', true);
         });
     };
+
+
+    window.addEventListener('jobs:selection-changed', function (e) {
+        var ids = new Set((e.detail && e.detail.ids) || []);
+        Object.keys(markersById).forEach(function (id) {
+            var entry = markersById[id];
+            entry.marker.setIcon(svgMarkerIcon(ids.has(Number(id)) ? SELECTED_COLOR : entry.color));
+        });
+    });
 
 
     initMap();
