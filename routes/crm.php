@@ -282,6 +282,7 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
 
             Route::middleware(['mower.checklist', 'crm.permission:'.CrmPermissions::UPLOAD_JOB_IMAGES])->group(function (): void {
                 Route::get('/', [MowerDashboardController::class, 'index'])->name('index');
+                Route::get('/map', [MowerDashboardController::class, 'map'])->name('map');
                 Route::get('/notifications', [NotificationController::class, 'mowerIndex'])->name('notifications.index');
                 Route::get('/discussions', [MowerDiscussionController::class, 'index'])->name('discussions.index');
                 Route::get('/discussions/{discussion}', [MowerDiscussionController::class, 'show'])->name('discussions.show');

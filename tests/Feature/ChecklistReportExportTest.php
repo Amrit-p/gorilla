@@ -105,4 +105,49 @@ class ChecklistReportExportTest extends TestCase
         $response->assertSee('checklist-excel-btn');
         $response->assertSee('checklist-pdf-btn');
     }
+
+    public function test_mower_report_only_shows_own_submissions(): void
+    {
+        $otherMower = User::factory()->create(['name' => 'Bob', 'is_active' => true]);
+        $otherMower->assignRole(CrmRoles::MOWER);
+
+        DB::table('mower_checklist_submissions')->insert([
+            'user_id' => $otherMower->id,
+            'checklist_point_id' => $this->point->id,
+            'date' => '2024-01-16',
+            'created_at' => now()->toDateTimeString(),
+            'updated_at' => now()->toDateTimeString(),
+        ]);
+
+        $response = $this->actingAs($this->mower)
+            ->get(route('reports.checklist.report', [
+                'start_date' => '2024-01-01',
+                'end_date' => '2024-01-31',
+                'user_id' => $otherMower->id,
+            ]));
+
+        $response->assertOk();
+        $response->assertSee('Alice');
+        $response->assertDontSee('Bob');
+    }
+
+    public function test_mower_index_page_hides_employee_and_checklist_filters(): void
+    {
+        $response = $this->actingAs($this->mower)
+            ->get(route('reports.checklist.index'));
+
+        $response->assertOk();
+        $response->assertDontSee('All Employees');
+        $response->assertDontSee('All Checklists');
+    }
+
+    public function test_manager_index_page_shows_employee_and_checklist_filters(): void
+    {
+        $response = $this->actingAs($this->manager)
+            ->get(route('reports.checklist.index'));
+
+        $response->assertOk();
+        $response->assertSee('All Employees');
+        $response->assertSee('All Checklists');
+    }
 }

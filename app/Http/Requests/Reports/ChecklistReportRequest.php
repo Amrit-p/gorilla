@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Reports;
 
 use App\DTOS\Request\Reports\ChecklistReportRequestDTO;
+use App\Support\CrmRoles;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ChecklistReportRequest extends FormRequest
@@ -25,7 +26,10 @@ class ChecklistReportRequest extends FormRequest
         $data = $this->validated();
         $data['start_date'] = $this->date('date_range.start')?->toDateString();
         $data['end_date'] = $this->date('date_range.end')?->toDateString();
-        $data['user_id'] = isset($data['user_id']) ? (string) $data['user_id'] : '';
+
+        $data['user_id'] = $this->user()->hasRole(CrmRoles::MOWER)
+            ? (string) $this->user()->id
+            : (isset($data['user_id']) ? (string) $data['user_id'] : '');
 
         return ChecklistReportRequestDTO::fromArray($data);
     }

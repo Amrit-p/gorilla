@@ -47,33 +47,35 @@
                         />
                     </div>
 
-                    {{-- Employee --}}
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-slate-500">Employee</label>
-                        <select name="user_id"
-                                class="filter w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-300">
-                            <option value="">All Employees</option>
-                            @foreach ($employees as $employee)
-                                <option value="{{ $employee->id }}" {{ ($filters['user_id'] ?? '') == $employee->id ? 'selected' : '' }}>
-                                    {{ $employee->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
+                    @unless ($isMower)
+                        {{-- Employee --}}
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-slate-500">Employee</label>
+                            <select name="user_id"
+                                    class="filter w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-300">
+                                <option value="">All Employees</option>
+                                @foreach ($employees as $employee)
+                                    <option value="{{ $employee->id }}" {{ ($filters['user_id'] ?? '') == $employee->id ? 'selected' : '' }}>
+                                        {{ $employee->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
 
-                    {{-- Checklist --}}
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-slate-500">Checklist</label>
-                        <select name="checklist_id"
-                                class="filter w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-300">
-                            <option value="">All Checklists</option>
-                            @foreach ($checklists as $checklist)
-                                <option value="{{ $checklist->id }}" {{ ($filters['checklist_id'] ?? '') == $checklist->id ? 'selected' : '' }}>
-                                    {{ $checklist->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
+                        {{-- Checklist --}}
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-slate-500">Checklist</label>
+                            <select name="checklist_id"
+                                    class="filter w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-300">
+                                <option value="">All Checklists</option>
+                                @foreach ($checklists as $checklist)
+                                    <option value="{{ $checklist->id }}" {{ ($filters['checklist_id'] ?? '') == $checklist->id ? 'selected' : '' }}>
+                                        {{ $checklist->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    @endunless
 
                     {{-- Actions --}}
                     <div class="sm:col-span-2 lg:col-span-4 flex items-center gap-3">

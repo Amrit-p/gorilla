@@ -39,10 +39,21 @@ window.crmInitGoogleJobsMap = window.crmInitJobsMap = function (mapConfig) {
         var markers = [];
         var markersById = {};
         var infoCloseTimer;
+        var activeJobId;
 
 
         function cancelInfoClose() { clearTimeout(infoCloseTimer); }
-        function scheduleInfoClose() { infoCloseTimer = setTimeout(function () { infoWindow.close(); }, POPUP_CLOSE_DELAY); }
+        function scheduleInfoClose() { infoCloseTimer = setTimeout(function () { infoWindow.close(); activeJobId = null; }, POPUP_CLOSE_DELAY); }
+
+        function openInfoWindowFor(job, marker) {
+            var html = typeof window.crmBuildMapJobPopup === 'function'
+                ? window.crmBuildMapJobPopup(job)
+                : '<strong>Job #' + job.id + '</strong>';
+
+            infoWindow.setContent(html);
+            infoWindow.open({ map: map, anchor: marker });
+            activeJobId = job.id;
+        }
 
 
         function clearMarkers() {
@@ -64,6 +75,7 @@ window.crmInitGoogleJobsMap = window.crmInitJobsMap = function (mapConfig) {
                 clickableIcons: false,
             });
             infoWindow = new google.maps.InfoWindow({ maxWidth: 320 });
+            infoWindow.addListener('closeclick', function () { activeJobId = null; });
             infoWindow.addListener('domready', function () {
                 var iw = document.querySelector('.gm-style-iw');
                 if (!iw) { return; }
@@ -105,17 +117,22 @@ window.crmInitGoogleJobsMap = window.crmInitJobsMap = function (mapConfig) {
                             content: content,
                         });
 
-                        /* Hover to open/close instead of click. */
+                        /* Hover to preview (desktop); tap to toggle (touch/mobile — no hover events fire there). */
                         content.addEventListener('mouseenter', function () {
                             cancelInfoClose();
-                            var html = typeof window.crmBuildMapJobPopup === 'function'
-                                ? window.crmBuildMapJobPopup(job)
-                                : '<strong>Job #' + job.id + '</strong>';
-
-                            infoWindow.setContent(html);
-                            infoWindow.open({ map: map, anchor: marker });
+                            openInfoWindowFor(job, marker);
                         });
                         content.addEventListener('mouseleave', scheduleInfoClose);
+                        content.addEventListener('click', function (e) {
+                            e.stopPropagation();
+                            cancelInfoClose();
+                            if (activeJobId === job.id) {
+                                infoWindow.close();
+                                activeJobId = null;
+                            } else {
+                                openInfoWindowFor(job, marker);
+                            }
+                        });
 
                         markers.push(marker);
                         markersById[job.id] = { marker: marker, content: content, color: baseColor };
@@ -136,11 +153,7 @@ window.crmInitGoogleJobsMap = window.crmInitJobsMap = function (mapConfig) {
                         mapConfig.highlightJob = null;
                         map.setCenter({ lat: highlightData.job.lat, lng: highlightData.job.lng });
                         map.setZoom(15);
-                        var html = typeof window.crmBuildMapJobPopup === 'function'
-                            ? window.crmBuildMapJobPopup(highlightData.job)
-                            : '<strong>Job #' + highlightData.job.id + '</strong>';
-                        infoWindow.setContent(html);
-                        infoWindow.open({ map: map, anchor: highlightData.marker });
+                        openInfoWindowFor(highlightData.job, highlightData.marker);
                     } else if (!preserveView && jobs.length > 0) {
                         map.fitBounds(bounds, 40);
                     }

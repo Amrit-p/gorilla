@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Mower;
 
+use App\Enums\JobCustomerType;
+use App\Enums\JobOperationalPaymentMode;
 use App\Enums\JobOperationalPaymentStatus;
 use App\Enums\JobWorkflowStatus;
 use App\Helpers\OptimizationHelper;
@@ -15,13 +17,18 @@ use App\Http\Requests\Mower\UpdateMowerJobStatusRequest;
 use App\Http\Requests\Mower\UploadMowerJobImagesRequest;
 use App\Models\Job;
 use App\Models\MowerRemark;
+use App\Models\Recurrence;
 use App\Models\User;
+use App\Models\Zone;
 use App\Notifications\MowerRemarkAddedNotification;
 use App\Services\DashboardAnalyticsService;
 use App\Services\JobImageManagementService;
 use App\Services\MowerDashboardService;
 use App\Support\CrmConstants;
 use App\Support\CrmRoles;
+use App\Support\EquipmentTypes;
+use App\Support\GoogleMapsSettings;
+use App\Support\ServiceTypes;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -94,6 +101,30 @@ class MowerDashboardController extends Controller
             'analytics' => $this->dashboardAnalyticsService->mower($request->user(), $scheduleDate, $scheduleEndDate),
             'workflowStatuses' => JobWorkflowStatus::values(),
             'paymentStatuses' => JobOperationalPaymentStatus::values(),
+        ]);
+    }
+
+    public function map(): View
+    {
+        $this->authorize('viewAny', Job::class);
+
+        return view('mower.map', [
+            'mapConfig' => GoogleMapsSettings::mapPageConfig(),
+            'zones' => Zone::query()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(['id', 'name']),
+            'recurrences' => Recurrence::query()->orderBy('name')->get(['id', 'name']),
+            'equipmentTypes' => EquipmentTypes::selectOptions(),
+            'serviceTypes' => ServiceTypes::all(),
+            'customerTypes' => JobCustomerType::values(),
+            'paymentModes' => JobOperationalPaymentMode::values(),
+            'paymentStatuses' => JobOperationalPaymentStatus::values(),
+            'workflowStatuses' => JobWorkflowStatus::values(),
+            'listScopes' => [
+                CrmConstants::JOB_LIST_SCOPE_TODAY => 'Today',
+                CrmConstants::JOB_LIST_SCOPE_UPCOMING => 'Upcoming',
+                CrmConstants::JOB_LIST_SCOPE_DONE => 'Done',
+                CrmConstants::JOB_LIST_SCOPE_COMPLETED_UNVERIFIED => 'Completed, unverified',
+                CrmConstants::JOB_LIST_SCOPE_HOLD => 'Hold',
+            ],
         ]);
     }
 

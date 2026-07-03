@@ -79,6 +79,15 @@ class MowerDashboardTest extends TestCase
             ->assertJsonStructure(['html']);
     }
 
+    public function test_map_page_renders_within_mower_layout(): void
+    {
+        $this->actingAs($this->mower)
+            ->get(route('mower.map'))
+            ->assertOk()
+            ->assertSee('Job Map')
+            ->assertSee('id="jobs-map"', false);
+    }
+
     public function test_unassigned_job_show_is_forbidden(): void
     {
         $job = $this->createAssignedJob($this->otherMower);

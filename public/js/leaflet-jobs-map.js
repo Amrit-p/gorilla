@@ -76,13 +76,21 @@ window.crmInitLeafletJobsMap = window.crmInitJobsMap = function (mapConfig) {
                     { maxWidth: 320, closeButton: false }
                 );
 
-                /* Hover to open/close instead of click. */
+                /* Hover to preview (desktop); tap to toggle (touch/mobile — no hover events fire there). */
                 marker.off('click');
                 var closeTimer;
                 var cancelClose   = function () { clearTimeout(closeTimer); };
                 var scheduleClose = function () { closeTimer = setTimeout(function () { marker.closePopup(); }, POPUP_CLOSE_DELAY); };
                 marker.on('mouseover', function () { cancelClose(); marker.openPopup(); });
                 marker.on('mouseout', scheduleClose);
+                marker.on('click', function () {
+                    cancelClose();
+                    if (marker.isPopupOpen()) {
+                        marker.closePopup();
+                    } else {
+                        marker.openPopup();
+                    }
+                });
                 marker.on('popupopen', function (e) {
                     var el = e.popup.getElement();
                     if (!el) { return; }

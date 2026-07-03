@@ -24,10 +24,12 @@ class ChecklistReportController extends Controller
     public function index(ChecklistReportRequest $request): View
     {
         $dto = $request->toDTO();
+        $isMower = $request->user()->hasRole(CrmRoles::MOWER);
         $data = [
             'filters' => $dto->toArray(),
+            'isMower' => $isMower,
             'checklists' => Checklist::orderBy('name')->get(['id', 'name']),
-            'employees' => User::role(CrmRoles::label('mower'))->orderBy('name')->get(['id', 'name']),
+            'employees' => $isMower ? collect() : User::role(CrmRoles::label('mower'))->orderBy('name')->get(['id', 'name']),
         ];
 
         return view('reports.checklist.index', $data);
