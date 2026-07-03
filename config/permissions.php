@@ -43,6 +43,7 @@ return [
                 'manage_jobs',
                 'assign_jobs',
                 'view_mower_report',
+                'view_checklist_report',
                 'verify_jobs',
                 'manage_followups',
                 'manage_discussions',
