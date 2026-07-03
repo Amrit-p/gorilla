@@ -29,22 +29,3 @@
         :accent="$cards['jobs_today']['accent']"
     />
 </div>
-
-<div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
-    <x-dashboard.chart-panel
-        title="Lead pipeline"
-        subtitle="Current count by status"
-        chart-id="sales-leads-chart"
-        type="doughnut"
-        :labels="$charts['leads_by_status']['labels'] ?? []"
-        :datasets="$charts['leads_by_status']['datasets'] ?? []"
-    />
-    <x-dashboard.chart-panel
-        title="Conversion activity"
-        subtitle="New vs won — last 14 days"
-        chart-id="sales-conversion-chart"
-        type="line"
-        :labels="$charts['conversion_trend']['labels'] ?? []"
-        :datasets="$charts['conversion_trend']['datasets'] ?? []"
-    />
-</div>
