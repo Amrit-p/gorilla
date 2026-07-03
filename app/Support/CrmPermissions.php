@@ -23,6 +23,8 @@ final class CrmPermissions
 
     public const ASSIGN_JOBS = 'assign_jobs';
 
+    public const CREATE_JOBS = 'create_jobs';
+
     public const MANAGE_USERS = 'manage_users';
 
     public const MANAGE_MASTERS = 'manage_masters';
@@ -129,7 +131,7 @@ final class CrmPermissions
         return $user->can(self::MANAGE_JOBS) || $user->can(self::ASSIGN_JOBS);
     }
 
-    /** Create, update, delete job records (scheduling CRUD). */
+    /** Update, delete, restore job records (scheduling CRUD, excluding creation). */
     public static function canManageJobRecords(?User $user): bool
     {
         if (! $user) {
@@ -137,6 +139,16 @@ final class CrmPermissions
         }
 
         return $user->can(self::MANAGE_JOBS) && $user->can(self::MANAGE_USERS);
+    }
+
+    /** Create job records (scheduling new jobs only). */
+    public static function canCreateJobs(?User $user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        return $user->can(self::MANAGE_JOBS) && $user->can(self::CREATE_JOBS);
     }
 
     public static function canAssignJobs(?User $user): bool

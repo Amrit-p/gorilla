@@ -17,7 +17,7 @@
             </a>
         @endcan
 
-        @can('manage-job-records')
+        @can('create', \App\Models\Job::class)
             <a href="{{ route('admin.jobs.create') }}" class="group rounded-xl border border-slate-200 p-4 transition hover:border-slate-400 hover:shadow-sm">
                 <p class="text-sm font-semibold text-slate-900 group-hover:text-slate-950">Create Job</p>
                 <p class="mt-1 text-xs text-slate-500">Schedule a service job</p>

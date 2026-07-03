@@ -109,7 +109,7 @@ class GorillaCrmRolesTest extends TestCase
         $this->actingAs($user)->get(route('admin.clients.index'))->assertOk();
         $this->actingAs($user)->get(route('admin.jobs.index'))->assertOk();
 
-        $this->actingAs($user)->get(route('admin.jobs.create'))->assertForbidden();
+        $this->actingAs($user)->get(route('admin.jobs.create'))->assertOk();
         $this->actingAs($user)->get(route('admin.users.index'))->assertForbidden();
         $this->actingAs($user)->get(route('admin.rbac.index'))->assertForbidden();
     }
@@ -153,6 +153,44 @@ class GorillaCrmRolesTest extends TestCase
         $this->assertFalse($mower->canManageJobRecords());
         $this->assertTrue($mower->canUploadJobImages());
         $this->assertFalse($mower->canManageLeads());
+    }
+
+    public function test_sales_manager_can_create_jobs_but_not_edit_or_delete_them(): void
+    {
+        $sales = $this->userWithRole(CrmRoles::SALES_MANAGER);
+
+        $this->assertTrue($sales->canCreateJobs());
+        $this->assertFalse($sales->canManageJobRecords());
+
+        $client = Client::query()->create([
+            'name' => 'Test Client',
+            'address' => '1 Test St',
+            'service_types' => ['Mulching'],
+            'weed_spray' => 'Yes',
+            're_completion_days' => '14 days',
+            'job_type' => 'Regular',
+            'safety_concerns' => ['Pet'],
+            'payment_mode' => 'Cash',
+            'payment_status' => 'Pending',
+        ]);
+        $job = Job::query()->create([
+            'client_id' => $client->id,
+            'client_address' => '1 Test St',
+            'scheduled_date' => now()->addDay()->toDateString(),
+            'scheduled_time' => '09:00',
+            'estimated_duration_minutes' => 60,
+            'required_services' => ['Mulching'],
+            'status' => JobWorkflowStatus::STARTED->value,
+            'priority' => 'Medium',
+            'payment_mode' => 'Cash',
+            'payment_status' => 'Received',
+            'parking_status' => 'Easy',
+            'customer_type' => 'Easy',
+        ]);
+
+        $this->assertTrue($sales->can('create', Job::class));
+        $this->assertFalse($sales->can('delete', $job));
+        $this->assertFalse($sales->can('restore', $job));
     }
 
     public function test_job_policy_upload_images_for_mower(): void

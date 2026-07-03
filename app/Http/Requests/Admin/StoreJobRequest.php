@@ -12,7 +12,7 @@ class StoreJobRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return CrmPermissions::canManageJobRecords($this->user());
+        return CrmPermissions::canCreateJobs($this->user());
     }
 
     /**

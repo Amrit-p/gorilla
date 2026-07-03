@@ -34,6 +34,11 @@ trait ChecksCrmPermissions
         return CrmPermissions::canManageJobRecords($this);
     }
 
+    public function canCreateJobs(): bool
+    {
+        return CrmPermissions::canCreateJobs($this);
+    }
+
     public function canAssignJobs(): bool
     {
         return CrmPermissions::canAssignJobs($this);

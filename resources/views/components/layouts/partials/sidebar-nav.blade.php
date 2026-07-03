@@ -78,7 +78,7 @@
                 </button>
                 <div class="sidebar-accordion-panel mt-0.5 space-y-0.5">
                     <a href="{{ route('admin.jobs.index') }}" class="{{ $linkClass(['admin.jobs.index', 'admin.jobs.show', 'admin.jobs.edit'], true) }}">All jobs</a>
-                    @can('manage-job-records')
+                    @can('create', \App\Models\Job::class)
                         <a href="{{ route('admin.jobs.create') }}" class="{{ $linkClass(['admin.jobs.create'], true) }}">Create job</a>
                     @endcan
                     <a href="{{ route('admin.maps.index') }}" class="{{ $linkClass(['admin.maps.*'], true) }}">Map &amp; routing</a>

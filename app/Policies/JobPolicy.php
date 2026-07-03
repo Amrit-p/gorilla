@@ -21,7 +21,7 @@ class JobPolicy
 
     public function create(User $user): bool
     {
-        return CrmPermissions::canManageJobRecords($user);
+        return CrmPermissions::canCreateJobs($user);
     }
 
     public function update(User $user, Job $job): bool
