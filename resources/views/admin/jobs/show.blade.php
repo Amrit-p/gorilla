@@ -26,18 +26,6 @@
                 @can('manage-job-records')
                     <a href="{{ route('admin.jobs.edit', $job) }}" class="rounded-md border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50">Edit</a>
                 @endcan
-                @can('assign-jobs')
-                    @foreach (\App\Enums\JobWorkflowStatus::cases() as $workflowStatus)
-                        <button
-                            type="button"
-                            class="job-quick-status rounded-md border border-slate-300 px-3 py-2 text-xs hover:bg-slate-50"
-                            data-id="{{ $job->id }}"
-                            data-status="{{ $workflowStatus->value }}"
-                        >
-                            Mark {{ $workflowStatus->value }}
-                        </button>
-                    @endforeach
-                @endcan
             </div>
         </div>
 
