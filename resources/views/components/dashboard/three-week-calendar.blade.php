@@ -3,6 +3,14 @@
     'dailyJobsTableUrl'   => '',
     'zones'               => collect(),
     'workers'             => collect(),
+    'workflowStatuses'    => [],
+    'recurrences'         => collect(),
+    'paymentModes'        => [],
+    'paymentStatuses'     => [],
+    'equipmentTypes'      => [],
+    'jobLevels'           => collect(),
+    'customerTypes'       => [],
+    'serviceTypes'        => [],
 ])
 
 {{-- ── Quick Filters ───────────────────────────────────────────────── --}}
@@ -96,7 +104,43 @@
     <div id="job-alert" class="hidden mx-4 mt-3 rounded-md border px-3 py-2 text-sm"></div>
 
     {{-- Panel body --}}
-    <div class="flex-1 overflow-auto p-2">
+    <div class="flex-1 overflow-auto p-2 space-y-4" style="scrollbar-gutter: stable">
+        {{-- NOTE: the job table is loaded via AJAX into this container --}}
+
+        {{-- Job filters, scoped to this day's job table only --}}
+        @include('admin.jobs.partials.filter-bar', [
+            'filters' => [
+                'search' => '',
+                'list_scope' => '',
+                'status' => '',
+                'zone_id' => '',
+                'recurrence_id' => '',
+                'assignment' => '',
+                'payment_mode' => '',
+                'payment_status' => '',
+                'equipment_type_id' => '',
+                'job_level_id' => '',
+                'customer_type' => '',
+                'service_type' => '',
+                'date_range_start' => '',
+                'date_range_end' => '',
+            ],
+            'zones' => $zones,
+            'workflowStatuses' => $workflowStatuses,
+            'recurrences' => $recurrences,
+            'paymentModes' => $paymentModes,
+            'paymentStatuses' => $paymentStatuses,
+            'equipmentTypes' => $equipmentTypes,
+            'jobLevels' => $jobLevels,
+            'customerTypes' => $customerTypes,
+            'serviceTypes' => $serviceTypes,
+            'hideListScope' => true,
+            'showHeaderActions' => false,
+            'tableContainer' => 'crm-day-content',
+            'filterCallback' => 'loadDayPanelJobs',
+            'filterUrl' => $dailyJobsTableUrl,
+            'resetUrl' => '#',
+        ])
 
         {{-- Loader --}}
         <div id="crm-day-loader" class="hidden items-center justify-center py-16">
@@ -154,12 +198,51 @@
         }
     }
 
-    function buildTableUrl(base, date, filters) {
-        var params = { date: date };
-        if (filters.zone_id)   { params.zone_id   = filters.zone_id; }
-        if (filters.worker_id) { params.worker_id = filters.worker_id; }
-        if (filters.search)    { params.search    = filters.search; }
-        return base + '?' + $.param(params);
+    function buildTableUrl(base, filters) {
+        return base + '?' + $.param(filters);
+    }
+
+    /* ── merges the quick filters (zone/worker/search) with the day panel's
+       own filter bar (which also has its own zone/search since those aren't
+       restricted to a subset anymore) and the currently open date. The panel's
+       own fields win when set; quick filters only fill in what's left blank.
+       Empty fields are dropped so they don't trip the backend's
+       `nullable|integer` validation on filters like zone_id. ─── */
+    function getDayPanelFilters() {
+        var filters = {};
+        var panelForm = document.getElementById('job-filter-form');
+        if (panelForm) {
+            new URLSearchParams(new FormData(panelForm)).forEach(function (value, key) {
+                if (value !== '') { filters[key] = value; }
+            });
+        }
+
+        var quick = getFilters();
+        if (!filters.zone_id && quick.zone_id) { filters.zone_id = quick.zone_id; }
+        if (!filters.search && quick.search)   { filters.search  = quick.search; }
+        if (quick.worker_id) { filters.worker_id = quick.worker_id; }
+
+        if (_currentDate) { filters.date = _currentDate; }
+
+        return filters;
+    }
+
+    /* ── sync the panel's own date-range filter to the clicked day ──── */
+    function syncDayPanelDateRange() {
+        var $input = $('#job-filter-form input[readonly].filter');
+        if (!$input.length || !_currentDate) { return; }
+
+        var picker = $input.data('daterangepicker');
+        if (picker) {
+            var m = moment(_currentDate, 'YYYY-MM-DD');
+            picker.setStartDate(m);
+            picker.setEndDate(m);
+        }
+
+        $input.val(_currentDate + ' – ' + _currentDate);
+        $input.siblings('button').removeClass('hidden');
+        $('#job-filter-form input[name="date_range[start]"]').val(_currentDate);
+        $('#job-filter-form input[name="date_range[end]"]').val(_currentDate);
     }
 
     /* ── helpers ─────────────────────────────────────── */
@@ -255,8 +338,15 @@
     /* ── reload hook used by job-actions-script after each action ─ */
     window.reloadDayPanelTable = function () {
         if (_currentDate) {
-            loadTable(buildTableUrl(_tableUrl, _currentDate, getFilters()));
+            loadTable(buildTableUrl(_tableUrl, getDayPanelFilters()));
             reloadCalendarGrid();
+        }
+    };
+
+    /* ── day panel's own filter bar (status, recurrence, assignment, etc.) ─ */
+    window.loadDayPanelJobs = function () {
+        if (_currentDate) {
+            loadTable(buildTableUrl(_tableUrl, getDayPanelFilters()));
         }
     };
 
@@ -267,6 +357,8 @@
 
         document.getElementById('crm-day-panel-title').textContent   = label;
         document.getElementById('crm-day-panel-subtitle').textContent = 'Loading…';
+
+        syncDayPanelDateRange();
 
         /* Update "view in jobs page" link */
         @can('view-jobs')
@@ -282,7 +374,7 @@
         document.getElementById('crm-day-backdrop').classList.remove('hidden');
         document.body.style.overflow = 'hidden';
 
-        loadTable(buildTableUrl(_tableUrl, _currentDate, getFilters()));
+        loadTable(buildTableUrl(_tableUrl, getDayPanelFilters()));
     };
 
     /* ── close ───────────────────────────────────────── */
@@ -304,7 +396,7 @@
         syncFilterUI();
         reloadCalendarGrid();
         if (_currentDate) {
-            loadTable(buildTableUrl(_tableUrl, _currentDate, getFilters()));
+            loadTable(buildTableUrl(_tableUrl, getDayPanelFilters()));
         }
     }
 
@@ -330,10 +422,8 @@
         e.preventDefault();
         /* Preserve filters when paging */
         var pageUrl = $(this).attr('href');
-        var filters = getFilters();
-        if (filters.zone_id)   { pageUrl += (pageUrl.includes('?') ? '&' : '?') + 'zone_id='   + encodeURIComponent(filters.zone_id); }
-        if (filters.worker_id) { pageUrl += '&worker_id=' + encodeURIComponent(filters.worker_id); }
-        if (filters.search)    { pageUrl += '&search='    + encodeURIComponent(filters.search); }
+        var qs      = $.param(getDayPanelFilters());
+        pageUrl += (pageUrl.includes('?') ? '&' : '?') + qs;
         loadTable(pageUrl);
     });
 

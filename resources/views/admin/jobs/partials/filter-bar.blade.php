@@ -22,6 +22,7 @@
     $filterUrl = $filterUrl ?? route('admin.jobs.index');
     $resetUrl = $resetUrl ?? route('admin.jobs.index');
     $hideListScope = $hideListScope ?? false;
+    $showHeaderActions = $showHeaderActions ?? true;
     $visibleFilters = $visibleFilters ?? null;
     $showFilter = fn (string $key): bool => is_null($visibleFilters) || in_array($key, $visibleFilters, true);
     $filterFieldKeys = ['search', 'zone_id', 'status', 'recurrence_id', 'assignment', 'payment_mode', 'payment_status', 'equipment_type_id', 'job_level_id', 'customer_type', 'service_type', 'date_range'];
@@ -56,25 +57,27 @@
                         onclick="event.stopPropagation()">Reset all</a>
                 @endif
                 <svg id="job-filter-chevron"
-                    class="h-3.5 w-3.5 text-slate-400 transition-transform duration-200 rotate-180"
+                    class="h-3.5 w-3.5 text-slate-400 transition-transform duration-200 {{ $hasActiveFilters ? 'rotate-180' : '' }}"
                     fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                 </svg>
             </div>
         </button>
 
-        <div class="flex flex-wrap items-center gap-2 border-l border-slate-100 px-4 py-2.5">
-            <x-ui.export-dropdown :excelHref="$excelHref" :pdfHref="$pdfHref" />
-            @can('create', \App\Models\Job::class)
-                <a href="{{ route('admin.jobs.create') }}"
-                    class="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700">Create
-                    Job</a>
-            @endcan
-        </div>
+        @if ($showHeaderActions)
+            <div class="flex flex-wrap items-center gap-2 border-l border-slate-100 px-4 py-2.5">
+                <x-ui.export-dropdown :excelHref="$excelHref" :pdfHref="$pdfHref" />
+                @can('create', \App\Models\Job::class)
+                    <a href="{{ route('admin.jobs.create') }}"
+                        class="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700">Create
+                        Job</a>
+                @endcan
+            </div>
+        @endif
     </div>
 
     {{-- Collapsible body --}}
-    <form id="job-filter-form" class="border-t border-slate-100 px-4 py-3">
+    <form id="job-filter-form" class="{{ $hasActiveFilters ? '' : 'hidden' }} border-t border-slate-100 px-4 py-3">
 
         @if (isset($listScopes) && !$hideListScope)
             <div class="mb-3 flex flex-wrap gap-1.5">

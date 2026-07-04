@@ -1,6 +1,15 @@
 @php
     $threeWeekStart = now()->startOfWeek(\Illuminate\Support\Carbon::MONDAY)->toDateString();
     $threeWeekEnd   = now()->startOfWeek(\Illuminate\Support\Carbon::MONDAY)->addWeeks(3)->subDay()->toDateString();
+
+    // Lookups for the day panel's job filter bar.
+    $dayPanelRecurrences     = \App\Models\Recurrence::query()->orderBy('name')->get(['id', 'name']);
+    $dayPanelPaymentModes    = \App\Enums\JobOperationalPaymentMode::values();
+    $dayPanelPaymentStatuses = \App\Enums\JobOperationalPaymentStatus::values();
+    $dayPanelEquipmentTypes  = \App\Support\EquipmentTypes::selectOptions();
+    $dayPanelJobLevels       = \App\Models\JobLevel::query()->active()->ordered()->get(['id', 'name', 'color_code']);
+    $dayPanelCustomerTypes   = \App\Enums\JobCustomerType::values();
+    $dayPanelServiceTypes    = \App\Support\ServiceTypes::all();
 @endphp
 <div>
     <div class="mb-4 flex items-center justify-between">
@@ -41,6 +50,14 @@
         :daily-jobs-table-url="route('dashboard.daily-jobs-table')"
         :zones="\App\Models\Zone::orderBy('name')->get(['id','name'])"
         :workers="\App\Models\User::role(\App\Support\CrmRoles::MOWER)->where('is_active', true)->orderBy('name')->get(['id','name'])"
+        :workflow-statuses="$workflowStatuses ?? []"
+        :recurrences="$dayPanelRecurrences"
+        :payment-modes="$dayPanelPaymentModes"
+        :payment-statuses="$dayPanelPaymentStatuses"
+        :equipment-types="$dayPanelEquipmentTypes"
+        :job-levels="$dayPanelJobLevels"
+        :customer-types="$dayPanelCustomerTypes"
+        :service-types="$dayPanelServiceTypes"
     />
 
     {{-- Job action modals — same ones used on the jobs index page --}}

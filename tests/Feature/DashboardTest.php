@@ -152,4 +152,124 @@ class DashboardTest extends TestCase
             ->assertOk()
             ->assertDontSee('1 job');
     }
+
+    public function test_daily_jobs_table_supports_the_day_panels_extra_filters(): void
+    {
+        $client = Client::query()->create([
+            'name' => 'Assigned Client',
+            'address' => '9 Elm St',
+            'service_types' => [ServiceTypes::all()[0]],
+            'weed_spray' => LeadWeedSpray::NO->value,
+            're_completion_days' => '14 days',
+            'job_type' => 'Regular',
+            'safety_concerns' => ['Pet'],
+            'payment_mode' => 'Cash',
+            'payment_status' => 'Done',
+            'charges' => 85,
+        ]);
+
+        $assignedJob = Job::query()->create([
+            'client_id' => $client->id,
+            'client_address' => $client->address,
+            'scheduled_date' => now()->toDateString(),
+            'scheduled_time' => '09:30',
+            'estimated_duration_minutes' => 60,
+            'required_services' => [ServiceTypes::all()[0]],
+            'parking_status' => 'Easy',
+            'customer_type' => 'Easy',
+            'payment_mode' => 'Cash',
+            'payment_status' => 'Received',
+            'status' => JobWorkflowStatus::PENDING->value,
+            'created_by' => $this->admin->id,
+        ]);
+
+        $mower = User::query()->create([
+            'name' => 'Assigned Mower',
+            'email' => 'assigned-mower@mowingcrm.test',
+            'password' => bcrypt('password'),
+            'is_active' => true,
+        ]);
+        $assignedJob->assignedEmployees()->attach($mower->id, ['assignment_date' => now()->toDateString()]);
+
+        Job::query()->create([
+            'client_id' => $client->id,
+            'client_address' => $client->address,
+            'scheduled_date' => now()->toDateString(),
+            'scheduled_time' => '11:00',
+            'estimated_duration_minutes' => 45,
+            'required_services' => [ServiceTypes::all()[0]],
+            'parking_status' => 'Easy',
+            'customer_type' => 'Easy',
+            'payment_mode' => 'Online',
+            'payment_status' => 'Received',
+            'status' => JobWorkflowStatus::PENDING->value,
+            'created_by' => $this->admin->id,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->get(route('dashboard.daily-jobs-table', [
+                'date' => now()->toDateString(),
+                'assignment' => 'unassigned',
+            ]))
+            ->assertOk()
+            ->assertDontSee('Assigned Mower');
+
+        $this->actingAs($this->admin)
+            ->get(route('dashboard.daily-jobs-table', [
+                'date' => now()->toDateString(),
+                'assignment' => 'assigned',
+                'payment_mode' => 'Cash',
+            ]))
+            ->assertOk()
+            ->assertSee('Assigned Mower');
+    }
+
+    public function test_daily_jobs_table_date_range_widens_beyond_the_clicked_day(): void
+    {
+        $client = Client::query()->create([
+            'name' => 'Range Client',
+            'address' => '12 Birch Ave',
+            'service_types' => [ServiceTypes::all()[0]],
+            'weed_spray' => LeadWeedSpray::NO->value,
+            're_completion_days' => '14 days',
+            'job_type' => 'Regular',
+            'safety_concerns' => ['Pet'],
+            'payment_mode' => 'Cash',
+            'payment_status' => 'Done',
+            'charges' => 85,
+        ]);
+
+        Job::query()->create([
+            'client_id' => $client->id,
+            'client_address' => $client->address,
+            'scheduled_date' => now()->addDays(2)->toDateString(),
+            'scheduled_time' => '09:30',
+            'estimated_duration_minutes' => 60,
+            'required_services' => [ServiceTypes::all()[0]],
+            'parking_status' => 'Easy',
+            'customer_type' => 'Easy',
+            'payment_mode' => 'Cash',
+            'payment_status' => 'Received',
+            'status' => JobWorkflowStatus::PENDING->value,
+            'created_by' => $this->admin->id,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->get(route('dashboard.daily-jobs-table', [
+                'date' => now()->toDateString(),
+            ]))
+            ->assertOk()
+            ->assertDontSee('Range Client');
+
+        $this->actingAs($this->admin)
+            ->get(route('dashboard.daily-jobs-table', [
+                'date' => now()->toDateString(),
+                'date_range' => [
+                    'start' => now()->toDateString(),
+                    'end' => now()->addDays(3)->toDateString(),
+                ],
+            ]))
+            ->assertOk()
+            ->assertSee('Range Client');
+    }
 }

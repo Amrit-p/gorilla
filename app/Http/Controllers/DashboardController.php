@@ -10,6 +10,7 @@ use App\Services\ActivityLogService;
 use App\Services\DashboardAnalyticsService;
 use App\Services\DashboardService;
 use App\Support\CrmRoles;
+use App\Support\QueryFilters\JobListFilter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -57,16 +58,28 @@ class DashboardController extends Controller
      * AJAX: server-rendered job table for a given date (used by the 3-week schedule panel).
      * Returns HTML so the full admin table partial—including all action buttons—is reused.
      */
-    public function dailyJobsTable(Request $request): Response
+    public function dailyJobsTable(Request $request, JobListFilter $jobListFilter): Response
     {
-        $request->validate([
+        $validated = $request->validate([
             'date' => 'required|date',
+            'date_range' => 'nullable|array',
+            'date_range.start' => 'nullable|date',
+            'date_range.end' => 'nullable|date',
             'zone_id' => 'nullable|integer|exists:zones,id',
             'worker_id' => 'nullable|integer|exists:users,id',
             'search' => 'nullable|string|max:100',
+            'status' => 'nullable|string',
+            'recurrence_id' => 'nullable|integer|exists:recurrences,id',
+            'assignment' => 'nullable|in:assigned,unassigned',
+            'payment_mode' => 'nullable|string',
+            'payment_status' => 'nullable|string',
+            'equipment_type_id' => 'nullable|integer',
+            'job_level_id' => 'nullable|integer|exists:job_levels,id',
+            'customer_type' => 'nullable|string',
+            'service_type' => 'nullable|string',
         ]);
 
-        $jobs = Job::query()
+        $query = Job::query()
             ->with([
                 'client:id,name,customer_unique_id',
                 'zone:id,name',
@@ -76,24 +89,28 @@ class DashboardController extends Controller
                 'assignedEmployees:id,name',
                 'recurrence:id,name',
             ])
-            ->whereDate('scheduled_date', $request->date)
-            ->whereNotIn('status', ['Cancelled'])
-            ->when($request->zone_id, fn ($q, $id) => $q->where('zone_id', $id))
-            ->when($request->worker_id, fn ($q, $id) => $q->whereHas(
-                'assignedEmployees', fn ($q) => $q->where('users.id', $id)
-            ))
-            ->when($request->search, function ($q, $term) {
-                $q->where(function ($q) use ($term) {
-                    $q->where('client_address', 'like', "%{$term}%")
-                        ->orWhereHas('client', function ($q) use ($term) {
-                            $q->where('name', 'like', "%{$term}%")
-                                ->orWhere('address', 'like', "%{$term}%")
-                                ->orWhere('customer_unique_id', 'like', "%{$term}%");
-                        })
-                        ->orWhereHas('assignedEmployees', fn ($q) => $q->where('name', 'like', "%{$term}%"))
-                        ->orWhereHas('doneByUser', fn ($q) => $q->where('name', 'like', "%{$term}%"));
-                });
-            })
+            ->when(($validated['status'] ?? null) !== 'Cancelled', fn ($q) => $q->whereNotIn('status', ['Cancelled']));
+
+        $jobListFilter->apply($query, [
+            'search' => $validated['search'] ?? null,
+            'zone_id' => $validated['zone_id'] ?? null,
+            'done_by_user_id' => $validated['worker_id'] ?? null,
+            'status' => $validated['status'] ?? null,
+            'recurrence_id' => $validated['recurrence_id'] ?? null,
+            'assignment' => $validated['assignment'] ?? null,
+            'payment_mode' => $validated['payment_mode'] ?? null,
+            'payment_status' => $validated['payment_status'] ?? null,
+            'equipment_type_id' => $validated['equipment_type_id'] ?? null,
+            'job_level_id' => $validated['job_level_id'] ?? null,
+            'customer_type' => $validated['customer_type'] ?? null,
+            'service_type' => $validated['service_type'] ?? null,
+            // The date range picker defaults to the clicked day, but the user
+            // may widen it from within the panel; fall back to `date` when absent.
+            'date_range_start' => $validated['date_range']['start'] ?? $validated['date'],
+            'date_range_end' => $validated['date_range']['end'] ?? $validated['date'],
+        ]);
+
+        $jobs = $query
             ->orderBy('numeric_priority')
             ->orderBy('scheduled_time')
             ->orderBy('id')
