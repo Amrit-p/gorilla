@@ -26,6 +26,7 @@ use App\Support\ServiceTypes;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class ClientManagementService
@@ -144,8 +145,29 @@ class ClientManagementService
 
     public function deleteClient(User $actor, Client $client): void
     {
-        $client->delete();
-        $this->activityLogService->log($actor, 'client.deleted', 'Customer deleted.', ['client_id' => $client->id]);
+        DB::transaction(function () use ($actor, $client): void {
+            $activeJobs = $client->jobs()->get();
+            if ($activeJobs->isNotEmpty()) {
+                $this->jobManagementService->deleteJobs($actor, $activeJobs);
+            }
+
+            $client->delete();
+            $this->activityLogService->log($actor, 'client.deleted', 'Customer deleted.', ['client_id' => $client->id]);
+        });
+    }
+
+    public function restoreClient(User $actor, Client $client): void
+    {
+        DB::transaction(function () use ($actor, $client): void {
+            $client->restore();
+
+            $trashedJobs = $client->jobs()->onlyTrashed()->get();
+            if ($trashedJobs->isNotEmpty()) {
+                $this->jobManagementService->restoreJobs($actor, $trashedJobs);
+            }
+
+            $this->activityLogService->log($actor, 'client.restored', 'Customer restored.', ['client_id' => $client->id]);
+        });
     }
 
     /**

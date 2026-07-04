@@ -1,8 +1,17 @@
+@php
+    $viewingDeleted = request('trashed') === '1' && (auth()->user()?->can('manage-customers') ?? false);
+@endphp
+
+<x-clients.bulk-toolbar :viewing-deleted="$viewingDeleted" />
+
 <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
     <table class="min-w-full text-left text-sm">
         <thead>
             {{-- Grouped header row --}}
             <tr class="divide-x divide-slate-200">
+                <th rowspan="2" class="w-8 px-2 py-2.5 text-center align-middle bg-slate-100">
+                    <input id="client-select-all" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" aria-label="Select all customers">
+                </th>
                 <th colspan="3" class="px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wide bg-green-100 text-green-800">Customer</th>
                 <th colspan="2" class="px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wide bg-yellow-100 text-yellow-800">Service</th>
                 <th colspan="3" class="px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wide bg-blue-100 text-blue-800">Account</th>
@@ -57,7 +66,12 @@
         </thead>
         <tbody class="divide-y divide-slate-100">
             @forelse ($clients as $client)
-                <tr class="divide-x divide-slate-100 transition-colors hover:bg-slate-50/70">
+                <tr class="client-row divide-x divide-slate-100 transition-colors hover:bg-slate-50/70 data-[selected=true]:bg-emerald-50/70 data-[selected=true]:shadow-[inset_3px_0_0_#10b981] data-[bulk-mode=true]:cursor-pointer" data-client-id="{{ $client->id }}" data-selected="false" data-bulk-mode="false">
+
+                    {{-- Select --}}
+                    <td class="w-8 px-2 py-3">
+                        <input type="checkbox" class="client-select-checkbox h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" data-client-id="{{ $client->id }}" aria-label="Select customer">
+                    </td>
 
                     {{-- Customer --}}
                     <td class="px-3 py-3 min-w-[160px] max-w-[200px]">
@@ -189,28 +203,39 @@
                                 </svg>
                             </button>
                             <div class="client-actions-menu hidden w-44 rounded-xl border border-slate-200 bg-white py-1 shadow-xl ring-1 ring-slate-900/5">
-                                <a href="{{ route('admin.clients.show', $client) }}" class="flex items-center gap-2.5 px-3.5 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50">
-                                    <svg class="h-3.5 w-3.5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z"/>
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
-                                    </svg>
-                                    View
-                                </a>
-                                @can('manage-customers')
-                                    <a href="{{ route('admin.clients.edit', $client) }}" class="flex items-center gap-2.5 px-3.5 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                                @if ($client->trashed())
+                                    @can('manage-customers')
+                                        <button class="restore-client flex w-full items-center gap-2.5 px-3.5 py-2 text-sm text-emerald-700 transition-colors hover:bg-emerald-50" data-id="{{ $client->id }}">
+                                            <svg class="h-3.5 w-3.5 shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3"/>
+                                            </svg>
+                                            Restore
+                                        </button>
+                                    @endcan
+                                @else
+                                    <a href="{{ route('admin.clients.show', $client) }}" class="flex items-center gap-2.5 px-3.5 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50">
                                         <svg class="h-3.5 w-3.5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
                                         </svg>
-                                        Edit
+                                        View
                                     </a>
-                                    <div class="my-1 border-t border-slate-100"></div>
-                                    <button class="delete-client flex w-full items-center gap-2.5 px-3.5 py-2 text-sm text-red-600 transition-colors hover:bg-red-50" data-id="{{ $client->id }}">
-                                        <svg class="h-3.5 w-3.5 shrink-0 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/>
-                                        </svg>
-                                        Delete
-                                    </button>
-                                @endcan
+                                    @can('manage-customers')
+                                        <a href="{{ route('admin.clients.edit', $client) }}" class="flex items-center gap-2.5 px-3.5 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                                            <svg class="h-3.5 w-3.5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125"/>
+                                            </svg>
+                                            Edit
+                                        </a>
+                                        <div class="my-1 border-t border-slate-100"></div>
+                                        <button class="delete-client flex w-full items-center gap-2.5 px-3.5 py-2 text-sm text-red-600 transition-colors hover:bg-red-50" data-id="{{ $client->id }}">
+                                            <svg class="h-3.5 w-3.5 shrink-0 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/>
+                                            </svg>
+                                            Delete
+                                        </button>
+                                    @endcan
+                                @endif
                             </div>
                         </div>
                     </td>
@@ -218,10 +243,165 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="11" class="px-4 py-10 text-center text-sm text-slate-400">No customers found.</td>
+                    <td colspan="12" class="px-4 py-10 text-center text-sm text-slate-400">No customers found.</td>
                 </tr>
             @endforelse
         </tbody>
     </table>
 </div>
+
+<script>
+    (function () {
+        if (typeof window.cleanupClientBulkSelection === 'function') {
+            window.cleanupClientBulkSelection();
+        }
+
+        const controller = new AbortController();
+        const signal = controller.signal;
+
+        function container() {
+            return document.getElementById('clients-table-container');
+        }
+
+        if (!container()) return;
+
+        let bulkMode = false;
+        let longPressTimer = null;
+        let longPressStartedAt = 0;
+        let longPressActivated = false;
+        const longPressMs = 520;
+
+        function checkboxes() {
+            return Array.from(container()?.querySelectorAll('.client-select-checkbox') || []);
+        }
+
+        function selectedTableIds() {
+            return checkboxes()
+                .filter(el => el.checked)
+                .map(el => Number(el.dataset.clientId))
+                .filter(id => Number.isInteger(id) && id > 0);
+        }
+
+        function syncToolbar() {
+            const ids = selectedTableIds();
+            const toolbar = document.getElementById('client-bulk-toolbar');
+            const count = document.getElementById('client-bulk-count');
+
+            if (count) { count.textContent = ids.length; }
+            if (toolbar) { toolbar.classList.toggle('hidden', ids.length === 0); }
+        }
+
+        function setBulkMode(active) {
+            bulkMode = active;
+            (container()?.querySelectorAll('.client-row') || []).forEach(row => {
+                row.dataset.bulkMode = active ? 'true' : 'false';
+            });
+        }
+
+        function syncBulkState() {
+            const boxes = checkboxes();
+            const selected = boxes.filter(el => el.checked);
+            const master = document.getElementById('client-select-all');
+
+            boxes.forEach(checkbox => {
+                const row = checkbox.closest('.client-row');
+                if (row) row.dataset.selected = checkbox.checked ? 'true' : 'false';
+            });
+
+            if (master) {
+                master.checked = boxes.length > 0 && selected.length === boxes.length;
+                master.indeterminate = selected.length > 0 && selected.length < boxes.length;
+            }
+
+            setBulkMode(selected.length > 0);
+            syncToolbar();
+        }
+
+        function setAllSelected(checked) {
+            checkboxes().forEach(checkbox => {
+                checkbox.checked = checked;
+            });
+            syncBulkState();
+        }
+
+        function clearLongPress() {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+
+        window.selectedClientIds = selectedTableIds;
+        window.clearClientBulkSelection = function () {
+            checkboxes().forEach(cb => { cb.checked = false; });
+            syncBulkState();
+        };
+        window.cleanupClientBulkSelection = function () {
+            controller.abort();
+            clearLongPress();
+        };
+
+        document.addEventListener('change', function (event) {
+            const target = event.target;
+
+            if (target.matches('#client-select-all')) {
+                setAllSelected(target.checked);
+                return;
+            }
+
+            if (target.matches('#clients-table-container .client-select-checkbox')) {
+                syncBulkState();
+            }
+        }, { signal });
+
+        document.addEventListener('click', function (event) {
+            const target = event.target;
+
+            if (target.closest('#client-bulk-select-page')) {
+                setAllSelected(true);
+                return;
+            }
+
+            if (target.closest('#client-bulk-clear')) {
+                window.clearClientBulkSelection();
+                return;
+            }
+
+            const row = target.closest('#clients-table-container .client-row');
+            if (!row || target.closest('a, button, input, select, textarea')) return;
+            if (longPressActivated) {
+                longPressActivated = false;
+                return;
+            }
+            if (Date.now() - longPressStartedAt < longPressMs + 80) return;
+            if (!bulkMode) return;
+
+            const checkbox = row.querySelector('.client-select-checkbox');
+            if (!checkbox) return;
+            checkbox.checked = !checkbox.checked;
+            syncBulkState();
+        }, { signal });
+
+        document.addEventListener('pointerdown', function (event) {
+            const row = event.target.closest('#clients-table-container .client-row');
+            if (!row || event.target.closest('a, button, input, select, textarea')) return;
+
+            longPressStartedAt = Date.now();
+            longPressActivated = false;
+            clearLongPress();
+            longPressTimer = setTimeout(function () {
+                const checkbox = row.querySelector('.client-select-checkbox');
+                if (!checkbox) return;
+                checkbox.checked = true;
+                longPressActivated = true;
+                syncBulkState();
+            }, longPressMs);
+        }, { signal });
+
+        document.addEventListener('pointerup', clearLongPress, { signal });
+        document.addEventListener('pointercancel', clearLongPress, { signal });
+        document.addEventListener('pointerleave', clearLongPress, { signal });
+
+        syncBulkState();
+    })();
+</script>
+
 <div class="mt-4">{{ $clients->links() }}</div>

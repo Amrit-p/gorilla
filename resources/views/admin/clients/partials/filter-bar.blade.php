@@ -6,7 +6,8 @@
         || !empty($filters['customer_type'])
         || !empty($filters['job_type'])
         || !empty($filters['payment_status'])
-        || ($filters['from_lead'] !== '' && $filters['from_lead'] !== null);
+        || ($filters['from_lead'] !== '' && $filters['from_lead'] !== null)
+        || !empty($filters['trashed']);
 
     $activeCount = collect($filters)->filter(fn ($v) => $v !== '' && $v !== null)->count();
 @endphp
@@ -59,6 +60,17 @@
     <form id="client-filter-form" class="{{ $hasActiveFilters ? '' : 'hidden' }} border-t border-slate-100 px-4 py-3">
         <input type="hidden" name="sort" id="sort-input" value="{{ $filters['sort'] ?? '' }}">
         <input type="hidden" name="direction" id="direction-input" value="{{ $filters['direction'] ?? '' }}">
+
+        @can('manage-customers')
+            <div class="mb-3 flex flex-wrap gap-1.5">
+                <button type="button" data-trashed=""
+                    class="client-trashed-scope rounded-full border px-2.5 py-1 text-xs font-medium {{ empty($filters['trashed']) ? 'border-slate-800 bg-slate-800 text-white' : 'border-slate-300 text-slate-600 hover:bg-slate-50' }}">All</button>
+                <button type="button" data-trashed="1"
+                    class="client-trashed-scope rounded-full border px-2.5 py-1 text-xs font-medium {{ ($filters['trashed'] ?? '') === '1' ? 'border-emerald-600 bg-emerald-50 text-emerald-800' : 'border-slate-300 text-slate-600 hover:bg-slate-50' }}">Trashed</button>
+            </div>
+        @endcan
+        <input type="hidden" name="trashed" id="client-trashed-input" value="{{ $filters['trashed'] ?? '' }}">
+
         <div class="grid grid-cols-4 gap-2.5">
 
             {{-- Row 1 --}}
@@ -166,5 +178,15 @@
         clientSearchTimer = setTimeout(function () {
             refreshClients();
         }, 400);
+    });
+
+    $('.client-trashed-scope').on('click', function () {
+        const scope = $(this).data('trashed') || '';
+        $('#client-trashed-input').val(scope);
+        $('.client-trashed-scope').removeClass('border-emerald-600 bg-emerald-50 text-emerald-800 border-slate-800 bg-slate-800 text-white')
+            .addClass('border-slate-300 text-slate-600 hover:bg-slate-50');
+        $(this).removeClass('border-slate-300 text-slate-600 hover:bg-slate-50')
+            .addClass(scope === '' ? 'border-slate-800 bg-slate-800 text-white' : 'border-emerald-600 bg-emerald-50 text-emerald-800');
+        refreshClients();
     });
 </script>

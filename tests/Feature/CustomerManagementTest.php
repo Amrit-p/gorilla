@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Enums\ClientCustomerType;
 use App\Enums\ClientPaymentStatus;
 use App\Enums\JobCustomerType;
+use App\Enums\JobOperationalPaymentMode;
+use App\Enums\JobOperationalPaymentStatus;
 use App\Enums\JobParkingStatus;
 use App\Enums\JobWorkflowStatus;
 use App\Enums\LeadJobType;
@@ -18,9 +20,11 @@ use App\Models\ClientDocument;
 use App\Models\ClientRating;
 use App\Models\EquipmentType;
 use App\Models\Job;
+use App\Models\JobLevel;
 use App\Models\Lead;
 use App\Models\Recurrence;
 use App\Models\User;
+use App\Services\ClientManagementService;
 use App\Support\ServiceTypes;
 use Database\Seeders\JobLevelSeeder;
 use Database\Seeders\MasterCatalogSeeder;
@@ -545,6 +549,128 @@ class CustomerManagementTest extends TestCase
             null,
             true,
         );
+    }
+
+    public function test_single_customer_can_be_deleted(): void
+    {
+        $client = Client::query()->create($this->validCustomerPayload());
+
+        $this->actingAs($this->admin)
+            ->deleteJson(route('admin.clients.destroy', $client))
+            ->assertOk()
+            ->assertJsonPath('message', 'Customer deleted successfully.');
+
+        $this->assertSoftDeleted($client);
+    }
+
+    public function test_multiple_customers_can_be_deleted_at_once(): void
+    {
+        $clientOne = Client::query()->create($this->validCustomerPayload());
+        $payloadTwo = $this->validCustomerPayload();
+        $payloadTwo['email'] = 'second-customer@example.com';
+        $clientTwo = Client::query()->create($payloadTwo);
+
+        $ids = $clientOne->id.','.$clientTwo->id;
+
+        $this->actingAs($this->admin)
+            ->deleteJson(route('admin.clients.destroy', $ids))
+            ->assertOk()
+            ->assertJsonPath('message', '2 customer(s) deleted successfully.');
+
+        $this->assertSoftDeleted($clientOne);
+        $this->assertSoftDeleted($clientTwo);
+    }
+
+    public function test_deleting_a_customer_also_soft_deletes_their_jobs(): void
+    {
+        $client = Client::query()->create($this->validCustomerPayload());
+        $job = Job::query()->create($this->jobPayload($client->id));
+
+        $this->actingAs($this->admin)
+            ->deleteJson(route('admin.clients.destroy', $client))
+            ->assertOk();
+
+        $this->assertSoftDeleted($client);
+        $this->assertSoftDeleted($job);
+    }
+
+    public function test_trashed_filter_only_shows_deleted_customers(): void
+    {
+        $activeClient = Client::query()->create($this->validCustomerPayload());
+        $trashedPayload = $this->validCustomerPayload();
+        $trashedPayload['email'] = 'trashed-customer@example.com';
+        $trashedClient = Client::query()->create($trashedPayload);
+        $trashedClient->delete();
+
+        $response = $this->actingAs($this->admin)
+            ->get(route('admin.clients.index', ['trashed' => '1']))
+            ->assertOk();
+
+        $clients = $response->viewData('clients');
+        $this->assertTrue($clients->contains('id', $trashedClient->id));
+        $this->assertFalse($clients->contains('id', $activeClient->id));
+    }
+
+    public function test_single_customer_can_be_restored(): void
+    {
+        $client = Client::query()->create($this->validCustomerPayload());
+        $job = Job::query()->create($this->jobPayload($client->id));
+        $this->clientManagementService()->deleteClient($this->admin, $client);
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.clients.restore', $client), [], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('message', 'Customer restored successfully.');
+
+        $this->assertNotSoftDeleted($client);
+        $this->assertNotSoftDeleted($job);
+    }
+
+    public function test_multiple_customers_can_be_restored_at_once(): void
+    {
+        $clientOne = Client::query()->create($this->validCustomerPayload());
+        $payloadTwo = $this->validCustomerPayload();
+        $payloadTwo['email'] = 'second-customer@example.com';
+        $clientTwo = Client::query()->create($payloadTwo);
+        $clientOne->delete();
+        $clientTwo->delete();
+
+        $ids = $clientOne->id.','.$clientTwo->id;
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.clients.restore', $ids), [], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('message', '2 customer(s) restored successfully.');
+
+        $this->assertNotSoftDeleted($clientOne);
+        $this->assertNotSoftDeleted($clientTwo);
+    }
+
+    private function clientManagementService(): ClientManagementService
+    {
+        return $this->app->make(ClientManagementService::class);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function jobPayload(int $clientId): array
+    {
+        return [
+            'client_id' => $clientId,
+            'client_address' => '50 Job Lane',
+            'scheduled_date' => now()->addDay()->toDateString(),
+            'scheduled_time' => '09:00',
+            'estimated_duration_minutes' => 60,
+            'required_services' => [ServiceTypes::all()[0]],
+            'parking_status' => JobParkingStatus::EASY->value,
+            'customer_type' => JobCustomerType::EASY->value,
+            'payment_mode' => JobOperationalPaymentMode::CASH->value,
+            'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+            'equipment_type_id' => EquipmentType::query()->where('is_active', true)->value('id'),
+            'recurrence_id' => Recurrence::query()->where('is_active', true)->value('id'),
+            'job_level_id' => JobLevel::query()->where('is_active', true)->value('id'),
+        ];
     }
 
     /**

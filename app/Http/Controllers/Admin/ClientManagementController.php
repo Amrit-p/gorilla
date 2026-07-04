@@ -55,6 +55,7 @@ class ClientManagementController extends Controller
             'payment_status' => $request->string('payment_status')->toString(),
             'client_type' => $request->string('client_type')->toString(),
             'from_lead' => $request->string('from_lead')->toString(),
+            'trashed' => $request->string('trashed')->toString(),
             'sort' => $request->string('sort')->toString(),
             'direction' => $request->string('direction')->toString(),
         ];
@@ -291,11 +292,61 @@ class ClientManagementController extends Controller
         );
     }
 
-    public function destroy(Request $request, Client $client): JsonResponse
+    public function destroy(Request $request, string $client): JsonResponse
     {
-        $this->authorize('delete', $client);
-        $this->clientManagementService->deleteClient($request->user(), $client);
+        $clients = $this->resolveClients($client);
 
-        return response()->json(['message' => 'Customer deleted successfully.']);
+        foreach ($clients as $model) {
+            $this->authorize('delete', $model);
+        }
+
+        foreach ($clients as $model) {
+            $this->clientManagementService->deleteClient($request->user(), $model);
+        }
+
+        return response()->json([
+            'message' => $clients->count() > 1
+                ? $clients->count().' customer(s) deleted successfully.'
+                : 'Customer deleted successfully.',
+        ]);
+    }
+
+    public function restore(Request $request, string $client): JsonResponse
+    {
+        $clients = $this->resolveClients($client, onlyTrashed: true);
+
+        foreach ($clients as $model) {
+            $this->authorize('restore', $model);
+        }
+
+        foreach ($clients as $model) {
+            $this->clientManagementService->restoreClient($request->user(), $model);
+        }
+
+        return response()->json([
+            'message' => $clients->count() > 1
+                ? $clients->count().' customer(s) restored successfully.'
+                : 'Customer restored successfully.',
+        ]);
+    }
+
+    /**
+     * Resolve one or more clients from a route segment that may contain a
+     * single id ("5") or a comma-separated list of ids ("5,6,7").
+     */
+    private function resolveClients(string $ids, bool $onlyTrashed = false): EloquentCollection
+    {
+        $ids = collect(explode(',', $ids))
+            ->map(fn (string $id): int => (int) trim($id))
+            ->filter(fn (int $id): bool => $id > 0)
+            ->unique()
+            ->values();
+
+        $query = $onlyTrashed ? Client::onlyTrashed() : Client::query();
+        $clients = $query->whereIn('id', $ids)->get();
+
+        abort_if($clients->isEmpty(), 404);
+
+        return $clients;
     }
 }

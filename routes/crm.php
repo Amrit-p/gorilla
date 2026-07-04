@@ -240,6 +240,7 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
         Route::get('/admin/clients/{client}/documents/{document}/download', [ClientManagementController::class, 'downloadDocument'])->name('admin.clients.documents.download');
         Route::patch('/admin/clients/{client}', [ClientManagementController::class, 'update'])->name('admin.clients.update');
         Route::delete('/admin/clients/{client}', [ClientManagementController::class, 'destroy'])->name('admin.clients.destroy');
+        Route::post('/admin/clients/{client}/restore', [ClientManagementController::class, 'restore'])->name('admin.clients.restore');
         Route::get('/admin/clients/{client}', [ClientManagementController::class, 'show'])->name('admin.clients.show');
     });
 

@@ -104,17 +104,50 @@
             refreshClients();
         });
 
-        $(document).on('click', '.delete-client', function () {
-            const id = $(this).data('id');
-            if (!confirm('Delete this customer?')) return;
+        function deleteClients(ids) {
             $.ajax({
-                url: "{{ url('/admin/clients') }}/" + id,
+                url: "{{ url('/admin/clients') }}/" + ids.join(','),
                 method: 'POST',
                 data: { _token: "{{ csrf_token() }}", _method: 'DELETE' },
                 headers: { 'Accept': 'application/json' },
                 success: function (res) { showClientAlert(res.message); refreshClients(); },
-                error: function () { showClientAlert('Failed to delete customer.', true); }
+                error: function () { showClientAlert('Failed to delete customer' + (ids.length > 1 ? 's' : '') + '.', true); }
             });
+        }
+
+        $(document).on('click', '.delete-client', function () {
+            if (!confirm('Delete this customer?')) return;
+            deleteClients([Number($(this).data('id'))]);
+        });
+
+        $(document).on('click', '#client-bulk-delete', function () {
+            const ids = typeof window.selectedClientIds === 'function' ? window.selectedClientIds() : [];
+            if (!ids.length) return;
+            if (!confirm('Delete ' + ids.length + ' selected customers?')) return;
+            deleteClients(ids);
+        });
+
+        function restoreClients(ids) {
+            $.ajax({
+                url: "{{ url('/admin/clients') }}/" + ids.join(',') + "/restore",
+                method: 'POST',
+                data: { _token: "{{ csrf_token() }}" },
+                headers: { 'Accept': 'application/json' },
+                success: function (res) { showClientAlert(res.message); refreshClients(); },
+                error: function () { showClientAlert('Failed to restore customer' + (ids.length > 1 ? 's' : '') + '.', true); }
+            });
+        }
+
+        $(document).on('click', '.restore-client', function () {
+            if (!confirm('Restore this customer?')) return;
+            restoreClients([Number($(this).data('id'))]);
+        });
+
+        $(document).on('click', '#client-bulk-restore', function () {
+            const ids = typeof window.selectedClientIds === 'function' ? window.selectedClientIds() : [];
+            if (!ids.length) return;
+            if (!confirm('Restore ' + ids.length + ' selected customers?')) return;
+            restoreClients(ids);
         });
 
         // Keep export links in sync with active filters

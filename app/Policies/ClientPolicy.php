@@ -32,4 +32,9 @@ class ClientPolicy
     {
         return CrmPermissions::canManageCustomers($user);
     }
+
+    public function restore(User $user, Client $client): bool
+    {
+        return CrmPermissions::canManageCustomers($user);
+    }
 }

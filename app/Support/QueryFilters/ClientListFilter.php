@@ -34,8 +34,12 @@ final class ClientListFilter
             $query->whereNull('lead_id');
         }
 
-        if(! empty($filters['recurrence_id'])) {
+        if (! empty($filters['recurrence_id'])) {
             $query->where('recurrence_id', $filters['recurrence_id']);
+        }
+
+        if (($filters['trashed'] ?? '') === '1') {
+            $query->onlyTrashed();
         }
 
         return $query;
