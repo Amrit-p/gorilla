@@ -18,6 +18,7 @@ use App\Models\Contract;
 use App\Models\Job;
 use App\Models\MowerRemark;
 use App\Notifications\JobRemarksUpdatedNotification;
+use App\Services\ClientStatisticsService;
 use App\Services\JobImageManagementService;
 use App\Services\JobManagementService;
 use App\Support\CrmConstants;
@@ -35,7 +36,8 @@ class JobManagementController extends Controller
 {
     public function __construct(
         private readonly JobManagementService $jobManagementService,
-        private readonly JobImageManagementService $jobImageManagementService
+        private readonly JobImageManagementService $jobImageManagementService,
+        private readonly ClientStatisticsService $clientStatisticsService
     ) {
         $this->middleware(EnsureJobIsNotVerified::class)->only([
             'edit',
@@ -114,6 +116,10 @@ class JobManagementController extends Controller
 
         $jobImages = $this->jobImageManagementService->presentAllForJob($job);
 
+        $customerHistory = $job->client
+            ? $this->clientStatisticsService->forJobShowSidebar($job->client, $job->id)
+            : null;
+
         return view('admin.jobs.show', array_merge(
             [
                 'job' => $job,
@@ -121,6 +127,7 @@ class JobManagementController extends Controller
                 'attachedImages' => $this->jobImageManagementService->presentAttachedImages($job),
                 'beforeImages' => $jobImages['before'],
                 'afterImages' => $jobImages['after'],
+                'customerHistory' => $customerHistory,
             ],
             $this->jobManagementService->formOptions($job->client_id)
         ));

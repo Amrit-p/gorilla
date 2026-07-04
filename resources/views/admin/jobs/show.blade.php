@@ -125,17 +125,93 @@
 
                 @if ($job->client)
                     <div class="rounded-2xl border border-slate-200 bg-white p-5">
-                        <h3 class="text-sm font-semibold text-slate-900">Customer</h3>
-                        <p class="mt-2 text-sm">
-                            <a href="{{ route('admin.clients.show', $job->client) }}" class="text-emerald-700 hover:underline">
-                                #{{ $job->client->customer_unique_id }} {{ $job->client->name }}
-                            </a>
-                        </p>
+                        <div class="flex items-center justify-between gap-2">
+                            <h3 class="text-sm font-semibold text-slate-900">Customer</h3>
+                            <a href="{{ route('admin.clients.show', $job->client) }}" class="text-xs font-medium text-emerald-700 hover:underline">View profile</a>
+                        </div>
+                        <p class="mt-2 text-sm font-medium text-slate-800">#{{ $job->client->customer_unique_id }} {{ $job->client->name }}</p>
+                        <p class="text-xs text-slate-500">Customer since {{ $job->client->created_at?->format('M j, Y') ?? '—' }}</p>
+
+                        <dl class="mt-4 space-y-2.5 text-sm">
+                            <div class="flex justify-between gap-3">
+                                <dt class="text-slate-500">Rating</dt>
+                                <dd class="font-medium text-slate-800">{{ $job->client->clientRating?->name ?? '—' }}</dd>
+                            </div>
+                            <div class="flex justify-between gap-3">
+                                <dt class="text-slate-500">Accounting level</dt>
+                                <dd class="font-medium text-slate-800">{{ $job->client->accountingLevel?->name ?? '—' }}</dd>
+                            </div>
+                            <div class="flex justify-between gap-3">
+                                <dt class="text-slate-500">Zone</dt>
+                                <dd class="font-medium text-slate-800">{{ $job->client->zone?->name ?? '—' }}</dd>
+                            </div>
+                            <div class="flex justify-between gap-3">
+                                <dt class="text-slate-500">Pending amount</dt>
+                                <dd>
+                                    @if (! empty($customerHistory['pending_jobs']))
+                                        <button type="button" onclick="openModal('pending-jobs-modal')" class="font-semibold text-amber-700 underline decoration-dotted underline-offset-2 hover:text-amber-800">
+                                            ${{ number_format($customerHistory['pending_amount'] ?? 0, 2) }}
+                                        </button>
+                                    @else
+                                        <span class="font-semibold text-slate-800">${{ number_format($customerHistory['pending_amount'] ?? 0, 2) }}</span>
+                                    @endif
+                                </dd>
+                            </div>
+                        </dl>
+
+                        <div class="mt-4 grid grid-cols-2 gap-3 border-t border-slate-100 pt-4 text-center">
+                            <div>
+                                <p class="text-lg font-semibold text-slate-900">{{ $customerHistory['total_jobs'] ?? 0 }}</p>
+                                <p class="text-xs text-slate-500">Total jobs</p>
+                            </div>
+                            <div>
+                                <p class="text-lg font-semibold text-emerald-700">{{ $customerHistory['completed_jobs'] ?? 0 }}</p>
+                                <p class="text-xs text-slate-500">Completed</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 border-t border-slate-100 pt-4">
+                            <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Last assigned mowers</p>
+                            @if (! empty($customerHistory['last_mowers']))
+                                <p class="mt-1.5 text-sm text-slate-800">{{ implode(', ', $customerHistory['last_mowers']) }}</p>
+                                <p class="text-xs text-slate-400">{{ \Illuminate\Support\Carbon::parse($customerHistory['last_job_date'])->format('M j, Y') }}</p>
+                            @else
+                                <p class="mt-1.5 text-sm text-slate-500">No previous jobs.</p>
+                            @endif
+                        </div>
                     </div>
                 @endif
             </div>
         </div>
     </div>
+
+    @if ($job->client && ! empty($customerHistory['pending_jobs']))
+        <x-ui.modal id="pending-jobs-modal" title="Pending Payments" maxWidth="max-w-lg">
+            <p class="mb-3 text-sm text-slate-500">
+                Jobs for <strong class="text-slate-700">{{ $job->client->name }}</strong> with unreceived payment.
+            </p>
+            <ul class="max-h-80 space-y-2 overflow-y-auto">
+                @foreach ($customerHistory['pending_jobs'] as $pendingJob)
+                    <li class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2.5">
+                        <div>
+                            <a href="{{ route('admin.jobs.show', $pendingJob['id']) }}" class="text-sm font-medium text-slate-800 hover:text-emerald-700 hover:underline">
+                                Job #{{ $pendingJob['id'] }}
+                            </a>
+                            <p class="text-xs text-slate-500">
+                                {{ $pendingJob['scheduled_date'] ? \Illuminate\Support\Carbon::parse($pendingJob['scheduled_date'])->format('M j, Y') : '—' }}
+                                • {{ $pendingJob['payment_status'] ?: '—' }}
+                            </p>
+                        </div>
+                        <span class="text-sm font-semibold text-amber-700">${{ number_format($pendingJob['charges'], 2) }}</span>
+                    </li>
+                @endforeach
+            </ul>
+            <div class="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-sm">
+                <span class="text-slate-500">Total pending</span>
+                <span class="font-semibold text-amber-700">${{ number_format($customerHistory['pending_amount'], 2) }}</span>
+            </div>
+        </x-ui.modal>
+    @endif
 
     @include('admin.partials.job-modals')
 
