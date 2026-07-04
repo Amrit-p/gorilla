@@ -48,11 +48,6 @@
         Clear filters
     </button>
 
-    {{-- Active indicator --}}
-    <span id="cal-filter-badge"
-          class="hidden inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
-        <span id="cal-filter-badge-text"></span>
-    </span>
 </div>
 
 <div id="three-week-grid-wrap" class="relative">
@@ -151,19 +146,11 @@
     function syncFilterUI() {
         var f     = getFilters();
         var active = hasActiveFilters(f);
-        var parts = [];
-
-        if (f.zone_id)   { parts.push($('#cal-filter-zone option:selected').text()); }
-        if (f.worker_id) { parts.push($('#cal-filter-worker option:selected').text()); }
-        if (f.search)    { parts.push('"' + f.search + '"'); }
 
         if (active) {
             $('#cal-filter-clear').removeClass('hidden');
-            $('#cal-filter-badge').removeClass('hidden');
-            $('#cal-filter-badge-text').text(parts.join(' · '));
         } else {
             $('#cal-filter-clear').addClass('hidden');
-            $('#cal-filter-badge').addClass('hidden');
         }
     }
 

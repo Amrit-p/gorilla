@@ -210,8 +210,14 @@ class DashboardService
             ))
             ->when($filters['search'] ?? null, function ($q, $term) {
                 $q->where(function ($q) use ($term) {
-                    $q->whereHas('client', fn ($q) => $q->where('name', 'like', "%{$term}%"))
-                        ->orWhere('client_address', 'like', "%{$term}%");
+                    $q->where('client_address', 'like', "%{$term}%")
+                        ->orWhereHas('client', function ($q) use ($term) {
+                            $q->where('name', 'like', "%{$term}%")
+                                ->orWhere('address', 'like', "%{$term}%")
+                                ->orWhere('customer_unique_id', 'like', "%{$term}%");
+                        })
+                        ->orWhereHas('assignedEmployees', fn ($q) => $q->where('name', 'like', "%{$term}%"))
+                        ->orWhereHas('doneByUser', fn ($q) => $q->where('name', 'like', "%{$term}%"));
                 });
             })
             ->get();

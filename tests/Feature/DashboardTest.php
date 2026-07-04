@@ -2,16 +2,17 @@
 
 namespace Tests\Feature;
 
-use App\Enums\LeadStatus;
+use App\Enums\JobWorkflowStatus;
 use App\Enums\LeadPaymentStatus;
-use App\Models\EquipmentType;
-use App\Support\ServiceTypes;
-use Database\Seeders\MasterCatalogSeeder;
+use App\Enums\LeadStatus;
 use App\Enums\LeadWeedSpray;
 use App\Models\Client;
+use App\Models\EquipmentType;
 use App\Models\Job;
 use App\Models\Lead;
 use App\Models\User;
+use App\Support\ServiceTypes;
+use Database\Seeders\MasterCatalogSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -71,7 +72,7 @@ class DashboardTest extends TestCase
             'customer_type' => 'Easy',
             'payment_mode' => 'Cash',
             'payment_status' => 'Received',
-            'status' => \App\Enums\JobWorkflowStatus::STARTED->value,
+            'status' => JobWorkflowStatus::STARTED->value,
             'created_by' => $this->admin->id,
         ]);
 
@@ -84,5 +85,71 @@ class DashboardTest extends TestCase
             ->assertSee('schedule', false)
             ->assertSee('Lead pipeline')
             ->assertDontSee('Placeholder Client');
+    }
+
+    public function test_calendar_search_matches_client_customer_unique_id_and_assigned_employee(): void
+    {
+        $mower = User::query()->create([
+            'name' => 'Search Mower',
+            'email' => 'search-mower@mowingcrm.test',
+            'password' => bcrypt('password'),
+            'is_active' => true,
+        ]);
+
+        $client = Client::query()->create([
+            'name' => 'Filter Client',
+            'address' => '5 Pine St',
+            'service_types' => [ServiceTypes::all()[0]],
+            'weed_spray' => LeadWeedSpray::NO->value,
+            're_completion_days' => '14 days',
+            'job_type' => 'Regular',
+            'safety_concerns' => ['Pet'],
+            'payment_mode' => 'Cash',
+            'payment_status' => 'Done',
+            'charges' => 85,
+        ]);
+
+        $job = Job::query()->create([
+            'client_id' => $client->id,
+            'client_address' => $client->address,
+            'scheduled_date' => now()->toDateString(),
+            'scheduled_time' => '09:30',
+            'estimated_duration_minutes' => 60,
+            'required_services' => [ServiceTypes::all()[0]],
+            'parking_status' => 'Easy',
+            'customer_type' => 'Easy',
+            'payment_mode' => 'Cash',
+            'payment_status' => 'Received',
+            'status' => JobWorkflowStatus::STARTED->value,
+            'created_by' => $this->admin->id,
+        ]);
+
+        $job->assignedEmployees()->attach($mower->id, ['assignment_date' => now()->toDateString()]);
+
+        $this->actingAs($this->admin)
+            ->get(route('dashboard.daily-jobs-table', [
+                'date' => now()->toDateString(),
+                'search' => (string) $client->customer_unique_id,
+            ]))
+            ->assertOk()
+            ->assertSee('Filter Client');
+
+        $this->actingAs($this->admin)
+            ->get(route('dashboard.daily-jobs-table', [
+                'date' => now()->toDateString(),
+                'search' => 'Search Mower',
+            ]))
+            ->assertOk()
+            ->assertSee('Filter Client');
+
+        $this->actingAs($this->admin)
+            ->get(route('dashboard.three-week-grid', ['search' => 'Search Mower']))
+            ->assertOk()
+            ->assertSee('1 job');
+
+        $this->actingAs($this->admin)
+            ->get(route('dashboard.three-week-grid', ['search' => 'Nonexistent Term']))
+            ->assertOk()
+            ->assertDontSee('1 job');
     }
 }
