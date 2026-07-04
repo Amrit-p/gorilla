@@ -33,6 +33,7 @@
             @csrf
             @method('PATCH')
             <input type="hidden" name="lead_id">
+            <p class="bulk-lead-context hidden rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-600"></p>
             <div>
                 <label class="mb-1 block text-sm font-medium text-slate-700">Status</label>
                 <select name="status" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
@@ -86,16 +87,35 @@
             refreshLeads();
         });
 
-        $(document).on('click', '.status-lead', function () {
+        function openLeadStatusModal(ids) {
             $('#lead-status-form')[0].reset();
-            $('#lead-status-form').find('[name="lead_id"]').val($(this).data('id'));
+            $('#lead-status-form').data('leadIds', ids);
+            $('#lead-status-form').find('[name="lead_id"]').val(ids.join(','));
+            const $context = $('#lead-status-form').find('.bulk-lead-context');
+            if (ids.length > 1) {
+                $context.removeClass('hidden').text('Status update will apply to ' + ids.length + ' selected leads.');
+            } else {
+                $context.addClass('hidden').text('');
+            }
             openModal('lead-status-modal');
+        }
+
+        $(document).on('click', '.status-lead', function () {
+            openLeadStatusModal([Number($(this).data('id'))]);
         });
+
+        $(document).on('click', '#lead-bulk-status', function () {
+            const ids = typeof window.selectedLeadIds === 'function' ? window.selectedLeadIds() : [];
+            if (!ids.length) return;
+            openLeadStatusModal(ids);
+        });
+
         $('#lead-status-form').on('submit', function (event) {
             event.preventDefault();
-            const id = $(this).find('[name="lead_id"]').val();
+            const ids = $(this).data('leadIds') || [];
+            if (!ids.length) return;
             $.ajax({
-                url: "{{ url('/admin/leads') }}/" + id + "/status",
+                url: "{{ url('/admin/leads') }}/" + ids.join(',') + "/status",
                 method: 'POST',
                 data: $(this).serialize(),
                 headers: { 'Accept': 'application/json' },
@@ -114,30 +134,58 @@
             });
         });
 
+        $(document).on('click', '#lead-bulk-timeline', function () {
+            const ids = typeof window.selectedLeadIds === 'function' ? window.selectedLeadIds() : [];
+            if (!ids.length) return;
+            $('#lead-note-form')[0].reset();
+            $('#lead-note-form').find('[name="lead_id"]').val(ids.join(','));
+            $('#lead-detail-content').html('<p class="text-slate-500">Adding a note will apply to ' + ids.length + ' selected leads.</p>');
+            openModal('lead-detail-modal');
+        });
+
         $('#lead-note-form').on('submit', function (event) {
             event.preventDefault();
             const id = $(this).find('[name="lead_id"]').val();
+            const isBulk = id.indexOf(',') !== -1;
             $.ajax({
                 url: "{{ url('/admin/leads') }}/" + id + "/notes",
                 method: 'POST',
                 data: $(this).serialize(),
                 headers: { 'Accept': 'application/json' },
-                success: function (res) { showLeadAlert(res.message); $('.view-lead[data-id="' + id + '"]').first().trigger('click'); $('#lead-note-form').find('[name="note"]').val(''); },
+                success: function (res) {
+                    showLeadAlert(res.message);
+                    $('#lead-note-form').find('[name="note"]').val('');
+                    if (isBulk) {
+                        closeModal('lead-detail-modal');
+                    } else {
+                        $('.view-lead[data-id="' + id + '"]').first().trigger('click');
+                    }
+                },
                 error: function (xhr) { showLeadAlert(Object.values(xhr.responseJSON?.errors || {})[0]?.[0] || 'Failed to add note.', true); }
             });
         });
 
-        $(document).on('click', '.delete-lead', function () {
-            const id = $(this).data('id');
-            if (!confirm('Delete this lead?')) return;
+        function deleteLeads(ids) {
             $.ajax({
-                url: "{{ url('/admin/leads') }}/" + id,
+                url: "{{ url('/admin/leads') }}/" + ids.join(','),
                 method: 'POST',
                 data: { _token: "{{ csrf_token() }}", _method: 'DELETE' },
                 headers: { 'Accept': 'application/json' },
                 success: function (res) { showLeadAlert(res.message); refreshLeads(); },
-                error: function (xhr) { showLeadAlert(Object.values(xhr.responseJSON?.errors || {})[0]?.[0] || 'Failed to delete lead.', true); }
+                error: function (xhr) { showLeadAlert(Object.values(xhr.responseJSON?.errors || {})[0]?.[0] || 'Failed to delete lead' + (ids.length > 1 ? 's' : '') + '.', true); }
             });
+        }
+
+        $(document).on('click', '.delete-lead', function () {
+            if (!confirm('Delete this lead?')) return;
+            deleteLeads([Number($(this).data('id'))]);
+        });
+
+        $(document).on('click', '#lead-bulk-delete', function () {
+            const ids = typeof window.selectedLeadIds === 'function' ? window.selectedLeadIds() : [];
+            if (!ids.length) return;
+            if (!confirm('Delete ' + ids.length + ' selected leads?')) return;
+            deleteLeads(ids);
         });
 
         $(document).on('click', '#leads-table-container .pagination a', function (event) {

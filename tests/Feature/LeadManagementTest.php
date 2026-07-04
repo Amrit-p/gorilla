@@ -166,6 +166,61 @@ class LeadManagementTest extends TestCase
         $this->assertTrue($indexLeads->contains('id', $unconvertedLead->id));
     }
 
+    public function test_lead_status_can_be_updated_for_multiple_leads_at_once(): void
+    {
+        $leadOne = Lead::query()->create($this->validLeadPayload());
+        $payloadTwo = $this->validLeadPayload();
+        $payloadTwo['email'] = 'second@example.com';
+        $leadTwo = Lead::query()->create($payloadTwo);
+
+        $ids = $leadOne->id.','.$leadTwo->id;
+
+        $this->actingAs($this->admin)
+            ->patchJson(route('admin.leads.status.update', $ids), ['status' => LeadStatus::FOLLOW_UP->value])
+            ->assertOk()
+            ->assertJsonPath('leads.0.status', LeadStatus::FOLLOW_UP->value)
+            ->assertJsonPath('leads.1.status', LeadStatus::FOLLOW_UP->value);
+
+        $this->assertSame(LeadStatus::FOLLOW_UP->value, $leadOne->fresh()->status);
+        $this->assertSame(LeadStatus::FOLLOW_UP->value, $leadTwo->fresh()->status);
+    }
+
+    public function test_multiple_leads_can_be_deleted_at_once(): void
+    {
+        $leadOne = Lead::query()->create($this->validLeadPayload());
+        $payloadTwo = $this->validLeadPayload();
+        $payloadTwo['email'] = 'second@example.com';
+        $leadTwo = Lead::query()->create($payloadTwo);
+
+        $ids = $leadOne->id.','.$leadTwo->id;
+
+        $this->actingAs($this->admin)
+            ->deleteJson(route('admin.leads.destroy', $ids))
+            ->assertOk()
+            ->assertJsonPath('deleted', 2)
+            ->assertJsonPath('skipped', 0);
+
+        $this->assertSoftDeleted($leadOne);
+        $this->assertSoftDeleted($leadTwo);
+    }
+
+    public function test_note_can_be_added_to_multiple_leads_at_once(): void
+    {
+        $leadOne = Lead::query()->create($this->validLeadPayload());
+        $payloadTwo = $this->validLeadPayload();
+        $payloadTwo['email'] = 'second@example.com';
+        $leadTwo = Lead::query()->create($payloadTwo);
+
+        $ids = $leadOne->id.','.$leadTwo->id;
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.leads.notes.store', $ids), ['note' => 'Bulk timeline note'])
+            ->assertOk();
+
+        $this->assertSame('Bulk timeline note', $leadOne->leadNotes()->latest()->first()->note);
+        $this->assertSame('Bulk timeline note', $leadTwo->leadNotes()->latest()->first()->note);
+    }
+
     public function test_equipment_type_id_must_be_active(): void
     {
         $inactive = EquipmentType::query()->where('name', 'Red Mower')->firstOrFail();

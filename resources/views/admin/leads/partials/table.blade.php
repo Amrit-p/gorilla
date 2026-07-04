@@ -1,15 +1,26 @@
 @php
     $convertedOnly = $convertedOnly ?? false;
-    $tableHeaders = ['Lead', 'Contact', 'Job & Payment', 'Recurrence', 'Zone', 'Status', 'Created'];
+    $tableHeaders = [
+        '<input id="lead-select-all" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" aria-label="Select all leads">',
+        'Lead', 'Contact', 'Job & Payment', 'Recurrence', 'Zone', 'Status', 'Created',
+    ];
     if ($convertedOnly) {
         $tableHeaders[] = 'Converted';
     }
     $tableHeaders[] = 'Assigned';
     $tableHeaders[] = '';
 @endphp
+
+<x-leads.bulk-toolbar />
+
 <x-ui.table :headers="$tableHeaders">
     @forelse ($leads as $lead)
-        <tr class="divide-x divide-slate-100 transition-colors hover:bg-slate-50/70">
+        <tr class="lead-row divide-x divide-slate-100 transition-colors hover:bg-slate-50/70 data-[selected=true]:bg-emerald-50/70 data-[selected=true]:shadow-[inset_3px_0_0_#10b981] data-[bulk-mode=true]:cursor-pointer" data-lead-id="{{ $lead->id }}" data-selected="false" data-bulk-mode="false">
+
+            {{-- Select --}}
+            <td class="w-8 px-2 py-4">
+                <input type="checkbox" class="lead-select-checkbox h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" data-lead-id="{{ $lead->id }}" aria-label="Select lead">
+            </td>
 
             {{-- Lead / Service --}}
             <td class="px-4 py-4">
@@ -184,5 +195,159 @@
         </tr>
     @endforelse
 </x-ui.table>
+
+<script>
+    (function () {
+        if (typeof window.cleanupLeadBulkSelection === 'function') {
+            window.cleanupLeadBulkSelection();
+        }
+
+        const controller = new AbortController();
+        const signal = controller.signal;
+
+        function container() {
+            return document.getElementById('leads-table-container');
+        }
+
+        if (!container()) return;
+
+        let bulkMode = false;
+        let longPressTimer = null;
+        let longPressStartedAt = 0;
+        let longPressActivated = false;
+        const longPressMs = 520;
+
+        function checkboxes() {
+            return Array.from(container()?.querySelectorAll('.lead-select-checkbox') || []);
+        }
+
+        function selectedTableIds() {
+            return checkboxes()
+                .filter(el => el.checked)
+                .map(el => Number(el.dataset.leadId))
+                .filter(id => Number.isInteger(id) && id > 0);
+        }
+
+        function syncToolbar() {
+            const ids = selectedTableIds();
+            const toolbar = document.getElementById('lead-bulk-toolbar');
+            const count = document.getElementById('lead-bulk-count');
+
+            if (count) { count.textContent = ids.length; }
+            if (toolbar) { toolbar.classList.toggle('hidden', ids.length === 0); }
+        }
+
+        function setBulkMode(active) {
+            bulkMode = active;
+            (container()?.querySelectorAll('.lead-row') || []).forEach(row => {
+                row.dataset.bulkMode = active ? 'true' : 'false';
+            });
+        }
+
+        function syncBulkState() {
+            const boxes = checkboxes();
+            const selected = boxes.filter(el => el.checked);
+            const master = document.getElementById('lead-select-all');
+
+            boxes.forEach(checkbox => {
+                const row = checkbox.closest('.lead-row');
+                if (row) row.dataset.selected = checkbox.checked ? 'true' : 'false';
+            });
+
+            if (master) {
+                master.checked = boxes.length > 0 && selected.length === boxes.length;
+                master.indeterminate = selected.length > 0 && selected.length < boxes.length;
+            }
+
+            setBulkMode(selected.length > 0);
+            syncToolbar();
+        }
+
+        function setAllSelected(checked) {
+            checkboxes().forEach(checkbox => {
+                checkbox.checked = checked;
+            });
+            syncBulkState();
+        }
+
+        function clearLongPress() {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+
+        window.selectedLeadIds = selectedTableIds;
+        window.clearLeadBulkSelection = function () {
+            checkboxes().forEach(cb => { cb.checked = false; });
+            syncBulkState();
+        };
+        window.cleanupLeadBulkSelection = function () {
+            controller.abort();
+            clearLongPress();
+        };
+
+        document.addEventListener('change', function (event) {
+            const target = event.target;
+
+            if (target.matches('#lead-select-all')) {
+                setAllSelected(target.checked);
+                return;
+            }
+
+            if (target.matches('#leads-table-container .lead-select-checkbox')) {
+                syncBulkState();
+            }
+        }, { signal });
+
+        document.addEventListener('click', function (event) {
+            const target = event.target;
+
+            if (target.closest('#lead-bulk-select-page')) {
+                setAllSelected(true);
+                return;
+            }
+
+            if (target.closest('#lead-bulk-clear')) {
+                window.clearLeadBulkSelection();
+                return;
+            }
+
+            const row = target.closest('#leads-table-container .lead-row');
+            if (!row || target.closest('a, button, input, select, textarea')) return;
+            if (longPressActivated) {
+                longPressActivated = false;
+                return;
+            }
+            if (Date.now() - longPressStartedAt < longPressMs + 80) return;
+            if (!bulkMode) return;
+
+            const checkbox = row.querySelector('.lead-select-checkbox');
+            if (!checkbox) return;
+            checkbox.checked = !checkbox.checked;
+            syncBulkState();
+        }, { signal });
+
+        document.addEventListener('pointerdown', function (event) {
+            const row = event.target.closest('#leads-table-container .lead-row');
+            if (!row || event.target.closest('a, button, input, select, textarea')) return;
+
+            longPressStartedAt = Date.now();
+            longPressActivated = false;
+            clearLongPress();
+            longPressTimer = setTimeout(function () {
+                const checkbox = row.querySelector('.lead-select-checkbox');
+                if (!checkbox) return;
+                checkbox.checked = true;
+                longPressActivated = true;
+                syncBulkState();
+            }, longPressMs);
+        }, { signal });
+
+        document.addEventListener('pointerup', clearLongPress, { signal });
+        document.addEventListener('pointercancel', clearLongPress, { signal });
+        document.addEventListener('pointerleave', clearLongPress, { signal });
+
+        syncBulkState();
+    })();
+</script>
 
 <div class="mt-4">{{ $leads->links() }}</div>

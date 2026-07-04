@@ -172,41 +172,116 @@ class LeadManagementController extends Controller
             ->with('success', 'Lead updated successfully.');
     }
 
-    public function destroy(Request $request, Lead $lead): JsonResponse
+    public function destroy(Request $request, string $lead): JsonResponse
     {
-        $this->authorize('delete', $lead);
-        $this->leadManagementService->deleteLead($request->user(), $lead);
+        $leads = $this->resolveLeads($lead);
 
-        return response()->json(['message' => 'Lead deleted successfully.']);
+        foreach ($leads as $model) {
+            $this->authorize('delete', $model);
+        }
+
+        if ($leads->count() === 1) {
+            $this->leadManagementService->deleteLead($request->user(), $leads->first());
+
+            return response()->json(['message' => 'Lead deleted successfully.']);
+        }
+
+        $deleted = 0;
+        $skipped = 0;
+        foreach ($leads as $model) {
+            if ($model->is_locked) {
+                $skipped++;
+
+                continue;
+            }
+            $this->leadManagementService->deleteLead($request->user(), $model);
+            $deleted++;
+        }
+
+        $message = "{$deleted} lead(s) deleted successfully.";
+        if ($skipped > 0) {
+            $message .= " {$skipped} locked lead(s) were skipped.";
+        }
+
+        return response()->json(['message' => $message, 'deleted' => $deleted, 'skipped' => $skipped]);
     }
 
-    public function updateStatus(UpdateLeadStatusRequest $request, Lead $lead): JsonResponse
+    public function updateStatus(UpdateLeadStatusRequest $request, string $lead): JsonResponse
     {
-        $this->authorize('update', $lead);
-        $updatedLead = $this->leadManagementService->updateStatus(
-            $request->user(),
-            $lead,
-            $request->validated('status')
-        );
+        $leads = $this->resolveLeads($lead);
 
-        if (! empty($request->validated('note'))) {
-            $this->leadManagementService->addLeadNote($request->user(), $updatedLead, $request->validated('note'));
+        foreach ($leads as $model) {
+            $this->authorize('update', $model);
+        }
+
+        $status = $request->validated('status');
+        $note = $request->validated('note');
+
+        $updatedLeads = $leads->map(function (Lead $model) use ($request, $status, $note): Lead {
+            $updatedLead = $this->leadManagementService->updateStatus($request->user(), $model, $status);
+
+            if (! empty($note)) {
+                $this->leadManagementService->addLeadNote($request->user(), $updatedLead, $note);
+            }
+
+            return $updatedLead;
+        });
+
+        if ($updatedLeads->count() === 1) {
+            $updatedLead = $updatedLeads->first();
+
+            return response()->json([
+                'message' => 'Lead status updated successfully.',
+                'lead' => $updatedLead,
+                'converted' => $updatedLead->client !== null,
+            ]);
         }
 
         return response()->json([
-            'message' => 'Lead status updated successfully.',
-            'lead' => $updatedLead,
-            'converted' => $updatedLead->client !== null,
+            'message' => $updatedLeads->count().' lead(s) status updated successfully.',
+            'leads' => $updatedLeads->values(),
+            'converted' => $updatedLeads->contains(fn (Lead $updatedLead): bool => $updatedLead->client !== null),
         ]);
     }
 
-    public function addNote(Request $request, Lead $lead): JsonResponse
+    /**
+     * Resolve one or more leads from a route segment that may contain a
+     * single id ("5") or a comma-separated list of ids ("5,6,7").
+     */
+    private function resolveLeads(string $ids): EloquentCollection
     {
-        $this->authorize('update', $lead);
-        $validated = $request->validate(['note' => ['required', 'string', 'max:5000']]);
-        $this->leadManagementService->addLeadNote($request->user(), $lead, $validated['note']);
+        $ids = collect(explode(',', $ids))
+            ->map(fn (string $id): int => (int) trim($id))
+            ->filter(fn (int $id): bool => $id > 0)
+            ->unique()
+            ->values();
 
-        return response()->json(['message' => 'Lead note added successfully.']);
+        $leads = Lead::query()->whereIn('id', $ids)->get();
+
+        abort_if($leads->isEmpty(), 404);
+
+        return $leads;
+    }
+
+    public function addNote(Request $request, string $lead): JsonResponse
+    {
+        $leads = $this->resolveLeads($lead);
+
+        foreach ($leads as $model) {
+            $this->authorize('update', $model);
+        }
+
+        $validated = $request->validate(['note' => ['required', 'string', 'max:5000']]);
+
+        foreach ($leads as $model) {
+            $this->leadManagementService->addLeadNote($request->user(), $model, $validated['note']);
+        }
+
+        return response()->json([
+            'message' => $leads->count() > 1
+                ? 'Note added to '.$leads->count().' lead(s) successfully.'
+                : 'Lead note added successfully.',
+        ]);
     }
 
     public function import(ImportLeadsRequest $request): JsonResponse
