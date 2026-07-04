@@ -134,6 +134,13 @@
         }, 4000);
     }
 
+    function extractErrorMessage(xhr, fallback) {
+        const data = xhr.responseJSON;
+        if (!data) return fallback;
+        const fieldError = Object.values(data.errors || {})[0]?.[0];
+        return fieldError || data.message || fallback;
+    }
+
     function openModal(id) {
         $('#' + id).removeClass('hidden').addClass('flex');
     }
@@ -508,7 +515,7 @@
                 refreshJobsTable();
             },
             error: function(xhr) {
-                showJobAlert(Object.values(xhr.responseJSON?.errors || {})[0]?.[0] || errorMsg, true);
+                showJobAlert(extractErrorMessage(xhr, errorMsg), true);
             }
         });
     }
@@ -523,8 +530,8 @@
                 showJobAlert(res.message || (ids.length > 1 ? 'Deleted selected jobs.' : 'Job deleted.'));
                 refreshJobsTable();
             },
-            error: function() {
-                showJobAlert('Failed to delete job' + (ids.length > 1 ? 's' : '') + '.', true);
+            error: function(xhr) {
+                showJobAlert(extractErrorMessage(xhr, 'Failed to delete job' + (ids.length > 1 ? 's' : '') + '.'), true);
             }
         });
     }
@@ -539,8 +546,8 @@
                 showJobAlert(res.message || (ids.length > 1 ? 'Restored selected jobs.' : 'Job restored.'));
                 refreshJobsTable();
             },
-            error: function() {
-                showJobAlert('Failed to restore job' + (ids.length > 1 ? 's' : '') + '.', true);
+            error: function(xhr) {
+                showJobAlert(extractErrorMessage(xhr, 'Failed to restore job' + (ids.length > 1 ? 's' : '') + '.'), true);
             }
         });
     }
@@ -555,8 +562,8 @@
                 showJobAlert(res.message || (ids.length > 1 ? 'Permanently deleted selected jobs.' : 'Job permanently deleted.'));
                 refreshJobsTable();
             },
-            error: function() {
-                showJobAlert('Failed to permanently delete job' + (ids.length > 1 ? 's' : '') + '.', true);
+            error: function(xhr) {
+                showJobAlert(extractErrorMessage(xhr, 'Failed to permanently delete job' + (ids.length > 1 ? 's' : '') + '.'), true);
             }
         });
     }
@@ -581,7 +588,7 @@
                 refreshJobsTable();
             },
             error: function(xhr) {
-                showJobAlert(xhr.responseJSON?.message || 'Failed to verify selected jobs.', true);
+                showJobAlert(extractErrorMessage(xhr, 'Failed to verify selected jobs.'), true);
             }
         });
     }
@@ -672,7 +679,7 @@
                 refreshJobsTable();
             },
             error: function(xhr) {
-                showJobAlert(Object.values(xhr.responseJSON?.errors || {})[0]?.[0] || 'Failed to update remarks.', true);
+                showJobAlert(extractErrorMessage(xhr, 'Failed to update remarks.'), true);
             }
         });
     });
@@ -851,8 +858,7 @@
                 showJobAlert(res.message || (isUpdate ? 'Follow-up updated.' : 'Follow-up saved.'));
             },
             error: function(xhr) {
-                const errors = xhr.responseJSON?.errors;
-                $err.removeClass('hidden').text(errors ? Object.values(errors)[0][0] : 'Failed to save follow-up.');
+                $err.removeClass('hidden').text(extractErrorMessage(xhr, 'Failed to save follow-up.'));
             }
         });
     });
@@ -941,7 +947,7 @@
                 refreshJobsTable();
             },
             error: function(xhr) {
-                showJobAlert(Object.values(xhr.responseJSON?.errors || {})[0]?.[0] || 'Failed to update contract.', true);
+                showJobAlert(extractErrorMessage(xhr, 'Failed to update contract.'), true);
             }
         });
     }

@@ -23,6 +23,9 @@
                 <div class="mt-2"><x-jobs.status-badge :status="$job->status" /></div>
             </div>
             <div class="flex flex-wrap gap-2">
+                <x-jobs.assign-button :job="$job" class="rounded-md border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50">Assign Mower</x-jobs.assign-button>
+                <x-jobs.reschedule-button :job="$job" class="rounded-md border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50">Reschedule</x-jobs.reschedule-button>
+                <x-jobs.verify-button :job="$job" class="rounded-md border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50" />
                 @can('update', $job)
                     <a href="{{ route('admin.jobs.edit', $job) }}" class="rounded-md border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50">Edit</a>
                 @endcan
@@ -134,7 +137,15 @@
         </div>
     </div>
 
-    @include('admin.partials.job-actions-script')
+    @include('admin.partials.job-modals')
+
+    <script>
+        function reloadJobShowPage() {
+            window.location.reload();
+        }
+    </script>
+
+    @include('admin.partials.job-actions-script', ['filterCallback' => 'reloadJobShowPage'])
 
     <script>
         $('.job-quick-status').on('click', function () {

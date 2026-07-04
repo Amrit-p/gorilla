@@ -248,34 +248,26 @@
                                 Edit
                             </a>
                         @endcan
-                        @can('verify-jobs')
-                            <button class="verify-job flex w-full items-center gap-2.5 px-3.5 py-2 text-sm {{ $job->isVerified() ? 'text-amber-600' : 'text-emerald-700' }} transition-colors hover:bg-slate-50"
-                                    data-id="{{ $job->id }}"
-                                    data-verified="{{ $job->isVerified() ? '1' : '0' }}">
-                                @if ($job->isVerified())
-                                    <svg class="h-3.5 w-3.5 shrink-0 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
-                                    </svg>
-                                    Unverify
-                                @else
-                                    <svg class="h-3.5 w-3.5 shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
-                                    </svg>
-                                    Verify
-                                @endif
-                            </button>
-                        @endcan
+                        <x-jobs.verify-button :job="$job" class="flex w-full items-center gap-2.5 px-3.5 py-2 text-sm {{ $job->isVerified() ? 'text-amber-600' : 'text-emerald-700' }} transition-colors hover:bg-slate-50">
+                            @if ($job->isVerified())
+                                <svg class="h-3.5 w-3.5 shrink-0 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+                                </svg>
+                                Unverify
+                            @else
+                                <svg class="h-3.5 w-3.5 shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+                                </svg>
+                                Verify
+                            @endif
+                        </x-jobs.verify-button>
                         @can('assign-jobs')
-                            <button class="assign-job flex w-full items-center gap-2.5 px-3.5 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50"
-                                    data-id="{{ $job->id }}"
-                                    data-client-id="{{ $job->client_id ?? '' }}"
-                                    data-done-by="{{ $job->done_by_user_id ?? '' }}"
-                                    data-employee-ids="{{ json_encode($job->assignedEmployees->pluck('id')) }}">
+                            <x-jobs.assign-button :job="$job" class="flex w-full items-center gap-2.5 px-3.5 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50">
                                 <svg class="h-3.5 w-3.5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/>
                                 </svg>
                                 Assign
-                            </button>
+                            </x-jobs.assign-button>
                             {{-- NOTE: Status button hidden, not deleted — unsure if still needed. Re-enable by uncommenting.
                             <button class="status-job flex w-full items-center gap-2.5 px-3.5 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50" data-id="{{ $job->id }}" data-status="{{ $job->status }}">
                                 <svg class="h-3.5 w-3.5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -284,16 +276,12 @@
                                 Status
                             </button>
                             --}}
-                            <button class="schedule-job flex w-full items-center gap-2.5 px-3.5 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50"
-                                    data-id="{{ $job->id }}"
-                                    data-client-id="{{ $job->client_id ?? '' }}"
-                                    data-scheduled-date="{{ $job->scheduled_date?->format('Y-m-d') ?? '' }}"
-                                    data-scheduled-time="{{ $job->scheduled_time ?? '' }}">
+                            <x-jobs.reschedule-button :job="$job" class="flex w-full items-center gap-2.5 px-3.5 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50">
                                 <svg class="h-3.5 w-3.5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"/>
                                 </svg>
                                 Schedule
-                            </button>
+                            </x-jobs.reschedule-button>
                         @endcan
                         @can('manage_followups')
                             <div class="my-1 border-t border-slate-100"></div>
