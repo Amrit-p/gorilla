@@ -19,7 +19,7 @@
                     <th rowspan="2" class="w-8 px-2 py-3 bg-slate-100"></th>
                 @endif
                 <th colspan="2" class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide bg-green-100 text-green-800">Customer</th>
-                <th colspan="3" class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide bg-yellow-100 text-yellow-800">Schedule</th>
+                <th colspan="4" class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide bg-yellow-100 text-yellow-800">Schedule</th>
                 <th colspan="2" class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide bg-blue-100 text-blue-800">Payment &amp; Crew</th>
                 <th colspan="1" class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide bg-purple-100 text-purple-800">Notes</th>
                 <th colspan="1" class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide bg-slate-100 text-slate-700">Actions</th>
@@ -33,6 +33,7 @@
                 <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider bg-yellow-50 text-yellow-700">Date &amp; Status</th>
                 <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider bg-yellow-50 text-yellow-700">Services</th>
                 <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider bg-yellow-50 text-yellow-700">Recurrence</th>
+                <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider bg-yellow-50 text-yellow-700">Last Job</th>
                 {{-- Payment & Crew --}}
                 <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider bg-blue-50 text-blue-700">Payment</th>
                 <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider bg-blue-50 text-blue-700">Mowers</th>
@@ -151,6 +152,17 @@
             {{-- Recurrence --}}
             <td class="whitespace-nowrap px-4 py-4">
                 <span class="text-sm text-slate-700">{{ $job->recurrence?->name ?? '—' }}</span>
+            </td>
+
+            {{-- Last Job --}}
+            <td class="whitespace-nowrap px-4 py-4">
+                @if ($job->client?->lastJob)
+                    <a href="{{ route('admin.jobs.show', $job->client->lastJob) }}" class="text-sm font-medium text-emerald-700 underline underline-offset-2 hover:text-emerald-800">
+                        {{ $job->client->lastJob->scheduled_date->format('d M Y') }}
+                    </a>
+                @else
+                    <span class="text-sm text-slate-400">—</span>
+                @endif
             </td>
 
             {{-- Payment --}}
@@ -312,7 +324,7 @@
         </tr>
     @empty
         <tr>
-            <td colspan="{{ $canReorder ? 11 : 10 }}" class="px-4 py-10 text-center text-sm text-slate-400">No jobs found.</td>
+            <td colspan="{{ $canReorder ? 12 : 11 }}" class="px-4 py-10 text-center text-sm text-slate-400">No jobs found.</td>
         </tr>
     @endforelse
         </tbody>
@@ -336,7 +348,7 @@
                         {{ $estFormatted }} estimated
                     </span>
                 </td>
-                <td colspan="{{ $canReorder ? 6 : 6 }}" class="px-4 py-2.5"></td>
+                <td colspan="7" class="px-4 py-2.5"></td>
             </tr>
         </tfoot>
         @endif

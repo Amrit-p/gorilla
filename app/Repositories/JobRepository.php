@@ -50,6 +50,7 @@ class JobRepository
             ->with([
                 'client:id,name,address,customer_unique_id,phone,email,customer_type,client_rating_id',
                 'client.clientRating:id,name,description',
+                'client.lastJob:service_jobs.id,service_jobs.client_id,service_jobs.scheduled_date',
                 'zone:id,name',
                 'recurrence:id,name',
                 'equipmentType:id,name,color_code',

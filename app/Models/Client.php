@@ -128,6 +128,14 @@ class Client extends Model
         );
     }
 
+    public function lastJob(): HasOne
+    {
+        return $this->hasOne(Job::class)->ofMany(
+            ['scheduled_date' => 'max'],
+            fn ($query) => $query->whereDate('scheduled_date', '<', now()->toDateString())
+        );
+    }
+
     public function documents(): HasMany
     {
         return $this->hasMany(ClientDocument::class);
