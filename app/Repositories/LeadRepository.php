@@ -34,6 +34,7 @@ class LeadRepository
                 'is_locked',
                 'assigned_sales_user_id',
                 'converted_at',
+                'lead_date',
                 'created_at',
             ])
             ->with([

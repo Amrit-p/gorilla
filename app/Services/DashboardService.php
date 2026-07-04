@@ -224,6 +224,23 @@ class DashboardService
 
         $jobsByDate = $jobs->groupBy(fn ($job) => $job->scheduled_date->format('Y-m-d'));
 
+        $leads = Lead::query()
+            ->select(['id', 'zone_id', 'lead_date'])
+            ->with('zone:id,name')
+            ->whereNotNull('lead_date')
+            ->whereNull('converted_at')
+            ->whereBetween('lead_date', [$startDate->toDateString(), $endDate->toDateString()])
+            ->when($filters['zone_id'] ?? null, fn ($q, $id) => $q->where('zone_id', $id))
+            ->when($filters['search'] ?? null, function ($q, $term) {
+                $q->where(function ($q) use ($term) {
+                    $q->where('client_name', 'like', "%{$term}%")
+                        ->orWhere('address', 'like', "%{$term}%");
+                });
+            })
+            ->get();
+
+        $leadsByDate = $leads->groupBy(fn ($lead) => $lead->lead_date->format('Y-m-d'));
+
         $weeks = [];
         for ($w = 0; $w < 3; $w++) {
             $weekStart = $startDate->copy()->addWeeks($w);
@@ -237,6 +254,12 @@ class DashboardService
                     ->map->count()
                     ->toArray();
 
+                $dayLeads = $leadsByDate->get($key, collect());
+                $leadZones = $dayLeads
+                    ->groupBy(fn ($l) => $l->zone?->name ?? 'Unassigned')
+                    ->map->count()
+                    ->toArray();
+
                 $days[] = [
                     'date' => $key,
                     'day_name' => $day->format('l'),
@@ -246,6 +269,9 @@ class DashboardService
                     'total' => $dayJobs->count(),
                     'zone_count' => count($zones),
                     'zones' => $zones,
+                    'lead_total' => $dayLeads->count(),
+                    'lead_zone_count' => count($leadZones),
+                    'lead_zones' => $leadZones,
                 ];
             }
             $weeks[] = [

@@ -10,6 +10,14 @@
     $dayPanelJobLevels       = \App\Models\JobLevel::query()->active()->ordered()->get(['id', 'name', 'color_code']);
     $dayPanelCustomerTypes   = \App\Enums\JobCustomerType::values();
     $dayPanelServiceTypes    = \App\Support\ServiceTypes::all();
+
+    // Lookups for the day panel's lead filter bar.
+    $dayPanelLeadStatuses    = \App\Enums\LeadStatus::selectableValues();
+    $dayPanelLeadSalesUsers  = \App\Models\User::query()
+        ->role(\App\Support\CrmRoles::SALES_MANAGER)
+        ->where('is_active', true)
+        ->orderBy('name')
+        ->get(['id', 'name']);
 @endphp
 <div>
     <div class="mb-4 flex items-center justify-between">
@@ -48,6 +56,7 @@
     <x-dashboard.three-week-calendar
         :weeks="$threeWeekSchedule"
         :daily-jobs-table-url="route('dashboard.daily-jobs-table')"
+        :daily-leads-table-url="route('dashboard.daily-leads-table')"
         :zones="\App\Models\Zone::orderBy('name')->get(['id','name'])"
         :workers="\App\Models\User::role(\App\Support\CrmRoles::MOWER)->where('is_active', true)->orderBy('name')->get(['id','name'])"
         :workflow-statuses="$workflowStatuses ?? []"
@@ -58,10 +67,15 @@
         :job-levels="$dayPanelJobLevels"
         :customer-types="$dayPanelCustomerTypes"
         :service-types="$dayPanelServiceTypes"
+        :lead-statuses="$dayPanelLeadStatuses"
+        :lead-sales-users="$dayPanelLeadSalesUsers"
     />
 
     {{-- Job action modals — same ones used on the jobs index page --}}
     @include('admin.partials.job-modals')
+
+    {{-- Lead action modals — same ones used on the leads index page --}}
+    @include('admin.leads.partials.lead-modals', ['statuses' => $dayPanelLeadStatuses])
 
     {{-- Shared dropdown utility --}}
     @include('admin.partials.dropdown-script')
@@ -71,4 +85,7 @@
 
     {{-- Job action handlers; filterCallback points to the panel reload fn defined in the component --}}
     @include('admin.partials.job-actions-script', ['filterCallback' => 'reloadDayPanelTable'])
+
+    {{-- Lead action handlers; refreshCallback points to the panel reload fn defined in the component --}}
+    @include('admin.leads.partials.lead-actions-script', ['refreshCallback' => 'reloadDayPanelLeads'])
 </div>

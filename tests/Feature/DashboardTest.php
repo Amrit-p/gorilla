@@ -272,4 +272,36 @@ class DashboardTest extends TestCase
             ->assertOk()
             ->assertSee('Range Client');
     }
+
+    public function test_three_week_grid_and_daily_leads_table_exclude_leads_converted_to_customer(): void
+    {
+        Lead::query()->create([
+            'client_name' => 'Open Lead',
+            'address' => '3 Cedar St',
+            'status' => LeadStatus::NEW->value,
+            'lead_date' => now()->toDateString(),
+        ]);
+
+        Lead::query()->create([
+            'client_name' => 'Converted Lead',
+            'address' => '4 Cedar St',
+            'status' => LeadStatus::WON->value,
+            'lead_date' => now()->toDateString(),
+            'converted_at' => now(),
+        ]);
+
+        $this->actingAs($this->admin)
+            ->get(route('dashboard.three-week-grid'))
+            ->assertOk()
+            ->assertSee('1 lead')
+            ->assertDontSee('2 leads');
+
+        $this->actingAs($this->admin)
+            ->get(route('dashboard.daily-leads-table', [
+                'date' => now()->toDateString(),
+            ]))
+            ->assertOk()
+            ->assertSee('Open Lead')
+            ->assertDontSee('Converted Lead');
+    }
 }

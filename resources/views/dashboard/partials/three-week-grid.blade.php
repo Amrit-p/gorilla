@@ -2,6 +2,7 @@
     @forelse ($weeks as $week)
         @php
             $weekTotal = array_sum(array_column($week['days'], 'total'));
+            $weekLeadTotal = array_sum(array_column($week['days'], 'lead_total'));
         @endphp
         <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
 
@@ -11,13 +12,20 @@
                     <h3 class="text-sm font-semibold text-slate-800">{{ $week['label'] }}</h3>
                     <span class="text-xs text-slate-400">{{ $week['start_date'] }} – {{ $week['end_date'] }}</span>
                 </div>
-                @if ($weekTotal > 0)
-                    <span class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
-                        {{ $weekTotal }} {{ $weekTotal === 1 ? 'job' : 'jobs' }}
-                    </span>
-                @else
-                    <span class="text-xs text-slate-400">No jobs this week</span>
-                @endif
+                <div class="flex items-center gap-2">
+                    @if ($weekTotal > 0)
+                        <span class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
+                            {{ $weekTotal }} {{ $weekTotal === 1 ? 'job' : 'jobs' }}
+                        </span>
+                    @else
+                        <span class="text-xs text-slate-400">No jobs this week</span>
+                    @endif
+                    @if ($weekLeadTotal > 0)
+                        <span class="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-semibold text-indigo-800">
+                            {{ $weekLeadTotal }} {{ $weekLeadTotal === 1 ? 'lead' : 'leads' }}
+                        </span>
+                    @endif
+                </div>
             </div>
 
             {{-- Day columns --}}
@@ -28,6 +36,7 @@
                             $isToday = $day['is_today'];
                             $isPast  = $day['is_past'];
                             $hasJobs = $day['total'] > 0;
+                            $hasLeads = $day['lead_total'] > 0;
                         @endphp
                         <div class="flex min-h-[140px] flex-col {{ $isToday ? 'bg-emerald-50' : ($isPast ? 'bg-slate-50/50' : 'bg-white') }}">
 
@@ -74,10 +83,38 @@
                                             @endforeach
                                         </div>
                                     @endif
-                                @else
+                                @elseif (! $hasLeads)
                                     <div class="flex flex-1 items-center justify-center">
                                         <span class="text-xs text-slate-300">—</span>
                                     </div>
+                                @endif
+
+                                @if ($hasLeads)
+                                    <button
+                                        type="button"
+                                        class="group mt-2 flex items-baseline gap-1 border-t border-slate-100 pt-2 text-left"
+                                        data-date="{{ $day['date'] }}"
+                                        data-label="{{ $day['day_name'] }}, {{ $day['date_label'] }}"
+                                        onclick="crmOpenLeadPanel(this)"
+                                    >
+                                        <span class="text-xl font-extrabold leading-none text-indigo-700 transition-colors group-hover:text-indigo-600">
+                                            {{ $day['lead_total'] }}
+                                        </span>
+                                        <span class="text-[10px] text-indigo-500 transition-colors group-hover:text-indigo-600">
+                                            {{ $day['lead_total'] === 1 ? 'lead' : 'leads' }}
+                                        </span>
+                                    </button>
+
+                                    @if ($day['lead_zone_count'] > 0)
+                                        <div class="space-y-1">
+                                            @foreach ($day['lead_zones'] as $zoneName => $zoneCount)
+                                                <div class="flex items-center justify-between gap-1">
+                                                    <span class="truncate text-[10px] text-slate-500" title="{{ $zoneName }}">{{ $zoneName }}</span>
+                                                    <span class="flex-shrink-0 rounded bg-slate-100 px-1 text-[10px] font-semibold text-slate-600">{{ $zoneCount }}</span>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @endif
                                 @endif
                             </div>
 

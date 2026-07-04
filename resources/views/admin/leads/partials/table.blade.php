@@ -116,7 +116,7 @@
 
             {{-- Created --}}
             <td class="whitespace-nowrap px-4 py-4">
-                <span class="text-xs text-slate-500">{{ $lead->created_at?->format('M d, Y') ?? '—' }}</span>
+                <span class="text-xs text-slate-500">{{ $lead->lead_date?->format('M d, Y') ?? '—' }}</span>
             </td>
 
             @if ($convertedOnly)

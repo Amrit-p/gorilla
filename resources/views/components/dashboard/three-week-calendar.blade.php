@@ -1,6 +1,7 @@
 @props([
     'weeks'               => [],
     'dailyJobsTableUrl'   => '',
+    'dailyLeadsTableUrl'  => '',
     'zones'               => collect(),
     'workers'             => collect(),
     'workflowStatuses'    => [],
@@ -11,6 +12,8 @@
     'jobLevels'           => collect(),
     'customerTypes'       => [],
     'serviceTypes'        => [],
+    'leadStatuses'        => [],
+    'leadSalesUsers'      => collect(),
 ])
 
 {{-- ── Quick Filters ───────────────────────────────────────────────── --}}
@@ -166,13 +169,85 @@
      class="fixed inset-0 z-40 hidden bg-black/25 backdrop-blur-[1px]"
      onclick="crmCloseDayPanel()"></div>
 
+{{-- ── Day Leads Slide-over Panel ────────────────────────────── --}}
+<div id="crm-lead-panel"
+     class="space-y-5 fixed inset-y-0 right-0 z-50 flex w-full max-w-[90vw] flex-col bg-white shadow-2xl"
+     style="right: -100%; transition: right 0.28s cubic-bezier(0.4,0,0.2,1);">
+
+    {{-- Panel header --}}
+    <div class="flex shrink-0 items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-4">
+        <div>
+            <h3 id="crm-lead-panel-title" class="text-base font-semibold text-slate-900">Leads</h3>
+            <p id="crm-lead-panel-subtitle" class="mt-0.5 text-xs text-slate-500"></p>
+        </div>
+        <button type="button" onclick="crmCloseLeadPanel()"
+            class="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-200 hover:text-slate-700">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+    </div>
+
+    {{-- Lead alert (needed by lead-actions-script) --}}
+    <div id="lead-alert" class="hidden mx-4 mt-3 rounded-md border px-3 py-2 text-sm"></div>
+
+    {{-- Panel body --}}
+    <div class="flex-1 overflow-auto p-2 space-y-4" style="scrollbar-gutter: stable">
+        {{-- NOTE: the lead table is loaded via AJAX into this container --}}
+
+        {{-- Lead filters, scoped to this day's lead table only --}}
+        @include('admin.leads.partials.filter-bar', [
+            'filters' => [
+                'search' => '',
+                'status' => '',
+                'assigned_sales_user_id' => '',
+                'zone_id' => '',
+                'recurrence_id' => '',
+            ],
+            'statuses' => $leadStatuses,
+            'salesUsers' => $leadSalesUsers,
+            'zones' => $zones,
+            'recurrences' => $recurrences,
+            'showHeaderActions' => false,
+            'tableContainer' => 'crm-lead-content',
+            'filterCallback' => 'loadDayPanelLeads',
+            'filterUrl' => $dailyLeadsTableUrl,
+            'resetUrl' => '#',
+        ])
+
+        {{-- Loader --}}
+        <div id="crm-lead-loader" class="hidden items-center justify-center py-16">
+            <svg class="h-6 w-6 animate-spin text-indigo-600" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 12 0 12 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+            </svg>
+        </div>
+
+        {{-- Error --}}
+        <div id="crm-lead-error" class="hidden items-center justify-center py-16">
+            <p class="text-sm text-red-500">Failed to load leads. Please try again.</p>
+        </div>
+
+        {{-- Server-rendered lead table is injected here --}}
+        <div id="crm-lead-content" class="hidden"></div>
+
+    </div>
+</div>
+
+{{-- Backdrop --}}
+<div id="crm-lead-backdrop"
+     class="fixed inset-0 z-40 hidden bg-black/25 backdrop-blur-[1px]"
+     onclick="crmCloseLeadPanel()"></div>
+
 @push('scripts')
 <script>
 (function () {
-    var _tableUrl    = @json($dailyJobsTableUrl);
-    var _gridUrl     = @json(route('dashboard.three-week-grid'));
-    var _currentDate = null;
-    var _weekOffset  = 0;
+    var _tableUrl     = @json($dailyJobsTableUrl);
+    var _leadTableUrl  = @json($dailyLeadsTableUrl);
+    var _gridUrl      = @json(route('dashboard.three-week-grid'));
+    var _currentDate  = null;
+    var _currentLeadDate = null;
+    var _weekOffset   = 0;
 
     /* ── filter state ────────────────────────────────── */
     function getFilters() {
@@ -223,6 +298,28 @@
         if (quick.worker_id) { filters.worker_id = quick.worker_id; }
 
         if (_currentDate) { filters.date = _currentDate; }
+
+        return filters;
+    }
+
+    /* ── merges the quick filters (zone/search) with the lead panel's own
+       filter bar (status/assignee/zone/recurrence/search) and the currently
+       open date. The panel's own fields win when set; quick filters only
+       fill in what's left blank. ─── */
+    function getLeadPanelFilters() {
+        var filters = {};
+        var panelForm = document.getElementById('lead-filter-form');
+        if (panelForm) {
+            new URLSearchParams(new FormData(panelForm)).forEach(function (value, key) {
+                if (value !== '') { filters[key] = value; }
+            });
+        }
+
+        var quick = getFilters();
+        if (!filters.zone_id && quick.zone_id) { filters.zone_id = quick.zone_id; }
+        if (!filters.search && quick.search)   { filters.search  = quick.search; }
+
+        if (_currentLeadDate) { filters.date = _currentLeadDate; }
 
         return filters;
     }
@@ -287,6 +384,35 @@
                 hide('crm-day-loader');
                 show('crm-day-error');
                 document.getElementById('crm-day-panel-subtitle').textContent = '';
+            }
+        });
+    }
+
+    /* ── lead table loader ───────────────────────────── */
+    function loadLeadTable(url) {
+        hide('crm-lead-content');
+        hide('crm-lead-error');
+        show('crm-lead-loader');
+
+        $.ajax({
+            url: url,
+            method: 'GET',
+            headers: { Accept: 'text/html, */*' },
+            success: function (html) {
+                hide('crm-lead-loader');
+
+                var $content = $('#crm-lead-content');
+                $content.html(html);
+                show('crm-lead-content');
+
+                var count = $content.find('.lead-row').length;
+                document.getElementById('crm-lead-panel-subtitle').textContent =
+                    count + ' ' + (count === 1 ? 'lead' : 'leads') + ' scheduled';
+            },
+            error: function () {
+                hide('crm-lead-loader');
+                show('crm-lead-error');
+                document.getElementById('crm-lead-panel-subtitle').textContent = '';
             }
         });
     }
@@ -391,12 +517,59 @@
         if (toolbar) { toolbar.classList.add('hidden'); }
     };
 
+    /* ── reload hook used by lead-actions-script after each action ─ */
+    window.reloadDayPanelLeads = function () {
+        if (_currentLeadDate) {
+            loadLeadTable(buildTableUrl(_leadTableUrl, getLeadPanelFilters()));
+            reloadCalendarGrid();
+        }
+    };
+
+    /* ── lead panel's own filter bar (status, assignee, zone, recurrence, etc.) ─ */
+    window.loadDayPanelLeads = function () {
+        if (_currentLeadDate) {
+            loadLeadTable(buildTableUrl(_leadTableUrl, getLeadPanelFilters()));
+        }
+    };
+
+    /* ── open ────────────────────────────────────────── */
+    window.crmOpenLeadPanel = function (btn) {
+        _currentLeadDate = btn.dataset.date;
+        var label        = btn.dataset.label;
+
+        document.getElementById('crm-lead-panel-title').textContent    = label;
+        document.getElementById('crm-lead-panel-subtitle').textContent = 'Loading…';
+
+        document.getElementById('crm-lead-panel').style.right = '0';
+        document.getElementById('crm-lead-backdrop').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+
+        loadLeadTable(buildTableUrl(_leadTableUrl, getLeadPanelFilters()));
+    };
+
+    /* ── close ───────────────────────────────────────── */
+    window.crmCloseLeadPanel = function () {
+        document.getElementById('crm-lead-panel').style.right = '-100%';
+        document.getElementById('crm-lead-backdrop').classList.add('hidden');
+        document.body.style.overflow = '';
+        _currentLeadDate = null;
+
+        if (typeof window.clearLeadBulkSelection === 'function') {
+            window.clearLeadBulkSelection();
+        }
+        var toolbar = document.getElementById('lead-bulk-toolbar');
+        if (toolbar) { toolbar.classList.add('hidden'); }
+    };
+
     /* ── filter controls ─────────────────────────────── */
     function applyFilters() {
         syncFilterUI();
         reloadCalendarGrid();
         if (_currentDate) {
             loadTable(buildTableUrl(_tableUrl, getDayPanelFilters()));
+        }
+        if (_currentLeadDate) {
+            loadLeadTable(buildTableUrl(_leadTableUrl, getLeadPanelFilters()));
         }
     }
 
@@ -427,9 +600,20 @@
         loadTable(pageUrl);
     });
 
-    /* ── Escape closes the panel ─────────────────────── */
+    $(document).on('click', '#crm-lead-content .pagination a', function (e) {
+        e.preventDefault();
+        var pageUrl = $(this).attr('href');
+        var qs      = $.param(getLeadPanelFilters());
+        pageUrl += (pageUrl.includes('?') ? '&' : '?') + qs;
+        loadLeadTable(pageUrl);
+    });
+
+    /* ── Escape closes the panels ────────────────────── */
     $(document).on('keydown', function (e) {
-        if (e.key === 'Escape') { window.crmCloseDayPanel(); }
+        if (e.key === 'Escape') {
+            window.crmCloseDayPanel();
+            window.crmCloseLeadPanel();
+        }
     });
 })();
 </script>

@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use App\Enums\JobWorkflowStatus;
 use App\Http\Requests\DashboardPreferenceRequest;
 use App\Models\Job;
+use App\Models\Lead;
 use App\Models\User;
 use App\Services\ActivityLogService;
 use App\Services\DashboardAnalyticsService;
 use App\Services\DashboardService;
 use App\Support\CrmRoles;
 use App\Support\QueryFilters\JobListFilter;
+use App\Support\QueryFilters\LeadListFilter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -117,6 +119,42 @@ class DashboardController extends Controller
             ->paginate(50);
 
         return response(view('dashboard.partials.daily-jobs-table', compact('jobs')));
+    }
+
+    /**
+     * AJAX: server-rendered lead table for a given date (used by the 3-week schedule panel).
+     * Excludes leads already converted to a customer.
+     */
+    public function dailyLeadsTable(Request $request, LeadListFilter $leadListFilter): Response
+    {
+        $validated = $request->validate([
+            'date' => 'required|date',
+            'zone_id' => 'nullable|integer|exists:zones,id',
+            'search' => 'nullable|string|max:100',
+        ]);
+
+        $query = Lead::query()
+            ->with([
+                'assignedSalesUser:id,name',
+                'equipmentType:id,name,color_code',
+                'client:id,lead_id',
+                'zone:id,name',
+                'recurrence:id,name',
+            ])
+            ->whereNull('converted_at')
+            ->whereDate('lead_date', $validated['date']);
+
+        $leadListFilter->apply($query, [
+            'search' => $validated['search'] ?? null,
+            'zone_id' => $validated['zone_id'] ?? null,
+        ]);
+
+        $leads = $query
+            ->orderBy('lead_time')
+            ->orderBy('id')
+            ->paginate(50);
+
+        return response(view('dashboard.partials.daily-leads-table', ['leads' => $leads, 'convertedOnly' => false]));
     }
 
     /**
