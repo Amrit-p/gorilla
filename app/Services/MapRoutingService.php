@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\JobWorkflowStatus;
 use App\Helpers\OptimizationHelper;
 use App\Models\Job;
 use App\Models\User;
@@ -67,6 +66,8 @@ class MapRoutingService
             ->with([
                 'client:id,name,address,latitude,longitude,phone,email,equipment_type_id,customer_type',
                 'client.equipmentType:id,name,color_code',
+                'client.lastJob:service_jobs.id,service_jobs.client_id,service_jobs.scheduled_date,service_jobs.done_by_user_id',
+                'client.lastJob.doneByUser:id,name',
                 'lead:id,client_name,address,latitude,longitude,equipment_type_id,mobile_number,email',
                 'lead.equipmentType:id,name,color_code',
                 'equipmentType:id,name,color_code',
@@ -108,8 +109,10 @@ class MapRoutingService
                     ->unique()
                     ->values()
                     ->all(),
-                'done_by_user_id'   => $job->done_by_user_id,
+                'done_by_user_id' => $job->done_by_user_id,
                 'helper_employee_ids' => $job->assignedEmployees->pluck('id')->map('strval')->values()->all(),
+                'last_job_date' => optional($job->client?->lastJob?->scheduled_date)->toDateString(),
+                'last_job_mower' => $job->client?->lastJob?->doneByUser?->name,
             ];
         })->filter(fn (array $item): bool => ! is_null($item['lat']) && ! is_null($item['lng']))->values();
     }
@@ -201,15 +204,15 @@ class MapRoutingService
         }
 
         $referencedIds = array_values($latestJobIdByUser);
-            $recentJobs = $referencedIds === []
-            ? collect()
-            : Job::query()
-                ->with(['client:id,latitude,longitude', 'lead:id,latitude,longitude'])
-                ->whereIn('id', $referencedIds)
-                ->get()
-                ->keyBy('id');
+        $recentJobs = $referencedIds === []
+        ? collect()
+        : Job::query()
+            ->with(['client:id,latitude,longitude', 'lead:id,latitude,longitude'])
+            ->whereIn('id', $referencedIds)
+            ->get()
+            ->keyBy('id');
 
-        $nearest = $employees->sortBy(function (User $employee) use ($job, $jobCoords, $latestJobIdByUser, $recentJobs): float {
+        $nearest = $employees->sortBy(function (User $employee) use ($jobCoords, $latestJobIdByUser, $recentJobs): float {
             $lastJobId = $latestJobIdByUser[$employee->id] ?? null;
             $lastJob = $lastJobId ? $recentJobs->get($lastJobId) : null;
             $lastCoords = $lastJob ? $this->jobCoordinates($lastJob) : null;

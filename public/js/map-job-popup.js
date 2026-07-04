@@ -22,6 +22,9 @@ window.crmBuildMapJobPopup = function (job) {
     const ICON_PIN      = 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z';
     const ICON_CALENDAR = 'M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z';
     const ICON_PEOPLE   = 'M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z';
+    const ICON_HISTORY  = 'M13 3a9 9 0 1 0 9 9h-2a7 7 0 1 1-2.05-4.95L15 10h6V4l-2.2 2.2A8.96 8.96 0 0 0 13 3zm-1 5v5l4.25 2.52.75-1.23-3.5-2.08V8H12z';
+
+    const lastJobDateStr = _formatDate(job.last_job_date);
 
     return `
 <div class="w-[min(320px,calc(100vw-32px))] relative p-3 sm:p-4 font-sans text-[13px] leading-relaxed text-slate-800">
@@ -75,6 +78,15 @@ window.crmBuildMapJobPopup = function (job) {
             ${employees ?? '<span class="text-slate-400 italic">Unassigned</span>'}
         </span>
     </div>
+
+    ${lastJobDateStr || job.last_job_mower ? `
+    <div class="flex items-center gap-1.5 mb-3">
+        ${_icon(ICON_HISTORY, 'text-slate-400')}
+        <span class="text-[12px] text-slate-500">
+            Last job: ${lastJobDateStr ? `<strong class="text-slate-700 font-semibold">${lastJobDateStr}</strong>` : '<span class="text-slate-400 italic">Unknown date</span>'}
+            ${job.last_job_mower ? `<span class="text-slate-400 mx-1">·</span>${_esc(job.last_job_mower)}` : ''}
+        </span>
+    </div>` : ''}
 
     <div class="h-px bg-slate-100 mb-3"></div>
 

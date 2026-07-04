@@ -11,7 +11,9 @@ use App\Enums\LeadJobType;
 use App\Enums\LeadPaymentMode;
 use App\Enums\LeadPaymentStatus;
 use App\Enums\LeadReCompletionDays;
+use App\Enums\LeadStatus;
 use App\Enums\LeadWeedSpray;
+use App\Helpers\OptimizationHelper;
 use App\Models\Client;
 use App\Models\EquipmentType;
 use App\Models\Job;
@@ -50,7 +52,7 @@ class GoogleMapsIntegrationTest extends TestCase
             ['key' => 'google_maps_api_key'],
             ['value' => 'settings-key-test']
         );
-        \App\Helpers\OptimizationHelper::forgetSettings();
+        OptimizationHelper::forgetSettings();
 
         $this->assertSame('settings-key-test', GoogleMapsSettings::apiKey());
     }
@@ -98,7 +100,7 @@ class GoogleMapsIntegrationTest extends TestCase
     {
         Setting::query()->where('key', 'google_maps_api_key')->delete();
         config(['services.google.maps_key' => null]);
-        \App\Helpers\OptimizationHelper::forgetSettings();
+        OptimizationHelper::forgetSettings();
 
         $this->actingAs($this->admin)
             ->get(route('admin.leads.create'))
@@ -114,7 +116,7 @@ class GoogleMapsIntegrationTest extends TestCase
             ['key' => 'google_maps_api_key'],
             ['value' => 'test-google-key']
         );
-        \App\Helpers\OptimizationHelper::forgetSettings();
+        OptimizationHelper::forgetSettings();
 
         $this->actingAs($this->admin)
             ->get(route('admin.leads.create'))
@@ -185,11 +187,86 @@ class GoogleMapsIntegrationTest extends TestCase
         $this->assertSame(route('admin.jobs.show', $job), $mapped['show_url']);
     }
 
+    public function test_map_jobs_endpoint_includes_client_last_job_and_mower(): void
+    {
+        $equipment = EquipmentType::query()->where('is_active', true)->firstOrFail();
+        $mower = User::factory()->create(['name' => 'Previous Mower']);
+
+        $lead = Lead::query()->create(array_merge($this->validLeadPayload(), [
+            'equipment_type_id' => $equipment->id,
+            'latitude' => '43.6532',
+            'longitude' => '-79.3832',
+        ]));
+
+        $client = Client::query()->create([
+            'name' => 'Repeat Client',
+            'address' => $lead->address,
+            'phone' => '555-0200',
+            'email' => 'repeatclient@example.com',
+            'lead_id' => $lead->id,
+            'service_types' => [ServiceTypes::all()[0]],
+            'weed_spray' => 'No',
+            're_completion_days' => '14 days',
+            'job_type' => 'Regular',
+            'safety_concerns' => ['Pet'],
+            'payment_mode' => 'Cash',
+            'payment_status' => 'Done',
+            'customer_type' => JobCustomerType::EASY->value,
+        ]);
+
+        $previousJob = Job::query()->create([
+            'client_id' => $client->id,
+            'lead_id' => $lead->id,
+            'equipment_type_id' => $equipment->id,
+            'client_address' => $lead->address,
+            'latitude' => '43.6532',
+            'longitude' => '-79.3832',
+            'scheduled_date' => now()->subWeek()->toDateString(),
+            'scheduled_time' => '09:00',
+            'estimated_duration_minutes' => 60,
+            'required_services' => [ServiceTypes::all()[0]],
+            'parking_status' => JobParkingStatus::EASY->value,
+            'customer_type' => JobCustomerType::EASY->value,
+            'payment_mode' => JobOperationalPaymentMode::CASH->value,
+            'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+            'status' => JobWorkflowStatus::COMPLETED->value,
+            'done_by_user_id' => $mower->id,
+        ]);
+
+        $job = Job::query()->create([
+            'client_id' => $client->id,
+            'lead_id' => $lead->id,
+            'equipment_type_id' => $equipment->id,
+            'client_address' => $lead->address,
+            'latitude' => '43.6532',
+            'longitude' => '-79.3832',
+            'scheduled_date' => now()->toDateString(),
+            'scheduled_time' => '09:00',
+            'estimated_duration_minutes' => 60,
+            'required_services' => [ServiceTypes::all()[0]],
+            'parking_status' => JobParkingStatus::EASY->value,
+            'customer_type' => JobCustomerType::EASY->value,
+            'payment_mode' => JobOperationalPaymentMode::CASH->value,
+            'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+            'status' => JobWorkflowStatus::STARTED->value,
+        ]);
+
+        $response = $this->actingAs($this->admin)
+            ->getJson(route('admin.maps.jobs', ['scheduled_date' => now()->toDateString()]))
+            ->assertOk();
+
+        $mapped = collect($response->json('jobs'))->firstWhere('id', $job->id);
+
+        $this->assertNotNull($mapped);
+        $this->assertSame($previousJob->scheduled_date->toDateString(), $mapped['last_job_date']);
+        $this->assertSame('Previous Mower', $mapped['last_job_mower']);
+    }
+
     public function test_map_page_renders_google_config_when_provider_is_google(): void
     {
         Setting::query()->updateOrCreate(['key' => 'map_provider'], ['value' => 'google']);
         Setting::query()->updateOrCreate(['key' => 'google_maps_api_key'], ['value' => 'page-test-key']);
-        \App\Helpers\OptimizationHelper::forgetSettings();
+        OptimizationHelper::forgetSettings();
 
         $this->actingAs($this->admin)
             ->get(route('admin.maps.index'))
@@ -204,7 +281,7 @@ class GoogleMapsIntegrationTest extends TestCase
         Setting::query()->updateOrCreate(['key' => 'map_provider'], ['value' => 'google']);
         Setting::query()->where('key', 'google_maps_api_key')->delete();
         config(['services.google.maps_key' => null]);
-        \App\Helpers\OptimizationHelper::forgetSettings();
+        OptimizationHelper::forgetSettings();
 
         $this->actingAs($this->admin)
             ->get(route('admin.maps.index'))
@@ -234,7 +311,7 @@ class GoogleMapsIntegrationTest extends TestCase
             'remarks' => 'Map test',
             'lead_date' => now()->toDateString(),
             'lead_time' => '09:00',
-            'status' => \App\Enums\LeadStatus::NEW->value,
+            'status' => LeadStatus::NEW->value,
         ];
     }
 }
