@@ -14,7 +14,10 @@
                         ? route('admin.jobs.show', $notification->data['job_id'])
                         : null;
                 @endphp
-                <div class="border-b border-slate-100 p-3 last:border-b-0">
+                <div
+                    data-notification-id="{{ $notification->id }}"
+                    data-unread="{{ is_null($notification->read_at) ? '1' : '0' }}"
+                    class="notification-row border-b border-slate-100 p-3 last:border-b-0">
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0 flex-1">
                             <p class="text-sm font-medium text-slate-800">{{ $notification->data['message'] ?? 'Notification' }}</p>
@@ -25,11 +28,13 @@
                                 @endif
                             </div>
                         </div>
-                        @if (is_null($notification->read_at))
-                            <x-ui.badge type="warning">Unread</x-ui.badge>
-                        @else
-                            <x-ui.badge>Read</x-ui.badge>
-                        @endif
+                        <span class="notification-badge">
+                            @if (is_null($notification->read_at))
+                                <x-ui.badge type="warning">Unread</x-ui.badge>
+                            @else
+                                <x-ui.badge>Read</x-ui.badge>
+                            @endif
+                        </span>
                     </div>
                 </div>
             @empty
@@ -63,5 +68,61 @@
                 }
             });
         });
+
+        (function () {
+            let pendingIds = [];
+            let flushTimer = null;
+
+            function flushPending() {
+                if (pendingIds.length === 0) {
+                    return;
+                }
+
+                const ids = pendingIds;
+                pendingIds = [];
+
+                $.ajax({
+                    url: "{{ route('notifications.read') }}",
+                    method: 'POST',
+                    data: { _token: "{{ csrf_token() }}", notification_ids: ids },
+                    headers: { 'Accept': 'application/json' }
+                });
+            }
+
+            function scheduleFlush() {
+                clearTimeout(flushTimer);
+                flushTimer = setTimeout(flushPending, 800);
+            }
+
+            if (!('IntersectionObserver' in window)) {
+                return;
+            }
+
+            const observer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (!entry.isIntersecting) {
+                        return;
+                    }
+
+                    const row = entry.target;
+                    if (row.dataset.unread !== '1') {
+                        observer.unobserve(row);
+                        return;
+                    }
+
+                    row.dataset.unread = '0';
+                    row.querySelector('.notification-badge').innerHTML = '<span class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium bg-slate-100 text-slate-700">Read</span>';
+                    pendingIds.push(row.dataset.notificationId);
+                    scheduleFlush();
+                    observer.unobserve(row);
+                });
+            }, { threshold: 0.6 });
+
+            document.querySelectorAll('.notification-row').forEach(function (row) {
+                observer.observe(row);
+            });
+
+            window.addEventListener('beforeunload', flushPending);
+        })();
     </script>
 </x-layouts.dashboard>
