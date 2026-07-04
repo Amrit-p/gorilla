@@ -26,6 +26,7 @@ return [
         'manage_contractors',
         'manage_followups',
         'verify_jobs',
+        'manage_salary_calculator',
     ],
 
     'roles' => [

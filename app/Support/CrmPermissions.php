@@ -45,6 +45,8 @@ final class CrmPermissions
 
     public const VERIFY_JOBS = 'verify_jobs';
 
+    public const MANAGE_SALARY_CALCULATOR = 'manage_salary_calculator';
+
     /**
      * @return array<int, string>
      */
@@ -203,6 +205,11 @@ final class CrmPermissions
     public static function canVerifyJobs(?User $user): bool
     {
         return $user?->can(self::VERIFY_JOBS) ?? false;
+    }
+
+    public static function canManageSalaryCalculator(?User $user): bool
+    {
+        return $user?->can(self::MANAGE_SALARY_CALCULATOR) ?? false;
     }
 
     public static function canViewReport(?User $user, string $permission): bool
