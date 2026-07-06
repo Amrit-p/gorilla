@@ -217,6 +217,16 @@ class DashboardController extends Controller
     }
 
     /**
+     * AJAX: server-rendered card list of jobs on hold, for the dashboard's Hold Jobs panel.
+     */
+    public function holdJobs(): Response
+    {
+        return response(view('dashboard.partials.hold-jobs-list', [
+            'jobs' => $this->dashboardService->holdJobs(),
+        ]));
+    }
+
+    /**
      * Save dashboard preferences with AJAX.
      */
     public function updatePreferences(DashboardPreferenceRequest $request): JsonResponse

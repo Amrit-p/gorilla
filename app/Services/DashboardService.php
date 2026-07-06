@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\JobWorkflowStatus;
 use App\Enums\LeadStatus;
 use App\Models\ActivityLog;
 use App\Models\Client;
@@ -203,7 +204,7 @@ class DashboardService
             ->select(['id', 'zone_id', 'scheduled_date', 'status'])
             ->with('zone:id,name')
             ->whereBetween('scheduled_date', [$startDate->toDateString(), $endDate->toDateString()])
-            ->whereNotIn('status', ['Cancelled'])
+            ->whereIn('status', [JobWorkflowStatus::PENDING->value, JobWorkflowStatus::COMPLETED->value])
             ->when($filters['zone_id'] ?? null, fn ($q, $id) => $q->where('zone_id', $id))
             ->when($filters['worker_id'] ?? null, fn ($q, $id) => $q->whereHas(
                 'assignedEmployees', fn ($q) => $q->where('users.id', $id)
@@ -284,5 +285,21 @@ class DashboardService
         }
 
         return $weeks;
+    }
+
+    /**
+     * Company-wide backlog of jobs on hold, earliest scheduled date first.
+     *
+     * @return Collection<int, Job>
+     */
+    public function holdJobs(): Collection
+    {
+        return Job::query()
+            ->select(['id', 'client_id', 'client_address', 'scheduled_date', 'scheduled_time', 'estimated_duration_minutes', 'status', 'payment_status', 'done_by_user_id'])
+            ->with(['client:id,customer_unique_id,name', 'assignedEmployees:id,name', 'doneByUser:id,name'])
+            ->where('status', JobWorkflowStatus::HOLD->value)
+            ->orderBy('scheduled_date')
+            ->orderBy('scheduled_time')
+            ->get();
     }
 }

@@ -18,9 +18,9 @@ class ScheduleJobsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'job_ids'        => ['required', 'array', 'min:1'],
-            'job_ids.*'      => ['integer', 'distinct', 'exists:service_jobs,id'],
-            'scheduled_date' => ['required', 'date'],
+            'job_ids' => ['required', 'array', 'min:1'],
+            'job_ids.*' => ['integer', 'distinct', 'exists:service_jobs,id'],
+            'scheduled_date' => ['required', 'date', 'after_or_equal:today'],
             'scheduled_time' => ['nullable', 'date_format:H:i,H:i:s'],
         ];
     }

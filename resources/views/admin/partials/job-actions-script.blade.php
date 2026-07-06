@@ -256,6 +256,9 @@
         if (typeof window.clearJobBulkSelection === 'function') {
             window.clearJobBulkSelection();
         }
+        if (typeof window.reloadHoldJobsPanel === 'function') {
+            window.reloadHoldJobsPanel();
+        }
     }
 
     // ── Clampable text helper ───────────────────────────────────────────────
@@ -503,7 +506,9 @@
         openModal('assign-job-modal');
     });
 
-    function submitBulkForm($form, url, modalId, successMsg, errorMsg) {
+    function submitBulkForm($form, url, modalId, successMsg, errorMsg, $errorBox) {
+        if ($errorBox) { $errorBox.addClass('hidden').text(''); }
+
         $.ajax({
             url: url,
             method: 'POST',
@@ -515,7 +520,12 @@
                 refreshJobsTable();
             },
             error: function(xhr) {
-                showJobAlert(extractErrorMessage(xhr, errorMsg), true);
+                const message = extractErrorMessage(xhr, errorMsg);
+                if ($errorBox) {
+                    $errorBox.removeClass('hidden').text(message);
+                } else {
+                    showJobAlert(message, true);
+                }
             }
         });
     }
@@ -608,6 +618,7 @@
         markModalBulkContext($('#schedule-job-form'), [jobId], 'Reschedule');
         $('#schedule-job-form').find('[name="scheduled_date"]').val($btn.data('scheduled-date') || '');
         $('#schedule-job-form').find('[name="scheduled_time"]').val($btn.data('scheduled-time') || '');
+        $('#schedule-job-form-error').addClass('hidden').text('');
         $('#schedule-job-modal').data({ 'client-id': clientId, 'job-id': jobId, 'history-loaded': false });
         resetHistoryPanel('schedule-client-history');
         resetModalTabs('schedule-job-modal');
@@ -621,6 +632,7 @@
         markModalBulkContext($('#schedule-job-form'), ids, 'Reschedule');
         $('#schedule-job-form').find('[name="scheduled_date"]').val('');
         $('#schedule-job-form').find('[name="scheduled_time"]').val('');
+        $('#schedule-job-form-error').addClass('hidden').text('');
         $('#schedule-job-modal').data({ 'client-id': '', 'job-id': 0, 'history-loaded': false });
         resetModalTabs('schedule-job-modal');
         $('#schedule-job-modal .job-tab-btn[data-tab="history"]').addClass('hidden');
@@ -631,7 +643,8 @@
         e.preventDefault();
         const ids = $(this).data('jobIds') || [];
         submitBulkForm($(this), "{{ route('admin.jobs.bulk.schedule') }}", 'schedule-job-modal',
-            ids.length > 1 ? 'Rescheduled selected jobs.' : 'Job rescheduled.', 'Failed to reschedule.');
+            ids.length > 1 ? 'Rescheduled selected jobs.' : 'Job rescheduled.', 'Failed to reschedule.',
+            $('#schedule-job-form-error'));
     });
 
     $(document).on('click', '.status-job', function() {

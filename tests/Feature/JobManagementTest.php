@@ -286,6 +286,48 @@ class JobManagementTest extends TestCase
         $this->assertSame($newDate, $jobB->refresh()->scheduled_date->toDateString());
     }
 
+    public function test_bulk_schedule_resets_status_to_pending(): void
+    {
+        $job = $this->createJob();
+        $job->update(['status' => JobWorkflowStatus::HOLD->value]);
+        $newDate = now()->addDays(3)->toDateString();
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.jobs.bulk.schedule'), [
+                'job_ids' => [$job->id],
+                'scheduled_date' => $newDate,
+            ])
+            ->assertOk();
+
+        $job->refresh();
+        $this->assertSame(JobWorkflowStatus::PENDING->value, $job->status);
+    }
+
+    public function test_bulk_schedule_rejects_a_past_date(): void
+    {
+        $job = $this->createJob();
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.jobs.bulk.schedule'), [
+                'job_ids' => [$job->id],
+                'scheduled_date' => now()->subDay()->toDateString(),
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('scheduled_date');
+    }
+
+    public function test_bulk_schedule_allows_todays_date(): void
+    {
+        $job = $this->createJob();
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.jobs.bulk.schedule'), [
+                'job_ids' => [$job->id],
+                'scheduled_date' => now()->toDateString(),
+            ])
+            ->assertOk();
+    }
+
     public function test_mower_cannot_bulk_schedule_jobs(): void
     {
         $job = $this->createJob();

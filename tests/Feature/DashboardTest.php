@@ -120,7 +120,7 @@ class DashboardTest extends TestCase
             'customer_type' => 'Easy',
             'payment_mode' => 'Cash',
             'payment_status' => 'Received',
-            'status' => JobWorkflowStatus::STARTED->value,
+            'status' => JobWorkflowStatus::PENDING->value,
             'created_by' => $this->admin->id,
         ]);
 
@@ -303,5 +303,103 @@ class DashboardTest extends TestCase
             ->assertOk()
             ->assertSee('Open Lead')
             ->assertDontSee('Converted Lead');
+    }
+
+    public function test_hold_jobs_panel_lists_only_hold_status_jobs_with_assigned_mower(): void
+    {
+        $mower = User::query()->create([
+            'name' => 'Hold Mower',
+            'email' => 'hold-mower@mowingcrm.test',
+            'password' => bcrypt('password'),
+            'is_active' => true,
+        ]);
+
+        $client = Client::query()->create([
+            'name' => 'Hold Client',
+            'address' => '7 Maple St',
+            'service_types' => [ServiceTypes::all()[0]],
+            'weed_spray' => LeadWeedSpray::NO->value,
+            're_completion_days' => '14 days',
+            'job_type' => 'Regular',
+            'safety_concerns' => ['Pet'],
+            'payment_mode' => 'Cash',
+            'payment_status' => 'Done',
+            'charges' => 85,
+        ]);
+
+        $holdJob = Job::query()->create([
+            'client_id' => $client->id,
+            'client_address' => $client->address,
+            'scheduled_date' => now()->addDay()->toDateString(),
+            'scheduled_time' => '09:30',
+            'estimated_duration_minutes' => 60,
+            'required_services' => [ServiceTypes::all()[0]],
+            'parking_status' => 'Easy',
+            'customer_type' => 'Easy',
+            'payment_mode' => 'Cash',
+            'payment_status' => 'Received',
+            'status' => JobWorkflowStatus::HOLD->value,
+            'created_by' => $this->admin->id,
+        ]);
+        $holdJob->assignedEmployees()->attach($mower->id, ['assignment_date' => $holdJob->scheduled_date]);
+
+        Job::query()->create([
+            'client_id' => $client->id,
+            'client_address' => $client->address,
+            'scheduled_date' => now()->addDay()->toDateString(),
+            'scheduled_time' => '11:00',
+            'estimated_duration_minutes' => 45,
+            'required_services' => [ServiceTypes::all()[0]],
+            'parking_status' => 'Easy',
+            'customer_type' => 'Easy',
+            'payment_mode' => 'Cash',
+            'payment_status' => 'Received',
+            'status' => JobWorkflowStatus::PENDING->value,
+            'created_by' => $this->admin->id,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->get(route('dashboard.hold-jobs'))
+            ->assertOk()
+            ->assertSee('Hold Client')
+            ->assertSee('Hold Mower')
+            ->assertSee('60 min est.')
+            ->assertDontSee('45 min est.');
+    }
+
+    public function test_three_week_grid_excludes_hold_jobs_but_includes_pending_and_completed(): void
+    {
+        $client = Client::query()->create([
+            'name' => 'Status Filter Client',
+            'address' => '8 Birch St',
+            'service_types' => [ServiceTypes::all()[0]],
+            'weed_spray' => LeadWeedSpray::NO->value,
+            're_completion_days' => '14 days',
+            'job_type' => 'Regular',
+            'safety_concerns' => ['Pet'],
+            'payment_mode' => 'Cash',
+            'payment_status' => 'Done',
+            'charges' => 85,
+        ]);
+
+        Job::query()->create([
+            'client_id' => $client->id,
+            'client_address' => $client->address,
+            'scheduled_date' => now()->toDateString(),
+            'scheduled_time' => '09:30',
+            'estimated_duration_minutes' => 60,
+            'required_services' => [ServiceTypes::all()[0]],
+            'parking_status' => 'Easy',
+            'customer_type' => 'Easy',
+            'payment_mode' => 'Cash',
+            'payment_status' => 'Received',
+            'status' => JobWorkflowStatus::HOLD->value,
+            'created_by' => $this->admin->id,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->get(route('dashboard.three-week-grid'))
+            ->assertOk()
+            ->assertDontSee('1 job');
     }
 }

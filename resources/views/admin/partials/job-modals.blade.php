@@ -142,9 +142,10 @@
         <form id="schedule-job-form" class="space-y-3">
             @csrf
             <p class="bulk-job-context hidden rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700"></p>
+            <div id="schedule-job-form-error" class="hidden rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-600"></div>
             <div>
                 <label class="mb-1 block text-sm font-medium text-slate-700">Date <span class="text-red-500">*</span></label>
-                <input type="date" name="scheduled_date" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500" required>
+                <input type="date" name="scheduled_date" min="{{ now()->toDateString() }}" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500" required>
             </div>
             <div>
                 <label class="mb-1 block text-sm font-medium text-slate-700">Time <span class="text-xs font-normal text-slate-400">(optional)</span></label>

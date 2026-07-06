@@ -354,6 +354,7 @@ class JobManagementService
                 if ($scheduledTime !== null) {
                     $job->scheduled_time = $scheduledTime;
                 }
+                $job->status = JobWorkflowStatus::PENDING->value;
                 $job->save();
                 $this->activityLogService->log($actor, 'job.rescheduled', 'Job rescheduled to '.$scheduledDate.'.', [
                     'job_id' => $job->id,
