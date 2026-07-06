@@ -38,20 +38,21 @@ class GeocodeJobAddresses extends Command
         }
 
         $geocoded = 0;
-        $failed = 0;
+        $errors = [];
 
-        $this->withProgressBar($jobs, function (Job $job) use (&$geocoded, &$failed): void {
-            $coordinates = $this->geocode($this->resolveAddress($job));
+        $this->withProgressBar($jobs, function (Job $job) use (&$geocoded, &$errors): void {
+            $address = $this->resolveAddress($job);
+            $result = $this->geocode($address);
 
-            if ($coordinates === null) {
-                $failed++;
+            if ($result['error'] !== null) {
+                $errors[] = "Job #{$job->id} ({$address}): {$result['error']}";
 
                 return;
             }
 
             $job->forceFill([
-                'latitude' => $coordinates['lat'],
-                'longitude' => $coordinates['lng'],
+                'latitude' => $result['lat'],
+                'longitude' => $result['lng'],
             ])->save();
 
             $geocoded++;
@@ -60,8 +61,14 @@ class GeocodeJobAddresses extends Command
         $this->newLine(2);
         $this->info("Geocoded {$geocoded} job(s).");
 
-        if ($failed > 0) {
-            $this->warn("Failed to geocode {$failed} job(s).");
+        if ($errors !== []) {
+            $this->warn(count($errors).' job(s) failed:');
+            foreach (array_slice($errors, 0, 10) as $error) {
+                $this->line("  - {$error}");
+            }
+            if (count($errors) > 10) {
+                $this->line('  ... and '.(count($errors) - 10).' more.');
+            }
         }
 
         return self::SUCCESS;
@@ -75,9 +82,9 @@ class GeocodeJobAddresses extends Command
     }
 
     /**
-     * @return array{lat: float, lng: float}|null
+     * @return array{lat: null, lng: null, error: string}|array{lat: float, lng: float, error: null}
      */
-    private function geocode(string $address): ?array
+    private function geocode(string $address): array
     {
         $response = Http::get('https://maps.googleapis.com/maps/api/geocode/json', [
             'address' => $address,
@@ -85,21 +92,24 @@ class GeocodeJobAddresses extends Command
         ]);
 
         if ($response->failed()) {
-            return null;
+            return ['lat' => null, 'lng' => null, 'error' => 'HTTP request failed ('.$response->status().')'];
         }
 
         $body = $response->json();
+        $status = $body['status'] ?? 'UNKNOWN';
 
-        if (($body['status'] ?? null) !== 'OK') {
-            return null;
+        if ($status !== 'OK') {
+            $message = $body['error_message'] ?? $status;
+
+            return ['lat' => null, 'lng' => null, 'error' => $message];
         }
 
         $location = $body['results'][0]['geometry']['location'] ?? null;
 
         if (! isset($location['lat'], $location['lng'])) {
-            return null;
+            return ['lat' => null, 'lng' => null, 'error' => 'No location in response'];
         }
 
-        return ['lat' => (float) $location['lat'], 'lng' => (float) $location['lng']];
+        return ['lat' => (float) $location['lat'], 'lng' => (float) $location['lng'], 'error' => null];
     }
 }
