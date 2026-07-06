@@ -17,6 +17,8 @@
     <style>
         .mower-safe-bottom { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
         .mower-touch { min-height: 44px; }
+        .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900 antialiased">
