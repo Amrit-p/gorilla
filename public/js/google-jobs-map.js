@@ -30,6 +30,13 @@ window.crmInitGoogleJobsMap = window.crmInitJobsMap = function (mapConfig) {
             return el;
         }
 
+        function officeMarkerHtml() {
+            return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width:34px;height:34px;display:block;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4));">'
+                + '<circle cx="12" cy="12" r="11" fill="#4f46e5" stroke="#ffffff" stroke-width="2"/>'
+                + '<path d="M12 5.5 5 11h2v6h4v-4h2v4h4v-6h2z" fill="#ffffff"/>'
+                + '</svg>';
+        }
+
         function isJobSelected(jobId) {
             return !!(window.crmJobSelection && window.crmJobSelection.has(jobId));
         }
@@ -40,6 +47,13 @@ window.crmInitGoogleJobsMap = window.crmInitJobsMap = function (mapConfig) {
         var markersById = {};
         var infoCloseTimer;
         var activeJobId;
+        var directionsService;
+        var directionsRenderer;
+        var routeVisible = false;
+        var lastJobs = [];
+        var MAX_ROUTE_STOPS = 25; // Directions API caps origin + destination + waypoints at 25 total.
+        var officeMarkerRef;
+        var OFFICE_COLLISION_EPSILON = 0.0003; // ~30m — job pins this close to the office get it nudged aside so both stay visible.
 
 
         function cancelInfoClose() { clearTimeout(infoCloseTimer); }
@@ -63,6 +77,109 @@ window.crmInitGoogleJobsMap = window.crmInitJobsMap = function (mapConfig) {
         }
 
 
+        function setMarkerBadge(jobId, number) {
+            var entry = markersById[jobId];
+            if (!entry) { return; }
+
+            var badge = entry.content.querySelector('.map-route-badge');
+            if (!badge) {
+                badge = document.createElement('div');
+                badge.className = 'map-route-badge';
+                badge.style.cssText = 'position:absolute;top:1px;left:0;width:32px;text-align:center;pointer-events:none;';
+                entry.content.style.position = 'relative';
+                entry.content.appendChild(badge);
+            }
+            badge.innerHTML = '<span style="display:inline-flex;align-items:center;justify-content:center;'
+                + 'width:15px;height:15px;border-radius:50%;background:#fff;color:#000;font-size:10px;'
+                + 'font-weight:700;line-height:1;box-shadow:0 0 0 1px rgba(0,0,0,.35);">' + number + '</span>';
+        }
+
+
+        function clearMarkerBadges() {
+            Object.keys(markersById).forEach(function (id) {
+                var badge = markersById[id].content.querySelector('.map-route-badge');
+                if (badge) { badge.remove(); }
+            });
+        }
+
+
+        function hideRoute() {
+            directionsRenderer.setMap(null);
+            routeVisible = false;
+            clearMarkerBadges();
+            var label = document.getElementById('map-route-toggle-label');
+            if (label) { label.textContent = 'Show Route'; }
+        }
+
+
+        function drawRoute() {
+            if (lastJobs.length < 1) {
+                showMapAlert('Need at least 1 geocoded job to draw a route.', true);
+                return;
+            }
+
+            var stops = lastJobs.slice();
+            if (stops.length > MAX_ROUTE_STOPS) {
+                showMapAlert('Route limited to the first ' + MAX_ROUTE_STOPS + ' jobs (Google Directions API limit).', true);
+                stops = stops.slice(0, MAX_ROUTE_STOPS);
+            }
+
+            var origin = mapConfig.defaultCenter;
+            var destination = stops[stops.length - 1];
+            var waypoints = stops.slice(0, -1).map(function (job) {
+                return { location: { lat: job.lat, lng: job.lng }, stopover: true };
+            });
+
+            directionsService.route({
+                origin: { lat: origin.lat, lng: origin.lng },
+                destination: { lat: destination.lat, lng: destination.lng },
+                waypoints: waypoints,
+                optimizeWaypoints: true,
+                travelMode: google.maps.TravelMode.DRIVING,
+            }, function (result, status) {
+                if (status !== 'OK') {
+                    showMapAlert('Unable to compute route: ' + status, true);
+                    return;
+                }
+
+                directionsRenderer.setDirections(result);
+                directionsRenderer.setMap(map);
+                routeVisible = true;
+                var label = document.getElementById('map-route-toggle-label');
+                if (label) { label.textContent = 'Hide Route'; }
+
+                /* waypoint_order indexes into the `waypoints` array (stops minus the fixed
+                   destination) — reassemble the actual optimized visiting order from it. */
+                clearMarkerBadges();
+                var visitOrder = result.routes[0].waypoint_order.map(function (idx) { return stops[idx]; });
+                visitOrder.push(destination);
+                visitOrder.forEach(function (job, i) {
+                    setMarkerBadge(job.id, i + 1);
+                });
+
+                var totals = result.routes[0].legs.reduce(function (acc, leg) {
+                    acc.meters  += leg.distance.value;
+                    acc.seconds += leg.duration.value;
+                    return acc;
+                }, { meters: 0, seconds: 0 });
+
+                showMapAlert(
+                    'Route: ' + (totals.meters / 1000).toFixed(1) + ' km, ~' +
+                    Math.round(totals.seconds / 60) + ' min across ' + stops.length + ' stops.'
+                );
+            });
+        }
+
+
+        window.crmToggleRoute = function () {
+            if (routeVisible) {
+                hideRoute();
+            } else {
+                drawRoute();
+            }
+        };
+
+
         function initMap() {
             var center = mapConfig.defaultCenter;
             map = new google.maps.Map(document.getElementById('jobs-map'), {
@@ -74,6 +191,13 @@ window.crmInitGoogleJobsMap = window.crmInitJobsMap = function (mapConfig) {
                 streetViewControl: false,
                 clickableIcons: false,
             });
+            directionsService = new google.maps.DirectionsService();
+            directionsRenderer = new google.maps.DirectionsRenderer({
+                suppressMarkers: true,
+                preserveViewport: true,
+                polylineOptions: { strokeColor: '#000000', strokeWeight: 4, strokeOpacity: 0.85 },
+            });
+
             infoWindow = new google.maps.InfoWindow({ maxWidth: 320 });
             infoWindow.addListener('closeclick', function () { activeJobId = null; });
             infoWindow.addListener('domready', function () {
@@ -84,6 +208,27 @@ window.crmInitGoogleJobsMap = window.crmInitJobsMap = function (mapConfig) {
                 bubble.addEventListener('mouseleave', scheduleInfoClose);
             });
             window.crmHideMapPois(map);
+
+            window.crmEnsureGoogleMarkerLibrary().then(function (lib) {
+                var content = document.createElement('div');
+                content.style.width = '34px';
+                content.style.height = '34px';
+                content.innerHTML = officeMarkerHtml();
+
+                var officeMarker = new lib.AdvancedMarkerElement({
+                    map: map,
+                    position: { lat: center.lat, lng: center.lng },
+                    title: 'Office',
+                    content: content,
+                    zIndex: 999,
+                });
+                officeMarkerRef = officeMarker;
+
+                content.addEventListener('click', function () {
+                    infoWindow.setContent('<strong>Office</strong>');
+                    infoWindow.open({ map: map, anchor: officeMarker });
+                });
+            });
 
             window.addEventListener('jobs:selection-changed', function (e) {
                 var ids = new Set((e.detail && e.detail.ids) || []);
@@ -98,11 +243,26 @@ window.crmInitGoogleJobsMap = window.crmInitJobsMap = function (mapConfig) {
         window.crmMapLoad = function (params, preserveView) {
             $.get(mapConfig.jobsUrl, params || {}, function (response) {
                 clearMarkers();
+                hideRoute();
 
                 var jobs            = response.jobs || [];
                 var bounds          = new google.maps.LatLngBounds();
-                var routePoints     = [];
                 var highlightData   = null;
+                lastJobs = jobs;
+
+                if (officeMarkerRef) {
+                    var office = mapConfig.defaultCenter;
+                    var overlapsOffice = jobs.some(function (job) {
+                        return Math.abs(job.lat - office.lat) < OFFICE_COLLISION_EPSILON
+                            && Math.abs(job.lng - office.lng) < OFFICE_COLLISION_EPSILON;
+                    });
+                    /* Nudge the real position (not just CSS) so the marker's hit-test area
+                       moves with it — a CSS-only offset left the click/hover target stuck
+                       over the job pin's true spot even though the icon visually moved. */
+                    officeMarkerRef.position = overlapsOffice
+                        ? { lat: office.lat + 0.00015, lng: office.lng - 0.00025 }
+                        : { lat: office.lat, lng: office.lng };
+                }
 
                 window.crmEnsureGoogleMarkerLibrary().then(function (lib) {
                     jobs.forEach(function (job) {
@@ -140,12 +300,6 @@ window.crmInitGoogleJobsMap = window.crmInitJobsMap = function (mapConfig) {
 
                         if (mapConfig.highlightJob && job.id == mapConfig.highlightJob) {
                             highlightData = { marker: marker, job: job };
-                        }
-
-                        if (job.route_sequence) {
-                            routePoints[job.route_sequence - 1] = pos;
-                        } else {
-                            routePoints.push(pos);
                         }
                     });
 

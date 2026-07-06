@@ -6,16 +6,27 @@
             {{-- Alert overlay --}}
             <div id="map-alert" class="absolute bottom-3 left-1/2 z-[1000] hidden -translate-x-1/2"></div>
 
-            {{-- Filter toggle button --}}
-            <button id="map-filter-toggle-btn" type="button"
-                class="mower-touch absolute right-3 top-3 z-[1000] flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm active:bg-slate-50">
-                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
-                </svg>
-                Filters
-                <span id="map-filter-count" class="hidden rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700"></span>
-            </button>
+            {{-- Route toggle + filter toggle --}}
+            <div class="absolute right-3 top-3 z-[1000] flex items-center gap-2">
+                <button id="map-route-toggle-btn" type="button" onclick="window.crmToggleRoute()"
+                    class="mower-touch flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm active:bg-slate-50">
+                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                    </svg>
+                    <span id="map-route-toggle-label">Route</span>
+                </button>
+
+                <button id="map-filter-toggle-btn" type="button"
+                    class="mower-touch flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm active:bg-slate-50">
+                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
+                    </svg>
+                    Filters
+                    <span id="map-filter-count" class="hidden rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700"></span>
+                </button>
+            </div>
 
             {{-- Equipment legend overlay --}}
             <div id="map-legend" class="absolute left-3 top-3 z-[1000] max-w-[55vw] rounded-md border border-slate-200 bg-white/95 px-2.5 py-2 text-[11px] shadow-sm">

@@ -47,11 +47,30 @@ final class GoogleMapsSettings
         return self::mapProvider() === 'google' && self::hasApiKey();
     }
 
+    /** Office address configured in Website Settings, if any. */
+    public static function officeAddress(): ?string
+    {
+        $address = trim((string) (app(SettingsService::class)->allAsArray()['office_address'] ?? ''));
+
+        return $address !== '' ? $address : null;
+    }
+
     /**
+     * Office coordinates from Website Settings when set, otherwise the
+     * `google-maps.default_center` config value.
+     *
      * @return array{lat: float, lng: float}
      */
     public static function defaultCenter(): array
     {
+        $settings = app(SettingsService::class)->allAsArray();
+        $lat = $settings['office_latitude'] ?? null;
+        $lng = $settings['office_longitude'] ?? null;
+
+        if (is_numeric($lat) && is_numeric($lng)) {
+            return ['lat' => (float) $lat, 'lng' => (float) $lng];
+        }
+
         return config('google-maps.default_center', ['lat' => 43.6532, 'lng' => -79.3832]);
     }
 

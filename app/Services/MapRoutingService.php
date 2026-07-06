@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Helpers\OptimizationHelper;
 use App\Models\Job;
 use App\Models\User;
+use App\Support\GoogleMapsSettings;
 use App\Support\QueryFilters\JobListFilter;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -217,7 +218,7 @@ class MapRoutingService
             $lastJob = $lastJobId ? $recentJobs->get($lastJobId) : null;
             $lastCoords = $lastJob ? $this->jobCoordinates($lastJob) : null;
 
-            $center = config('google-maps.default_center', ['lat' => 43.6532, 'lng' => -79.3832]);
+            $center = GoogleMapsSettings::defaultCenter();
             $lat = (float) ($lastCoords['lat'] ?? $center['lat']);
             $lng = (float) ($lastCoords['lng'] ?? $center['lng']);
 

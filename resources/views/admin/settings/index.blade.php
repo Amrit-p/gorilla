@@ -126,6 +126,21 @@
                     </div>
                     <x-ui.input label="Default currency" name="default_currency" :value="$settings['default_currency'] ?? 'USD'" required />
                 </div>
+
+                <div class="mt-4 border-t border-slate-100 pt-4">
+                    <x-maps.address-picker
+                        prefix="office"
+                        address-name="office_address"
+                        address-label="Office address"
+                        placeholder="Search for your office address..."
+                        :address-value="$settings['office_address'] ?? ''"
+                        :latitude-value="$settings['office_latitude'] ?? null"
+                        :longitude-value="$settings['office_longitude'] ?? null"
+                        :show-coordinates="true"
+                        map-height="240px"
+                    />
+                    <p class="mt-2 text-xs text-slate-500">Used as the starting point for the jobs routing map and nearest-employee assignment.</p>
+                </div>
             </section>
 
             <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -366,6 +381,9 @@
             formData.append('default_timezone', $form.find('[name="default_timezone"]').val());
             formData.append('map_provider', $form.find('[name="map_provider"]').val());
             formData.append('google_maps_api_key', $form.find('[name="google_maps_api_key"]').val());
+            formData.append('office_address', $('#office-address-input').val());
+            formData.append('office_latitude', $('#office-latitude').val());
+            formData.append('office_longitude', $('#office-longitude').val());
             formData.append('default_currency', $form.find('[name="default_currency"]').val());
             formData.append('seo_meta_title', $form.find('[name="seo_meta_title"]').val());
             formData.append('seo_meta_description', $form.find('[name="seo_meta_description"]').val());
