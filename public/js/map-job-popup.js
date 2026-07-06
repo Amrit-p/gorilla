@@ -34,7 +34,7 @@ window.crmBuildMapJobPopup = function (job) {
             title="Close">&#x2715;</button>
 
     <div class="flex items-center gap-2 mb-3 pr-8">
-        <a href="${showUrl}" target="_blank"
+        <a href="${showUrl}"
            class="font-bold text-sm text-indigo-600 hover:text-indigo-800 no-underline tracking-tight">
             Job #${job.id}
         </a>
@@ -99,11 +99,11 @@ window.crmBuildMapJobPopup = function (job) {
             Select
         </label>` : ''}
         ${canView ? `
-        <a href="${showUrl}" target="_blank"
+        <a href="${showUrl}"
            class="inline-flex items-center justify-center h-8 sm:h-7 px-3 rounded-md text-[11px] font-semibold no-underline bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-colors">View</a>` : ''}
         ${/* NOTE: Edit button hidden, not deleted — unsure if still needed. Re-enable by uncommenting.
         canManage && job.edit_url ? `
-        <a href="${job.edit_url}" target="_blank"
+        <a href="${job.edit_url}"
            class="inline-flex items-center justify-center h-8 sm:h-7 px-3 rounded-md text-[11px] font-semibold no-underline bg-emerald-600 text-white hover:bg-emerald-700 transition-colors">Edit</a>` : ''
         */ ''}
         ${canManage ? `

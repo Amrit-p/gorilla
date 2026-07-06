@@ -216,6 +216,16 @@
     {{ $slot }}
 
     @include('components.scripts.jquery-validate')
+
+    {{-- Global Esc → browser back navigation --}}
+    <script>
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                window.history.back();
+            }
+        });
+    </script>
+
     @stack('scripts')
 </body>
 </html>

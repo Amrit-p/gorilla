@@ -89,7 +89,7 @@
         </div>
         <div class="flex items-center gap-2">
             <span id="crm-day-panel-link-wrap" class="hidden">
-                <a id="crm-day-panel-full-link" href="#" target="_blank"
+                <a id="crm-day-panel-full-link" href="#"
                    class="text-xs font-medium text-emerald-700 hover:text-emerald-800">
                     View in jobs page →
                 </a>

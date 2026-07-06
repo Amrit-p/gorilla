@@ -109,8 +109,6 @@
             @if ($mapsUrl)
                 <a
                     href="{{ $mapsUrl }}"
-                    target="_blank"
-                    rel="noopener noreferrer"
                     class="mower-touch mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800"
                 >
                     Open in Maps

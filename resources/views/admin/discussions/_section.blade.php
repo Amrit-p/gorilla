@@ -61,8 +61,6 @@
                 <div class="attachment-pill flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-700"
                     data-id="{{ $attachment->id }}">
                     <a href="{{ Storage::url($attachment->file_path) }}"
-                    target="_blank"
-                    rel="noopener"
                     title="View {{ $attachment->original_name }}"
                     class="flex min-w-0 items-center gap-1.5 hover:underline">
                         @if ($attachment->file_type === 'image')

@@ -77,7 +77,7 @@
                         @if ($images->isNotEmpty())
                             <div class="mb-3 flex flex-wrap gap-2">
                                 @foreach ($images as $img)
-                                    <a href="{{ $img->url }}" target="_blank" rel="noopener"
+                                    <a href="{{ $img->url }}"
                                        class="relative overflow-hidden rounded-xl border border-slate-200 shadow-sm">
                                         <img src="{{ $img->url }}"
                                              alt="{{ $img->original_name }}"
@@ -90,7 +90,7 @@
                         @if ($docs->isNotEmpty())
                             <div class="flex flex-col gap-2">
                                 @foreach ($docs as $doc)
-                                    <a href="{{ $doc->url }}" target="_blank" rel="noopener"
+                                    <a href="{{ $doc->url }}"
                                        class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs font-medium text-slate-700 shadow-sm active:bg-slate-50">
                                         @if ($doc->file_type === 'pdf')
                                             <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-red-50">

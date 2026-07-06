@@ -47,8 +47,6 @@
                         <div class="flex items-center gap-2">
                             <a
                                 href="{{ config('app.website_url') }}"
-                                target="_blank"
-                                rel="noopener noreferrer"
                                 class="inline-flex items-center gap-2 rounded-md border border-slate-300 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
                             >
                                 Website

@@ -88,7 +88,7 @@
                         <h3 class="text-sm font-semibold text-slate-900">Attached images</h3>
                         <div class="mt-3 grid grid-cols-3 gap-2">
                             @foreach ($attachedImages as $image)
-                                <a href="{{ $image['url'] }}" target="_blank" rel="noopener" class="aspect-square overflow-hidden rounded-lg bg-slate-100">
+                                <a href="{{ $image['url'] }}" class="aspect-square overflow-hidden rounded-lg bg-slate-100">
                                     <img
                                         src="{{ $image['thumb_url'] }}"
                                         alt="Attached"

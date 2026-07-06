@@ -8,7 +8,7 @@
 <div id="{{ $galleryId }}" class="mt-3 grid grid-cols-3 gap-2" data-kind="{{ $kind }}">
     @foreach ($images as $image)
         <div class="group relative aspect-square overflow-hidden rounded-lg bg-slate-100" data-image-id="{{ $image['id'] }}">
-            <a href="{{ $image['url'] }}" target="_blank" rel="noopener" class="block h-full w-full">
+            <a href="{{ $image['url'] }}" class="block h-full w-full">
                 <img
                     src="{{ $image['thumb_url'] }}"
                     alt="{{ ucfirst($kind) }} photo"

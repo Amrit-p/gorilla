@@ -170,12 +170,12 @@
                         @else
                             <div class="flex flex-col gap-1">
                                 @foreach ($recentJobs as $job)
-                                    <a href="{{ route('admin.jobs.show', $job) }}" target="_blank" class="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-200 hover:text-slate-800 whitespace-nowrap">
+                                    <a href="{{ route('admin.jobs.show', $job) }}" class="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-200 hover:text-slate-800 whitespace-nowrap">
                                         {{ $job->scheduled_date?->format('d M y') ?? '—' }}
                                     </a>
                                 @endforeach
                                 @if ($totalPreviousJobs > 3)
-                                    <a href="{{ route('admin.clients.show', ['client' => $client, 'tab' => 'jobs']) }}" target="_blank" class="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100 whitespace-nowrap">
+                                    <a href="{{ route('admin.clients.show', ['client' => $client, 'tab' => 'jobs']) }}" class="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100 whitespace-nowrap">
                                         +{{ $totalPreviousJobs - 3 }} more
                                     </a>
                                 @endif
@@ -186,7 +186,7 @@
                     {{-- Next Job --}}
                     <td class="whitespace-nowrap px-3 py-3">
                         @if ($client->nextJob)
-                            <a href="{{ route('admin.jobs.show', $client->nextJob) }}" target="_blank" class="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100">
+                            <a href="{{ route('admin.jobs.show', $client->nextJob) }}" class="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100">
                                 {{ $client->nextJob->scheduled_date?->format('d M y') ?? '—' }}
                             </a>
                         @else
