@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Support\CrmPermissions;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -15,9 +16,9 @@ class SyncCrmPermissions extends Command
      */
     public function handle()
     {
-        \App\Support\CrmPermissions::syncRolesAndPermissions();
+        CrmPermissions::migrateLegacyAssignments();
 
-    	$this->info('Done');    
+        $this->info('Done');
 
     }
 }

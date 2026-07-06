@@ -101,6 +101,7 @@ return [
     'legacy_roles' => [
         'Super Admin' => 'office_manager',
         'Office Manager' => 'office_manager',
+        'admin' => 'office_manager',
         'Sales Manager' => 'sales_manager',
         'Sales Person' => 'sales_manager',
         'Mowers' => 'mower',
