@@ -32,7 +32,7 @@
 
         <div id="mower-alert" class="hidden rounded-xl px-4 py-3 text-sm" style="position:fixed;top:1rem;left:50%;transform:translateX(-50%);z-index:9999;min-width:280px;max-width:90vw;"></div>
 
-        <div class="grid grid-cols-3 gap-2">
+        <div class="grid grid-cols-2 gap-2">
             @foreach ($listScopes as $key => $label)
                 @if ($key === \App\Support\CrmConstants::MOWER_SCOPE_PENDING)
                     @continue
@@ -47,10 +47,10 @@
             @endforeach
         </div>
 
-            <div class="grid grid-cols-4 gap-2">
+        <div class="grid grid-cols-2 gap-2">
             <a
                 href="{{ route('mower.clients.create') }}"
-                class="inline-flex items-center justify-center gap-1.5 rounded-full bg-emerald-700 px-2 py-2 text-xs font-semibold text-white shadow-sm active:bg-emerald-800"
+                class="inline-flex items-center justify-center gap-1.5 rounded-full bg-emerald-700 px-3 py-2 text-xs font-semibold text-white shadow-sm active:bg-emerald-800"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
@@ -60,7 +60,7 @@
             @can('view-jobs')
                 <a
                     href="{{ route('mower.map') }}"
-                    class="inline-flex items-center justify-center gap-1.5 rounded-full bg-sky-700 px-2 py-2 text-xs font-semibold text-white shadow-sm active:bg-sky-800"
+                    class="inline-flex items-center justify-center gap-1.5 rounded-full bg-sky-700 px-3 py-2 text-xs font-semibold text-white shadow-sm active:bg-sky-800"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
@@ -71,7 +71,7 @@
             @can('view-mower-report')
                 <a
                     href="{{ route('reports.mower.index') }}"
-                    class="inline-flex items-center justify-center gap-1.5 rounded-full bg-indigo-700 px-2 py-2 text-xs font-semibold text-white shadow-sm active:bg-indigo-800"
+                    class="inline-flex items-center justify-center gap-1.5 rounded-full bg-indigo-700 px-3 py-2 text-xs font-semibold text-white shadow-sm active:bg-indigo-800"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 17V9m4 8V5m4 12v-6M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z" />
@@ -82,7 +82,7 @@
             @can('viewAny', \App\Models\SalaryReceipt::class)
                 <a
                     href="{{ route('admin.salary-receipts.index') }}"
-                    class="inline-flex items-center justify-center gap-1.5 rounded-full bg-amber-700 px-2 py-2 text-xs font-semibold text-white shadow-sm active:bg-amber-800"
+                    class="inline-flex items-center justify-center gap-1.5 rounded-full bg-amber-700 px-3 py-2 text-xs font-semibold text-white shadow-sm active:bg-amber-800"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 14l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -93,7 +93,7 @@
             <a
                 id="mower-export-pdf"
                 href="{{ route('mower.export-pdf', ['scope' => $scope, 'date_range[start]' => $scheduleStart, 'date_range[end]' => $scheduleEnd]) }}"
-                class="inline-flex items-center justify-center gap-1.5 rounded-full bg-slate-800 px-2 py-2 text-xs font-semibold text-white shadow-sm active:bg-slate-900"
+                class="col-span-2 inline-flex items-center justify-center gap-1.5 rounded-full bg-slate-800 px-3 py-2 text-xs font-semibold text-white shadow-sm active:bg-slate-900"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h4a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
