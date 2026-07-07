@@ -16,9 +16,16 @@ class NotificationController extends Controller
     {
         $user = $request->user();
 
+        $tab = $request->query('tab') === 'read' ? 'read' : 'unread';
+
+        $query = $tab === 'read'
+            ? $user->readNotifications()
+            : $user->unreadNotifications();
+
         return view('notifications.index', [
-            'notifications' => $user->notifications()->latest()->paginate(20),
+            'notifications' => $query->latest()->paginate(20)->withQueryString(),
             'unreadCount' => $this->rememberUnreadCount($user),
+            'tab' => $tab,
         ]);
     }
 

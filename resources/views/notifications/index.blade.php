@@ -7,6 +7,17 @@
 
         <div id="notification-alert" class="hidden"></div>
 
+        <div class="flex items-center gap-1 border-b border-slate-200">
+            <a href="{{ route('notifications.index', ['tab' => 'unread']) }}"
+                class="border-b-2 px-4 py-2 text-sm font-medium {{ $tab === 'unread' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700' }}">
+                Unread
+            </a>
+            <a href="{{ route('notifications.index', ['tab' => 'read']) }}"
+                class="border-b-2 px-4 py-2 text-sm font-medium {{ $tab === 'read' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700' }}">
+                Read
+            </a>
+        </div>
+
         <div class="rounded-lg border border-slate-200 bg-white">
             @forelse ($notifications as $notification)
                 @php
@@ -38,7 +49,7 @@
                     </div>
                 </div>
             @empty
-                <div class="p-4 text-sm text-slate-500">No notifications yet.</div>
+                <div class="p-4 text-sm text-slate-500">{{ $tab === 'read' ? 'No read notifications.' : 'No unread notifications.' }}</div>
             @endforelse
         </div>
 
