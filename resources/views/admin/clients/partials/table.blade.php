@@ -4,6 +4,8 @@
 
 <x-clients.bulk-toolbar :viewing-deleted="$viewingDeleted" />
 
+<div class="mb-4">{{ $clients->links() }}</div>
+
 <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
     <table class="min-w-full text-left text-sm">
         <thead>

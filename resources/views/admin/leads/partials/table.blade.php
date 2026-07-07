@@ -13,6 +13,8 @@
 
 <x-leads.bulk-toolbar />
 
+<div class="mb-4">{{ $leads->links() }}</div>
+
 <x-ui.table :headers="$tableHeaders">
     @forelse ($leads as $lead)
         <tr class="lead-row divide-x divide-slate-100 transition-colors hover:bg-slate-50/70 data-[selected=true]:bg-emerald-50/70 data-[selected=true]:shadow-[inset_3px_0_0_#10b981] data-[bulk-mode=true]:cursor-pointer" data-lead-id="{{ $lead->id }}" data-selected="false" data-bulk-mode="false">
