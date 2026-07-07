@@ -201,6 +201,33 @@ class ClientScheduleRescheduleTest extends TestCase
             ->assertJsonValidationErrors('scheduled_date');
     }
 
+    public function test_bulk_hold_moves_pending_unverified_jobs_to_hold(): void
+    {
+        Notification::fake();
+
+        $client = Client::query()->create($this->clientPayload(now()->addDays(2)->toDateString()));
+
+        $pendingJob = Job::query()->create(array_merge($this->jobPayload($client->id), [
+            'status' => JobWorkflowStatus::PENDING->value,
+        ]));
+        $verifiedJob = Job::query()->create(array_merge($this->jobPayload($client->id), [
+            'status' => JobWorkflowStatus::PENDING->value,
+            'verified_at' => now(),
+            'verified_by' => $this->admin->id,
+        ]));
+        $completedJob = Job::query()->create(array_merge($this->jobPayload($client->id), [
+            'status' => JobWorkflowStatus::COMPLETED->value,
+        ]));
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.clients.hold'), ['client_ids' => [$client->id]])
+            ->assertOk();
+
+        $this->assertSame(JobWorkflowStatus::HOLD->value, $pendingJob->refresh()->status);
+        $this->assertSame(JobWorkflowStatus::PENDING->value, $verifiedJob->refresh()->status);
+        $this->assertSame(JobWorkflowStatus::COMPLETED->value, $completedJob->refresh()->status);
+    }
+
     public function test_creating_client_creates_a_pending_job_from_the_customer(): void
     {
         Notification::fake();

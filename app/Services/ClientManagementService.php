@@ -151,6 +151,32 @@ class ClientManagementService
     }
 
     /**
+     * Put each customer's pending, unverified jobs on hold.
+     *
+     * @param  Collection<int, Client>  $clients
+     * @return int Number of jobs moved to hold.
+     */
+    public function holdClientsJobs(User $actor, Collection $clients): int
+    {
+        $jobs = collect();
+
+        foreach ($clients as $client) {
+            $jobs = $jobs->merge(
+                $client->jobs()
+                    ->where('status', JobWorkflowStatus::PENDING->value)
+                    ->whereNull('verified_at')
+                    ->get()
+            );
+        }
+
+        if ($jobs->isNotEmpty()) {
+            $this->jobManagementService->updateJobsStatus($actor, $jobs, JobWorkflowStatus::HOLD->value);
+        }
+
+        return $jobs->count();
+    }
+
+    /**
      * Reschedule the customer's existing jobs to its schedule date, or create a
      * first job from the customer when it has none.
      */

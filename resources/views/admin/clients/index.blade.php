@@ -214,6 +214,27 @@
             });
         });
 
+        $(document).on('click', '#client-bulk-hold', function () {
+            const ids = typeof window.selectedClientIds === 'function' ? window.selectedClientIds() : [];
+            if (!ids.length) return;
+            if (!confirm('Put pending jobs on hold for ' + ids.length + ' selected customer(s)?')) return;
+
+            $.ajax({
+                url: "{{ route('admin.clients.hold') }}",
+                method: 'POST',
+                data: { _token: "{{ csrf_token() }}", client_ids: ids },
+                headers: { 'Accept': 'application/json' },
+                success: function (res) {
+                    if (typeof window.clearClientBulkSelection === 'function') window.clearClientBulkSelection();
+                    showClientAlert(res.message);
+                    refreshClients();
+                },
+                error: function (xhr) {
+                    showClientAlert(xhr.responseJSON?.message || 'Failed to hold jobs.', true);
+                }
+            });
+        });
+
         // Keep export links in sync with active filters
         function syncExportLinks() {
             const params = $('#client-filter-form').serialize();

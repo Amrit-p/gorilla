@@ -304,6 +304,30 @@ class ClientManagementController extends Controller
         ]);
     }
 
+    public function bulkHold(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'client_ids' => ['required', 'array', 'min:1'],
+            'client_ids.*' => ['integer', 'distinct', 'exists:clients,id'],
+        ]);
+
+        $clients = Client::query()->whereIn('id', $validated['client_ids'])->get();
+
+        abort_if($clients->isEmpty(), 404);
+
+        foreach ($clients as $client) {
+            $this->authorize('update', $client);
+        }
+
+        $count = $this->clientManagementService->holdClientsJobs($request->user(), $clients);
+
+        return response()->json([
+            'message' => $count === 0
+                ? 'No eligible jobs to hold for the selected customer(s).'
+                : $count.' job(s) put on hold.',
+        ]);
+    }
+
     public function downloadDocument(Client $client, ClientDocument $document): StreamedResponse
     {
         $this->authorize('view', $client);
