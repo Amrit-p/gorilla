@@ -117,6 +117,82 @@ class ClientScheduleRescheduleTest extends TestCase
         Notification::assertNothingSent();
     }
 
+    public function test_updating_client_schedule_date_reschedules_hold_jobs(): void
+    {
+        Notification::fake();
+
+        $client = Client::query()->create($this->clientPayload(now()->addDays(2)->toDateString()));
+
+        $holdJob = Job::query()->create(array_merge($this->jobPayload($client->id), [
+            'status' => JobWorkflowStatus::HOLD->value,
+        ]));
+
+        $newDate = now()->addWeek()->toDateString();
+
+        $this->actingAs($this->admin)
+            ->patch(route('admin.clients.update', $client), $this->clientPayload($newDate))
+            ->assertRedirect(route('admin.clients.show', $client));
+
+        $this->assertSame($newDate, $holdJob->refresh()->scheduled_date->toDateString());
+    }
+
+    public function test_creating_client_creates_a_pending_job_from_the_customer(): void
+    {
+        Notification::fake();
+
+        $scheduleDate = now()->addDays(3)->toDateString();
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.clients.store'), $this->clientPayload($scheduleDate))
+            ->assertRedirect();
+
+        $client = Client::query()->latest('id')->firstOrFail();
+        $job = $client->jobs()->firstOrFail();
+
+        $this->assertSame(1, $client->jobs()->count());
+        $this->assertSame(JobWorkflowStatus::PENDING->value, $job->status);
+        $this->assertSame($scheduleDate, $job->scheduled_date->toDateString());
+        $this->assertSame($client->service_types, $job->required_services);
+    }
+
+    public function test_updating_schedule_date_creates_a_job_when_customer_has_no_jobs(): void
+    {
+        Notification::fake();
+
+        $client = Client::query()->create($this->clientPayload(now()->addDays(2)->toDateString()));
+        $this->assertSame(0, $client->jobs()->count());
+
+        $newDate = now()->addWeek()->toDateString();
+
+        $this->actingAs($this->admin)
+            ->patch(route('admin.clients.update', $client), $this->clientPayload($newDate))
+            ->assertRedirect(route('admin.clients.show', $client));
+
+        $job = $client->jobs()->firstOrFail();
+
+        $this->assertSame(1, $client->jobs()->count());
+        $this->assertSame(JobWorkflowStatus::PENDING->value, $job->status);
+        $this->assertSame($newDate, $job->scheduled_date->toDateString());
+    }
+
+    public function test_creating_client_rejects_a_past_schedule_date(): void
+    {
+        $this->actingAs($this->admin)
+            ->post(route('admin.clients.store'), $this->clientPayload(now()->subDay()->toDateString()))
+            ->assertSessionHasErrors('schedule_date');
+
+        $this->assertSame(0, Client::query()->count());
+    }
+
+    public function test_updating_client_rejects_a_past_schedule_date(): void
+    {
+        $client = Client::query()->create($this->clientPayload(now()->addDays(2)->toDateString()));
+
+        $this->actingAs($this->admin)
+            ->patch(route('admin.clients.update', $client), $this->clientPayload(now()->subDay()->toDateString()))
+            ->assertSessionHasErrors('schedule_date');
+    }
+
     /**
      * @return array<string, mixed>
      */

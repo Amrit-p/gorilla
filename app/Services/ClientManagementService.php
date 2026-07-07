@@ -106,6 +106,7 @@ class ClientManagementService
         $client = Client::query()->create($this->prepareClientData($data));
         $this->storeClientDocuments($actor, $client, $documents);
         GeocodeClientAddressJob::dispatch($client->id);
+        $this->jobManagementService->createJobFromClient($actor, $client);
 
         $this->activityLogService->log($actor, 'client.created', 'Customer created.', ['client_id' => $client->id]);
 
@@ -122,7 +123,11 @@ class ClientManagementService
         $this->storeClientDocuments($actor, $client, $documents);
 
         if ($client->schedule_date !== null && $client->schedule_date->toDateString() !== $originalScheduleDate) {
-            $this->reschedulePendingJobs($actor, $client);
+            if ($client->jobs()->exists()) {
+                $this->reschedulePendingJobs($actor, $client);
+            } else {
+                $this->jobManagementService->createJobFromClient($actor, $client);
+            }
         }
 
         GeocodeClientAddressJob::dispatch($client->id);
@@ -134,7 +139,7 @@ class ClientManagementService
     private function reschedulePendingJobs(User $actor, Client $client): void
     {
         $pendingJobs = $client->jobs()
-            ->where('status', JobWorkflowStatus::PENDING->value)
+            ->where('status', '!=', JobWorkflowStatus::COMPLETED->value)
             ->whereNull('verified_at')
             ->get();
 

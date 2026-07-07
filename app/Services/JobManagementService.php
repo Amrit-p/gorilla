@@ -158,6 +158,49 @@ class JobManagementService
     }
 
     /**
+     * Create a job for a customer, mirroring the field mapping used when a
+     * lead is converted. Returns null when the customer has no service types.
+     */
+    public function createJobFromClient(User $actor, Client $client): ?Job
+    {
+        if (empty($client->service_types)) {
+            return null;
+        }
+
+        $job = Job::query()->create([
+            'client_id' => $client->id,
+            'lead_id' => $client->lead_id,
+            'zone_id' => $client->zone_id,
+            'equipment_type_id' => $client->equipment_type_id,
+            'job_level_id' => $client->job_level_id,
+            'recurrence_id' => $client->recurrence_id,
+            'client_address' => $client->address,
+            'latitude' => $client->latitude,
+            'longitude' => $client->longitude,
+            'required_services' => $client->service_types,
+            'scheduled_date' => $client->schedule_date,
+            'estimated_duration_minutes' => $client->estimated_time,
+            'customer_type' => $client->customer_type,
+            'payment_mode' => $client->payment_mode,
+            'payment_status' => $client->payment_status,
+            'charges' => $client->charges,
+            'site_instructions' => $client->additional_site_instructions,
+            'special_remarks' => $client->special_remarks,
+            'status' => JobWorkflowStatus::PENDING->value,
+            'created_by' => $actor->id,
+        ]);
+
+        GeocodeJobAddressJob::dispatch($job->id);
+
+        $this->activityLogService->log($actor, 'job.created_from_client', 'Job created from customer.', [
+            'job_id' => $job->id,
+            'client_id' => $client->id,
+        ]);
+
+        return $job;
+    }
+
+    /**
      * @param  array<string, mixed>  $data
      * @param  array<int, UploadedFile>  $images
      */

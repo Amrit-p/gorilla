@@ -30,7 +30,7 @@ trait ValidatesClientIntake
             'job_type' => ['required', Rule::in(LeadJobType::values())],
             'charges' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'estimated_time' => ['nullable', 'string', 'max:50'],
-            'schedule_date' => ['nullable', 'date'],
+            'schedule_date' => ['nullable', 'date', 'after_or_equal:today'],
             'phone' => ['nullable', 'string', 'max:30'],
             'email' => ['nullable', 'email', 'max:255'],
             'payment_mode' => ['required', Rule::in(LeadPaymentMode::values())],
