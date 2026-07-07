@@ -136,6 +136,71 @@ class ClientScheduleRescheduleTest extends TestCase
         $this->assertSame($newDate, $holdJob->refresh()->scheduled_date->toDateString());
     }
 
+    public function test_bulk_reschedule_updates_schedule_date_and_reschedules_jobs(): void
+    {
+        Notification::fake();
+
+        $clientA = Client::query()->create($this->clientPayload(now()->addDays(2)->toDateString()));
+        $clientB = Client::query()->create($this->clientPayload(now()->addDays(2)->toDateString()));
+
+        $jobA = Job::query()->create(array_merge($this->jobPayload($clientA->id), [
+            'status' => JobWorkflowStatus::PENDING->value,
+        ]));
+        $jobB = Job::query()->create(array_merge($this->jobPayload($clientB->id), [
+            'status' => JobWorkflowStatus::HOLD->value,
+        ]));
+
+        $newDate = now()->addWeeks(2)->toDateString();
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.clients.reschedule'), [
+                'client_ids' => [$clientA->id, $clientB->id],
+                'scheduled_date' => $newDate,
+                'scheduled_time' => '10:30',
+            ])
+            ->assertOk();
+
+        $this->assertSame($newDate, $clientA->refresh()->schedule_date->toDateString());
+        $this->assertSame($newDate, $clientB->refresh()->schedule_date->toDateString());
+        $this->assertSame($newDate, $jobA->refresh()->scheduled_date->toDateString());
+        $this->assertSame($newDate, $jobB->refresh()->scheduled_date->toDateString());
+        $this->assertSame('10:30', substr((string) $jobA->scheduled_time, 0, 5));
+    }
+
+    public function test_bulk_reschedule_creates_a_job_for_a_customer_without_jobs(): void
+    {
+        Notification::fake();
+
+        $client = Client::query()->create($this->clientPayload(now()->addDays(2)->toDateString()));
+        $this->assertSame(0, $client->jobs()->count());
+
+        $newDate = now()->addWeek()->toDateString();
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.clients.reschedule'), [
+                'client_ids' => [$client->id],
+                'scheduled_date' => $newDate,
+            ])
+            ->assertOk();
+
+        $job = $client->jobs()->firstOrFail();
+        $this->assertSame(1, $client->jobs()->count());
+        $this->assertSame($newDate, $job->scheduled_date->toDateString());
+    }
+
+    public function test_bulk_reschedule_rejects_a_past_date(): void
+    {
+        $client = Client::query()->create($this->clientPayload(now()->addDays(2)->toDateString()));
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.clients.reschedule'), [
+                'client_ids' => [$client->id],
+                'scheduled_date' => now()->subDay()->toDateString(),
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('scheduled_date');
+    }
+
     public function test_creating_client_creates_a_pending_job_from_the_customer(): void
     {
         Notification::fake();

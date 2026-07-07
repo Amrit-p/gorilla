@@ -252,6 +252,7 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
         Route::get('/admin/clients/export/pdf', [ClientManagementController::class, 'exportPdf'])->name('admin.clients.export.pdf');
         Route::get('/admin/clients/create', [ClientManagementController::class, 'create'])->name('admin.clients.create');
         Route::post('/admin/clients', [ClientManagementController::class, 'store'])->name('admin.clients.store');
+        Route::post('/admin/clients/reschedule', [ClientManagementController::class, 'bulkReschedule'])->name('admin.clients.reschedule');
         Route::get('/admin/clients/{client}/edit', [ClientManagementController::class, 'edit'])->name('admin.clients.edit');
         Route::get('/admin/clients/{client}/jobs', [ClientManagementController::class, 'jobsTab'])->name('admin.clients.jobs');
         Route::get('/admin/clients/{client}/documents/{document}/download', [ClientManagementController::class, 'downloadDocument'])->name('admin.clients.documents.download');

@@ -11,6 +11,7 @@ use App\Enums\LeadWeedSpray;
 use App\Exports\ClientsExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ImportClientsRequest;
+use App\Http\Requests\Admin\RescheduleClientsRequest;
 use App\Http\Requests\Admin\StoreClientRequest;
 use App\Http\Requests\Admin\UpdateClientRequest;
 use App\Models\Client;
@@ -277,6 +278,30 @@ class ClientManagementController extends Controller
         return redirect()
             ->route('admin.clients.show', $client)
             ->with('success', 'Customer updated successfully.');
+    }
+
+    public function bulkReschedule(RescheduleClientsRequest $request): JsonResponse
+    {
+        $clients = Client::query()->whereIn('id', $request->validated('client_ids'))->get();
+
+        abort_if($clients->isEmpty(), 404);
+
+        foreach ($clients as $client) {
+            $this->authorize('update', $client);
+        }
+
+        $this->clientManagementService->rescheduleClients(
+            $request->user(),
+            $clients,
+            $request->validated('scheduled_date'),
+            $request->validated('scheduled_time'),
+        );
+
+        return response()->json([
+            'message' => $clients->count() > 1
+                ? $clients->count().' customers rescheduled successfully.'
+                : 'Customer rescheduled successfully.',
+        ]);
     }
 
     public function downloadDocument(Client $client, ClientDocument $document): StreamedResponse

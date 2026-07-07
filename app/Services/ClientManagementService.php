@@ -123,11 +123,7 @@ class ClientManagementService
         $this->storeClientDocuments($actor, $client, $documents);
 
         if ($client->schedule_date !== null && $client->schedule_date->toDateString() !== $originalScheduleDate) {
-            if ($client->jobs()->exists()) {
-                $this->reschedulePendingJobs($actor, $client);
-            } else {
-                $this->jobManagementService->createJobFromClient($actor, $client);
-            }
+            $this->applyScheduleChange($actor, $client);
         }
 
         GeocodeClientAddressJob::dispatch($client->id);
@@ -136,7 +132,38 @@ class ClientManagementService
         return $client;
     }
 
-    private function reschedulePendingJobs(User $actor, Client $client): void
+    /**
+     * Set a new schedule date on each customer and reschedule (or create) their jobs.
+     *
+     * @param  Collection<int, Client>  $clients
+     */
+    public function rescheduleClients(User $actor, Collection $clients, string $scheduledDate, ?string $scheduledTime = null): void
+    {
+        foreach ($clients as $client) {
+            $client->schedule_date = $scheduledDate;
+            $client->save();
+            $this->applyScheduleChange($actor, $client, $scheduledTime);
+            $this->activityLogService->log($actor, 'client.rescheduled', 'Customer schedule updated.', [
+                'client_id' => $client->id,
+                'scheduled_date' => $scheduledDate,
+            ]);
+        }
+    }
+
+    /**
+     * Reschedule the customer's existing jobs to its schedule date, or create a
+     * first job from the customer when it has none.
+     */
+    private function applyScheduleChange(User $actor, Client $client, ?string $scheduledTime = null): void
+    {
+        if ($client->jobs()->exists()) {
+            $this->reschedulePendingJobs($actor, $client, $scheduledTime);
+        } else {
+            $this->jobManagementService->createJobFromClient($actor, $client);
+        }
+    }
+
+    private function reschedulePendingJobs(User $actor, Client $client, ?string $scheduledTime = null): void
     {
         $pendingJobs = $client->jobs()
             ->where('status', '!=', JobWorkflowStatus::COMPLETED->value)
@@ -144,7 +171,7 @@ class ClientManagementService
             ->get();
 
         if ($pendingJobs->isNotEmpty()) {
-            $this->jobManagementService->scheduleJobs($actor, $pendingJobs, $client->schedule_date->toDateString());
+            $this->jobManagementService->scheduleJobs($actor, $pendingJobs, $client->schedule_date->toDateString(), $scheduledTime);
         }
     }
 

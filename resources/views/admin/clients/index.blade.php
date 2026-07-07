@@ -17,6 +17,26 @@
 
     <x-clients.import-modal />
 
+    {{-- Bulk reschedule --}}
+    <x-ui.modal id="client-reschedule-modal" title="Reschedule Customers">
+        <form id="client-reschedule-form" class="space-y-3">
+            @csrf
+            <p class="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">
+                <span id="client-reschedule-count">0</span> customer(s) selected. Their upcoming jobs will be rescheduled to this date.
+            </p>
+            <div id="client-reschedule-error" class="hidden rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-600"></div>
+            <div>
+                <label class="mb-1 block text-sm font-medium text-slate-700">Date <span class="text-red-500">*</span></label>
+                <input type="date" name="scheduled_date" min="{{ now()->toDateString() }}" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500" required>
+            </div>
+            <div>
+                <label class="mb-1 block text-sm font-medium text-slate-700">Time <span class="text-xs font-normal text-slate-400">(optional)</span></label>
+                <input type="time" name="scheduled_time" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+            </div>
+            <x-ui.button type="submit">Reschedule</x-ui.button>
+        </form>
+    </x-ui.modal>
+
     @include('admin.partials.dropdown-script')
 
     <style>
@@ -148,6 +168,50 @@
             if (!ids.length) return;
             if (!confirm('Restore ' + ids.length + ' selected customers?')) return;
             restoreClients(ids);
+        });
+
+        $(document).on('click', '#client-bulk-reschedule', function () {
+            const ids = typeof window.selectedClientIds === 'function' ? window.selectedClientIds() : [];
+            if (!ids.length) return;
+            $('#client-reschedule-count').text(ids.length);
+            $('#client-reschedule-error').addClass('hidden').text('');
+            $('#client-reschedule-form')[0].reset();
+            openModal('client-reschedule-modal');
+        });
+
+        $('#client-reschedule-form').on('submit', function (e) {
+            e.preventDefault();
+            const ids = typeof window.selectedClientIds === 'function' ? window.selectedClientIds() : [];
+            if (!ids.length) return;
+
+            const $submit = $(this).find('button[type="submit"]');
+            $submit.prop('disabled', true);
+            $('#client-reschedule-error').addClass('hidden').text('');
+
+            $.ajax({
+                url: "{{ route('admin.clients.reschedule') }}",
+                method: 'POST',
+                data: {
+                    _token: "{{ csrf_token() }}",
+                    client_ids: ids,
+                    scheduled_date: $(this).find('[name="scheduled_date"]').val(),
+                    scheduled_time: $(this).find('[name="scheduled_time"]').val(),
+                },
+                headers: { 'Accept': 'application/json' },
+                success: function (res) {
+                    closeModal('client-reschedule-modal');
+                    if (typeof window.clearClientBulkSelection === 'function') window.clearClientBulkSelection();
+                    showClientAlert(res.message);
+                    refreshClients();
+                },
+                error: function (xhr) {
+                    const msg = xhr.responseJSON?.message
+                        || Object.values(xhr.responseJSON?.errors || {})[0]?.[0]
+                        || 'Failed to reschedule customer(s).';
+                    $('#client-reschedule-error').removeClass('hidden').text(msg);
+                },
+                complete: function () { $submit.prop('disabled', false); }
+            });
         });
 
         // Keep export links in sync with active filters
