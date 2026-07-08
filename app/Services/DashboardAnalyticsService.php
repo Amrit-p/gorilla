@@ -94,6 +94,35 @@ class DashboardAnalyticsService
         $today = now()->toDateString();
         $monthStart = now()->startOfMonth()->toDateString();
 
+        $mowerPerformance = $this->mowerPerformanceData($monthStart, $today);
+
+        $leadStatusCounts = Lead::query()
+            ->selectRaw('status, COUNT(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        return [
+            'type' => 'admin',
+            'cards' => array_merge($this->revenueAndJobCards(), $this->leadPipelineCards($leadStatusCounts)),
+            'charts' => [
+                'revenue_trend' => $this->revenueTrendLastDays(7),
+                'jobs_by_status' => $this->jobsByStatusChart(),
+            ],
+            'mower_performance' => $mowerPerformance,
+        ];
+    }
+
+    /**
+     * Total revenue, pending payments, jobs today, and completed jobs stat cards
+     * shared by the admin and sales dashboards.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    private function revenueAndJobCards(): array
+    {
+        $today = now()->toDateString();
+        $monthStart = now()->startOfMonth()->toDateString();
+
         $revenueMtd = (float) DB::table('service_jobs as sj')
             ->join('clients as c', 'c.id', '=', 'sj.client_id')
             ->whereNull('sj.deleted_at')
@@ -125,46 +154,31 @@ class DashboardAnalyticsService
             ->where('status', JobWorkflowStatus::COMPLETED->value)
             ->count();
 
-        $mowerPerformance = $this->mowerPerformanceData($monthStart, $today);
-
-        $leadStatusCounts = Lead::query()
-            ->selectRaw('status, COUNT(*) as total')
-            ->groupBy('status')
-            ->pluck('total', 'status');
-
         return [
-            'type' => 'admin',
-            'cards' => array_merge([
-                'total_revenue' => [
-                    'label' => 'Total revenue (MTD)',
-                    'value' => '$'.number_format($revenueMtd, 2),
-                    'subtitle' => 'Completed & received payments',
-                    'accent' => 'emerald',
-                ],
-                'pending_payments' => [
-                    'label' => 'Pending payments',
-                    'value' => (string) ((int) ($pendingRow->job_count ?? 0)),
-                    'subtitle' => '$'.number_format((float) ($pendingRow->amount ?? 0), 2).' outstanding',
-                    'accent' => 'amber',
-                ],
-                'jobs_today' => [
-                    'label' => 'Jobs today',
-                    'value' => (string) $jobsToday,
-                    'subtitle' => $completedToday.' completed today',
-                    'accent' => 'sky',
-                ],
-                'completed_jobs' => [
-                    'label' => 'Completed jobs (MTD)',
-                    'value' => (string) $completedMtd,
-                    'subtitle' => 'Month to date',
-                    'accent' => 'teal',
-                ],
-            ], $this->leadPipelineCards($leadStatusCounts)),
-            'charts' => [
-                'revenue_trend' => $this->revenueTrendLastDays(7),
-                'jobs_by_status' => $this->jobsByStatusChart(),
+            'total_revenue' => [
+                'label' => 'Total revenue (MTD)',
+                'value' => '$'.number_format($revenueMtd, 2),
+                'subtitle' => 'Completed & received payments',
+                'accent' => 'emerald',
             ],
-            'mower_performance' => $mowerPerformance,
+            'pending_payments' => [
+                'label' => 'Pending payments',
+                'value' => (string) ((int) ($pendingRow->job_count ?? 0)),
+                'subtitle' => '$'.number_format((float) ($pendingRow->amount ?? 0), 2).' outstanding',
+                'accent' => 'amber',
+            ],
+            'jobs_today' => [
+                'label' => 'Jobs today',
+                'value' => (string) $jobsToday,
+                'subtitle' => $completedToday.' completed today',
+                'accent' => 'sky',
+            ],
+            'completed_jobs' => [
+                'label' => 'Completed jobs (MTD)',
+                'value' => (string) $completedMtd,
+                'subtitle' => 'Month to date',
+                'accent' => 'teal',
+            ],
         ];
     }
 
@@ -239,22 +253,10 @@ class DashboardAnalyticsService
      */
     private function buildSalesAnalytics(): array
     {
-        $today = now()->toDateString();
-
         $statusCounts = Lead::query()
             ->selectRaw('status, COUNT(*) as total')
             ->groupBy('status')
             ->pluck('total', 'status');
-
-        $jobsToday = Job::query()
-            ->whereDate('scheduled_date', $today)
-            ->whereNotIn('status', ['Cancelled'])
-            ->count();
-
-        $completedToday = Job::query()
-            ->whereDate('scheduled_date', $today)
-            ->where('status', JobWorkflowStatus::COMPLETED->value)
-            ->count();
 
         $labels = [];
         $data = [];
@@ -265,14 +267,7 @@ class DashboardAnalyticsService
 
         return [
             'type' => 'sales',
-            'cards' => array_merge($this->leadPipelineCards($statusCounts), [
-                'jobs_today' => [
-                    'label' => 'Jobs today',
-                    'value' => (string) $jobsToday,
-                    'subtitle' => $completedToday.' completed today',
-                    'accent' => 'teal',
-                ],
-            ]),
+            'cards' => array_merge($this->revenueAndJobCards(), $this->leadPipelineCards($statusCounts)),
             'charts' => [
                 'leads_by_status' => [
                     'labels' => $labels,

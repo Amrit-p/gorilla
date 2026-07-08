@@ -28,10 +28,8 @@ $dashboardType = $analytics['type'] ?? 'admin';
 
         <div id="dashboard-alert" class="hidden"></div>
 
-        @if ($dashboardType === 'admin')
+        @if (in_array($dashboardType, ['admin', 'sales']))
         @include('dashboard.partials.admin-analytics', ['analytics' => $analytics])
-        @elseif ($dashboardType === 'sales')
-        @include('dashboard.partials.sales-analytics', ['analytics' => $analytics])
         @else
         @include('dashboard.partials.mower-analytics', ['analytics' => $analytics])
         @endif
