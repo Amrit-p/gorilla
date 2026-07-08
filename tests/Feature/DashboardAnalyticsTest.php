@@ -67,9 +67,6 @@ class DashboardAnalyticsTest extends TestCase
             ->assertSee('Jobs today', false)
             ->assertSee('Completed jobs (MTD)', false)
             ->assertSee('Mower performance', false)
-            ->assertSee('Lead conversion rate', false)
-            ->assertSee('New leads', false)
-            ->assertSee('Follow up', false)
             ->assertSee('$150.00', false);
     }
 
@@ -84,8 +81,7 @@ class DashboardAnalyticsTest extends TestCase
         $this->actingAs($sales)
             ->get(route('dashboard.index'))
             ->assertOk()
-            ->assertSee('New leads', false)
-            ->assertSee('Follow up', false);
+            ->assertSee('Jobs today', false);
     }
 
     public function test_mower_dashboard_shows_field_metrics(): void

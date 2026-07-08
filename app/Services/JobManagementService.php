@@ -159,11 +159,12 @@ class JobManagementService
 
     /**
      * Create a job for a customer, mirroring the field mapping used when a
-     * lead is converted. Returns null when the customer has no service types.
+     * lead is converted. Returns null when the customer has no service types
+     * or no schedule date, since jobs require a scheduled date.
      */
     public function createJobFromClient(User $actor, Client $client): ?Job
     {
-        if (empty($client->service_types)) {
+        if (empty($client->service_types) || $client->schedule_date === null) {
             return null;
         }
 
