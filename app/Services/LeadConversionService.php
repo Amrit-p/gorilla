@@ -6,14 +6,14 @@ use App\Enums\ClientCustomerType;
 use App\Enums\JobWorkflowStatus;
 use App\Enums\LeadPaymentStatus;
 use App\Enums\LeadStatus;
+use App\Helpers\OptimizationHelper;
 use App\Models\Client;
+use App\Models\Job;
 use App\Models\Lead;
 use App\Models\User;
 use App\Notifications\LeadWonNotification;
-use App\Helpers\OptimizationHelper;
-use App\Models\Job;
 use App\Support\CrmRoles;
-use Illuminate\Support\Facades\DB;
+use App\Support\EstimatedDurationMinutes;
 
 class LeadConversionService
 {
@@ -30,6 +30,8 @@ class LeadConversionService
 
         $existingByLead = Client::query()->where('lead_id', $lead->id)->first();
         if ($existingByLead) {
+            $this->ensureJobFromLead($lead, $existingByLead, $actor);
+
             return $existingByLead;
         }
 
@@ -39,6 +41,8 @@ class LeadConversionService
                 $duplicate->lead_id = $lead->id;
                 $duplicate->save();
             }
+
+            $this->ensureJobFromLead($lead, $duplicate, $actor);
 
             return $duplicate->fresh();
         }
@@ -77,7 +81,9 @@ class LeadConversionService
             },
             'created_by' => $actor->id,
         ]);
+
         $this->createJobFromLead($lead, $client, $actor);
+
         return $client;
     }
 
@@ -139,6 +145,23 @@ class LeadConversionService
         return LeadStatus::convertsToClientValue($status);
     }
 
+    /**
+     * Create a job from the lead when one does not already exist for this lead+client pair.
+     */
+    public function ensureJobFromLead(Lead $lead, Client $client, User $actor): void
+    {
+        $exists = Job::query()
+            ->where('lead_id', $lead->id)
+            ->where('client_id', $client->id)
+            ->exists();
+
+        if ($exists) {
+            return;
+        }
+
+        $this->createJobFromLead($lead, $client, $actor);
+    }
+
     public function createJobFromLead(Lead $lead, Client $client, User $actor): void
     {
         if (empty($lead->service_types)) {
@@ -146,23 +169,33 @@ class LeadConversionService
         }
 
         $job = Job::query()->create([
-            'client_id'              => $client->id,
-            'recurrence_id'          => $lead->recurrence_id,
-            'lead_id'                => $lead->id,           // missing
-            'zone_id'                => $lead->zone_id,
-            'equipment_type_id'      => $lead->equipment_type_id,
-            'client_address'         => $lead->address,      // missing (different name)
-            'latitude'               => $lead->latitude,     // missing
-            'longitude'              => $lead->longitude,    // missing
-            'required_services'      => $lead->service_types, // was 'service_types' (wrong key)
-            'scheduled_date'         => $lead->lead_date,
-            'scheduled_time'         => $lead->lead_time,
-            'payment_mode'           => $lead->payment_mode, // missing
-            'payment_status'         => $lead->payment_status, // missing
-            'status'                 => JobWorkflowStatus::HOLD->value,
-            'created_by'             => $actor->id,
-            'estimated_duration_minutes'         => $client->estimated_time,
-            'charges'               => $client->charges, // missing
+            'client_id' => $client->id,
+            'recurrence_id' => $lead->recurrence_id,
+            'is_recurring' => $lead->recurrence_id !== null,
+            'lead_id' => $lead->id,
+            'zone_id' => $lead->zone_id,
+            'equipment_type_id' => $lead->equipment_type_id,
+            'customer_name' => $lead->client_name ?: $lead->address,
+            'email' => $lead->email,
+            'phone' => $lead->mobile_number,
+            'weed_spray' => $lead->weed_spray,
+            'job_type' => $lead->job_type,
+            'property_details' => $lead->property_details,
+            'notes' => $lead->remarks,
+            'client_address' => $lead->address,
+            'latitude' => $lead->latitude,
+            'longitude' => $lead->longitude,
+            'required_services' => $lead->service_types,
+            'scheduled_date' => $lead->lead_date ?? now()->toDateString(),
+            'scheduled_time' => $lead->lead_time,
+            'payment_mode' => $lead->payment_mode,
+            'payment_status' => $lead->payment_status,
+            'status' => JobWorkflowStatus::HOLD->value,
+            'created_by' => $actor->id,
+            'estimated_duration_minutes' => EstimatedDurationMinutes::resolve($client->estimated_time),
+            'charges' => $lead->charges ?? $client->charges,
+            'special_remarks' => $lead->remarks,
+            'customer_type' => ClientCustomerType::DONT_KNOW->value,
         ]);
 
         $this->activityLogService->log(

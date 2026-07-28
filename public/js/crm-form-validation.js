@@ -174,11 +174,15 @@
         },
         job: {
             rules: {
-                client_id: { required: true },
+                customer_name: { required: true, maxlength: 120 },
+                phone: { required: true, maxlength: 30 },
+                email: { email: true, maxlength: 120 },
                 equipment_type_id: { required: true },
+                recurrence_id: { required: true },
                 client_address: { required: true, maxlength: 255 },
                 scheduled_date: { required: true, dateISO: true },
                 estimated_duration_minutes: { required: true, number: true, min: 15, max: 1440 },
+                'required_services[]': { required: true },
                 parking_status: { required: true },
                 customer_type: { required: true },
                 payment_mode: { required: true },
@@ -193,11 +197,15 @@
         },
         'job-edit': {
             rules: {
-                client_id: { required: true },
+                customer_name: { required: true, maxlength: 120 },
+                phone: { required: true, maxlength: 30 },
+                email: { email: true, maxlength: 120 },
                 equipment_type_id: { required: true },
+                recurrence_id: { required: true },
                 client_address: { required: true, maxlength: 255 },
                 scheduled_date: { required: true, dateISO: true },
                 estimated_duration_minutes: { required: true, number: true, min: 15, max: 1440 },
+                'required_services[]': { required: true },
                 parking_status: { required: true },
                 customer_type: { required: true },
                 payment_mode: { required: true },

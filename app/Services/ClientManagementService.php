@@ -99,14 +99,17 @@ class ClientManagementService
         ];
     }
 
-    public function createClient(User $actor, array $data): Client
+    public function createClient(User $actor, array $data, bool $createInitialJob = true): Client
     {
         $documents = $this->pullDocuments($data);
         $data['created_by'] = $actor->id;
         $client = Client::query()->create($this->prepareClientData($data));
         $this->storeClientDocuments($actor, $client, $documents);
         GeocodeClientAddressJob::dispatch($client->id);
-        $this->jobManagementService->createJobFromClient($actor, $client);
+
+        if ($createInitialJob) {
+            $this->jobManagementService->createJobFromClient($actor, $client);
+        }
 
         $this->activityLogService->log($actor, 'client.created', 'Customer created.', ['client_id' => $client->id]);
 

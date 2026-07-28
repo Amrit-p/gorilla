@@ -138,9 +138,11 @@ class FollowupService
     private function searchJobs(string $query): array
     {
         return Job::query()
-            ->with('client:id,name')
             ->when($query !== '', fn ($q) => $q->where(fn ($q2) => $q2
                 ->where('id', 'like', "%{$query}%")
+                ->orWhere('customer_name', 'like', "%{$query}%")
+                ->orWhere('email', 'like', "%{$query}%")
+                ->orWhere('phone', 'like', "%{$query}%")
                 ->orWhere('client_address', 'like', "%{$query}%")
                 ->orWhereHas('client', fn ($cq) => $cq->where('name', 'like', "%{$query}%"))
             ))
@@ -150,7 +152,7 @@ class FollowupService
             ->map(fn (Job $job) => [
                 'id' => $job->id,
                 'label' => "#{$job->id}"
-                    .($job->client ? " – {$job->client->name}" : '')
+                    .' – '.$job->customerDisplayName()
                     .($job->client_address ? " ({$job->client_address})" : ''),
             ])
             ->all();

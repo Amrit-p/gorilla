@@ -110,7 +110,7 @@
                         </svg>
                     </span>
                     <input type="text" name="search" value="{{ $filters['search'] }}"
-                        placeholder="Customer, address, ID…"
+                        placeholder="Name, phone, email, address…"
                         class="filter w-full rounded-lg border border-slate-200 bg-slate-50 pl-8 pr-3 py-2 text-xs text-slate-700 placeholder-slate-400 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
                 </div>
             </div>

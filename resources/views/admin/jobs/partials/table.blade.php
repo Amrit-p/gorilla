@@ -76,20 +76,19 @@
             <td class="px-4 py-4">
                 @if ($job->trashed())
                     <span class="text-sm font-semibold leading-snug text-slate-800">
-                        {{ $job->client?->name ?: 'N/A' }}
-                        @if ($job->client?->customer_unique_id)
-                            <span class="font-normal text-slate-400">#{{ $job->client->customer_unique_id }}</span>
-                        @endif
+                        {{ $job->customerDisplayName() }}
                     </span>
                 @else
                 <a href="{{ route('admin.jobs.show', $job) }}" class="text-sm font-semibold leading-snug text-slate-800 hover:text-emerald-700 hover:underline">
-                    {{ $job->client?->name ?: 'N/A' }}
-                    @if ($job->client?->customer_unique_id)
-                        <span class="font-normal text-slate-400">#{{ $job->client->customer_unique_id }}</span>
-                    @endif
+                    {{ $job->customerDisplayName() }}
                 </a>
                 @endif
                 <p class="mt-0.5 text-xs text-slate-500">{{ $job->client_address ?: '—' }}</p>
+                @if ($job->phone || $job->email)
+                    <p class="mt-0.5 text-xs text-slate-500">
+                        {{ collect([$job->phone, $job->email])->filter()->implode(' · ') }}
+                    </p>
+                @endif
                 @if ($job->equipmentType)
                     <span class="mt-1 inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
                         <span class="h-1.5 w-1.5 shrink-0 rounded-full" style="background-color: {{ $job->equipmentType->color_code ?? '#64748b' }}"></span>
@@ -102,10 +101,11 @@
                         {{ $job->jobLevel->name }}
                     </span>
                 @endif
-                @if ($job->client?->clientRating)
-                    <span class="mt-1 inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700" @if($job->client->clientRating->description) title="{{ $job->client->clientRating->description }}" @endif>
+                @if ($job->clientRating ?? $job->client?->clientRating)
+                    @php $rating = $job->clientRating ?? $job->client?->clientRating; @endphp
+                    <span class="mt-1 inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700" @if($rating->description) title="{{ $rating->description }}" @endif>
                         <svg class="h-3 w-3 shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path d="M9.05 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 0 0 .95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.367 2.446a1 1 0 0 0-.364 1.118l1.287 3.957c.3.922-.755 1.688-1.539 1.118l-3.366-2.446a1 1 0 0 0-1.176 0l-3.366 2.446c-.784.57-1.838-.196-1.539-1.118l1.287-3.957a1 1 0 0 0-.364-1.118L2.356 9.384c-.783-.57-.38-1.81.588-1.81h4.163a1 1 0 0 0 .95-.69l1.286-3.957Z"/></svg>
-                        {{ $job->client->clientRating->name }}
+                        {{ $rating->name }}
                     </span>
                 @endif
             </td>

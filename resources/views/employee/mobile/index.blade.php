@@ -14,13 +14,13 @@
                     <div class="flex items-start justify-between gap-2">
                         <div>
                             <p class="text-sm font-semibold text-slate-900">
-                                #{{ $job->route_sequence }} {{ $job->client?->name ?: 'Customer N/A' }}
+                                #{{ $job->route_sequence }} {{ $job->customerDisplayName() }}
                             </p>
-                            <p class="text-xs text-slate-500">{{ $job->client?->address ?: 'No address' }}</p>
+                            <p class="text-xs text-slate-500">{{ $job->client_address ?: 'No address' }}</p>
                             <p class="mt-1 text-xs text-slate-600">
                                 Time: {{ $job->scheduled_time ? \Illuminate\Support\Carbon::parse($job->scheduled_time)->format('h:i A') : 'Flexible' }}
                             </p>
-                            <p class="mt-1 text-xs text-slate-600">Phone: {{ $job->client?->phone ?: '-' }}</p>
+                            <p class="mt-1 text-xs text-slate-600">Phone: {{ $job->phone ?: ($job->client?->phone ?: '-') }}</p>
                             <p class="mt-2 text-xs text-slate-600">Site Instructions: {{ $job->site_instructions ?: 'None' }}</p>
                         </div>
                         <x-ui.badge type="warning">{{ $job->status }}</x-ui.badge>
@@ -49,8 +49,8 @@
             @forelse ($completedLedger as $job)
                 <div class="flex items-center justify-between border-b border-slate-100 py-2 last:border-b-0">
                     <div>
-                        <p class="text-sm font-medium text-slate-800">{{ $job->client?->name ?: 'Customer N/A' }}</p>
-                        <p class="text-xs text-slate-500">{{ optional($job->scheduled_date)->format('d M Y') }} • {{ $job->client?->address ?: '-' }}</p>
+                        <p class="text-sm font-medium text-slate-800">{{ $job->customerDisplayName() }}</p>
+                        <p class="text-xs text-slate-500">{{ optional($job->scheduled_date)->format('d M Y') }} • {{ $job->client_address ?: '-' }}</p>
                     </div>
                     <x-ui.badge type="success">Completed</x-ui.badge>
                 </div>

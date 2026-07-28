@@ -6,7 +6,7 @@
 @endphp
 
 <x-layouts.mower
-    :title="$client?->name ?: 'Job details'"
+    :title="$job->customerDisplayName()"
     :show-back="true"
     :back-url="route('mower.index')"
 >
@@ -53,18 +53,18 @@
                 @endif
                 <div class="flex justify-between gap-4">
                     <dt class="text-slate-500">Name</dt>
-                    <dd class="text-right font-medium text-slate-900">{{ $client?->name ?: '—' }}</dd>
+                    <dd class="text-right font-medium text-slate-900">{{ $job->customerDisplayName() }}</dd>
                 </div>
-                @if ($client?->phone)
+                @if ($job->phone ?: $client?->phone)
                     <div class="flex justify-between gap-4">
                         <dt class="text-slate-500">Phone</dt>
-                        <dd><a href="tel:{{ preg_replace('/\D+/', '', $client->phone) }}" class="font-medium text-emerald-700">{{ $client->phone }}</a></dd>
+                        <dd><a href="tel:{{ preg_replace('/\D+/', '', $job->phone ?: $client->phone) }}" class="font-medium text-emerald-700">{{ $job->phone ?: $client->phone }}</a></dd>
                     </div>
                 @endif
-                @if ($client?->email)
+                @if ($job->email ?: $client?->email)
                     <div class="flex justify-between gap-4">
                         <dt class="text-slate-500">Email</dt>
-                        <dd class="text-right text-slate-900">{{ $client->email }}</dd>
+                        <dd class="text-right text-slate-900">{{ $job->email ?: $client->email }}</dd>
                     </div>
                 @endif
                 @if ($client?->customer_type)

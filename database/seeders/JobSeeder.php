@@ -21,12 +21,12 @@ class JobSeeder extends Seeder
             'liam.carter@mowingcrm.test',
         ])->get(['id', 'incentive_percentage']);
 
-        $mowerIds         = $mowers->pluck('id')->values();
-        $mowerIncentives  = $mowers->pluck('incentive_percentage', 'id');
+        $mowerIds = $mowers->pluck('id')->values();
+        $mowerIncentives = $mowers->pluck('incentive_percentage', 'id');
 
-        $adminId      = User::where('email', 'admin@mowingcrm.test')->value('id');
-        $clients      = Client::with('lead')->orderBy('id')->take(20)->get();
-        $jobLevelIds  = JobLevel::orderBy('sort_order')->pluck('id')->values();
+        $adminId = User::where('email', 'admin@mowingcrm.test')->value('id');
+        $clients = Client::with('lead')->orderBy('id')->take(20)->get();
+        $jobLevelIds = JobLevel::orderBy('sort_order')->pluck('id')->values();
 
         $statuses = [
             JobWorkflowStatus::COMPLETED->value,
@@ -101,54 +101,61 @@ class JobSeeder extends Seeder
                 ? JobOperationalPaymentStatus::RECEIVED->value
                 : JobOperationalPaymentStatus::PENDING->value;
 
-            $assignedMowerId  = $mowerIds[$i % $mowerIds->count()];
-            $mowerIncentive   = $mowerIncentives[$assignedMowerId] ?? 0;
+            $assignedMowerId = $mowerIds[$i % $mowerIds->count()];
+            $mowerIncentive = $mowerIncentives[$assignedMowerId] ?? 0;
 
             $job = Job::create([
-                'client_id'                  => $client->id,
-                'lead_id'                    => $client->lead_id,
-                'zone_id'                    => $client->zone_id,
-                'equipment_type_id'          => $client->equipment_type_id,
-                'job_level_id'               => $jobLevelIds[$i % $jobLevelIds->count()],
-                'recurrence_id'              => $client->recurrence_id,
-                'client_address'             => $client->address,
-                'latitude'                   => $client->latitude,
-                'longitude'                  => $client->longitude,
-                'scheduled_date'             => $dates[$i],
-                'scheduled_time'             => $times[$i],
+                'client_id' => $client->id,
+                'lead_id' => $client->lead_id,
+                'zone_id' => $client->zone_id,
+                'equipment_type_id' => $client->equipment_type_id,
+                'job_level_id' => $jobLevelIds[$i % $jobLevelIds->count()],
+                'recurrence_id' => $client->recurrence_id,
+                'customer_name' => $client->name,
+                'email' => $client->email,
+                'phone' => $client->phone,
+                'weed_spray' => $client->weed_spray,
+                'job_type' => $client->job_type,
+                'property_details' => $client->property_details,
+                'notes' => $client->notes,
+                'client_address' => $client->address,
+                'latitude' => $client->latitude,
+                'longitude' => $client->longitude,
+                'scheduled_date' => $dates[$i],
+                'scheduled_time' => $times[$i],
                 'estimated_duration_minutes' => $durations[$i],
-                'consumed_time_minutes'      => $isCompleted ? $durations[$i] + rand(-5, 10) : null,
-                'required_services'          => $client->service_types,
-                'is_recurring'               => true,
-                'route_sequence'             => $i + 1,
-                'priority'                   => $priorities[$i % count($priorities)],
-                'status'                     => $status,
-                'site_instructions'          => $siteInstructions[$i],
-                'parking_status'             => $parkingStatuses[$i],
-                'customer_type'              => $client->customer_type,
-                'pet_warning'                => null,
-                'attached_images'            => [],
-                'before_images'              => [],
-                'after_images'               => [],
-                'done_by_user_id'            => $isCompleted ? $assignedMowerId : null,
-                'payment_mode'               => $paymentMode,
-                'payment_status'             => $paymentStatus,
-                'payment_pending_reason'     => null,
-                'special_remarks'            => $client->special_remarks,
-                'internal_notes'             => null,
-                'created_by'                 => $adminId,
-                'charges'                    => rand(50, 150),
-                'incentive_percentage'       => $mowerIncentive,
+                'consumed_time_minutes' => $isCompleted ? $durations[$i] + rand(-5, 10) : null,
+                'required_services' => $client->service_types,
+                'is_recurring' => true,
+                'route_sequence' => $i + 1,
+                'priority' => $priorities[$i % count($priorities)],
+                'status' => $status,
+                'site_instructions' => $siteInstructions[$i],
+                'parking_status' => $parkingStatuses[$i],
+                'customer_type' => $client->customer_type,
+                'pet_warning' => null,
+                'attached_images' => [],
+                'before_images' => [],
+                'after_images' => [],
+                'done_by_user_id' => $isCompleted ? $assignedMowerId : null,
+                'payment_mode' => $paymentMode,
+                'payment_status' => $paymentStatus,
+                'payment_pending_reason' => null,
+                'special_remarks' => $client->special_remarks,
+                'internal_notes' => null,
+                'created_by' => $adminId,
+                'charges' => rand(50, 150),
+                'incentive_percentage' => $mowerIncentive,
             ]);
 
             DB::table('job_user_assignments')->insert([
-                'job_id'               => $job->id,
-                'user_id'              => $assignedMowerId,
-                'assignment_date'      => $dates[$i],
-                'assignment_status'    => $isCompleted ? 'Completed' : 'Assigned',
+                'job_id' => $job->id,
+                'user_id' => $assignedMowerId,
+                'assignment_date' => $dates[$i],
+                'assignment_status' => $isCompleted ? 'Completed' : 'Assigned',
                 'incentive_percentage' => $mowerIncentive,
-                'created_at'           => now(),
-                'updated_at'           => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
         }
     }

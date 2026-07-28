@@ -1,4 +1,4 @@
-<x-layouts.dashboard :title="'Create Job'" subtitle="Tab-based scheduling with smart mower assignment">
+<x-layouts.dashboard :title="'Create Job'" subtitle="Add contact details, schedule the visit, then assign a mower">
     <x-ui.breadcrumbs :items="[
         ['label' => 'Dashboard', 'url' => route('dashboard.index')],
         ['label' => 'Jobs', 'url' => route('admin.jobs.index')],
@@ -6,10 +6,9 @@
     ]" />
 
     <div class="mx-auto max-w-6xl space-y-5">
-        <x-jobs.remarks-card :empty="true" />
         <div>
             <h2 class="text-lg font-semibold text-slate-900">Create Job</h2>
-            <p class="text-sm text-slate-600">Complete each step in order. Review mower assignment on the final step, then submit.</p>
+            <p class="text-sm text-slate-600">Enter contact and job details first, then assign a mower and submit.</p>
         </div>
 
         <div id="job-form-alert" class="hidden"></div>
@@ -34,11 +33,9 @@
             window.jobFormRoutes = {
                 workloads: @json(route('admin.jobs.mower-workloads')),
                 suggestions: @json(route('admin.jobs.mower-suggestions')),
-                clientRemarks: @json(route('admin.jobs.client-remarks')),
             };
         </script>
         <script src="{{ asset('js/job-form.js') }}?v={{ @filemtime(public_path('js/job-form.js')) ?: 1 }}"></script>
-        <script src="{{ asset('js/job-remarks.js') }}?v={{ @filemtime(public_path('js/job-remarks.js')) ?: 1 }}"></script>
         <script>
             function showJobFormAlert(message, isError) {
                 const baseClass = isError

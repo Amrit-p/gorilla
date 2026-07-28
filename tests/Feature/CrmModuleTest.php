@@ -4,29 +4,30 @@ namespace Tests\Feature;
 
 use App\Enums\ClientCustomerType;
 use App\Enums\ClientPaymentStatus;
-use App\Enums\JobParkingStatus;
 use App\Enums\JobCustomerType;
-use App\Enums\JobWorkflowStatus;
 use App\Enums\JobOperationalPaymentMode;
 use App\Enums\JobOperationalPaymentStatus;
+use App\Enums\JobParkingStatus;
 use App\Enums\LeadJobType;
 use App\Enums\LeadPaymentMode;
-use App\Enums\LeadStatus;
-use App\Models\Recurrence;
-use App\Enums\LeadWeedSpray;
-use App\Models\Client;
-use App\Models\Job;
-use App\Models\Lead;
-use App\Models\User;
 use App\Enums\LeadPaymentStatus;
+use App\Enums\LeadStatus;
+use App\Enums\LeadWeedSpray;
+use App\Exports\LeadsExport;
+use App\Models\Client;
 use App\Models\EquipmentType;
+use App\Models\Job;
 use App\Models\JobLevel;
+use App\Models\Lead;
+use App\Models\Recurrence;
+use App\Models\User;
 use App\Support\ServiceTypes;
 use Database\Seeders\JobLevelSeeder;
 use Database\Seeders\MasterCatalogSeeder;
 use Database\Seeders\RecurrenceSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use Tests\TestCase;
 
 class CrmModuleTest extends TestCase
@@ -90,16 +91,16 @@ class CrmModuleTest extends TestCase
         $response->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         $response->assertDownload('leads-import-sample.xlsx');
 
-        $tmp = tempnam(sys_get_temp_dir(), 'leads_sample_') . '.xlsx';
+        $tmp = tempnam(sys_get_temp_dir(), 'leads_sample_').'.xlsx';
         file_put_contents($tmp, $response->streamedContent());
 
         try {
-            $sheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($tmp)->getActiveSheet();
+            $sheet = IOFactory::load($tmp)->getActiveSheet();
 
-            foreach (\App\Exports\LeadsExport::COLUMNS as $col => $def) {
+            foreach (LeadsExport::COLUMNS as $col => $def) {
                 $this->assertSame(
                     $def['header'],
-                    $sheet->getCell($col . '4')->getValue(),
+                    $sheet->getCell($col.'4')->getValue(),
                     "Row 4 column {$col} header mismatch"
                 );
             }
@@ -149,7 +150,9 @@ class CrmModuleTest extends TestCase
         $this->actingAs($this->admin)
             ->get(route('admin.jobs.create'))
             ->assertOk()
-            ->assertSee('Create Job');
+            ->assertSee('Create Job')
+            ->assertSee('Job details')
+            ->assertDontSee('Select customer');
 
         $payload = $this->validJobPayload($client->id);
 
@@ -237,7 +240,7 @@ class CrmModuleTest extends TestCase
             'payment_status' => ClientPaymentStatus::DONE->value,
             'customer_type' => ClientCustomerType::EASY->value,
             'parking_status' => JobParkingStatus::EASY->value,
-            'equipment_type_id' => \App\Models\EquipmentType::query()->where('is_active', true)->value('id'),
+            'equipment_type_id' => EquipmentType::query()->where('is_active', true)->value('id'),
         ];
     }
 
@@ -248,6 +251,9 @@ class CrmModuleTest extends TestCase
     {
         return [
             'client_id' => $clientId,
+            'customer_name' => 'CRM Job Customer',
+            'phone' => '555-0456',
+            'email' => 'crm.job@example.com',
             'recurrence_id' => Recurrence::query()->where('is_active', true)->value('id'),
             'job_level_id' => JobLevel::query()->where('is_active', true)->value('id'),
             'client_address' => '456 Client Ave',
@@ -259,7 +265,7 @@ class CrmModuleTest extends TestCase
             'customer_type' => JobCustomerType::EASY->value,
             'payment_mode' => JobOperationalPaymentMode::CASH->value,
             'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
-            'equipment_type_id' => \App\Models\EquipmentType::query()->where('is_active', true)->value('id'),
+            'equipment_type_id' => EquipmentType::query()->where('is_active', true)->value('id'),
         ];
     }
 }

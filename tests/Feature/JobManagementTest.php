@@ -59,7 +59,31 @@ class JobManagementTest extends TestCase
 
         $this->assertDatabaseHas('service_jobs', [
             'client_id' => $client->id,
+            'customer_name' => 'Job Client',
+            'phone' => '555-0100',
             'status' => JobWorkflowStatus::PENDING->value,
+        ]);
+    }
+
+    public function test_job_can_be_created_without_client_using_contact_fields(): void
+    {
+        $payload = $this->jobPayload(0);
+        unset($payload['client_id']);
+        $payload['customer_name'] = 'Standalone Customer';
+        $payload['phone'] = '555-9999';
+        $payload['email'] = 'standalone@example.com';
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.jobs.store'), $payload)
+            ->assertCreated()
+            ->assertJsonPath('job.customer_name', 'Standalone Customer')
+            ->assertJsonPath('job.client_id', null);
+
+        $this->assertDatabaseHas('service_jobs', [
+            'customer_name' => 'Standalone Customer',
+            'phone' => '555-9999',
+            'email' => 'standalone@example.com',
+            'client_id' => null,
         ]);
     }
 
@@ -606,10 +630,12 @@ class JobManagementTest extends TestCase
     /**
      * @return array<string, mixed>
      */
-    private function jobPayload(int $clientId): array
+    private function jobPayload(?int $clientId = null): array
     {
-        return [
-            'client_id' => $clientId,
+        $payload = [
+            'customer_name' => 'Job Client',
+            'phone' => '555-0100',
+            'email' => 'job.client@example.com',
             'client_address' => '50 Job Lane',
             'scheduled_date' => now()->addDay()->toDateString(),
             'scheduled_time' => '09:00',
@@ -623,5 +649,11 @@ class JobManagementTest extends TestCase
             'recurrence_id' => Recurrence::query()->where('is_active', true)->value('id'),
             'job_level_id' => JobLevel::query()->where('is_active', true)->value('id'),
         ];
+
+        if ($clientId) {
+            $payload['client_id'] = $clientId;
+        }
+
+        return $payload;
     }
 }

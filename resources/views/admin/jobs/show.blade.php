@@ -1,4 +1,4 @@
-<x-layouts.dashboard :title="'Job #'.$job->id" :subtitle="$job->client?->name">
+<x-layouts.dashboard :title="'Job #'.$job->id" :subtitle="$job->customerDisplayName()">
     <x-ui.breadcrumbs :items="[
         ['label' => 'Dashboard', 'url' => route('dashboard.index')],
         ['label' => 'Jobs', 'url' => route('admin.jobs.index')],
@@ -14,7 +14,7 @@
 
         <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
-                <h2 class="text-lg font-semibold text-slate-900">{{ $job->client?->name ?: 'Job' }}</h2>
+                <h2 class="text-lg font-semibold text-slate-900">{{ $job->customerDisplayName() }}</h2>
                 <p class="text-sm text-slate-600">
                     {{ optional($job->scheduled_date)->format('l, M j, Y') }}
                     {{ $job->scheduled_time ? 'at '.\Illuminate\Support\Carbon::parse($job->scheduled_time)->format('g:i A') : '' }}
@@ -38,6 +38,18 @@
                     <h3 class="text-sm font-semibold text-slate-900">Job tracking</h3>
                     <dl class="mt-4 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
                         <div>
+                            <dt class="text-slate-500">Customer</dt>
+                            <dd class="font-medium text-slate-800">{{ $job->customerDisplayName() }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-slate-500">Phone</dt>
+                            <dd class="font-medium text-slate-800">{{ $job->phone ?: ($job->client?->phone ?: '—') }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-slate-500">Email</dt>
+                            <dd class="font-medium text-slate-800">{{ $job->email ?: ($job->client?->email ?: '—') }}</dd>
+                        </div>
+                        <div>
                             <dt class="text-slate-500">Address</dt>
                             <dd class="font-medium text-slate-800">{{ $job->client_address }}</dd>
                         </div>
@@ -46,8 +58,12 @@
                             <dd>{{ is_array($job->required_services) ? implode(', ', $job->required_services) : '—' }}</dd>
                         </div>
                         <div>
+                            <dt class="text-slate-500">Job type / weed spray</dt>
+                            <dd>{{ $job->job_type ?: '—' }} • {{ $job->weed_spray ?: '—' }}</dd>
+                        </div>
+                        <div>
                             <dt class="text-slate-500">Parking / site type</dt>
-                            <dd>{{ $job->parking_status }} • {{ $job->customer_type }}</dd>
+                            <dd>{{ $job->parking_status ?: '—' }} • {{ $job->customer_type ?: '—' }}</dd>
                         </div>
                         <div>
                             <dt class="text-slate-500">Payment</dt>
@@ -63,6 +79,18 @@
                             <div class="sm:col-span-2">
                                 <dt class="text-slate-500">Site instructions</dt>
                                 <dd class="whitespace-pre-wrap">{{ $job->site_instructions }}</dd>
+                            </div>
+                        @endif
+                        @if ($job->property_details)
+                            <div class="sm:col-span-2">
+                                <dt class="text-slate-500">Property details</dt>
+                                <dd class="whitespace-pre-wrap">{{ $job->property_details }}</dd>
+                            </div>
+                        @endif
+                        @if ($job->notes)
+                            <div class="sm:col-span-2">
+                                <dt class="text-slate-500">Notes</dt>
+                                <dd class="whitespace-pre-wrap">{{ $job->notes }}</dd>
                             </div>
                         @endif
                     </dl>
@@ -126,24 +154,24 @@
                 @if ($job->client)
                     <div class="rounded-2xl border border-slate-200 bg-white p-5">
                         <div class="flex items-center justify-between gap-2">
-                            <h3 class="text-sm font-semibold text-slate-900">Customer</h3>
+                            <h3 class="text-sm font-semibold text-slate-900">Linked customer profile</h3>
                             <a href="{{ route('admin.clients.show', $job->client) }}" class="text-xs font-medium text-emerald-700 hover:underline">View profile</a>
                         </div>
                         <p class="mt-2 text-sm font-medium text-slate-800">#{{ $job->client->customer_unique_id }} {{ $job->client->name }}</p>
-                        <p class="text-xs text-slate-500">Customer since {{ $job->client->created_at?->format('M j, Y') ?? '—' }}</p>
+                        <p class="text-xs text-slate-500">Legacy customer record — contact details above are stored on this job.</p>
 
                         <dl class="mt-4 space-y-2.5 text-sm">
                             <div class="flex justify-between gap-3">
                                 <dt class="text-slate-500">Rating</dt>
-                                <dd class="font-medium text-slate-800">{{ $job->client->clientRating?->name ?? '—' }}</dd>
+                                <dd class="font-medium text-slate-800">{{ $job->clientRating?->name ?? $job->client->clientRating?->name ?? '—' }}</dd>
                             </div>
                             <div class="flex justify-between gap-3">
                                 <dt class="text-slate-500">Accounting level</dt>
-                                <dd class="font-medium text-slate-800">{{ $job->client->accountingLevel?->name ?? '—' }}</dd>
+                                <dd class="font-medium text-slate-800">{{ $job->accountingLevel?->name ?? $job->client->accountingLevel?->name ?? '—' }}</dd>
                             </div>
                             <div class="flex justify-between gap-3">
                                 <dt class="text-slate-500">Zone</dt>
-                                <dd class="font-medium text-slate-800">{{ $job->client->zone?->name ?? '—' }}</dd>
+                                <dd class="font-medium text-slate-800">{{ $job->zone?->name ?? $job->client->zone?->name ?? '—' }}</dd>
                             </div>
                             <div class="flex justify-between gap-3">
                                 <dt class="text-slate-500">Pending amount</dt>
@@ -179,6 +207,36 @@
                                 <p class="mt-1.5 text-sm text-slate-500">No previous jobs.</p>
                             @endif
                         </div>
+                    </div>
+                @else
+                    <div class="rounded-2xl border border-slate-200 bg-white p-5">
+                        <h3 class="text-sm font-semibold text-slate-900">Customer</h3>
+                        <dl class="mt-4 space-y-2.5 text-sm">
+                            <div class="flex justify-between gap-3">
+                                <dt class="text-slate-500">Name</dt>
+                                <dd class="font-medium text-slate-800">{{ $job->customerDisplayName() }}</dd>
+                            </div>
+                            <div class="flex justify-between gap-3">
+                                <dt class="text-slate-500">Phone</dt>
+                                <dd class="font-medium text-slate-800">{{ $job->phone ?: '—' }}</dd>
+                            </div>
+                            <div class="flex justify-between gap-3">
+                                <dt class="text-slate-500">Email</dt>
+                                <dd class="font-medium text-slate-800">{{ $job->email ?: '—' }}</dd>
+                            </div>
+                            <div class="flex justify-between gap-3">
+                                <dt class="text-slate-500">Zone</dt>
+                                <dd class="font-medium text-slate-800">{{ $job->zone?->name ?? '—' }}</dd>
+                            </div>
+                            <div class="flex justify-between gap-3">
+                                <dt class="text-slate-500">Rating</dt>
+                                <dd class="font-medium text-slate-800">{{ $job->clientRating?->name ?? '—' }}</dd>
+                            </div>
+                            <div class="flex justify-between gap-3">
+                                <dt class="text-slate-500">Accounting level</dt>
+                                <dd class="font-medium text-slate-800">{{ $job->accountingLevel?->name ?? '—' }}</dd>
+                            </div>
+                        </dl>
                     </div>
                 @endif
             </div>

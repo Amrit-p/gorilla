@@ -31,7 +31,7 @@ class JobStatusChangedNotification extends Notification
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $client = $this->job->client?->name ?? "#{$this->job->id}";
+        $client = $this->job->customerDisplayName();
 
         return (new MailMessage)
             ->subject('Job Marked as Completed')
@@ -46,7 +46,7 @@ class JobStatusChangedNotification extends Notification
      */
     public function toArray(object $notifiable): array
     {
-        $client = $this->job->client?->name ?? "#{$this->job->id}";
+        $client = $this->job->customerDisplayName();
 
         return [
             'job_id' => $this->job->id,

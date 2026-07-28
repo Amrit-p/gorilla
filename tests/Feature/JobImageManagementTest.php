@@ -235,6 +235,9 @@ class JobImageManagementTest extends TestCase
 
         $job = Job::query()->create(array_merge([
             'client_id' => $client->id,
+            'customer_name' => $client->name,
+            'phone' => '555-0200',
+            'email' => 'image@example.com',
             'client_address' => '20 Photo Ln',
             'scheduled_date' => now()->toDateString(),
             'scheduled_time' => '09:00',

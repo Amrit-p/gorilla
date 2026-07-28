@@ -11,6 +11,15 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable([
     'client_id',
+    'customer_name',
+    'email',
+    'phone',
+    'weed_spray',
+    'job_type',
+    'property_details',
+    'notes',
+    'accounting_level_id',
+    'client_rating_id',
     'lead_id',
     'zone_id',
     'equipment_type_id',
@@ -94,6 +103,16 @@ class Job extends Model
         return $this->belongsTo(Lead::class);
     }
 
+    public function accountingLevel(): BelongsTo
+    {
+        return $this->belongsTo(AccountingLevel::class);
+    }
+
+    public function clientRating(): BelongsTo
+    {
+        return $this->belongsTo(ClientRating::class);
+    }
+
     public function equipmentType(): BelongsTo
     {
         return $this->belongsTo(EquipmentType::class);
@@ -102,6 +121,14 @@ class Job extends Model
     public function jobLevel(): BelongsTo
     {
         return $this->belongsTo(JobLevel::class);
+    }
+
+    /**
+     * Customer display name stored on the job (falls back to linked client during transition).
+     */
+    public function customerDisplayName(): string
+    {
+        return (string) ($this->customer_name ?: $this->client?->name ?: 'N/A');
     }
 
     public function creator(): BelongsTo

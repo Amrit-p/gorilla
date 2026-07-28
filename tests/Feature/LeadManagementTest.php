@@ -140,6 +140,15 @@ class LeadManagementTest extends TestCase
             'email' => 'duplicate@example.com',
             'lead_id' => $lead->id,
         ]);
+
+        $this->assertDatabaseHas('service_jobs', [
+            'lead_id' => $lead->id,
+            'customer_name' => $payload['client_name'],
+            'phone' => $payload['mobile_number'],
+            'email' => 'duplicate@example.com',
+            'client_address' => $payload['address'],
+        ]);
+        $this->assertSame(1, Job::query()->where('lead_id', $lead->id)->count());
     }
 
     public function test_converted_page_only_lists_converted_leads(): void

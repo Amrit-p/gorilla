@@ -7,6 +7,8 @@ use App\Enums\JobOperationalPaymentMode;
 use App\Enums\JobOperationalPaymentStatus;
 use App\Enums\JobParkingStatus;
 use App\Enums\JobWorkflowStatus;
+use App\Enums\LeadJobType;
+use App\Enums\LeadWeedSpray;
 use App\Helpers\OptimizationHelper;
 use App\Jobs\GeocodeJobAddressJob;
 use App\Models\ActivityLog;
@@ -24,6 +26,7 @@ use App\Repositories\JobRepository;
 use App\Support\CrmPermissions;
 use App\Support\CrmRoles;
 use App\Support\EquipmentTypes;
+use App\Support\EstimatedDurationMinutes;
 use App\Support\ServiceTypes;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
@@ -73,14 +76,14 @@ class JobManagementService
         $selectedClient = $selectedClientId
             ? Client::query()
                 ->with(['equipmentType:id,name,color_code', 'lead.equipmentType:id,name,color_code'])
-                ->find($selectedClientId, ['id', 'name', 'address', 'latitude', 'longitude', 'zone_id', 'recurrence_id', 'payment_mode', 'payment_status', 'service_types', 'parking_status', 'customer_type', 'pet_warning', 'additional_site_instructions', 'equipment_type_id', 'lead_id'])
+                ->find($selectedClientId)
             : null;
 
         return [
             'clients' => Client::query()
                 ->with(['equipmentType:id,name,color_code', 'lead.equipmentType:id,name,color_code'])
                 ->orderBy('name')
-                ->get(['id', 'name', 'address', 'latitude', 'longitude', 'customer_unique_id', 'zone_id', 'recurrence_id', 'payment_mode', 'payment_status', 'service_types', 'parking_status', 'customer_type', 'pet_warning', 'additional_site_instructions', 'equipment_type_id', 'lead_id']),
+                ->get(['id', 'name', 'email', 'phone', 'address', 'latitude', 'longitude', 'customer_unique_id', 'zone_id', 'recurrence_id', 'payment_mode', 'payment_status', 'service_types', 'parking_status', 'customer_type', 'pet_warning', 'additional_site_instructions', 'equipment_type_id', 'lead_id', 'weed_spray', 'job_type', 'property_details', 'notes', 'charges']),
             'employees' => User::query()
                 ->role(CrmRoles::MOWER)
                 ->where('is_active', true)
@@ -91,6 +94,8 @@ class JobManagementService
             'customerTypes' => JobCustomerType::values(),
             'paymentModes' => JobOperationalPaymentMode::values(),
             'paymentStatuses' => JobOperationalPaymentStatus::values(),
+            'jobTypes' => LeadJobType::values(),
+            'weedSprayOptions' => LeadWeedSpray::values(),
             'recurrences' => Recurrence::query()->orderBy('name')->get(['id', 'name']),
             'equipmentTypes' => EquipmentTypes::selectOptions(),
             'jobLevels' => JobLevel::query()->active()->ordered()->get(['id', 'name', 'color_code']),
@@ -175,18 +180,30 @@ class JobManagementService
             'equipment_type_id' => $client->equipment_type_id,
             'job_level_id' => $client->job_level_id,
             'recurrence_id' => $client->recurrence_id,
+            'accounting_level_id' => $client->accounting_level_id,
+            'client_rating_id' => $client->client_rating_id,
+            'customer_name' => $client->name,
+            'email' => $client->email,
+            'phone' => $client->phone,
+            'weed_spray' => $client->weed_spray,
+            'job_type' => $client->job_type,
+            'property_details' => $client->property_details,
+            'notes' => $client->notes,
             'client_address' => $client->address,
             'latitude' => $client->latitude,
             'longitude' => $client->longitude,
             'required_services' => $client->service_types,
             'scheduled_date' => $client->schedule_date,
-            'estimated_duration_minutes' => $client->estimated_time,
+            'estimated_duration_minutes' => EstimatedDurationMinutes::resolve($client->estimated_time),
             'customer_type' => $client->customer_type,
             'payment_mode' => $client->payment_mode,
             'payment_status' => $client->payment_status,
             'charges' => $client->charges,
             'site_instructions' => $client->additional_site_instructions,
             'special_remarks' => $client->special_remarks,
+            'parking_status' => $client->parking_status,
+            'pet_warning' => $client->pet_warning,
+            'is_recurring' => $client->recurrence_id !== null,
             'status' => JobWorkflowStatus::PENDING->value,
             'created_by' => $actor->id,
         ]);
@@ -535,6 +552,10 @@ class JobManagementService
     private function prepareJobData(array $data, array $images = [], ?Job $existingJob = null): array
     {
         unset($data['images']);
+
+        if (array_key_exists('client_id', $data) && ($data['client_id'] === '' || $data['client_id'] === null)) {
+            $data['client_id'] = null;
+        }
 
         $data['status'] ??= JobWorkflowStatus::PENDING->value;
         $data['priority'] ??= 'Medium';

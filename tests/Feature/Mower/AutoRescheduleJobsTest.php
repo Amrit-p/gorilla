@@ -172,6 +172,9 @@ class AutoRescheduleJobsTest extends TestCase
     {
         return array_merge([
             'client_id' => $this->client->id,
+            'customer_name' => $this->client->name,
+            'phone' => $this->client->phone ?? '555-0000',
+            'email' => $this->client->email,
             'client_address' => '1 Test Rd',
             'scheduled_date' => now()->toDateString(),
             'is_recurring' => true,

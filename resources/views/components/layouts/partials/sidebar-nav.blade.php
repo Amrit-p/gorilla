@@ -47,23 +47,8 @@
                 </button>
                 <div class="sidebar-accordion-panel mt-0.5 space-y-0.5">
                     <a href="{{ route('admin.leads.index') }}" class="{{ $linkClass(['admin.leads.index', 'admin.leads.show', 'admin.leads.edit'], true) }}">All leads</a>
-                    <a href="{{ route('admin.leads.converted') }}" class="{{ $linkClass(['admin.leads.converted'], true) }}">Converted to Customer</a>
+                    <a href="{{ route('admin.leads.converted') }}" class="{{ $linkClass(['admin.leads.converted'], true) }}">Converted leads</a>
                     <a href="{{ route('admin.leads.create') }}" class="{{ $linkClass(['admin.leads.create'], true) }}">Add lead</a>
-                </div>
-            </div>
-        @endcan
-
-        @can('manage-customers')
-            <p class="sidebar-label mb-2 mt-5 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Customers</p>
-            <div class="sidebar-accordion" data-open="{{ $accordionOpen(['admin.clients.*']) ? 'true' : 'false' }}">
-                <button type="button" class="sidebar-accordion-trigger {{ $linkClass(['admin.clients.*']) }} w-full text-left" title="Customers">
-                    <svg class="h-[18px] w-[18px] shrink-0 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                    <span class="sidebar-text flex-1">Customers</span>
-                    <svg class="sidebar-accordion-chevron h-4 w-4 shrink-0 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                </button>
-                <div class="sidebar-accordion-panel mt-0.5 space-y-0.5">
-                    <a href="{{ route('admin.clients.index') }}" class="{{ $linkClass(['admin.clients.index', 'admin.clients.show', 'admin.clients.edit'], true) }}">All customers</a>
-                    <a href="{{ route('admin.clients.create') }}" class="{{ $linkClass(['admin.clients.create'], true) }}">Add customer</a>
                 </div>
             </div>
         @endcan

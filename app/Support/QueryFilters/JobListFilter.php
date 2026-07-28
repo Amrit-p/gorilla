@@ -16,10 +16,15 @@ final class JobListFilter
         if (! empty($filters['search'])) {
             $search = trim((string) $filters['search']);
             $query->where(function (Builder $q) use ($search): void {
-                $q->where('client_address', 'like', "%{$search}%")
+                $q->where('customer_name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('client_address', 'like', "%{$search}%")
                     ->orWhereHas('client', function (Builder $clientQuery) use ($search): void {
                         $clientQuery->where('name', 'like', "%{$search}%")
                             ->orWhere('address', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%")
+                            ->orWhere('phone', 'like', "%{$search}%")
                             ->orWhere('customer_unique_id', 'like', "%{$search}%");
                     })
                     ->orWhereHas('assignedEmployees', function (Builder $empQuery) use ($search): void {

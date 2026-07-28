@@ -84,10 +84,10 @@ class MapRoutingService
 
             return [
                 'id' => $job->id,
-                'client_name' => $job->client?->name,
+                'client_name' => $job->customerDisplayName(),
                 'client_address' => $job->client_address ?? $job->client?->address ?? $job->lead?->address,
-                'client_phone' => $job->client?->phone ?? $job->lead?->mobile_number,
-                'client_email' => $job->client?->email ?? $job->lead?->email,
+                'client_phone' => $job->phone ?: ($job->client?->phone ?? $job->lead?->mobile_number),
+                'client_email' => $job->email ?: ($job->client?->email ?? $job->lead?->email),
                 'show_url' => route('admin.jobs.show', $job),
                 'edit_url' => route('admin.jobs.edit', $job),
                 'scheduled_date' => optional($job->scheduled_date)->toDateString(),
