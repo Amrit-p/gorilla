@@ -75,6 +75,11 @@ class Lead extends Model
         return $this->belongsTo(Recurrence::class);
     }
 
+    public function job(): HasOne
+    {
+        return $this->hasOne(Job::class);
+    }
+
     public function client(): HasOne
     {
         return $this->hasOne(Client::class);

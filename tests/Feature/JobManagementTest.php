@@ -50,15 +50,14 @@ class JobManagementTest extends TestCase
 
     public function test_job_can_be_created_via_ajax(): void
     {
-        $client = Client::query()->create($this->clientPayload());
-
         $this->actingAs($this->admin)
-            ->postJson(route('admin.jobs.store'), $this->jobPayload($client->id))
+            ->postJson(route('admin.jobs.store'), $this->jobPayload(null))
             ->assertCreated()
-            ->assertJsonPath('job.client_id', $client->id);
+            ->assertJsonPath('job.client_id', null)
+            ->assertJsonPath('job.customer_name', 'Job Client');
 
         $this->assertDatabaseHas('service_jobs', [
-            'client_id' => $client->id,
+            'client_id' => null,
             'customer_name' => 'Job Client',
             'phone' => '555-0100',
             'status' => JobWorkflowStatus::PENDING->value,
@@ -89,18 +88,16 @@ class JobManagementTest extends TestCase
 
     public function test_job_can_be_created_without_optional_operational_fields(): void
     {
-        $client = Client::query()->create($this->clientPayload());
-
-        $payload = $this->jobPayload($client->id);
+        $payload = $this->jobPayload(null);
         unset($payload['job_level_id'], $payload['scheduled_time'], $payload['payment_status']);
 
         $this->actingAs($this->admin)
             ->postJson(route('admin.jobs.store'), $payload)
             ->assertCreated()
-            ->assertJsonPath('job.client_id', $client->id);
+            ->assertJsonPath('job.client_id', null);
 
         $this->assertDatabaseHas('service_jobs', [
-            'client_id' => $client->id,
+            'client_id' => null,
             'job_level_id' => null,
             'scheduled_time' => null,
             'payment_status' => null,
@@ -157,16 +154,14 @@ class JobManagementTest extends TestCase
 
     public function test_mower_assignment_on_create(): void
     {
-        $client = Client::query()->create($this->clientPayload());
-
         $this->actingAs($this->admin)
-            ->postJson(route('admin.jobs.store'), array_merge($this->jobPayload($client->id), [
+            ->postJson(route('admin.jobs.store'), array_merge($this->jobPayload(null), [
                 'employee_ids' => [$this->mower->id],
                 'done_by_user_id' => $this->mower->id,
             ]))
             ->assertCreated();
 
-        $job = Job::query()->where('client_id', $client->id)->firstOrFail();
+        $job = Job::query()->where('customer_name', 'Job Client')->where('phone', '555-0100')->firstOrFail();
         $this->assertTrue($job->assignedEmployees()->where('users.id', $this->mower->id)->exists());
         $this->assertSame($this->mower->id, $job->done_by_user_id);
     }
@@ -212,6 +207,26 @@ class JobManagementTest extends TestCase
 
         $html = (string) $response->json('html');
         $this->assertStringContainsString(now()->format('d M'), $html);
+    }
+
+    public function test_jobs_index_shows_customer_name_from_job_contact_fields(): void
+    {
+        Job::query()->create(array_merge($this->jobPayload(), [
+            'customer_name' => 'Amritsar Contact',
+            'phone' => '9876543210',
+            'client_address' => 'Amritsar, Punjab, India',
+            'scheduled_date' => now()->toDateString(),
+            'status' => JobWorkflowStatus::HOLD->value,
+        ]));
+
+        $response = $this->actingAs($this->admin)
+            ->getJson(route('admin.jobs.index'))
+            ->assertOk();
+
+        $html = (string) $response->json('html');
+        $this->assertStringContainsString('Amritsar Contact', $html);
+        $this->assertStringContainsString('9876543210', $html);
+        $this->assertStringNotContainsString('>N/A<', $html);
     }
 
     public function test_mower_suggestions_endpoint_returns_recommendation(): void

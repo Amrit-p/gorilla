@@ -33,6 +33,8 @@
             window.jobFormRoutes = {
                 workloads: @json(route('admin.jobs.mower-workloads')),
                 suggestions: @json(route('admin.jobs.mower-suggestions')),
+                clientRemarks: @json(route('admin.jobs.client-remarks')),
+                clientHistory: @json(route('admin.jobs.client-history')),
             };
         </script>
         <script src="{{ asset('js/job-form.js') }}?v={{ @filemtime(public_path('js/job-form.js')) ?: 1 }}"></script>

@@ -233,14 +233,14 @@ class LeadManagementController extends Controller
             return response()->json([
                 'message' => 'Lead status updated successfully.',
                 'lead' => $updatedLead,
-                'converted' => $updatedLead->client !== null,
+                'converted' => $updatedLead->converted_at !== null,
             ]);
         }
 
         return response()->json([
             'message' => $updatedLeads->count().' lead(s) status updated successfully.',
             'leads' => $updatedLeads->values(),
-            'converted' => $updatedLeads->contains(fn (Lead $updatedLead): bool => $updatedLead->client !== null),
+            'converted' => $updatedLeads->contains(fn (Lead $updatedLead): bool => $updatedLead->converted_at !== null),
         ]);
     }
 

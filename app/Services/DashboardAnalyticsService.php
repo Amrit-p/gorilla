@@ -124,19 +124,17 @@ class DashboardAnalyticsService
         $monthStart = now()->startOfMonth()->toDateString();
 
         $revenueMtd = (float) DB::table('service_jobs as sj')
-            ->join('clients as c', 'c.id', '=', 'sj.client_id')
             ->whereNull('sj.deleted_at')
             ->where('sj.status', JobWorkflowStatus::COMPLETED->value)
             ->where('sj.payment_status', JobOperationalPaymentStatus::RECEIVED->value)
             ->whereBetween('sj.scheduled_date', [$monthStart, $today])
-            ->sum('c.charges');
+            ->sum('sj.charges');
 
         $pendingRow = DB::table('service_jobs as sj')
-            ->join('clients as c', 'c.id', '=', 'sj.client_id')
             ->whereNull('sj.deleted_at')
             ->where('sj.payment_status', JobOperationalPaymentStatus::PENDING->value)
             ->whereNotIn('sj.status', [JobWorkflowStatus::COMPLETED->value])
-            ->selectRaw('COUNT(*) as job_count, COALESCE(SUM(c.charges), 0) as amount')
+            ->selectRaw('COUNT(*) as job_count, COALESCE(SUM(sj.charges), 0) as amount')
             ->first();
 
         $jobsToday = Job::query()
@@ -371,13 +369,12 @@ class DashboardAnalyticsService
         $to = now()->toDateString();
 
         $totals = DB::table('service_jobs as sj')
-            ->join('clients as c', 'c.id', '=', 'sj.client_id')
             ->whereNull('sj.deleted_at')
             ->where('sj.status', JobWorkflowStatus::COMPLETED->value)
             ->where('sj.payment_status', JobOperationalPaymentStatus::RECEIVED->value)
             ->whereBetween('sj.scheduled_date', [$from, $to])
             ->groupBy('sj.scheduled_date')
-            ->selectRaw('sj.scheduled_date as day, COALESCE(SUM(c.charges), 0) as total')
+            ->selectRaw('sj.scheduled_date as day, COALESCE(SUM(sj.charges), 0) as total')
             ->pluck('total', 'day');
 
         for ($i = $days - 1; $i >= 0; $i--) {
@@ -530,13 +527,12 @@ class DashboardAnalyticsService
 
         $fetchRevenue = function (string $from, string $to): Collection {
             return DB::table('service_jobs as sj')
-                ->join('clients as c', 'c.id', '=', 'sj.client_id')
                 ->whereNull('sj.deleted_at')
                 ->where('sj.status', JobWorkflowStatus::COMPLETED->value)
                 ->where('sj.payment_status', JobOperationalPaymentStatus::RECEIVED->value)
                 ->whereBetween('sj.scheduled_date', [$from, $to])
                 ->groupBy('sj.scheduled_date')
-                ->selectRaw('sj.scheduled_date as day, COALESCE(SUM(c.charges), 0) as total')
+                ->selectRaw('sj.scheduled_date as day, COALESCE(SUM(sj.charges), 0) as total')
                 ->pluck('total', 'day');
         };
 

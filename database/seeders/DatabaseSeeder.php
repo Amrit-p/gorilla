@@ -28,7 +28,6 @@ class DatabaseSeeder extends Seeder
         if (app()->environment(['development', 'dev', 'local'])) {
             $this->call([
                 LeadSeeder::class,
-                ClientSeeder::class,
                 JobSeeder::class,
             ]);
         }

@@ -43,6 +43,9 @@ class MowerDashboardService
             ->select([
                 'id',
                 'client_id',
+                'customer_name',
+                'phone',
+                'email',
                 'client_address',
                 'latitude',
                 'longitude',
@@ -89,6 +92,7 @@ class MowerDashboardService
                 JobWorkflowStatus::HOLD->value,
                 JobWorkflowStatus::COMPLETED->value,
             ]);
+
         return $query->get();
     }
 

@@ -3,66 +3,80 @@
 namespace App\Http\Controllers\Mower;
 
 use App\Enums\JobCustomerType;
+use App\Enums\JobOperationalPaymentMode;
+use App\Enums\JobOperationalPaymentStatus;
 use App\Enums\JobParkingStatus;
+use App\Enums\LeadJobType;
+use App\Enums\LeadWeedSpray;
 use App\Helpers\OptimizationHelper;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Mower\StoreMowerClientRequest;
+use App\Http\Requests\Mower\StoreMowerQuickJobRequest;
+use App\Models\Recurrence;
 use App\Models\User;
+use App\Models\Zone;
 use App\Notifications\MowerClientJobCreatedNotification;
-use App\Services\ClientManagementService;
 use App\Services\JobManagementService;
 use App\Support\CrmRoles;
-use App\Support\EstimatedDurationMinutes;
+use App\Support\EquipmentTypes;
+use App\Support\ServiceTypes;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 class MowerClientController extends Controller
 {
     public function __construct(
-        private readonly ClientManagementService $clientManagementService,
         private readonly JobManagementService $jobManagementService
     ) {}
 
     public function create(): View
     {
-        return view('mower.clients.create', $this->clientManagementService->formOptions());
+        return view('mower.jobs.create', [
+            'serviceTypes' => ServiceTypes::all(),
+            'weedSprayOptions' => LeadWeedSpray::values(),
+            'recurrenceOptions' => Recurrence::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'jobTypes' => LeadJobType::values(),
+            'paymentModes' => JobOperationalPaymentMode::values(),
+            'customerTypes' => JobCustomerType::values(),
+            'parkingStatuses' => JobParkingStatus::values(),
+            'equipmentTypes' => EquipmentTypes::selectOptions(),
+            'zones' => Zone::query()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(['id', 'name']),
+        ]);
     }
 
-    public function store(StoreMowerClientRequest $request): RedirectResponse
+    public function store(StoreMowerQuickJobRequest $request): RedirectResponse
     {
         $actor = $request->user();
-        $client = $this->clientManagementService->createClient($actor, $request->validated(), createInitialJob: false);
+        $data = $request->validated();
+
+        $address = trim((string) ($data['address'] ?? ''));
+        $scheduledDate = $data['scheduled_date'] ?? $data['schedule_date'] ?? now()->toDateString();
 
         $job = $this->jobManagementService->createJob($actor, [
-            'client_id' => $client->id,
-            'customer_name' => $client->name,
-            'email' => $client->email,
-            'phone' => $client->phone,
-            'weed_spray' => $client->weed_spray,
-            'job_type' => $client->job_type,
-            'property_details' => $client->property_details,
-            'notes' => $client->notes,
-            'client_address' => $client->address,
-            'latitude' => $client->latitude,
-            'longitude' => $client->longitude,
-            'recurrence_id' => $client->recurrence_id,
-            'is_recurring' => $client->recurrence_id !== null,
-            'zone_id' => $client->zone_id,
-            'equipment_type_id' => $client->equipment_type_id,
-            'job_level_id' => $client->job_level_id,
-            'required_services' => $client->service_types ?? [],
-            'payment_mode' => $client->payment_mode,
-            'payment_status' => 'Pending',
-            'charges' => $client->charges,
-            'scheduled_date' => $client->schedule_date?->toDateString() ?? now()->toDateString(),
+            'customer_name' => $data['customer_name'] ?? ($address !== '' ? $address : 'Customer'),
+            'phone' => $data['phone'],
+            'email' => $data['email'] ?? null,
+            'client_address' => $address,
+            'latitude' => $data['latitude'] ?? null,
+            'longitude' => $data['longitude'] ?? null,
+            'required_services' => $data['service_types'],
+            'weed_spray' => $data['weed_spray'],
+            'job_type' => $data['job_type'],
+            'recurrence_id' => $data['recurrence_id'],
+            'is_recurring' => true,
+            'equipment_type_id' => $data['equipment_type_id'],
+            'customer_type' => $data['customer_type'],
+            'payment_mode' => $data['payment_mode'],
+            'payment_status' => JobOperationalPaymentStatus::PENDING->value,
+            'parking_status' => $data['parking_status'] ?? JobParkingStatus::EASY->value,
+            'charges' => $data['charges'] ?? null,
+            'scheduled_date' => $scheduledDate,
             'scheduled_time' => '08:00',
-            'estimated_duration_minutes' => EstimatedDurationMinutes::resolve($client->estimated_time),
-            'customer_type' => $client->customer_type ?: JobCustomerType::DONT_KNOW->value,
-            'parking_status' => $client->parking_status ?: JobParkingStatus::values()[0] ?? null,
-            'site_instructions' => $client->additional_site_instructions,
-            'special_remarks' => $client->special_remarks,
+            'estimated_duration_minutes' => 60,
+            'zone_id' => $data['zone_id'] ?? null,
+            'site_instructions' => $data['site_instructions'] ?? $data['additional_site_instructions'] ?? null,
+            'special_remarks' => $data['special_remarks'] ?? null,
             'done_by_user_id' => $actor->id,
-        ]);
+        ], $request->file('images', []) ?: []);
 
         if ($job) {
             User::query()

@@ -124,11 +124,26 @@ class Job extends Model
     }
 
     /**
-     * Customer display name stored on the job (falls back to linked client during transition).
+     * Contact name on the job, with sensible fallbacks when name was never set.
      */
     public function customerDisplayName(): string
     {
-        return (string) ($this->customer_name ?: $this->client?->name ?: 'N/A');
+        $name = trim((string) ($this->customer_name ?: ''));
+        if ($name !== '') {
+            return $name;
+        }
+
+        $legacy = trim((string) ($this->client?->name ?: ''));
+        if ($legacy !== '') {
+            return $legacy;
+        }
+
+        $address = trim((string) ($this->client_address ?: ''));
+        if ($address !== '') {
+            return $address;
+        }
+
+        return 'N/A';
     }
 
     public function creator(): BelongsTo

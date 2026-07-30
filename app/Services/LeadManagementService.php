@@ -214,8 +214,8 @@ class LeadManagementService
         $lead->queued_for_scheduling = true;
         $lead->save();
 
-        $client = $this->leadConversionService->convertLeadToClient($lead, $actor);
-        $this->leadConversionService->logConversion($actor, $lead, $client);
+        $job = $this->leadConversionService->convertLeadToJob($lead, $actor);
+        $this->leadConversionService->logConversion($actor, $lead, $job);
 
         event(new LeadConvertedToClient($lead->fresh(), $actor));
 

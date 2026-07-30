@@ -89,7 +89,6 @@ class CrmOptimizationTest extends TestCase
 
         foreach ([
             route('admin.jobs.index'),
-            route('admin.clients.index'),
             route('admin.leads.index'),
             route('admin.users.index'),
         ] as $url) {

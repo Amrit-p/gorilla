@@ -20,13 +20,6 @@ final class JobListFilter
                     ->orWhere('email', 'like', "%{$search}%")
                     ->orWhere('phone', 'like', "%{$search}%")
                     ->orWhere('client_address', 'like', "%{$search}%")
-                    ->orWhereHas('client', function (Builder $clientQuery) use ($search): void {
-                        $clientQuery->where('name', 'like', "%{$search}%")
-                            ->orWhere('address', 'like', "%{$search}%")
-                            ->orWhere('email', 'like', "%{$search}%")
-                            ->orWhere('phone', 'like', "%{$search}%")
-                            ->orWhere('customer_unique_id', 'like', "%{$search}%");
-                    })
                     ->orWhereHas('assignedEmployees', function (Builder $empQuery) use ($search): void {
                         $empQuery->where('name', 'like', "%{$search}%");
                     })

@@ -71,19 +71,9 @@ class JobManagementService
     /**
      * @return array<string, mixed>
      */
-    public function formOptions(?int $selectedClientId = null): array
+    public function formOptions(): array
     {
-        $selectedClient = $selectedClientId
-            ? Client::query()
-                ->with(['equipmentType:id,name,color_code', 'lead.equipmentType:id,name,color_code'])
-                ->find($selectedClientId)
-            : null;
-
         return [
-            'clients' => Client::query()
-                ->with(['equipmentType:id,name,color_code', 'lead.equipmentType:id,name,color_code'])
-                ->orderBy('name')
-                ->get(['id', 'name', 'email', 'phone', 'address', 'latitude', 'longitude', 'customer_unique_id', 'zone_id', 'recurrence_id', 'payment_mode', 'payment_status', 'service_types', 'parking_status', 'customer_type', 'pet_warning', 'additional_site_instructions', 'equipment_type_id', 'lead_id', 'weed_spray', 'job_type', 'property_details', 'notes', 'charges']),
             'employees' => User::query()
                 ->role(CrmRoles::MOWER)
                 ->where('is_active', true)
@@ -110,7 +100,6 @@ class JobManagementService
             ], CrmPermissions::isOfficeManager(auth()->user()) ? [
                 'deleted' => 'Deleted jobs',
             ] : []),
-            'selectedClient' => $selectedClient,
             'mowerWorkloads' => $this->mowerAssignmentService->mowerWorkloads(now()->toDateString()),
         ];
     }
@@ -153,7 +142,7 @@ class JobManagementService
             $this->activityLogService->log($actor, 'job.created', 'Job created.', ['job_id' => $job->id]);
             DB::commit();
 
-            return $job->fresh(['client', 'assignedEmployees', 'doneByUser']);
+            return $job->fresh(['assignedEmployees', 'doneByUser']);
         } catch (\Throwable $th) {
             DB::rollBack();
             report($th);
@@ -166,6 +155,8 @@ class JobManagementService
      * Create a job for a customer, mirroring the field mapping used when a
      * lead is converted. Returns null when the customer has no service types
      * or no schedule date, since jobs require a scheduled date.
+     *
+     * Retained for ClientManagementService until the Customer entity is removed.
      */
     public function createJobFromClient(User $actor, Client $client): ?Job
     {
@@ -241,7 +232,7 @@ class JobManagementService
 
             DB::commit();
 
-            return $job->fresh(['client', 'assignedEmployees', 'doneByUser']);
+            return $job->fresh(['assignedEmployees', 'doneByUser']);
         } catch (\Throwable $th) {
             DB::rollBack();
             report($th);
@@ -307,7 +298,7 @@ class JobManagementService
         }
 
         // Reload jobs after commit — one query with eager loads instead of N fresh() calls.
-        $freshJobs = Job::with(['client', 'assignedEmployees', 'doneByUser'])
+        $freshJobs = Job::with(['assignedEmployees', 'doneByUser'])
             ->whereIn('id', $jobs->pluck('id'))
             ->get();
 
@@ -523,28 +514,6 @@ class JobManagementService
     }
 
     /**
-     * Prefill site fields from selected customer.
-     *
-     * @return array<string, mixed>
-     */
-    public function clientDefaults(int $clientId): array
-    {
-        $client = Client::query()->with('lead.equipmentType')->findOrFail($clientId);
-        $equipmentTypeId = $client->equipment_type_id ?? $client->lead?->equipment_type_id;
-
-        return [
-            'client_address' => $client->address,
-            'latitude' => $client->latitude,
-            'longitude' => $client->longitude,
-            'zone_id' => $client->zone_id,
-            'recurrence_id' => $client->recurrence_id,
-            'customer_type' => $client->customer_type,
-            'site_instructions' => $client->additional_site_instructions,
-            'equipment_type_id' => $equipmentTypeId,
-        ];
-    }
-
-    /**
      * @param  array<string, mixed>  $data
      * @param  array<int, UploadedFile>  $images
      * @return array<string, mixed>
@@ -553,9 +522,8 @@ class JobManagementService
     {
         unset($data['images']);
 
-        if (array_key_exists('client_id', $data) && ($data['client_id'] === '' || $data['client_id'] === null)) {
-            $data['client_id'] = null;
-        }
+        // Jobs no longer depend on the Client entity — always store null.
+        $data['client_id'] = null;
 
         $data['status'] ??= JobWorkflowStatus::PENDING->value;
         $data['priority'] ??= 'Medium';
@@ -567,16 +535,6 @@ class JobManagementService
             JobOperationalPaymentStatus::PARTIAL->value,
         ], true)) {
             $data['payment_pending_reason'] = null;
-        }
-
-        if (! empty($data['client_id'])) {
-            $client = Client::query()->find($data['client_id'], ['lead_id', 'equipment_type_id']);
-            if ($client) {
-                $data['lead_id'] ??= $client->lead_id;
-                if (empty($data['equipment_type_id'])) {
-                    $data['equipment_type_id'] = $client->equipment_type_id;
-                }
-            }
         }
 
         if (! empty($data['done_by_user_id'])) {

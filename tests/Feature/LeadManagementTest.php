@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Enums\LeadJobType;
 use App\Enums\LeadPaymentMode;
-use App\Enums\LeadPaymentStatus;
 use App\Enums\LeadReCompletionDays;
 use App\Enums\LeadStatus;
 use App\Enums\LeadWeedSpray;
@@ -53,7 +52,7 @@ class LeadManagementTest extends TestCase
         $this->assertSame($payload['equipment_type_id'], $lead->equipment_type_id);
     }
 
-    public function test_lead_status_mature_converts_to_client_in_transaction(): void
+    public function test_lead_status_won_converts_to_job_in_transaction(): void
     {
         $lead = Lead::query()->create($this->validLeadPayload());
 
@@ -67,20 +66,19 @@ class LeadManagementTest extends TestCase
         $lead->refresh();
         $this->assertTrue($lead->is_locked);
         $this->assertNotNull($lead->converted_at);
-        $client = Client::query()->where('lead_id', $lead->id)->firstOrFail();
-        $this->assertDatabaseHas('clients', [
-            'lead_id' => $lead->id,
-            'email' => $lead->email,
-            'phone' => $lead->mobile_number,
-        ]);
+        $this->assertSame(0, Client::query()->where('lead_id', $lead->id)->count());
         $this->assertSame(1, Job::query()->where('lead_id', $lead->id)->count());
         $this->assertDatabaseHas('service_jobs', [
             'lead_id' => $lead->id,
-            'client_id' => $client->id,
+            'customer_name' => $lead->client_name,
+            'phone' => $lead->mobile_number,
+            'email' => $lead->email,
+            'client_address' => $lead->address,
+            'client_id' => null,
         ]);
     }
 
-    public function test_lead_status_won_converts_to_client(): void
+    public function test_lead_status_won_converts_to_job(): void
     {
         $lead = Lead::query()->create($this->validLeadPayload());
 
@@ -91,10 +89,11 @@ class LeadManagementTest extends TestCase
             ->assertOk()
             ->assertJsonPath('converted', true);
 
-        $this->assertSame(1, Client::query()->where('lead_id', $lead->id)->count());
+        $this->assertSame(1, Job::query()->where('lead_id', $lead->id)->count());
+        $this->assertSame(0, Client::query()->where('lead_id', $lead->id)->count());
     }
 
-    public function test_duplicate_customer_not_created_on_repeated_conversion(): void
+    public function test_duplicate_job_not_created_on_repeated_conversion(): void
     {
         $lead = Lead::query()->create($this->validLeadPayload());
 
@@ -106,47 +105,26 @@ class LeadManagementTest extends TestCase
             ->patchJson(route('admin.leads.status.update', $lead), ['status' => LeadStatus::WON->value])
             ->assertOk();
 
-        $this->assertSame(1, Client::query()->where('lead_id', $lead->id)->count());
+        $this->assertSame(1, Job::query()->where('lead_id', $lead->id)->count());
     }
 
-    public function test_duplicate_client_by_email_is_linked_not_recreated(): void
+    public function test_conversion_creates_job_with_lead_contact_snapshot(): void
     {
         $payload = $this->validLeadPayload();
-        $payload['email'] = 'duplicate@example.com';
-
-        Client::query()->create([
-            'name' => 'Existing Client',
-            'email' => 'duplicate@example.com',
-            'phone' => '555-9999',
-            'address' => '99 Existing Rd',
-            'service_types' => [ServiceTypes::all()[0]],
-            'weed_spray' => LeadWeedSpray::NO->value,
-            're_completion_days' => LeadReCompletionDays::DAYS_14->value,
-            'job_type' => LeadJobType::REGULAR->value,
-            'payment_mode' => LeadPaymentMode::CASH->value,
-            'payment_status' => LeadPaymentStatus::PENDING->value,
-            'charges' => 10,
-            'created_by' => $this->admin->id,
-        ]);
-
+        $payload['email'] = 'convert-snapshot@example.com';
         $lead = Lead::query()->create($payload);
 
         $this->actingAs($this->admin)
             ->patchJson(route('admin.leads.status.update', $lead), ['status' => LeadStatus::WON->value])
             ->assertOk();
 
-        $this->assertSame(1, Client::query()->where('email', 'duplicate@example.com')->count());
-        $this->assertDatabaseHas('clients', [
-            'email' => 'duplicate@example.com',
-            'lead_id' => $lead->id,
-        ]);
-
         $this->assertDatabaseHas('service_jobs', [
             'lead_id' => $lead->id,
             'customer_name' => $payload['client_name'],
             'phone' => $payload['mobile_number'],
-            'email' => 'duplicate@example.com',
+            'email' => 'convert-snapshot@example.com',
             'client_address' => $payload['address'],
+            'client_id' => null,
         ]);
         $this->assertSame(1, Job::query()->where('lead_id', $lead->id)->count());
     }

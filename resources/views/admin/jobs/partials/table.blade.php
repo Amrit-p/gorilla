@@ -20,7 +20,7 @@
                 @if ($canReorder)
                     <th rowspan="2" class="w-8 px-2 py-3 bg-slate-100"></th>
                 @endif
-                <th colspan="2" class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide bg-green-100 text-green-800">Customer</th>
+                <th colspan="2" class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide bg-green-100 text-green-800">Contact</th>
                 <th colspan="4" class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide bg-yellow-100 text-yellow-800">Schedule</th>
                 <th colspan="2" class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide bg-blue-100 text-blue-800">Payment &amp; Crew</th>
                 <th colspan="1" class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide bg-purple-100 text-purple-800">Notes</th>
@@ -28,8 +28,8 @@
             </tr>
             {{-- Sub-header row --}}
             <tr class="divide-x divide-slate-200 border-t border-slate-200">
-                {{-- Customer --}}
-                <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider bg-green-50 text-green-700">Customer / Address</th>
+                {{-- Contact --}}
+                <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider bg-green-50 text-green-700">Name / Address</th>
                 <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider bg-green-50 text-green-700">Zone</th>
                 {{-- Schedule --}}
                 <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider bg-yellow-50 text-yellow-700">Date &amp; Status</th>

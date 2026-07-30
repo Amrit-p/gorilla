@@ -83,10 +83,6 @@ class GorillaCrmRolesTest extends TestCase
             ->assertOk();
 
         $this->actingAs($user)
-            ->get(route('admin.clients.index'))
-            ->assertOk();
-
-        $this->actingAs($user)
             ->get(route('admin.jobs.index'))
             ->assertOk();
 
@@ -99,14 +95,13 @@ class GorillaCrmRolesTest extends TestCase
             ->assertOk();
     }
 
-    public function test_sales_manager_can_manage_leads_customers_and_view_jobs(): void
+    public function test_sales_manager_can_manage_leads_and_view_jobs(): void
     {
         $user = $this->userWithRole(CrmRoles::SALES_MANAGER);
 
         $this->actingAs($user)->get(route('dashboard.index'))->assertOk();
         $this->actingAs($user)->get(route('admin.leads.index'))->assertOk();
         $this->actingAs($user)->get(route('admin.leads.create'))->assertOk();
-        $this->actingAs($user)->get(route('admin.clients.index'))->assertOk();
         $this->actingAs($user)->get(route('admin.jobs.index'))->assertOk();
 
         $this->actingAs($user)->get(route('admin.jobs.create'))->assertOk();
@@ -126,7 +121,6 @@ class GorillaCrmRolesTest extends TestCase
 
         $this->actingAs($user)->get(route('admin.jobs.create'))->assertForbidden();
         $this->actingAs($user)->get(route('admin.leads.index'))->assertForbidden();
-        $this->actingAs($user)->get(route('admin.clients.index'))->assertForbidden();
         $this->actingAs($user)->get(route('admin.users.index'))->assertForbidden();
     }
 

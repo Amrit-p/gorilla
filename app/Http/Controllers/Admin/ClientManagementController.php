@@ -233,7 +233,7 @@ class ClientManagementController extends Controller
                 'workflowStatuses' => JobWorkflowStatus::values(),
             ],
             $this->clientManagementService->formOptions(),
-            $this->jobManagementService->formOptions($client->id)
+            $this->jobManagementService->formOptions()
         ));
     }
 

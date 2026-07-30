@@ -177,11 +177,10 @@
         // Lazy-load history on first click
         if (target === 'history') {
             const panelId  = modal === 'assign-job-modal' ? 'assign-client-history' : 'schedule-client-history';
-            const clientId = $modal.data('client-id') || '';
             const jobId    = $modal.data('job-id') || 0;
             const loaded   = $modal.data('history-loaded');
-            if (!loaded && clientId) {
-                loadClientHistory(panelId, clientId, jobId);
+            if (!loaded && jobId) {
+                loadClientHistory(panelId, jobId);
                 $modal.data('history-loaded', true);
             }
         }
@@ -317,9 +316,9 @@
         return $('<span>').text(str || '').html();
     }
 
-    function loadClientHistory(panelId, clientId, jobId) {
+    function loadClientHistory(panelId, jobId) {
         const $panel = $('#' + panelId);
-        if (!$panel.length || !clientId) {
+        if (!$panel.length || !jobId) {
             $panel.addClass('hidden');
             return;
         }
@@ -342,7 +341,7 @@
         $.ajax({
             url: "{{ route('admin.jobs.client-history') }}",
             method: 'GET',
-            data: { client_id: clientId, exclude_job_id: jobId || 0 },
+            data: { job_id: jobId, exclude_job_id: jobId || 0 },
             headers: { Accept: 'application/json' },
             success: function(data) {
                 $panel.find('.client-history-loading').addClass('hidden');
@@ -466,7 +465,6 @@
         const doneBy      = $btn.data('done-by');
         const employeeIds = $btn.data('employee-ids') || [];
         const jobId       = Number($btn.data('id'));
-        const clientId    = $btn.data('client-id') || '';
 
         $('#assign-job-form')[0].reset();
         markModalBulkContext($('#assign-job-form'), [jobId], 'Assignment');
@@ -479,11 +477,11 @@
         }
 
         // Store context for lazy history load; reset history state
-        $('#assign-job-modal').data({ 'client-id': clientId, 'job-id': jobId, 'history-loaded': false });
+        $('#assign-job-modal').data({ 'job-id': jobId, 'history-loaded': false });
         resetHistoryPanel('assign-client-history');
         resetModalTabs('assign-job-modal');
-        // Show history tab only for single jobs
-        $('#assign-job-modal .job-tab-btn[data-tab="history"]').toggleClass('hidden', !clientId);
+        // Show history tab for single jobs
+        $('#assign-job-modal .job-tab-btn[data-tab="history"]').toggleClass('hidden', !jobId);
         selectedContractId = null;
         openModal('assign-job-modal');
     });
@@ -499,7 +497,7 @@
             window.mcaReset_assign(null, []);
         }
 
-        $('#assign-job-modal').data({ 'client-id': '', 'job-id': 0, 'history-loaded': false });
+        $('#assign-job-modal').data({ 'job-id': 0, 'history-loaded': false });
         resetModalTabs('assign-job-modal');
         $('#assign-job-modal .job-tab-btn[data-tab="history"]').addClass('hidden');
         selectedContractId = null;
@@ -614,15 +612,14 @@
     $(document).on('click', '.schedule-job', function() {
         const $btn     = $(this);
         const jobId    = Number($btn.data('id'));
-        const clientId = $btn.data('client-id') || '';
         markModalBulkContext($('#schedule-job-form'), [jobId], 'Reschedule');
         $('#schedule-job-form').find('[name="scheduled_date"]').val($btn.data('scheduled-date') || '');
         $('#schedule-job-form').find('[name="scheduled_time"]').val($btn.data('scheduled-time') || '');
         $('#schedule-job-form-error').addClass('hidden').text('');
-        $('#schedule-job-modal').data({ 'client-id': clientId, 'job-id': jobId, 'history-loaded': false });
+        $('#schedule-job-modal').data({ 'job-id': jobId, 'history-loaded': false });
         resetHistoryPanel('schedule-client-history');
         resetModalTabs('schedule-job-modal');
-        $('#schedule-job-modal .job-tab-btn[data-tab="history"]').toggleClass('hidden', !clientId);
+        $('#schedule-job-modal .job-tab-btn[data-tab="history"]').toggleClass('hidden', !jobId);
         openModal('schedule-job-modal');
     });
 
@@ -633,7 +630,7 @@
         $('#schedule-job-form').find('[name="scheduled_date"]').val('');
         $('#schedule-job-form').find('[name="scheduled_time"]').val('');
         $('#schedule-job-form-error').addClass('hidden').text('');
-        $('#schedule-job-modal').data({ 'client-id': '', 'job-id': 0, 'history-loaded': false });
+        $('#schedule-job-modal').data({ 'job-id': 0, 'history-loaded': false });
         resetModalTabs('schedule-job-modal');
         $('#schedule-job-modal .job-tab-btn[data-tab="history"]').addClass('hidden');
         openModal('schedule-job-modal');

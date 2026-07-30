@@ -9,7 +9,6 @@ use App\Enums\JobParkingStatus;
 use App\Enums\JobWorkflowStatus;
 use App\Enums\UserEfficiency;
 use App\Http\Middleware\EnsureMowerChecklistComplete;
-use App\Models\Client;
 use App\Models\Job;
 use App\Models\User;
 use App\Notifications\JobStatusChangedNotification;
@@ -60,7 +59,7 @@ class MowerDashboardTest extends TestCase
             ->get(route('mower.index'))
             ->assertOk()
             ->assertSee('My Jobs')
-            ->assertSee($assigned->client?->name);
+            ->assertSee($assigned->customerDisplayName());
 
         $html = $response->getContent();
         $this->assertSame(1, substr_count($html, 'rounded-2xl border border-slate-200 bg-white p-4'));
@@ -308,7 +307,7 @@ class MowerDashboardTest extends TestCase
             ->assertOk();
 
         $this->assertDatabaseHas('mower_remarks', [
-            'client_id' => $job->client_id,
+            'job_id' => $job->id,
             'description' => 'Gate was unlocked.',
         ]);
     }
@@ -324,7 +323,7 @@ class MowerDashboardTest extends TestCase
             ])
             ->assertOk();
 
-        $this->assertDatabaseMissing('mower_remarks', ['client_id' => $job->client_id]);
+        $this->assertDatabaseMissing('mower_remarks', ['job_id' => $job->id]);
     }
 
     public function test_save_all_requires_reason_for_pending_payment(): void
@@ -425,21 +424,10 @@ class MowerDashboardTest extends TestCase
      */
     private function createAssignedJob(User $mower, array $overrides = []): Job
     {
-        $client = Client::query()->create([
-            'name' => 'Mower Client '.$mower->id,
-            'address' => '10 Field Rd',
-            'service_types' => [ServiceTypes::all()[0]],
-            'weed_spray' => 'No',
-            're_completion_days' => '14 days',
-            'job_type' => 'Regular',
-            'safety_concerns' => ['Pet'],
-            'payment_mode' => 'Cash',
-            'payment_status' => 'Done',
-            'customer_type' => JobCustomerType::EASY->value,
-        ]);
-
         $job = Job::query()->create(array_merge([
-            'client_id' => $client->id,
+            'client_id' => null,
+            'customer_name' => 'Mower Client '.$mower->id,
+            'phone' => '555-'.$mower->id,
             'client_address' => '10 Field Rd',
             'scheduled_date' => now()->toDateString(),
             'scheduled_time' => '09:00',
@@ -450,6 +438,7 @@ class MowerDashboardTest extends TestCase
             'payment_mode' => JobOperationalPaymentMode::CASH->value,
             'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
             'status' => JobWorkflowStatus::STARTED->value,
+            'charges' => 80,
         ], $overrides));
 
         $job->assignedEmployees()->attach($mower->id, [
@@ -457,6 +446,6 @@ class MowerDashboardTest extends TestCase
             'assignment_status' => $job->status,
         ]);
 
-        return $job->load('client');
+        return $job;
     }
 }

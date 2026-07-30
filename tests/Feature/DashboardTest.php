@@ -48,22 +48,10 @@ class DashboardTest extends TestCase
             'created_at' => now(),
         ]);
 
-        $client = Client::query()->create([
-            'name' => 'Schedule Client',
-            'address' => '2 Oak Rd',
-            'service_types' => [ServiceTypes::all()[0]],
-            'weed_spray' => LeadWeedSpray::NO->value,
-            're_completion_days' => '14 days',
-            'job_type' => 'Regular',
-            'safety_concerns' => ['Pet'],
-            'payment_mode' => 'Cash',
-            'payment_status' => 'Done',
-            'charges' => 85,
-        ]);
-
         Job::query()->create([
-            'client_id' => $client->id,
-            'client_address' => $client->address,
+            'customer_name' => 'Schedule Client',
+            'phone' => '555-0100',
+            'client_address' => '2 Oak Rd',
             'scheduled_date' => now()->toDateString(),
             'scheduled_time' => '09:30',
             'estimated_duration_minutes' => 60,
@@ -87,7 +75,7 @@ class DashboardTest extends TestCase
             ->assertDontSee('Placeholder Client');
     }
 
-    public function test_calendar_search_matches_client_customer_unique_id_and_assigned_employee(): void
+    public function test_calendar_search_matches_customer_name_and_assigned_employee(): void
     {
         $mower = User::query()->create([
             'name' => 'Search Mower',
@@ -96,22 +84,10 @@ class DashboardTest extends TestCase
             'is_active' => true,
         ]);
 
-        $client = Client::query()->create([
-            'name' => 'Filter Client',
-            'address' => '5 Pine St',
-            'service_types' => [ServiceTypes::all()[0]],
-            'weed_spray' => LeadWeedSpray::NO->value,
-            're_completion_days' => '14 days',
-            'job_type' => 'Regular',
-            'safety_concerns' => ['Pet'],
-            'payment_mode' => 'Cash',
-            'payment_status' => 'Done',
-            'charges' => 85,
-        ]);
-
         $job = Job::query()->create([
-            'client_id' => $client->id,
-            'client_address' => $client->address,
+            'customer_name' => 'Filter Client',
+            'phone' => '555-7777',
+            'client_address' => '5 Pine St',
             'scheduled_date' => now()->toDateString(),
             'scheduled_time' => '09:30',
             'estimated_duration_minutes' => 60,
@@ -129,7 +105,7 @@ class DashboardTest extends TestCase
         $this->actingAs($this->admin)
             ->get(route('dashboard.daily-jobs-table', [
                 'date' => now()->toDateString(),
-                'search' => (string) $client->customer_unique_id,
+                'search' => 'Filter Client',
             ]))
             ->assertOk()
             ->assertSee('Filter Client');
@@ -169,7 +145,9 @@ class DashboardTest extends TestCase
         ]);
 
         $assignedJob = Job::query()->create([
-            'client_id' => $client->id,
+            'customer_name' => $client->name,
+            'phone' => $client->phone ?? '555-0000',
+            'client_id' => null,
             'client_address' => $client->address,
             'scheduled_date' => now()->toDateString(),
             'scheduled_time' => '09:30',
@@ -192,7 +170,9 @@ class DashboardTest extends TestCase
         $assignedJob->assignedEmployees()->attach($mower->id, ['assignment_date' => now()->toDateString()]);
 
         Job::query()->create([
-            'client_id' => $client->id,
+            'customer_name' => $client->name,
+            'phone' => $client->phone ?? '555-0000',
+            'client_id' => null,
             'client_address' => $client->address,
             'scheduled_date' => now()->toDateString(),
             'scheduled_time' => '11:00',
@@ -240,7 +220,9 @@ class DashboardTest extends TestCase
         ]);
 
         Job::query()->create([
-            'client_id' => $client->id,
+            'customer_name' => $client->name,
+            'phone' => $client->phone ?? '555-0000',
+            'client_id' => null,
             'client_address' => $client->address,
             'scheduled_date' => now()->addDays(2)->toDateString(),
             'scheduled_time' => '09:30',
@@ -328,7 +310,9 @@ class DashboardTest extends TestCase
         ]);
 
         $holdJob = Job::query()->create([
-            'client_id' => $client->id,
+            'customer_name' => $client->name,
+            'phone' => $client->phone ?? '555-0000',
+            'client_id' => null,
             'client_address' => $client->address,
             'scheduled_date' => now()->addDay()->toDateString(),
             'scheduled_time' => '09:30',
@@ -344,7 +328,9 @@ class DashboardTest extends TestCase
         $holdJob->assignedEmployees()->attach($mower->id, ['assignment_date' => $holdJob->scheduled_date]);
 
         Job::query()->create([
-            'client_id' => $client->id,
+            'customer_name' => $client->name,
+            'phone' => $client->phone ?? '555-0000',
+            'client_id' => null,
             'client_address' => $client->address,
             'scheduled_date' => now()->addDay()->toDateString(),
             'scheduled_time' => '11:00',
@@ -383,7 +369,9 @@ class DashboardTest extends TestCase
         ]);
 
         Job::query()->create([
-            'client_id' => $client->id,
+            'customer_name' => $client->name,
+            'phone' => $client->phone ?? '555-0000',
+            'client_id' => null,
             'client_address' => $client->address,
             'scheduled_date' => now()->toDateString(),
             'scheduled_time' => '09:30',

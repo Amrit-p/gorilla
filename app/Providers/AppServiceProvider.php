@@ -5,7 +5,6 @@ namespace App\Providers;
 use App\Events\LeadConvertedToClient;
 use App\Helpers\OptimizationHelper;
 use App\Listeners\HandleLeadConvertedToClient;
-use App\Models\Client;
 use App\Models\Job;
 use App\Models\Lead;
 use App\Services\MailSettingsRegistrar;
@@ -65,10 +64,6 @@ class AppServiceProvider extends ServiceProvider
         Lead::saved($bumpCaches);
         Lead::deleted($bumpCaches);
         Lead::restored($bumpCaches);
-
-        Client::saved($bumpCaches);
-        Client::deleted($bumpCaches);
-        Client::restored($bumpCaches);
 
         Job::saved($bumpCaches);
         Job::deleted($bumpCaches);

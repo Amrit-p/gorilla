@@ -44,16 +44,17 @@ class DashboardAnalyticsTest extends TestCase
 
     public function test_admin_dashboard_shows_revenue_and_job_metrics(): void
     {
-        $client = $this->createClient(150.00);
-        Job::query()->create($this->jobPayload($client->id, [
+        Job::query()->create($this->jobPayload(null, [
             'status' => JobWorkflowStatus::COMPLETED->value,
             'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
             'scheduled_date' => now()->toDateString(),
+            'charges' => 150.00,
         ]));
 
-        Job::query()->create($this->jobPayload($client->id, [
+        Job::query()->create($this->jobPayload(null, [
             'payment_status' => JobOperationalPaymentStatus::PENDING->value,
             'scheduled_date' => now()->toDateString(),
+            'charges' => 80.00,
         ]));
 
         Lead::query()->create($this->leadPayload(LeadStatus::NEW->value));
@@ -221,10 +222,12 @@ class DashboardAnalyticsTest extends TestCase
      * @param  array<string, mixed>  $overrides
      * @return array<string, mixed>
      */
-    private function jobPayload(int $clientId, array $overrides = []): array
+    private function jobPayload(?int $clientId = null, array $overrides = []): array
     {
         return array_merge([
             'client_id' => $clientId,
+            'customer_name' => 'Analytics Customer',
+            'phone' => '555-1000',
             'client_address' => '1 Analytics Rd',
             'scheduled_date' => now()->toDateString(),
             'scheduled_time' => '10:00',
@@ -235,6 +238,7 @@ class DashboardAnalyticsTest extends TestCase
             'payment_mode' => JobOperationalPaymentMode::CASH->value,
             'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
             'status' => JobWorkflowStatus::STARTED->value,
+            'charges' => 100.00,
             'created_by' => $this->admin->id,
         ], $overrides);
     }

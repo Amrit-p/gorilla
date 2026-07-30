@@ -4,7 +4,7 @@
 @endphp
 <x-layouts.dashboard
     :title="$convertedOnly ? 'Converted to Customer' : 'Lead Management'"
-    :subtitle="$convertedOnly ? 'Leads that have converted into paying customers.' : 'View, filter, and manage your sales leads in one place.'"
+    :subtitle="$convertedOnly ? 'Leads that have been converted into jobs.' : 'View, filter, and manage your sales leads in one place.'"
 >
     <div class="space-y-5">
 

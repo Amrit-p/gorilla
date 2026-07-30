@@ -7,7 +7,7 @@ function remarkCardHtml(remark) {
     );
 }
 
-function loadClientRemarks(clientId) {
+function loadJobRemarks(jobId) {
     if (!window.jobFormRoutes?.clientRemarks || !jQuery('#job-remarks-card').length) {
         return;
     }
@@ -20,9 +20,9 @@ function loadClientRemarks(clientId) {
     $list.addClass('hidden').empty();
     $btn.addClass('hidden').text('');
 
-    jQuery.get(window.jobFormRoutes.clientRemarks, { client_id: clientId || '' }, function (res) {
+    jQuery.get(window.jobFormRoutes.clientRemarks, { job_id: jobId || '' }, function (res) {
         if (!res.lastRemark) {
-            $last.html('<p class="text-sm text-slate-400">No remarks recorded for this customer yet.</p>');
+            $last.html('<p class="text-sm text-slate-400">No remarks recorded for this job yet.</p>');
             return;
         }
 
@@ -45,9 +45,5 @@ function loadClientRemarks(clientId) {
 }
 
 jQuery(function () {
-    jQuery('#job-client-id').on('change', function () {
-        loadClientRemarks(jQuery(this).val());
-    });
-
-    loadClientRemarks(jQuery('#job-client-id').val());
+    loadJobRemarks(window.jobFormRoutes?.jobId || jQuery('#job-id').val());
 });
