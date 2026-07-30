@@ -136,7 +136,6 @@ class CrmModuleTest extends TestCase
             'customer_name' => $payload['customer_name'],
             'phone' => $payload['phone'],
             'client_address' => $payload['client_address'],
-            'client_id' => null,
         ]);
     }
 

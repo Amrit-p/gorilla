@@ -1,5 +1,4 @@
 @php
-    $client = $job->client;
     $mapsUrl = $job->latitude && $job->longitude
         ? 'https://www.google.com/maps/dir/?api=1&destination='.$job->latitude.','.$job->longitude
         : ($job->client_address ? 'https://www.google.com/maps/search/?api=1&query='.urlencode($job->client_address) : null);
@@ -42,41 +41,35 @@
         </section>
 
         <section class="rounded-2xl bg-white p-4 shadow-sm">
-            <h2 class="text-sm font-semibold text-slate-900">Customer</h2>
+            <h2 class="text-sm font-semibold text-slate-900">Contact</h2>
             <p class="mt-1 text-xs text-slate-500">Read-only — contact office to change.</p>
             <dl class="mt-3 space-y-2 text-sm">
-                @if ($client?->customer_unique_id)
-                    <div class="flex justify-between gap-4">
-                        <dt class="text-slate-500">ID</dt>
-                        <dd class="font-medium text-slate-900">#{{ $client->customer_unique_id }}</dd>
-                    </div>
-                @endif
                 <div class="flex justify-between gap-4">
                     <dt class="text-slate-500">Name</dt>
                     <dd class="text-right font-medium text-slate-900">{{ $job->customerDisplayName() }}</dd>
                 </div>
-                @if ($job->phone ?: $client?->phone)
+                @if ($job->phone)
                     <div class="flex justify-between gap-4">
                         <dt class="text-slate-500">Phone</dt>
-                        <dd><a href="tel:{{ preg_replace('/\D+/', '', $job->phone ?: $client->phone) }}" class="font-medium text-emerald-700">{{ $job->phone ?: $client->phone }}</a></dd>
+                        <dd><a href="tel:{{ preg_replace('/\D+/', '', $job->phone) }}" class="font-medium text-emerald-700">{{ $job->phone }}</a></dd>
                     </div>
                 @endif
-                @if ($job->email ?: $client?->email)
+                @if ($job->email)
                     <div class="flex justify-between gap-4">
                         <dt class="text-slate-500">Email</dt>
-                        <dd class="text-right text-slate-900">{{ $job->email ?: $client->email }}</dd>
+                        <dd class="text-right text-slate-900">{{ $job->email }}</dd>
                     </div>
                 @endif
-                @if ($client?->customer_type)
+                @if ($job->customer_type)
                     <div class="flex justify-between gap-4">
                         <dt class="text-slate-500">Type</dt>
-                        <dd class="text-right">{{ $client->customer_type }}</dd>
+                        <dd class="text-right">{{ $job->customer_type }}</dd>
                     </div>
                 @endif
-                @if ($client?->additional_site_instructions)
+                @if ($job->site_instructions)
                     <div>
                         <dt class="text-slate-500">Site instructions</dt>
-                        <dd class="mt-1 rounded-lg bg-slate-50 px-3 py-2 text-slate-800">{{ $client->additional_site_instructions }}</dd>
+                        <dd class="mt-1 rounded-lg bg-slate-50 px-3 py-2 text-slate-800">{{ $job->site_instructions }}</dd>
                     </div>
                 @endif
             </dl>
@@ -105,7 +98,7 @@
         </section>
         <section class="rounded-2xl bg-white p-4 shadow-sm">
             <h2 class="text-sm font-semibold text-slate-900">Location</h2>
-            <p class="mt-2 text-sm text-slate-800">{{ $job->client_address ?: $client?->address }}</p>
+            <p class="mt-2 text-sm text-slate-800">{{ $job->client_address ?: '—' }}</p>
             @if ($mapsUrl)
                 <a
                     href="{{ $mapsUrl }}"

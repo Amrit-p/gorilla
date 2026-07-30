@@ -9,8 +9,8 @@
         <div>
             <h2 class="text-lg font-semibold text-slate-900">Edit Lead</h2>
             <p class="text-sm text-slate-600">{{ $lead->client_name ?: $lead->address }}</p>
-            @if ($lead->client)
-                <p class="mt-1 text-xs text-emerald-700">Converted to customer #{{ $lead->client->customer_unique_id ?? $lead->client->id }}</p>
+            @if ($lead->converted_at)
+                <p class="mt-1 text-xs text-emerald-700">Converted to job on {{ $lead->converted_at->format('M d, Y') }}</p>
             @endif
         </div>
 

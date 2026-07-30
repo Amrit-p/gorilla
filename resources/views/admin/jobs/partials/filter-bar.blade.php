@@ -91,9 +91,6 @@
         @endif
 
         <input type="hidden" name="list_scope" id="job-list-scope" value="{{ $filters['list_scope'] ?? '' }}">
-        @if (!empty($clientId))
-            <input type="hidden" name="client_id" value="{{ $clientId }}">
-        @endif
 
         <div class="grid {{ $filterGridClass }} gap-x-2.5 gap-y-3">
 

@@ -43,11 +43,11 @@
                         </div>
                         <div>
                             <dt class="text-slate-500">Phone</dt>
-                            <dd class="font-medium text-slate-800">{{ $job->phone ?: ($job->client?->phone ?: '—') }}</dd>
+                            <dd class="font-medium text-slate-800">{{ $job->phone ?: '—' }}</dd>
                         </div>
                         <div>
                             <dt class="text-slate-500">Email</dt>
-                            <dd class="font-medium text-slate-800">{{ $job->email ?: ($job->client?->email ?: '—') }}</dd>
+                            <dd class="font-medium text-slate-800">{{ $job->email ?: '—' }}</dd>
                         </div>
                         <div>
                             <dt class="text-slate-500">Address</dt>

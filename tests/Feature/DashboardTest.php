@@ -6,7 +6,6 @@ use App\Enums\JobWorkflowStatus;
 use App\Enums\LeadPaymentStatus;
 use App\Enums\LeadStatus;
 use App\Enums\LeadWeedSpray;
-use App\Models\Client;
 use App\Models\EquipmentType;
 use App\Models\Job;
 use App\Models\Lead;
@@ -131,24 +130,10 @@ class DashboardTest extends TestCase
 
     public function test_daily_jobs_table_supports_the_day_panels_extra_filters(): void
     {
-        $client = Client::query()->create([
-            'name' => 'Assigned Client',
-            'address' => '9 Elm St',
-            'service_types' => [ServiceTypes::all()[0]],
-            'weed_spray' => LeadWeedSpray::NO->value,
-            're_completion_days' => '14 days',
-            'job_type' => 'Regular',
-            'safety_concerns' => ['Pet'],
-            'payment_mode' => 'Cash',
-            'payment_status' => 'Done',
-            'charges' => 85,
-        ]);
-
         $assignedJob = Job::query()->create([
-            'customer_name' => $client->name,
-            'phone' => $client->phone ?? '555-0000',
-            'client_id' => null,
-            'client_address' => $client->address,
+            'customer_name' => 'Assigned Client',
+            'phone' => '555-0001',
+            'client_address' => '9 Elm St',
             'scheduled_date' => now()->toDateString(),
             'scheduled_time' => '09:30',
             'estimated_duration_minutes' => 60,
@@ -170,10 +155,9 @@ class DashboardTest extends TestCase
         $assignedJob->assignedEmployees()->attach($mower->id, ['assignment_date' => now()->toDateString()]);
 
         Job::query()->create([
-            'customer_name' => $client->name,
-            'phone' => $client->phone ?? '555-0000',
-            'client_id' => null,
-            'client_address' => $client->address,
+            'customer_name' => 'Assigned Client',
+            'phone' => '555-0001',
+            'client_address' => '9 Elm St',
             'scheduled_date' => now()->toDateString(),
             'scheduled_time' => '11:00',
             'estimated_duration_minutes' => 45,
@@ -206,24 +190,10 @@ class DashboardTest extends TestCase
 
     public function test_daily_jobs_table_date_range_widens_beyond_the_clicked_day(): void
     {
-        $client = Client::query()->create([
-            'name' => 'Range Client',
-            'address' => '12 Birch Ave',
-            'service_types' => [ServiceTypes::all()[0]],
-            'weed_spray' => LeadWeedSpray::NO->value,
-            're_completion_days' => '14 days',
-            'job_type' => 'Regular',
-            'safety_concerns' => ['Pet'],
-            'payment_mode' => 'Cash',
-            'payment_status' => 'Done',
-            'charges' => 85,
-        ]);
-
         Job::query()->create([
-            'customer_name' => $client->name,
-            'phone' => $client->phone ?? '555-0000',
-            'client_id' => null,
-            'client_address' => $client->address,
+            'customer_name' => 'Range Client',
+            'phone' => '555-0002',
+            'client_address' => '12 Birch Ave',
             'scheduled_date' => now()->addDays(2)->toDateString(),
             'scheduled_time' => '09:30',
             'estimated_duration_minutes' => 60,
@@ -296,24 +266,10 @@ class DashboardTest extends TestCase
             'is_active' => true,
         ]);
 
-        $client = Client::query()->create([
-            'name' => 'Hold Client',
-            'address' => '7 Maple St',
-            'service_types' => [ServiceTypes::all()[0]],
-            'weed_spray' => LeadWeedSpray::NO->value,
-            're_completion_days' => '14 days',
-            'job_type' => 'Regular',
-            'safety_concerns' => ['Pet'],
-            'payment_mode' => 'Cash',
-            'payment_status' => 'Done',
-            'charges' => 85,
-        ]);
-
         $holdJob = Job::query()->create([
-            'customer_name' => $client->name,
-            'phone' => $client->phone ?? '555-0000',
-            'client_id' => null,
-            'client_address' => $client->address,
+            'customer_name' => 'Hold Client',
+            'phone' => '555-0003',
+            'client_address' => '7 Maple St',
             'scheduled_date' => now()->addDay()->toDateString(),
             'scheduled_time' => '09:30',
             'estimated_duration_minutes' => 60,
@@ -328,10 +284,9 @@ class DashboardTest extends TestCase
         $holdJob->assignedEmployees()->attach($mower->id, ['assignment_date' => $holdJob->scheduled_date]);
 
         Job::query()->create([
-            'customer_name' => $client->name,
-            'phone' => $client->phone ?? '555-0000',
-            'client_id' => null,
-            'client_address' => $client->address,
+            'customer_name' => 'Hold Client',
+            'phone' => '555-0003',
+            'client_address' => '7 Maple St',
             'scheduled_date' => now()->addDay()->toDateString(),
             'scheduled_time' => '11:00',
             'estimated_duration_minutes' => 45,
@@ -355,24 +310,10 @@ class DashboardTest extends TestCase
 
     public function test_three_week_grid_excludes_hold_jobs_but_includes_pending_and_completed(): void
     {
-        $client = Client::query()->create([
-            'name' => 'Status Filter Client',
-            'address' => '8 Birch St',
-            'service_types' => [ServiceTypes::all()[0]],
-            'weed_spray' => LeadWeedSpray::NO->value,
-            're_completion_days' => '14 days',
-            'job_type' => 'Regular',
-            'safety_concerns' => ['Pet'],
-            'payment_mode' => 'Cash',
-            'payment_status' => 'Done',
-            'charges' => 85,
-        ]);
-
         Job::query()->create([
-            'customer_name' => $client->name,
-            'phone' => $client->phone ?? '555-0000',
-            'client_id' => null,
-            'client_address' => $client->address,
+            'customer_name' => 'Status Filter Client',
+            'phone' => '555-0004',
+            'client_address' => '8 Birch St',
             'scheduled_date' => now()->toDateString(),
             'scheduled_time' => '09:30',
             'estimated_duration_minutes' => 60,

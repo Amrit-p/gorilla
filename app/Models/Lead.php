@@ -80,11 +80,6 @@ class Lead extends Model
         return $this->hasOne(Job::class);
     }
 
-    public function client(): HasOne
-    {
-        return $this->hasOne(Client::class);
-    }
-
     public function leadNotes(): HasMany
     {
         return $this->hasMany(LeadNote::class);

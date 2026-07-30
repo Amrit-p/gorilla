@@ -425,7 +425,6 @@ class MowerDashboardTest extends TestCase
     private function createAssignedJob(User $mower, array $overrides = []): Job
     {
         $job = Job::query()->create(array_merge([
-            'client_id' => null,
             'customer_name' => 'Mower Client '.$mower->id,
             'phone' => '555-'.$mower->id,
             'client_address' => '10 Field Rd',

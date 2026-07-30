@@ -3,7 +3,6 @@
 namespace Tests\Feature\Mower;
 
 use App\Models\Checklist;
-use App\Models\Client;
 use App\Models\EquipmentType;
 use App\Models\Job;
 use App\Models\MowerChecklistSubmission;
@@ -85,14 +84,12 @@ class MowerClientControllerTest extends TestCase
         $response->assertRedirect(route('mower.index'));
         $response->assertSessionHas('success');
 
-        $this->assertSame(0, Client::query()->count());
         $this->assertDatabaseHas('service_jobs', [
             'client_address' => '123 Test Street, Auckland',
             'phone' => '0211234567',
             'customer_name' => 'Test Customer',
             'payment_status' => 'Pending',
             'done_by_user_id' => $this->mower->id,
-            'client_id' => null,
         ]);
 
         $job = Job::query()->where('phone', '0211234567')->first();

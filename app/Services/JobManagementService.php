@@ -12,7 +12,6 @@ use App\Enums\LeadWeedSpray;
 use App\Helpers\OptimizationHelper;
 use App\Jobs\GeocodeJobAddressJob;
 use App\Models\ActivityLog;
-use App\Models\Client;
 use App\Models\Job;
 use App\Models\JobLevel;
 use App\Models\Recurrence;
@@ -26,7 +25,6 @@ use App\Repositories\JobRepository;
 use App\Support\CrmPermissions;
 use App\Support\CrmRoles;
 use App\Support\EquipmentTypes;
-use App\Support\EstimatedDurationMinutes;
 use App\Support\ServiceTypes;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
@@ -149,64 +147,6 @@ class JobManagementService
 
             return null;
         }
-    }
-
-    /**
-     * Create a job for a customer, mirroring the field mapping used when a
-     * lead is converted. Returns null when the customer has no service types
-     * or no schedule date, since jobs require a scheduled date.
-     *
-     * Retained for ClientManagementService until the Customer entity is removed.
-     */
-    public function createJobFromClient(User $actor, Client $client): ?Job
-    {
-        if (empty($client->service_types) || $client->schedule_date === null) {
-            return null;
-        }
-
-        $job = Job::query()->create([
-            'client_id' => $client->id,
-            'lead_id' => $client->lead_id,
-            'zone_id' => $client->zone_id,
-            'equipment_type_id' => $client->equipment_type_id,
-            'job_level_id' => $client->job_level_id,
-            'recurrence_id' => $client->recurrence_id,
-            'accounting_level_id' => $client->accounting_level_id,
-            'client_rating_id' => $client->client_rating_id,
-            'customer_name' => $client->name,
-            'email' => $client->email,
-            'phone' => $client->phone,
-            'weed_spray' => $client->weed_spray,
-            'job_type' => $client->job_type,
-            'property_details' => $client->property_details,
-            'notes' => $client->notes,
-            'client_address' => $client->address,
-            'latitude' => $client->latitude,
-            'longitude' => $client->longitude,
-            'required_services' => $client->service_types,
-            'scheduled_date' => $client->schedule_date,
-            'estimated_duration_minutes' => EstimatedDurationMinutes::resolve($client->estimated_time),
-            'customer_type' => $client->customer_type,
-            'payment_mode' => $client->payment_mode,
-            'payment_status' => $client->payment_status,
-            'charges' => $client->charges,
-            'site_instructions' => $client->additional_site_instructions,
-            'special_remarks' => $client->special_remarks,
-            'parking_status' => $client->parking_status,
-            'pet_warning' => $client->pet_warning,
-            'is_recurring' => $client->recurrence_id !== null,
-            'status' => JobWorkflowStatus::PENDING->value,
-            'created_by' => $actor->id,
-        ]);
-
-        GeocodeJobAddressJob::dispatch($job->id);
-
-        $this->activityLogService->log($actor, 'job.created_from_client', 'Job created from customer.', [
-            'job_id' => $job->id,
-            'client_id' => $client->id,
-        ]);
-
-        return $job;
     }
 
     /**
@@ -520,10 +460,7 @@ class JobManagementService
      */
     private function prepareJobData(array $data, array $images = [], ?Job $existingJob = null): array
     {
-        unset($data['images']);
-
-        // Jobs no longer depend on the Client entity — always store null.
-        $data['client_id'] = null;
+        unset($data['images'], $data['client_id']);
 
         $data['status'] ??= JobWorkflowStatus::PENDING->value;
         $data['priority'] ??= 'Medium';

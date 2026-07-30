@@ -42,7 +42,6 @@ class MowerClientJobCreatedNotification extends Notification
     {
         return [
             'job_id' => $this->job->id,
-            'client_id' => null,
             'created_by_id' => $this->createdBy->id,
             'created_by_name' => $this->createdBy->name,
             'message' => "{$this->createdBy->name} created a new job #{$this->job->id}.",

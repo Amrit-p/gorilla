@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -18,11 +19,11 @@ return new class extends Migration
         });
 
         $nextId = (int) config('mowing.customer_unique_id_start', 2001);
-        foreach (\App\Models\Client::withTrashed()->orderBy('id')->get() as $client) {
+        foreach (DB::table('clients')->orderBy('id')->get(['id', 'customer_unique_id']) as $client) {
             if ($client->customer_unique_id !== null) {
                 continue;
             }
-            \Illuminate\Support\Facades\DB::table('clients')
+            DB::table('clients')
                 ->where('id', $client->id)
                 ->update(['customer_unique_id' => $nextId++]);
         }

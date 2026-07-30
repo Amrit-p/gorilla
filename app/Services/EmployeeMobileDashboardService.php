@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\JobWorkflowStatus;
 use App\Models\Job;
 use App\Models\User;
 use Illuminate\Support\Collection;
@@ -18,7 +19,7 @@ class EmployeeMobileDashboardService
     public function todaysJobs(User $employee): Collection
     {
         return Job::query()
-            ->with(['client:id,name,address,phone', 'lead:id,site_instructions'])
+            ->with(['lead:id,site_instructions'])
             ->whereDate('scheduled_date', now()->toDateString())
             ->where(fn ($q) => $q
                 ->whereHas('assignedEmployees', fn ($q) => $q->where('users.id', $employee->id))
@@ -35,8 +36,7 @@ class EmployeeMobileDashboardService
     public function completedLedger(User $employee, int $limit = 20): Collection
     {
         return Job::query()
-            ->with(['client:id,name,address'])
-            ->where('status', \App\Enums\JobWorkflowStatus::COMPLETED->value)
+            ->where('status', JobWorkflowStatus::COMPLETED->value)
             ->where(fn ($q) => $q
                 ->whereHas('assignedEmployees', fn ($q) => $q->where('users.id', $employee->id))
                 ->orWhere('done_by_user_id', $employee->id)

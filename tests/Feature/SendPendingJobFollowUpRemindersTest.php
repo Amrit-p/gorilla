@@ -7,7 +7,6 @@ use App\Enums\JobOperationalPaymentMode;
 use App\Enums\JobOperationalPaymentStatus;
 use App\Enums\JobParkingStatus;
 use App\Enums\JobWorkflowStatus;
-use App\Models\Client;
 use App\Models\EquipmentType;
 use App\Models\Job;
 use App\Models\JobLevel;
@@ -108,22 +107,10 @@ class SendPendingJobFollowUpRemindersTest extends TestCase
      */
     private function createPendingJob(array $overrides = []): Job
     {
-        $client = Client::query()->create([
-            'name' => 'Follow-Up Client',
-            'address' => '50 Job Lane',
-            'service_types' => [ServiceTypes::all()[0]],
-            'weed_spray' => 'No',
-            're_completion_days' => '14 days',
-            'job_type' => 'Regular',
-            'safety_concerns' => ['Pet'],
-            'payment_mode' => 'Cash',
-            'payment_status' => 'Done',
-            'customer_type' => 'Easy',
-            'equipment_type_id' => EquipmentType::query()->where('is_active', true)->value('id'),
-        ]);
-
         return Job::query()->create(array_merge([
-            'client_id' => $client->id,
+            'customer_name' => 'Follow-Up Client',
+            'phone' => '555-0300',
+            'email' => 'followup@example.com',
             'client_address' => '50 Job Lane',
             'scheduled_date' => now()->addDay()->toDateString(),
             'scheduled_time' => '09:00',

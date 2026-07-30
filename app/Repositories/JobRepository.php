@@ -21,7 +21,6 @@ class JobRepository
         $query = $this->baseListQuery($filters)
             ->select([
                 'id',
-                'client_id',
                 'lead_id',
                 'zone_id',
                 'customer_name',
@@ -73,10 +72,9 @@ class JobRepository
     {
         return Job::query()
             ->with([
-                'client:id,customer_unique_id,name,address,phone,email,customer_type,parking_status,pet_warning,zone_id,accounting_level_id,client_rating_id,payment_status,created_at',
-                'client.zone:id,name',
-                'client.accountingLevel:id,name',
-                'client.clientRating:id,name',
+                'zone:id,name',
+                'accountingLevel:id,name',
+                'clientRating:id,name',
                 'assignedEmployees:id,name,efficiency',
                 'doneByUser:id,name,efficiency',
                 'creator:id,name',

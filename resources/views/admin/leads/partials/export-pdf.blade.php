@@ -74,8 +74,8 @@
                         @if ($lead->is_locked)
                             <br><span class="badge badge-red" style="margin-top:2px;">Locked</span>
                         @endif
-                        @if ($lead->client)
-                            <br><span class="badge badge-green" style="margin-top:2px;">Customer</span>
+                        @if ($lead->converted_at)
+                            <br><span class="badge badge-green" style="margin-top:2px;">Converted</span>
                         @endif
                     </td>
                     <td>{{ $lead->assignedSalesUser?->name ?? 'Unassigned' }}</td>

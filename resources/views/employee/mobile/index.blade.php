@@ -20,7 +20,7 @@
                             <p class="mt-1 text-xs text-slate-600">
                                 Time: {{ $job->scheduled_time ? \Illuminate\Support\Carbon::parse($job->scheduled_time)->format('h:i A') : 'Flexible' }}
                             </p>
-                            <p class="mt-1 text-xs text-slate-600">Phone: {{ $job->phone ?: ($job->client?->phone ?: '-') }}</p>
+                            <p class="mt-1 text-xs text-slate-600">Phone: {{ $job->phone ?: '-' }}</p>
                             <p class="mt-2 text-xs text-slate-600">Site Instructions: {{ $job->site_instructions ?: 'None' }}</p>
                         </div>
                         <x-ui.badge type="warning">{{ $job->status }}</x-ui.badge>

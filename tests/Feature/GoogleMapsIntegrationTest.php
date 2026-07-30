@@ -14,7 +14,6 @@ use App\Enums\LeadReCompletionDays;
 use App\Enums\LeadStatus;
 use App\Enums\LeadWeedSpray;
 use App\Helpers\OptimizationHelper;
-use App\Models\Client;
 use App\Models\EquipmentType;
 use App\Models\Job;
 use App\Models\Lead;
@@ -136,25 +135,11 @@ class GoogleMapsIntegrationTest extends TestCase
             'longitude' => '-79.3832',
         ]));
 
-        $client = Client::query()->create([
-            'name' => 'Map Client',
-            'address' => $lead->address,
+        $job = Job::query()->create([
+            'lead_id' => $lead->id,
+            'customer_name' => 'Map Client',
             'phone' => '555-0100',
             'email' => 'mapclient@example.com',
-            'lead_id' => $lead->id,
-            'service_types' => [ServiceTypes::all()[0]],
-            'weed_spray' => 'No',
-            're_completion_days' => '14 days',
-            'job_type' => 'Regular',
-            'safety_concerns' => ['Pet'],
-            'payment_mode' => 'Cash',
-            'payment_status' => 'Done',
-            'customer_type' => JobCustomerType::EASY->value,
-        ]);
-
-        $job = Job::query()->create([
-            'client_id' => $client->id,
-            'lead_id' => $lead->id,
             'equipment_type_id' => $equipment->id,
             'client_address' => $lead->address,
             'latitude' => '43.6532',
@@ -198,25 +183,11 @@ class GoogleMapsIntegrationTest extends TestCase
             'longitude' => '-79.3832',
         ]));
 
-        $client = Client::query()->create([
-            'name' => 'Repeat Client',
-            'address' => $lead->address,
+        $previousJob = Job::query()->create([
+            'lead_id' => $lead->id,
+            'customer_name' => 'Repeat Client',
             'phone' => '555-0200',
             'email' => 'repeatclient@example.com',
-            'lead_id' => $lead->id,
-            'service_types' => [ServiceTypes::all()[0]],
-            'weed_spray' => 'No',
-            're_completion_days' => '14 days',
-            'job_type' => 'Regular',
-            'safety_concerns' => ['Pet'],
-            'payment_mode' => 'Cash',
-            'payment_status' => 'Done',
-            'customer_type' => JobCustomerType::EASY->value,
-        ]);
-
-        $previousJob = Job::query()->create([
-            'client_id' => $client->id,
-            'lead_id' => $lead->id,
             'equipment_type_id' => $equipment->id,
             'client_address' => $lead->address,
             'latitude' => '43.6532',
@@ -234,8 +205,10 @@ class GoogleMapsIntegrationTest extends TestCase
         ]);
 
         $job = Job::query()->create([
-            'client_id' => $client->id,
             'lead_id' => $lead->id,
+            'customer_name' => 'Repeat Client',
+            'phone' => '555-0200',
+            'email' => 'repeatclient@example.com',
             'equipment_type_id' => $equipment->id,
             'client_address' => $lead->address,
             'latitude' => '43.6532',

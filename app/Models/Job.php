@@ -10,7 +10,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable([
-    'client_id',
     'customer_name',
     'email',
     'phone',
@@ -93,11 +92,6 @@ class Job extends Model
         return $this->belongsTo(Zone::class);
     }
 
-    public function client(): BelongsTo
-    {
-        return $this->belongsTo(Client::class);
-    }
-
     public function lead(): BelongsTo
     {
         return $this->belongsTo(Lead::class);
@@ -131,11 +125,6 @@ class Job extends Model
         $name = trim((string) ($this->customer_name ?: ''));
         if ($name !== '') {
             return $name;
-        }
-
-        $legacy = trim((string) ($this->client?->name ?: ''));
-        if ($legacy !== '') {
-            return $legacy;
         }
 
         $address = trim((string) ($this->client_address ?: ''));

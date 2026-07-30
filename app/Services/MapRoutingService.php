@@ -15,7 +15,7 @@ class MapRoutingService
 {
     /**
      * Return map-ready jobs with computed coordinates from lead first.
-     * Short-lived cache per filter combination — generation bumps when jobs/leads/clients change.
+     * Short-lived cache per filter combination — generation bumps when jobs/leads change.
      *
      * @param  array<string, mixed>  $filters
      */
@@ -65,10 +65,6 @@ class MapRoutingService
     {
         $query = Job::query()
             ->with([
-                'client:id,name,address,latitude,longitude,phone,email,equipment_type_id,customer_type',
-                'client.equipmentType:id,name,color_code',
-                'client.lastJob:service_jobs.id,service_jobs.client_id,service_jobs.scheduled_date,service_jobs.done_by_user_id',
-                'client.lastJob.doneByUser:id,name',
                 'lead:id,client_name,address,latitude,longitude,equipment_type_id,mobile_number,email',
                 'lead.equipmentType:id,name,color_code',
                 'equipmentType:id,name,color_code',
@@ -78,16 +74,21 @@ class MapRoutingService
 
         (new JobListFilter)->apply($query, $filters);
 
-        return $query->get()->map(function (Job $job): array {
-            $lat = $job->latitude ?? $job->client?->latitude ?? $job->lead?->latitude;
-            $lng = $job->longitude ?? $job->client?->longitude ?? $job->lead?->longitude;
+        $jobs = $query->get();
+        $lastVisitByPhone = $this->previousVisitsByPhone($jobs);
+
+        return $jobs->map(function (Job $job) use ($lastVisitByPhone): array {
+            $lat = $job->latitude ?? $job->lead?->latitude;
+            $lng = $job->longitude ?? $job->lead?->longitude;
+            $phone = trim((string) $job->phone);
+            $previous = $phone !== '' ? ($lastVisitByPhone[$phone] ?? null) : null;
 
             return [
                 'id' => $job->id,
                 'client_name' => $job->customerDisplayName(),
-                'client_address' => $job->client_address ?? $job->client?->address ?? $job->lead?->address,
-                'client_phone' => $job->phone ?: ($job->client?->phone ?? $job->lead?->mobile_number),
-                'client_email' => $job->email ?: ($job->client?->email ?? $job->lead?->email),
+                'client_address' => $job->client_address ?? $job->lead?->address,
+                'client_phone' => $job->phone ?: ($job->lead?->mobile_number),
+                'client_email' => $job->email ?: ($job->lead?->email),
                 'show_url' => route('admin.jobs.show', $job),
                 'edit_url' => route('admin.jobs.edit', $job),
                 'scheduled_date' => optional($job->scheduled_date)->toDateString(),
@@ -98,10 +99,8 @@ class MapRoutingService
                 'lat' => (float) $lat,
                 'lng' => (float) $lng,
                 'equipment_name' => $job->equipmentType?->name
-                    ?? $job->client?->equipmentType?->name
                     ?? $job->lead?->equipmentType?->name,
                 'equipment_color' => $job->equipmentType?->color_code
-                    ?? $job->client?->equipmentType?->color_code
                     ?? $job->lead?->equipmentType?->color_code
                     ?? '#64748b',
                 'assigned_employees' => collect([$job->doneByUser?->name])
@@ -112,10 +111,41 @@ class MapRoutingService
                     ->all(),
                 'done_by_user_id' => $job->done_by_user_id,
                 'helper_employee_ids' => $job->assignedEmployees->pluck('id')->map('strval')->values()->all(),
-                'last_job_date' => optional($job->client?->lastJob?->scheduled_date)->toDateString(),
-                'last_job_mower' => $job->client?->lastJob?->doneByUser?->name,
+                'last_job_date' => $previous?->scheduled_date?->toDateString(),
+                'last_job_mower' => $previous?->doneByUser?->name,
             ];
         })->filter(fn (array $item): bool => ! is_null($item['lat']) && ! is_null($item['lng']))->values();
+    }
+
+    /**
+     * Most recent prior visit per phone (scheduled before today), matching former Client::lastJob.
+     *
+     * @param  Collection<int, Job>  $jobs
+     * @return array<string, Job>
+     */
+    private function previousVisitsByPhone(Collection $jobs): array
+    {
+        $phones = $jobs->pluck('phone')
+            ->map(fn ($phone): string => trim((string) $phone))
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($phones->isEmpty()) {
+            return [];
+        }
+
+        return Job::query()
+            ->with('doneByUser:id,name')
+            ->whereIn('phone', $phones->all())
+            ->whereNotNull('scheduled_date')
+            ->whereDate('scheduled_date', '<', now()->toDateString())
+            ->orderByDesc('scheduled_date')
+            ->orderByDesc('scheduled_time')
+            ->get()
+            ->unique(fn (Job $job): string => trim((string) $job->phone))
+            ->keyBy(fn (Job $job): string => trim((string) $job->phone))
+            ->all();
     }
 
     /**
@@ -126,7 +156,7 @@ class MapRoutingService
     public function optimizeRouteSequence(array $jobIds): array
     {
         $jobs = Job::query()
-            ->with(['client:id,latitude,longitude', 'lead:id,latitude,longitude'])
+            ->with(['lead:id,latitude,longitude'])
             ->whereIn('id', $jobIds)
             ->get()
             ->filter(fn (Job $job): bool => $this->jobCoordinates($job) !== null)
@@ -208,7 +238,7 @@ class MapRoutingService
         $recentJobs = $referencedIds === []
         ? collect()
         : Job::query()
-            ->with(['client:id,latitude,longitude', 'lead:id,latitude,longitude'])
+            ->with(['lead:id,latitude,longitude'])
             ->whereIn('id', $referencedIds)
             ->get()
             ->keyBy('id');
@@ -246,8 +276,8 @@ class MapRoutingService
      */
     private function jobCoordinates(Job $job): ?array
     {
-        $lat = $job->latitude ?? $job->client?->latitude ?? $job->lead?->latitude;
-        $lng = $job->longitude ?? $job->client?->longitude ?? $job->lead?->longitude;
+        $lat = $job->latitude ?? $job->lead?->latitude;
+        $lng = $job->longitude ?? $job->lead?->longitude;
 
         if ($lat === null || $lng === null) {
             return null;

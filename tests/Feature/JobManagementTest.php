@@ -8,7 +8,6 @@ use App\Enums\JobOperationalPaymentStatus;
 use App\Enums\JobParkingStatus;
 use App\Enums\JobWorkflowStatus;
 use App\Enums\UserEfficiency;
-use App\Models\Client;
 use App\Models\EquipmentType;
 use App\Models\Job;
 use App\Models\JobLevel;
@@ -51,13 +50,11 @@ class JobManagementTest extends TestCase
     public function test_job_can_be_created_via_ajax(): void
     {
         $this->actingAs($this->admin)
-            ->postJson(route('admin.jobs.store'), $this->jobPayload(null))
+            ->postJson(route('admin.jobs.store'), $this->jobPayload())
             ->assertCreated()
-            ->assertJsonPath('job.client_id', null)
             ->assertJsonPath('job.customer_name', 'Job Client');
 
         $this->assertDatabaseHas('service_jobs', [
-            'client_id' => null,
             'customer_name' => 'Job Client',
             'phone' => '555-0100',
             'status' => JobWorkflowStatus::PENDING->value,
@@ -66,8 +63,7 @@ class JobManagementTest extends TestCase
 
     public function test_job_can_be_created_without_client_using_contact_fields(): void
     {
-        $payload = $this->jobPayload(0);
-        unset($payload['client_id']);
+        $payload = $this->jobPayload();
         $payload['customer_name'] = 'Standalone Customer';
         $payload['phone'] = '555-9999';
         $payload['email'] = 'standalone@example.com';
@@ -75,29 +71,25 @@ class JobManagementTest extends TestCase
         $this->actingAs($this->admin)
             ->postJson(route('admin.jobs.store'), $payload)
             ->assertCreated()
-            ->assertJsonPath('job.customer_name', 'Standalone Customer')
-            ->assertJsonPath('job.client_id', null);
+            ->assertJsonPath('job.customer_name', 'Standalone Customer');
 
         $this->assertDatabaseHas('service_jobs', [
             'customer_name' => 'Standalone Customer',
             'phone' => '555-9999',
             'email' => 'standalone@example.com',
-            'client_id' => null,
         ]);
     }
 
     public function test_job_can_be_created_without_optional_operational_fields(): void
     {
-        $payload = $this->jobPayload(null);
+        $payload = $this->jobPayload();
         unset($payload['job_level_id'], $payload['scheduled_time'], $payload['payment_status']);
 
         $this->actingAs($this->admin)
             ->postJson(route('admin.jobs.store'), $payload)
-            ->assertCreated()
-            ->assertJsonPath('job.client_id', null);
+            ->assertCreated();
 
         $this->assertDatabaseHas('service_jobs', [
-            'client_id' => null,
             'job_level_id' => null,
             'scheduled_time' => null,
             'payment_status' => null,
@@ -106,10 +98,8 @@ class JobManagementTest extends TestCase
 
     public function test_job_creation_requires_pending_reason_when_payment_status_pending_or_partial(): void
     {
-        $client = Client::query()->create($this->clientPayload());
-
         foreach ([JobOperationalPaymentStatus::PENDING, JobOperationalPaymentStatus::PARTIAL] as $status) {
-            $payload = array_merge($this->jobPayload($client->id), [
+            $payload = array_merge($this->jobPayload(), [
                 'payment_status' => $status->value,
             ]);
             unset($payload['payment_pending_reason']);
@@ -130,7 +120,7 @@ class JobManagementTest extends TestCase
     {
         $job = $this->createJob();
 
-        $payload = array_merge($this->jobPayload($job->client_id), [
+        $payload = array_merge($this->jobPayload(), [
             'payment_status' => JobOperationalPaymentStatus::PARTIAL->value,
             'is_recurring' => false,
             'route_sequence' => 0,
@@ -155,7 +145,7 @@ class JobManagementTest extends TestCase
     public function test_mower_assignment_on_create(): void
     {
         $this->actingAs($this->admin)
-            ->postJson(route('admin.jobs.store'), array_merge($this->jobPayload(null), [
+            ->postJson(route('admin.jobs.store'), array_merge($this->jobPayload(), [
                 'employee_ids' => [$this->mower->id],
                 'done_by_user_id' => $this->mower->id,
             ]))
@@ -191,12 +181,11 @@ class JobManagementTest extends TestCase
 
     public function test_list_filter_today_returns_scheduled_jobs(): void
     {
-        $client = Client::query()->create($this->clientPayload());
-        Job::query()->create(array_merge($this->jobPayload($client->id), [
+        Job::query()->create(array_merge($this->jobPayload(), [
             'scheduled_date' => now()->toDateString(),
             'status' => JobWorkflowStatus::STARTED->value,
         ]));
-        Job::query()->create(array_merge($this->jobPayload($client->id), [
+        Job::query()->create(array_merge($this->jobPayload(), [
             'scheduled_date' => now()->addWeek()->toDateString(),
             'status' => JobWorkflowStatus::STARTED->value,
         ]));
@@ -604,9 +593,7 @@ class JobManagementTest extends TestCase
 
     private function createJob(): Job
     {
-        $client = Client::query()->create($this->clientPayload());
-
-        return Job::query()->create(array_merge($this->jobPayload($client->id), [
+        return Job::query()->create(array_merge($this->jobPayload(), [
             'created_by' => $this->admin->id,
         ]));
     }
@@ -625,29 +612,9 @@ class JobManagementTest extends TestCase
     /**
      * @return array<string, mixed>
      */
-    private function clientPayload(): array
+    private function jobPayload(): array
     {
         return [
-            'name' => 'Job Client',
-            'address' => '50 Job Lane',
-            'service_types' => [ServiceTypes::all()[0]],
-            'weed_spray' => 'No',
-            're_completion_days' => '14 days',
-            'job_type' => 'Regular',
-            'safety_concerns' => ['Pet'],
-            'payment_mode' => 'Cash',
-            'payment_status' => 'Done',
-            'customer_type' => 'Easy',
-            'equipment_type_id' => EquipmentType::query()->where('is_active', true)->value('id'),
-        ];
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function jobPayload(?int $clientId = null): array
-    {
-        $payload = [
             'customer_name' => 'Job Client',
             'phone' => '555-0100',
             'email' => 'job.client@example.com',
@@ -664,11 +631,5 @@ class JobManagementTest extends TestCase
             'recurrence_id' => Recurrence::query()->where('is_active', true)->value('id'),
             'job_level_id' => JobLevel::query()->where('is_active', true)->value('id'),
         ];
-
-        if ($clientId) {
-            $payload['client_id'] = $clientId;
-        }
-
-        return $payload;
     }
 }

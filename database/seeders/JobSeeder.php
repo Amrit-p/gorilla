@@ -140,7 +140,6 @@ class JobSeeder extends Seeder
             $mowerIncentive = $assignedMowerId ? ($mowerIncentives[$assignedMowerId] ?? 0) : 0;
 
             $job = Job::create([
-                'client_id' => null,
                 'zone_id' => $zoneIds->isNotEmpty() ? $zoneIds[$i % $zoneIds->count()] : null,
                 'job_level_id' => $jobLevelIds->isNotEmpty() ? $jobLevelIds[$i % $jobLevelIds->count()] : null,
                 'customer_name' => $customer['name'],

@@ -73,7 +73,7 @@ class JobsExport extends SpreadsheetExport
         foreach ($this->jobs as $i => $job) {
             $sheet->setCellValue('A'.$row, $i + 1);
             $sheet->setCellValue('B'.$row, $job->customerDisplayName() === 'N/A' ? '' : $job->customerDisplayName());
-            $sheet->setCellValue('C'.$row, $job->phone ?: ($job->client?->customer_unique_id ?? ''));
+            $sheet->setCellValue('C'.$row, $job->phone ?: '');
             $sheet->setCellValue('D'.$row, $job->client_address ?? '');
             $sheet->setCellValue('E'.$row, $job->zone?->name ?? '');
             $sheet->setCellValue('F'.$row, $job->scheduled_date?->format('d/m/Y') ?? '');

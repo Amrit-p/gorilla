@@ -110,7 +110,6 @@ class MowerRemarkJobIdTest extends TestCase
     private function createAssignedJob(array $overrides = []): Job
     {
         $job = Job::query()->create(array_merge([
-            'client_id' => null,
             'customer_name' => 'Remark Customer',
             'phone' => '555-0100',
             'client_address' => '10 Remark Rd',

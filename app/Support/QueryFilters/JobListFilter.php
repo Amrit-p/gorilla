@@ -45,6 +45,10 @@ final class JobListFilter
             default => null,
         };
 
+        if (! empty($filters['scheduled_date'])) {
+            $query->whereDate('scheduled_date', $filters['scheduled_date']);
+        }
+
         if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
@@ -65,8 +69,8 @@ final class JobListFilter
             });
         }
 
-        if (! empty($filters['client_id'])) {
-            $query->where('client_id', $filters['client_id']);
+        if (! empty($filters['phone'])) {
+            $query->where('phone', $filters['phone']);
         }
 
         if (! empty($filters['recurrence_id'])) {

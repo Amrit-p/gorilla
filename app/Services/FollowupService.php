@@ -144,7 +144,6 @@ class FollowupService
                 ->orWhere('email', 'like', "%{$query}%")
                 ->orWhere('phone', 'like', "%{$query}%")
                 ->orWhere('client_address', 'like', "%{$query}%")
-                ->orWhereHas('client', fn ($cq) => $cq->where('name', 'like', "%{$query}%"))
             ))
             ->latest()
             ->limit(15)

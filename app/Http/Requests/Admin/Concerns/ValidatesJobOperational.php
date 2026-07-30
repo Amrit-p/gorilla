@@ -23,7 +23,6 @@ trait ValidatesJobOperational
     protected function jobOperationalRules(): array
     {
         return [
-            'client_id' => ['nullable', 'exists:clients,id'],
             'customer_name' => ['required', 'string', 'max:120'],
             'email' => ['nullable', 'email', 'max:120'],
             'phone' => ['required', 'string', 'max:30'],

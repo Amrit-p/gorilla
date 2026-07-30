@@ -124,7 +124,6 @@ class LeadManagementController extends Controller
         $lead->load([
             'leadNotes.user:id,name',
             'equipmentType:id,name,color_code',
-            'client:id,lead_id',
             'assignedSalesUser:id,name',
         ]);
 

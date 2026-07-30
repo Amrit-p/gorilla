@@ -3,24 +3,6 @@
 @endphp
 
 <div class="sm:col-span-2">
-    <label class="mb-1 block text-sm font-medium text-slate-700">Customer</label>
-    <select name="client_id" id="job-client-id" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-        <option value="">Select client</option>
-        @foreach ($clients as $client)
-            <option
-                value="{{ $client->id }}"
-                data-address="{{ $client->address }}"
-                data-lat="{{ $client->latitude }}"
-                data-lng="{{ $client->longitude }}"
-                @selected((string) old('client_id', $jobModel?->client_id) === (string) $client->id)
-            >
-                {{ $client->name }}
-            </option>
-        @endforeach
-    </select>
-</div>
-
-<div class="sm:col-span-2">
     <x-ui.input label="Service address" name="client_address" id="job-client-address" :value="old('client_address', $jobModel?->client_address)" />
 </div>
 

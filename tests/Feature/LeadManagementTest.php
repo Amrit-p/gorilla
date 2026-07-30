@@ -7,7 +7,6 @@ use App\Enums\LeadPaymentMode;
 use App\Enums\LeadReCompletionDays;
 use App\Enums\LeadStatus;
 use App\Enums\LeadWeedSpray;
-use App\Models\Client;
 use App\Models\EquipmentType;
 use App\Models\Job;
 use App\Models\Lead;
@@ -66,7 +65,6 @@ class LeadManagementTest extends TestCase
         $lead->refresh();
         $this->assertTrue($lead->is_locked);
         $this->assertNotNull($lead->converted_at);
-        $this->assertSame(0, Client::query()->where('lead_id', $lead->id)->count());
         $this->assertSame(1, Job::query()->where('lead_id', $lead->id)->count());
         $this->assertDatabaseHas('service_jobs', [
             'lead_id' => $lead->id,
@@ -74,7 +72,6 @@ class LeadManagementTest extends TestCase
             'phone' => $lead->mobile_number,
             'email' => $lead->email,
             'client_address' => $lead->address,
-            'client_id' => null,
         ]);
     }
 
@@ -90,7 +87,6 @@ class LeadManagementTest extends TestCase
             ->assertJsonPath('converted', true);
 
         $this->assertSame(1, Job::query()->where('lead_id', $lead->id)->count());
-        $this->assertSame(0, Client::query()->where('lead_id', $lead->id)->count());
     }
 
     public function test_duplicate_job_not_created_on_repeated_conversion(): void
@@ -124,7 +120,6 @@ class LeadManagementTest extends TestCase
             'phone' => $payload['mobile_number'],
             'email' => 'convert-snapshot@example.com',
             'client_address' => $payload['address'],
-            'client_id' => null,
         ]);
         $this->assertSame(1, Job::query()->where('lead_id', $lead->id)->count());
     }

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class MowerRemark extends Model
 {
-    protected $fillable = ['user_id', 'job_id', 'client_id', 'description'];
+    protected $fillable = ['user_id', 'job_id', 'description'];
 
     public function user(): BelongsTo
     {
@@ -17,10 +17,5 @@ class MowerRemark extends Model
     public function job(): BelongsTo
     {
         return $this->belongsTo(Job::class);
-    }
-
-    public function client(): BelongsTo
-    {
-        return $this->belongsTo(Client::class);
     }
 }

@@ -50,7 +50,6 @@ class AutoRescheduleJobs extends Command
 
             DB::transaction(function () use ($job, $nextDate, $managers, &$rescheduled): void {
                 $newJob = Job::create([
-                    'client_id' => $job->client_id,
                     'lead_id' => $job->lead_id,
                     'zone_id' => $job->zone_id,
                     'equipment_type_id' => $job->equipment_type_id,
