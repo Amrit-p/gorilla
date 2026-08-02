@@ -14,8 +14,8 @@ class HandleLeadConvertedToClient implements ShouldQueue
 
     public function handle(LeadConvertedToClient $event): void
     {
-        $lead = $event->lead->fresh(['client']);
-        if (! $lead || ! $lead->client) {
+        $lead = $event->lead->fresh();
+        if (! $lead || $lead->converted_at === null) {
             return;
         }
 

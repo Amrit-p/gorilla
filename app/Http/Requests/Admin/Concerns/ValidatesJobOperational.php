@@ -7,6 +7,8 @@ use App\Enums\JobOperationalPaymentMode;
 use App\Enums\JobOperationalPaymentStatus;
 use App\Enums\JobParkingStatus;
 use App\Enums\JobWorkflowStatus;
+use App\Enums\LeadJobType;
+use App\Enums\LeadWeedSpray;
 use App\Models\User;
 use App\Support\CrmRoles;
 use App\Support\EquipmentTypes;
@@ -21,7 +23,15 @@ trait ValidatesJobOperational
     protected function jobOperationalRules(): array
     {
         return [
-            'client_id' => ['required', 'exists:clients,id'],
+            'customer_name' => ['required', 'string', 'max:120'],
+            'email' => ['nullable', 'email', 'max:120'],
+            'phone' => ['required', 'string', 'max:30'],
+            'weed_spray' => ['nullable', Rule::in(LeadWeedSpray::values())],
+            'job_type' => ['nullable', Rule::in(LeadJobType::values())],
+            'property_details' => ['nullable', 'string'],
+            'notes' => ['nullable', 'string'],
+            'accounting_level_id' => ['nullable', 'exists:accounting_levels,id'],
+            'client_rating_id' => ['nullable', 'exists:client_ratings,id'],
             'recurrence_id' => ['required', 'exists:recurrences,id'],
             'zone_id' => ['nullable', 'exists:zones,id'],
             'equipment_type_id' => EquipmentTypes::idRules(),
@@ -34,8 +44,8 @@ trait ValidatesJobOperational
             'estimated_duration_minutes' => ['required', 'integer', 'min:15', 'max:1440'],
             'required_services' => ['required', 'array', 'min:1'],
             'required_services.*' => ServiceTypes::itemRules(),
-            'parking_status' => ['nullable', Rule::in(JobParkingStatus::values())],
-            'customer_type' => ['nullable', Rule::in(JobCustomerType::values())],
+            'parking_status' => ['required', Rule::in(JobParkingStatus::values())],
+            'customer_type' => ['required', Rule::in(JobCustomerType::values())],
             'pet_warning' => ['nullable', 'string', 'max:1000'],
             'images' => ['nullable', 'array'],
             'images.*' => ['image', 'max:5120'],

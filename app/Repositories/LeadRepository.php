@@ -40,7 +40,6 @@ class LeadRepository
             ->with([
                 'assignedSalesUser:id,name',
                 'equipmentType:id,name,color_code',
-                'client:id,lead_id',
                 'zone:id,name',
                 'recurrence:id,name',
             ])
@@ -63,7 +62,6 @@ class LeadRepository
             ->with([
                 'assignedSalesUser:id,name',
                 'equipmentType:id,name,color_code',
-                'client:id,lead_id',
                 'zone:id,name',
                 'recurrence:id,name',
             ])

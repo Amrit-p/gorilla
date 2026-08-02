@@ -10,7 +10,6 @@ use App\Enums\JobParkingStatus;
 use App\Enums\JobWorkflowStatus;
 use App\Enums\UserEfficiency;
 use App\Models\Checklist;
-use App\Models\Client;
 use App\Models\Job;
 use App\Models\MowerChecklistSubmission;
 use App\Models\User;
@@ -220,21 +219,10 @@ class JobImageManagementTest extends TestCase
      */
     private function createAssignedJob(User $mower, array $overrides = []): Job
     {
-        $client = Client::query()->create([
-            'name' => 'Image Client '.$mower->id,
-            'address' => '20 Photo Ln',
-            'service_types' => [ServiceTypes::all()[0]],
-            'weed_spray' => 'No',
-            're_completion_days' => '14 days',
-            'job_type' => 'Regular',
-            'safety_concerns' => ['Pet'],
-            'payment_mode' => 'Cash',
-            'payment_status' => 'Done',
-            'customer_type' => JobCustomerType::EASY->value,
-        ]);
-
         $job = Job::query()->create(array_merge([
-            'client_id' => $client->id,
+            'customer_name' => 'Image Client '.$mower->id,
+            'phone' => '555-0200',
+            'email' => 'image@example.com',
             'client_address' => '20 Photo Ln',
             'scheduled_date' => now()->toDateString(),
             'scheduled_time' => '09:00',

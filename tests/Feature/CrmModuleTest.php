@@ -2,31 +2,29 @@
 
 namespace Tests\Feature;
 
-use App\Enums\ClientCustomerType;
-use App\Enums\ClientPaymentStatus;
-use App\Enums\JobParkingStatus;
 use App\Enums\JobCustomerType;
-use App\Enums\JobWorkflowStatus;
 use App\Enums\JobOperationalPaymentMode;
 use App\Enums\JobOperationalPaymentStatus;
+use App\Enums\JobParkingStatus;
 use App\Enums\LeadJobType;
 use App\Enums\LeadPaymentMode;
-use App\Enums\LeadStatus;
-use App\Models\Recurrence;
-use App\Enums\LeadWeedSpray;
-use App\Models\Client;
-use App\Models\Job;
-use App\Models\Lead;
-use App\Models\User;
 use App\Enums\LeadPaymentStatus;
+use App\Enums\LeadStatus;
+use App\Enums\LeadWeedSpray;
+use App\Exports\LeadsExport;
 use App\Models\EquipmentType;
+use App\Models\Job;
 use App\Models\JobLevel;
+use App\Models\Lead;
+use App\Models\Recurrence;
+use App\Models\User;
 use App\Support\ServiceTypes;
 use Database\Seeders\JobLevelSeeder;
 use Database\Seeders\MasterCatalogSeeder;
 use Database\Seeders\RecurrenceSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use Tests\TestCase;
 
 class CrmModuleTest extends TestCase
@@ -90,16 +88,16 @@ class CrmModuleTest extends TestCase
         $response->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         $response->assertDownload('leads-import-sample.xlsx');
 
-        $tmp = tempnam(sys_get_temp_dir(), 'leads_sample_') . '.xlsx';
+        $tmp = tempnam(sys_get_temp_dir(), 'leads_sample_').'.xlsx';
         file_put_contents($tmp, $response->streamedContent());
 
         try {
-            $sheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($tmp)->getActiveSheet();
+            $sheet = IOFactory::load($tmp)->getActiveSheet();
 
-            foreach (\App\Exports\LeadsExport::COLUMNS as $col => $def) {
+            foreach (LeadsExport::COLUMNS as $col => $def) {
                 $this->assertSame(
                     $def['header'],
-                    $sheet->getCell($col . '4')->getValue(),
+                    $sheet->getCell($col.'4')->getValue(),
                     "Row 4 column {$col} header mismatch"
                 );
             }
@@ -116,52 +114,27 @@ class CrmModuleTest extends TestCase
             ->assertDontSee('No query results for model');
     }
 
-    public function test_client_create_page_and_store(): void
-    {
-        $this->actingAs($this->admin)
-            ->get(route('admin.clients.create'))
-            ->assertOk()
-            ->assertSee('Create Customer');
-
-        $payload = $this->validClientPayload();
-
-        $this->actingAs($this->admin)
-            ->post(route('admin.clients.store'), $payload)
-            ->assertRedirect()
-            ->assertSessionHas('success');
-
-        $client = Client::query()->where('address', $payload['address'])->first();
-        $this->assertNotNull($client?->customer_unique_id);
-        $this->assertGreaterThanOrEqual(2001, $client->customer_unique_id);
-    }
-
-    public function test_client_create_route_is_not_captured_by_show_route(): void
-    {
-        $this->actingAs($this->admin)
-            ->get('/admin/clients/create')
-            ->assertOk();
-    }
-
     public function test_job_create_page_and_store(): void
     {
-        $client = Client::query()->create($this->validClientPayload());
-
         $this->actingAs($this->admin)
             ->get(route('admin.jobs.create'))
             ->assertOk()
-            ->assertSee('Create Job');
+            ->assertSee('Create Job')
+            ->assertSee('Job details')
+            ->assertDontSee('Select customer');
 
-        $payload = $this->validJobPayload($client->id);
+        $payload = $this->validJobPayload();
 
         $response = $this->actingAs($this->admin)
             ->post(route('admin.jobs.store'), $payload)
             ->assertSessionHas('success');
 
-        $job = Job::query()->where('client_id', $client->id)->firstOrFail();
+        $job = Job::query()->where('phone', $payload['phone'])->firstOrFail();
         $response->assertRedirect(route('admin.jobs.show', $job));
 
         $this->assertDatabaseHas('service_jobs', [
-            'client_id' => $client->id,
+            'customer_name' => $payload['customer_name'],
+            'phone' => $payload['phone'],
             'client_address' => $payload['client_address'],
         ]);
     }
@@ -220,34 +193,12 @@ class CrmModuleTest extends TestCase
     /**
      * @return array<string, mixed>
      */
-    private function validClientPayload(): array
+    private function validJobPayload(): array
     {
         return [
-            'name' => '456 Client Ave',
-            'address' => '456 Client Ave',
-            'service_types' => [collect(ServiceTypes::all())->first(fn ($s) => str_contains($s, 'Cut')) ?? ServiceTypes::all()[0]],
-            'weed_spray' => LeadWeedSpray::YES->value,
-            'recurrence_id' => Recurrence::query()->where('is_active', true)->value('id'),
-            'job_type' => LeadJobType::REGULAR->value,
-            'safety_concerns' => ['Pet'],
-            'charges' => '75.00',
-            'phone' => '555-0200',
-            'email' => 'client@example.com',
-            'payment_mode' => LeadPaymentMode::ONLINE->value,
-            'payment_status' => ClientPaymentStatus::DONE->value,
-            'customer_type' => ClientCustomerType::EASY->value,
-            'parking_status' => JobParkingStatus::EASY->value,
-            'equipment_type_id' => \App\Models\EquipmentType::query()->where('is_active', true)->value('id'),
-        ];
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function validJobPayload(int $clientId): array
-    {
-        return [
-            'client_id' => $clientId,
+            'customer_name' => 'CRM Job Customer',
+            'phone' => '555-0456',
+            'email' => 'crm.job@example.com',
             'recurrence_id' => Recurrence::query()->where('is_active', true)->value('id'),
             'job_level_id' => JobLevel::query()->where('is_active', true)->value('id'),
             'client_address' => '456 Client Ave',
@@ -259,7 +210,7 @@ class CrmModuleTest extends TestCase
             'customer_type' => JobCustomerType::EASY->value,
             'payment_mode' => JobOperationalPaymentMode::CASH->value,
             'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
-            'equipment_type_id' => \App\Models\EquipmentType::query()->where('is_active', true)->value('id'),
+            'equipment_type_id' => EquipmentType::query()->where('is_active', true)->value('id'),
         ];
     }
 }

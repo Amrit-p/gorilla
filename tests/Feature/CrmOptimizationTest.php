@@ -10,7 +10,6 @@ use App\Enums\JobParkingStatus;
 use App\Enums\JobWorkflowStatus;
 use App\Enums\UserEfficiency;
 use App\Models\Checklist;
-use App\Models\Client;
 use App\Models\Job;
 use App\Models\MowerChecklistSubmission;
 use App\Models\User;
@@ -62,10 +61,9 @@ class CrmOptimizationTest extends TestCase
     {
         $mowerA = $this->mowerUser();
         $mowerB = $this->mowerUser();
-        $client = $this->createClient();
 
         foreach ([$mowerA, $mowerB, $mowerA] as $mower) {
-            $job = Job::query()->create($this->jobPayload($client->id));
+            $job = Job::query()->create($this->jobPayload());
             $job->assignedEmployees()->sync([$mower->id]);
         }
 
@@ -84,12 +82,10 @@ class CrmOptimizationTest extends TestCase
 
     public function test_crm_index_endpoints_return_standard_ajax_html(): void
     {
-        $client = $this->createClient();
-        Job::query()->create($this->jobPayload($client->id));
+        Job::query()->create($this->jobPayload());
 
         foreach ([
             route('admin.jobs.index'),
-            route('admin.clients.index'),
             route('admin.leads.index'),
             route('admin.users.index'),
         ] as $url) {
@@ -100,12 +96,10 @@ class CrmOptimizationTest extends TestCase
         }
     }
 
-    public function test_jobs_list_does_not_n_plus_one_clients(): void
+    public function test_jobs_list_does_not_query_clients_table(): void
     {
-        $client = $this->createClient();
-
         for ($i = 0; $i < 8; $i++) {
-            Job::query()->create($this->jobPayload($client->id, [
+            Job::query()->create($this->jobPayload([
                 'client_address' => "Address {$i}",
             ]));
         }
@@ -121,14 +115,13 @@ class CrmOptimizationTest extends TestCase
             ->assertJsonStructure(['html']);
 
         $clientSelects = array_filter($queries, static fn (string $sql): bool => str_contains(strtolower($sql), 'from "clients"') || str_contains(strtolower($sql), 'from `clients`'));
-        $this->assertLessThanOrEqual(2, count($clientSelects));
+        $this->assertSame(0, count($clientSelects));
     }
 
     public function test_mower_dashboard_analytics_payload_is_stable(): void
     {
         $mower = $this->mowerUser();
-        $client = $this->createClient();
-        $job = Job::query()->create($this->jobPayload($client->id, [
+        $job = Job::query()->create($this->jobPayload([
             'status' => JobWorkflowStatus::COMPLETED->value,
             'consumed_time_minutes' => 45,
         ]));
@@ -144,8 +137,7 @@ class CrmOptimizationTest extends TestCase
 
     public function test_job_show_renders_readonly_field_photos(): void
     {
-        $client = $this->createClient();
-        $job = Job::query()->create($this->jobPayload($client->id));
+        $job = Job::query()->create($this->jobPayload());
         $job->forceFill([
             'before_images' => [
                 (new JobStoredImage(
@@ -173,7 +165,7 @@ class CrmOptimizationTest extends TestCase
     {
         $mower = $this->mowerUser();
         $this->completeChecklistForMower($mower);
-        $job = Job::query()->create($this->jobPayload($this->createClient()->id));
+        $job = Job::query()->create($this->jobPayload());
         $job->assignedEmployees()->sync([$mower->id]);
 
         $this->actingAs($mower)
@@ -241,31 +233,16 @@ class CrmOptimizationTest extends TestCase
         return $user;
     }
 
-    private function createClient(): Client
-    {
-        return Client::query()->create([
-            'name' => 'Optimization Client',
-            'address' => '1 Opt Rd',
-            'service_types' => [ServiceTypes::all()[0]],
-            'weed_spray' => 'No',
-            're_completion_days' => '14 days',
-            'job_type' => 'Regular',
-            'safety_concerns' => ['Pet'],
-            'payment_mode' => 'Cash',
-            'payment_status' => 'Done',
-            'customer_type' => JobCustomerType::EASY->value,
-            'charges' => 100,
-        ]);
-    }
-
     /**
      * @param  array<string, mixed>  $overrides
      * @return array<string, mixed>
      */
-    private function jobPayload(int $clientId, array $overrides = []): array
+    private function jobPayload(array $overrides = []): array
     {
         return array_merge([
-            'client_id' => $clientId,
+            'customer_name' => 'Optimization Client',
+            'phone' => '555-0100',
+            'email' => 'optimization@example.com',
             'client_address' => '1 Opt Rd',
             'scheduled_date' => now()->toDateString(),
             'scheduled_time' => '09:00',

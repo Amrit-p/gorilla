@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Enums\JobWorkflowStatus;
 use App\Models\Checklist;
-use App\Models\Client;
 use App\Models\Job;
 use App\Models\MowerChecklistSubmission;
 use App\Models\User;
@@ -83,10 +82,6 @@ class GorillaCrmRolesTest extends TestCase
             ->assertOk();
 
         $this->actingAs($user)
-            ->get(route('admin.clients.index'))
-            ->assertOk();
-
-        $this->actingAs($user)
             ->get(route('admin.jobs.index'))
             ->assertOk();
 
@@ -99,14 +94,13 @@ class GorillaCrmRolesTest extends TestCase
             ->assertOk();
     }
 
-    public function test_sales_manager_can_manage_leads_customers_and_view_jobs(): void
+    public function test_sales_manager_can_manage_leads_and_view_jobs(): void
     {
         $user = $this->userWithRole(CrmRoles::SALES_MANAGER);
 
         $this->actingAs($user)->get(route('dashboard.index'))->assertOk();
         $this->actingAs($user)->get(route('admin.leads.index'))->assertOk();
         $this->actingAs($user)->get(route('admin.leads.create'))->assertOk();
-        $this->actingAs($user)->get(route('admin.clients.index'))->assertOk();
         $this->actingAs($user)->get(route('admin.jobs.index'))->assertOk();
 
         $this->actingAs($user)->get(route('admin.jobs.create'))->assertOk();
@@ -126,7 +120,6 @@ class GorillaCrmRolesTest extends TestCase
 
         $this->actingAs($user)->get(route('admin.jobs.create'))->assertForbidden();
         $this->actingAs($user)->get(route('admin.leads.index'))->assertForbidden();
-        $this->actingAs($user)->get(route('admin.clients.index'))->assertForbidden();
         $this->actingAs($user)->get(route('admin.users.index'))->assertForbidden();
     }
 
@@ -162,19 +155,10 @@ class GorillaCrmRolesTest extends TestCase
         $this->assertTrue($sales->canCreateJobs());
         $this->assertFalse($sales->canManageJobRecords());
 
-        $client = Client::query()->create([
-            'name' => 'Test Client',
-            'address' => '1 Test St',
-            'service_types' => ['Mulching'],
-            'weed_spray' => 'Yes',
-            're_completion_days' => '14 days',
-            'job_type' => 'Regular',
-            'safety_concerns' => ['Pet'],
-            'payment_mode' => 'Cash',
-            'payment_status' => 'Pending',
-        ]);
         $job = Job::query()->create([
-            'client_id' => $client->id,
+            'customer_name' => 'Test Client',
+            'phone' => '555-0100',
+            'email' => 'test.client@example.com',
             'client_address' => '1 Test St',
             'scheduled_date' => now()->addDay()->toDateString(),
             'scheduled_time' => '09:00',
@@ -211,19 +195,10 @@ class GorillaCrmRolesTest extends TestCase
     public function test_job_policy_upload_images_for_mower(): void
     {
         $mower = $this->userWithRole(CrmRoles::MOWER);
-        $client = Client::query()->create([
-            'name' => 'Test Client',
-            'address' => '1 Test St',
-            'service_types' => ['Mulching'],
-            'weed_spray' => 'Yes',
-            're_completion_days' => '14 days',
-            'job_type' => 'Regular',
-            'safety_concerns' => ['Pet'],
-            'payment_mode' => 'Cash',
-            'payment_status' => 'Pending',
-        ]);
         $job = Job::query()->create([
-            'client_id' => $client->id,
+            'customer_name' => 'Test Client',
+            'phone' => '555-0100',
+            'email' => 'test.client@example.com',
             'client_address' => '1 Test St',
             'scheduled_date' => now()->addDay()->toDateString(),
             'scheduled_time' => '09:00',

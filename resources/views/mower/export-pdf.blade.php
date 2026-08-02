@@ -139,10 +139,10 @@
                     <tr>
                         <td class="center muted">{{ $i + 1 }}</td>
                         <td>
-                            @if ($job->client?->customer_unique_id)
-                                <span style="color:#64748b">#{{ $job->client->customer_unique_id }}</span>
+                            {{ $job->customerDisplayName() }}
+                            @if ($job->phone)
+                                <br><span style="color:#64748b">{{ $job->phone }}</span>
                             @endif
-                            {{ $job->client?->name ?: 'Customer' }}
                         </td>
                         <td>{{ $job->client_address ?: '—' }}</td>
                         <td class="center">

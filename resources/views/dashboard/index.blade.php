@@ -61,9 +61,9 @@ $dashboardType = $analytics['type'] ?? 'admin';
                             <tr class="hover:bg-slate-50">
                                 <td class="px-4 py-3 font-medium text-slate-800">
                                     @can('view-jobs')
-                                    <a href="{{ route('admin.jobs.show', $job) }}" class="hover:text-emerald-700">{{ $job->client?->name ?? '—' }}</a>
+                                    <a href="{{ route('admin.jobs.show', $job) }}" class="hover:text-emerald-700">{{ $job->customerDisplayName() }}</a>
                                     @else
-                                    {{ $job->client?->name ?? '—' }}
+                                    {{ $job->customerDisplayName() }}
                                     @endcan
                                 </td>
                                 <td class="max-w-[200px] truncate px-4 py-3 text-slate-600" title="{{ $job->client_address }}">{{ $job->client_address ?: '—' }}</td>

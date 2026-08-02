@@ -83,7 +83,6 @@ class DashboardController extends Controller
 
         $query = Job::query()
             ->with([
-                'client:id,name,customer_unique_id',
                 'zone:id,name',
                 'equipmentType:id,name,color_code',
                 'jobLevel:id,name,color_code',
@@ -137,7 +136,6 @@ class DashboardController extends Controller
             ->with([
                 'assignedSalesUser:id,name',
                 'equipmentType:id,name,color_code',
-                'client:id,lead_id',
                 'zone:id,name',
                 'recurrence:id,name',
             ])

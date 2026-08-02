@@ -58,9 +58,9 @@
                 <tr>
                     <td class="center">{{ $i + 1 }}</td>
                     <td>
-                        {{ $job->client?->name ?? '—' }}
-                        @if ($job->client?->customer_unique_id)
-                            <br><span style="color:#94a3b8;font-size:6.5px;">#{{ $job->client->customer_unique_id }}</span>
+                        {{ $job->customerDisplayName() }}
+                        @if ($job->phone)
+                            <br><span style="color:#94a3b8;font-size:6.5px;">{{ $job->phone }}</span>
                         @endif
                     </td>
                     <td>{{ $job->client_address ?? '—' }}</td>

@@ -110,8 +110,8 @@
                     @if ($lead->is_locked)
                         <x-ui.badge type="warning">Locked</x-ui.badge>
                     @endif
-                    @if ($lead->client)
-                        <x-ui.badge type="success">Customer</x-ui.badge>
+                    @if ($lead->converted_at)
+                        <x-ui.badge type="success">Converted</x-ui.badge>
                     @endif
                 </div>
             </td>

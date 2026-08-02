@@ -34,15 +34,27 @@ enum LeadStatus: string
         ));
     }
 
-    public function convertsToClient(): bool
+    public function convertsToJob(): bool
     {
         return in_array($this, [self::MATURE, self::WON], true);
     }
 
-    public static function convertsToClientValue(string $status): bool
+    public static function convertsToJobValue(string $status): bool
     {
         $enum = self::tryFrom($status);
 
-        return $enum?->convertsToClient() ?? false;
+        return $enum?->convertsToJob() ?? false;
+    }
+
+    /** @deprecated Use convertsToJob() */
+    public function convertsToClient(): bool
+    {
+        return $this->convertsToJob();
+    }
+
+    /** @deprecated Use convertsToJobValue() */
+    public static function convertsToClientValue(string $status): bool
+    {
+        return self::convertsToJobValue($status);
     }
 }

@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Enums\JobWorkflowStatus;
 use App\Enums\LeadStatus;
 use App\Models\ActivityLog;
-use App\Models\Client;
 use App\Models\DashboardPreference;
 use App\Models\Job;
 use App\Models\Lead;
@@ -19,7 +18,7 @@ class DashboardService
 {
     /**
      * Aggregate KPIs for dashboard cards — cached briefly to absorb refresh storms.
-     * Cache clears when Lead, Client, or Job models change (see AppServiceProvider).
+     * Cache clears when Lead or Job models change (see AppServiceProvider).
      *
      * @return array<string, mixed>
      */
@@ -65,7 +64,8 @@ class DashboardService
         return Job::query()
             ->select([
                 'id',
-                'client_id',
+                'customer_name',
+                'phone',
                 'client_address',
                 'scheduled_date',
                 'scheduled_time',
@@ -75,7 +75,6 @@ class DashboardService
                 'done_by_user_id',
             ])
             ->with([
-                'client:id,name,charges,phone',
                 'doneByUser:id,name',
             ])
             ->whereDate('scheduled_date', now()->toDateString())
@@ -109,7 +108,7 @@ class DashboardService
     }
 
     /**
-     * @return array{leads: int, clients: int, jobs: int, revenue: float}
+     * @return array{leads: int, converted: int, jobs: int, revenue: float}
      */
     private function periodMetrics(string $fromDate, string $toDate): array
     {
@@ -120,8 +119,13 @@ class DashboardService
             'leads' => Lead::query()
                 ->whereBetween('created_at', [$from, $to])
                 ->count(),
-            'clients' => Client::query()
-                ->whereBetween('created_at', [$from, $to])
+            'converted' => Lead::query()
+                ->whereNotNull('converted_at')
+                ->whereBetween('converted_at', [$from, $to])
+                ->count(),
+            'clients' => Lead::query()
+                ->whereNotNull('converted_at')
+                ->whereBetween('converted_at', [$from, $to])
                 ->count(),
             'jobs' => Job::query()
                 ->whereBetween('scheduled_date', [$fromDate, $toDate])
@@ -212,11 +216,9 @@ class DashboardService
             ->when($filters['search'] ?? null, function ($q, $term) {
                 $q->where(function ($q) use ($term) {
                     $q->where('client_address', 'like', "%{$term}%")
-                        ->orWhereHas('client', function ($q) use ($term) {
-                            $q->where('name', 'like', "%{$term}%")
-                                ->orWhere('address', 'like', "%{$term}%")
-                                ->orWhere('customer_unique_id', 'like', "%{$term}%");
-                        })
+                        ->orWhere('customer_name', 'like', "%{$term}%")
+                        ->orWhere('phone', 'like', "%{$term}%")
+                        ->orWhere('email', 'like', "%{$term}%")
                         ->orWhereHas('assignedEmployees', fn ($q) => $q->where('name', 'like', "%{$term}%"))
                         ->orWhereHas('doneByUser', fn ($q) => $q->where('name', 'like', "%{$term}%"));
                 });
@@ -295,8 +297,8 @@ class DashboardService
     public function holdJobs(): Collection
     {
         return Job::query()
-            ->select(['id', 'client_id', 'client_address', 'scheduled_date', 'scheduled_time', 'estimated_duration_minutes', 'status', 'payment_status', 'done_by_user_id'])
-            ->with(['client:id,customer_unique_id,name', 'assignedEmployees:id,name', 'doneByUser:id,name'])
+            ->select(['id', 'customer_name', 'phone', 'client_address', 'scheduled_date', 'scheduled_time', 'estimated_duration_minutes', 'status', 'payment_status', 'done_by_user_id'])
+            ->with(['assignedEmployees:id,name', 'doneByUser:id,name'])
             ->where('status', JobWorkflowStatus::HOLD->value)
             ->orderBy('scheduled_date')
             ->orderBy('scheduled_time')

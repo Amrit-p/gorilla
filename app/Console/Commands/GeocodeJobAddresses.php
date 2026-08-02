@@ -24,7 +24,7 @@ class GeocodeJobAddresses extends Command
         $force = (bool) $this->option('force');
 
         $jobs = Job::query()
-            ->with(['client:id,address,latitude,longitude', 'lead:id,address,latitude,longitude'])
+            ->with(['lead:id,address,latitude,longitude'])
             ->when(! $force, fn ($query) => $query->where(function ($query): void {
                 $query->whereNull('latitude')->orWhereNull('longitude');
             }))
@@ -76,7 +76,7 @@ class GeocodeJobAddresses extends Command
 
     private function resolveAddress(Job $job): ?string
     {
-        $address = $job->client_address ?: $job->client?->address ?: $job->lead?->address;
+        $address = $job->client_address ?: $job->lead?->address;
 
         return $address !== null && trim($address) !== '' ? $address : null;
     }

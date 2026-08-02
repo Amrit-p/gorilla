@@ -135,11 +135,9 @@ class MowerDashboardController extends Controller
 
         $images = $this->jobImageManagementService->presentAllForJob($job);
 
-        $lastRemark = $job->client_id
-            ? MowerRemark::where('client_id', $job->client_id)
-                ->latest()
-                ->first()
-            : null;
+        $lastRemark = MowerRemark::where('job_id', $job->id)
+            ->latest('id')
+            ->first();
 
         return view('mower.jobs.show', [
             'job' => $job,
@@ -168,7 +166,7 @@ class MowerDashboardController extends Controller
             if (! empty($validated['description'])) {
                 $remark = MowerRemark::create([
                     'user_id' => $request->user()->id,
-                    'client_id' => $job->client_id,
+                    'job_id' => $job->id,
                     'description' => $validated['description'],
                 ]);
 
@@ -322,7 +320,7 @@ class MowerDashboardController extends Controller
 
         $remark = MowerRemark::create([
             'user_id' => $request->user()->id,
-            'client_id' => $job->client_id,
+            'job_id' => $job->id,
             'description' => $validated['description'],
         ]);
 

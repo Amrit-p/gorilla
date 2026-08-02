@@ -3,7 +3,7 @@
 namespace Tests\Feature\Mower;
 
 use App\Models\Checklist;
-use App\Models\Client;
+use App\Models\EquipmentType;
 use App\Models\Job;
 use App\Models\MowerChecklistSubmission;
 use App\Models\Recurrence;
@@ -11,11 +11,10 @@ use App\Models\User;
 use App\Notifications\MowerClientJobCreatedNotification;
 use App\Support\CrmRoles;
 use Database\Seeders\ChecklistSeeder;
+use Database\Seeders\MasterCatalogSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class MowerClientControllerTest extends TestCase
@@ -26,37 +25,40 @@ class MowerClientControllerTest extends TestCase
 
     private Recurrence $recurrence;
 
+    private int $equipmentTypeId;
+
     protected function setUp(): void
     {
         parent::setUp();
         $this->seed(RoleAndPermissionSeeder::class);
         $this->seed(ChecklistSeeder::class);
+        $this->seed(MasterCatalogSeeder::class);
 
         $this->mower = User::factory()->create(['is_active' => true]);
         $this->mower->assignRole(CrmRoles::MOWER);
         $this->completeChecklistForMower($this->mower);
 
         $this->recurrence = Recurrence::create(['name' => 'Weekly', 'is_active' => true, 'sort_order' => 1]);
+        $this->equipmentTypeId = (int) EquipmentType::query()->where('is_active', true)->value('id');
     }
 
-    public function test_mower_can_view_create_client_page(): void
+    public function test_mower_can_view_create_job_page(): void
     {
-        $response = $this->actingAs($this->mower)->get(route('mower.clients.create'));
+        $response = $this->actingAs($this->mower)->get(route('mower.jobs.create'));
 
         $response->assertOk();
-        $response->assertViewIs('mower.clients.create');
+        $response->assertViewIs('mower.jobs.create');
     }
 
-    public function test_unauthenticated_user_cannot_view_create_client_page(): void
+    public function test_unauthenticated_user_cannot_view_create_job_page(): void
     {
-        $response = $this->get(route('mower.clients.create'));
+        $response = $this->get(route('mower.jobs.create'));
 
         $response->assertRedirect(route('login'));
     }
 
-    public function test_mower_can_create_client_and_job_is_auto_created(): void
+    public function test_mower_can_create_job_without_customer_record(): void
     {
-        Storage::fake('public');
         Notification::fake();
 
         $officeManager = User::factory()->create(['is_active' => true]);
@@ -65,31 +67,34 @@ class MowerClientControllerTest extends TestCase
         $salesManager = User::factory()->create(['is_active' => true]);
         $salesManager->assignRole(CrmRoles::SALES_MANAGER);
 
-        $response = $this->actingAs($this->mower)->post(route('mower.clients.store'), [
+        $response = $this->actingAs($this->mower)->post(route('mower.jobs.store'), [
             'address' => '123 Test Street, Auckland',
+            'phone' => '0211234567',
+            'customer_name' => 'Test Customer',
             'service_types' => ['Mulching'],
             'weed_spray' => 'Yes',
             'recurrence_id' => $this->recurrence->id,
+            'equipment_type_id' => $this->equipmentTypeId,
             'job_type' => 'Regular',
             'payment_mode' => 'Cash',
             'customer_type' => 'Easy',
-            'documents' => [UploadedFile::fake()->create('site-photo.jpg', 100, 'image/jpeg')],
+            'schedule_date' => now()->toDateString(),
         ]);
 
         $response->assertRedirect(route('mower.index'));
         $response->assertSessionHas('success');
 
-        $client = Client::where('address', '123 Test Street, Auckland')->first();
-        $this->assertNotNull($client);
-        $this->assertEquals($this->mower->id, $client->created_by);
-
         $this->assertDatabaseHas('service_jobs', [
-            'client_id' => $client->id,
+            'client_address' => '123 Test Street, Auckland',
+            'phone' => '0211234567',
+            'customer_name' => 'Test Customer',
             'payment_status' => 'Pending',
             'done_by_user_id' => $this->mower->id,
         ]);
 
-        $job = Job::where('client_id', $client->id)->first();
+        $job = Job::query()->where('phone', '0211234567')->first();
+        $this->assertNotNull($job);
+        $this->assertSame(60, (int) $job->estimated_duration_minutes);
         Notification::assertSentTo($officeManager, MowerClientJobCreatedNotification::class,
             fn ($n) => $n->job->id === $job->id && $n->createdBy->id === $this->mower->id
         );
@@ -99,22 +104,24 @@ class MowerClientControllerTest extends TestCase
         Notification::assertNotSentTo($this->mower, MowerClientJobCreatedNotification::class);
     }
 
-    public function test_mower_cannot_create_client_without_required_fields(): void
+    public function test_mower_cannot_create_job_without_required_fields(): void
     {
-        $response = $this->actingAs($this->mower)->post(route('mower.clients.store'), []);
+        $response = $this->actingAs($this->mower)->post(route('mower.jobs.store'), []);
 
-        $response->assertSessionHasErrors(['address', 'service_types', 'weed_spray', 'recurrence_id', 'job_type', 'payment_mode', 'customer_type']);
+        $response->assertSessionHasErrors(['address', 'phone', 'service_types', 'weed_spray', 'recurrence_id', 'equipment_type_id', 'job_type', 'payment_mode', 'customer_type']);
     }
 
-    public function test_non_mower_cannot_create_client(): void
+    public function test_non_mower_cannot_create_job(): void
     {
         $admin = User::factory()->create(['is_active' => true]);
 
-        $response = $this->actingAs($admin)->post(route('mower.clients.store'), [
+        $response = $this->actingAs($admin)->post(route('mower.jobs.store'), [
             'address' => '123 Test Street',
+            'phone' => '0211234567',
             'service_types' => ['Mulching'],
             'weed_spray' => 'Yes',
             'recurrence_id' => $this->recurrence->id,
+            'equipment_type_id' => $this->equipmentTypeId,
             'job_type' => 'Regular',
             'payment_mode' => 'Cash',
             'customer_type' => 'Easy',

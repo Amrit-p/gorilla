@@ -7,10 +7,11 @@ use App\Enums\JobOperationalPaymentMode;
 use App\Enums\JobOperationalPaymentStatus;
 use App\Enums\JobParkingStatus;
 use App\Enums\JobWorkflowStatus;
+use App\Enums\LeadJobType;
+use App\Enums\LeadWeedSpray;
 use App\Helpers\OptimizationHelper;
 use App\Jobs\GeocodeJobAddressJob;
 use App\Models\ActivityLog;
-use App\Models\Client;
 use App\Models\Job;
 use App\Models\JobLevel;
 use App\Models\Recurrence;
@@ -68,19 +69,9 @@ class JobManagementService
     /**
      * @return array<string, mixed>
      */
-    public function formOptions(?int $selectedClientId = null): array
+    public function formOptions(): array
     {
-        $selectedClient = $selectedClientId
-            ? Client::query()
-                ->with(['equipmentType:id,name,color_code', 'lead.equipmentType:id,name,color_code'])
-                ->find($selectedClientId, ['id', 'name', 'address', 'latitude', 'longitude', 'zone_id', 'recurrence_id', 'payment_mode', 'payment_status', 'service_types', 'parking_status', 'customer_type', 'pet_warning', 'additional_site_instructions', 'equipment_type_id', 'lead_id'])
-            : null;
-
         return [
-            'clients' => Client::query()
-                ->with(['equipmentType:id,name,color_code', 'lead.equipmentType:id,name,color_code'])
-                ->orderBy('name')
-                ->get(['id', 'name', 'address', 'latitude', 'longitude', 'customer_unique_id', 'zone_id', 'recurrence_id', 'payment_mode', 'payment_status', 'service_types', 'parking_status', 'customer_type', 'pet_warning', 'additional_site_instructions', 'equipment_type_id', 'lead_id']),
             'employees' => User::query()
                 ->role(CrmRoles::MOWER)
                 ->where('is_active', true)
@@ -91,6 +82,8 @@ class JobManagementService
             'customerTypes' => JobCustomerType::values(),
             'paymentModes' => JobOperationalPaymentMode::values(),
             'paymentStatuses' => JobOperationalPaymentStatus::values(),
+            'jobTypes' => LeadJobType::values(),
+            'weedSprayOptions' => LeadWeedSpray::values(),
             'recurrences' => Recurrence::query()->orderBy('name')->get(['id', 'name']),
             'equipmentTypes' => EquipmentTypes::selectOptions(),
             'jobLevels' => JobLevel::query()->active()->ordered()->get(['id', 'name', 'color_code']),
@@ -105,7 +98,6 @@ class JobManagementService
             ], CrmPermissions::isOfficeManager(auth()->user()) ? [
                 'deleted' => 'Deleted jobs',
             ] : []),
-            'selectedClient' => $selectedClient,
             'mowerWorkloads' => $this->mowerAssignmentService->mowerWorkloads(now()->toDateString()),
         ];
     }
@@ -148,57 +140,13 @@ class JobManagementService
             $this->activityLogService->log($actor, 'job.created', 'Job created.', ['job_id' => $job->id]);
             DB::commit();
 
-            return $job->fresh(['client', 'assignedEmployees', 'doneByUser']);
+            return $job->fresh(['assignedEmployees', 'doneByUser']);
         } catch (\Throwable $th) {
             DB::rollBack();
             report($th);
 
             return null;
         }
-    }
-
-    /**
-     * Create a job for a customer, mirroring the field mapping used when a
-     * lead is converted. Returns null when the customer has no service types
-     * or no schedule date, since jobs require a scheduled date.
-     */
-    public function createJobFromClient(User $actor, Client $client): ?Job
-    {
-        if (empty($client->service_types) || $client->schedule_date === null) {
-            return null;
-        }
-
-        $job = Job::query()->create([
-            'client_id' => $client->id,
-            'lead_id' => $client->lead_id,
-            'zone_id' => $client->zone_id,
-            'equipment_type_id' => $client->equipment_type_id,
-            'job_level_id' => $client->job_level_id,
-            'recurrence_id' => $client->recurrence_id,
-            'client_address' => $client->address,
-            'latitude' => $client->latitude,
-            'longitude' => $client->longitude,
-            'required_services' => $client->service_types,
-            'scheduled_date' => $client->schedule_date,
-            'estimated_duration_minutes' => $client->estimated_time,
-            'customer_type' => $client->customer_type,
-            'payment_mode' => $client->payment_mode,
-            'payment_status' => $client->payment_status,
-            'charges' => $client->charges,
-            'site_instructions' => $client->additional_site_instructions,
-            'special_remarks' => $client->special_remarks,
-            'status' => JobWorkflowStatus::PENDING->value,
-            'created_by' => $actor->id,
-        ]);
-
-        GeocodeJobAddressJob::dispatch($job->id);
-
-        $this->activityLogService->log($actor, 'job.created_from_client', 'Job created from customer.', [
-            'job_id' => $job->id,
-            'client_id' => $client->id,
-        ]);
-
-        return $job;
     }
 
     /**
@@ -224,7 +172,7 @@ class JobManagementService
 
             DB::commit();
 
-            return $job->fresh(['client', 'assignedEmployees', 'doneByUser']);
+            return $job->fresh(['assignedEmployees', 'doneByUser']);
         } catch (\Throwable $th) {
             DB::rollBack();
             report($th);
@@ -290,7 +238,7 @@ class JobManagementService
         }
 
         // Reload jobs after commit — one query with eager loads instead of N fresh() calls.
-        $freshJobs = Job::with(['client', 'assignedEmployees', 'doneByUser'])
+        $freshJobs = Job::with(['assignedEmployees', 'doneByUser'])
             ->whereIn('id', $jobs->pluck('id'))
             ->get();
 
@@ -506,35 +454,13 @@ class JobManagementService
     }
 
     /**
-     * Prefill site fields from selected customer.
-     *
-     * @return array<string, mixed>
-     */
-    public function clientDefaults(int $clientId): array
-    {
-        $client = Client::query()->with('lead.equipmentType')->findOrFail($clientId);
-        $equipmentTypeId = $client->equipment_type_id ?? $client->lead?->equipment_type_id;
-
-        return [
-            'client_address' => $client->address,
-            'latitude' => $client->latitude,
-            'longitude' => $client->longitude,
-            'zone_id' => $client->zone_id,
-            'recurrence_id' => $client->recurrence_id,
-            'customer_type' => $client->customer_type,
-            'site_instructions' => $client->additional_site_instructions,
-            'equipment_type_id' => $equipmentTypeId,
-        ];
-    }
-
-    /**
      * @param  array<string, mixed>  $data
      * @param  array<int, UploadedFile>  $images
      * @return array<string, mixed>
      */
     private function prepareJobData(array $data, array $images = [], ?Job $existingJob = null): array
     {
-        unset($data['images']);
+        unset($data['images'], $data['client_id']);
 
         $data['status'] ??= JobWorkflowStatus::PENDING->value;
         $data['priority'] ??= 'Medium';
@@ -546,16 +472,6 @@ class JobManagementService
             JobOperationalPaymentStatus::PARTIAL->value,
         ], true)) {
             $data['payment_pending_reason'] = null;
-        }
-
-        if (! empty($data['client_id'])) {
-            $client = Client::query()->find($data['client_id'], ['lead_id', 'equipment_type_id']);
-            if ($client) {
-                $data['lead_id'] ??= $client->lead_id;
-                if (empty($data['equipment_type_id'])) {
-                    $data['equipment_type_id'] = $client->equipment_type_id;
-                }
-            }
         }
 
         if (! empty($data['done_by_user_id'])) {

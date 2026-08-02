@@ -10,11 +10,10 @@
         <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
                 <h2 class="text-lg font-semibold text-slate-900">Edit Job</h2>
-                <p class="text-sm text-slate-600">{{ $job->client?->name }} — <x-jobs.status-badge :status="$job->status" /></p>
+                <p class="text-sm text-slate-600">{{ $job->customerDisplayName() }} — <x-jobs.status-badge :status="$job->status" /></p>
             </div>
             <a href="{{ route('admin.jobs.show', $job) }}" class="text-sm text-emerald-700 hover:underline">View job</a>
         </div>
-        <x-jobs.remarks-card />
 
         <div id="job-form-alert" class="hidden"></div>
 
@@ -44,10 +43,11 @@
                 workloads: @json(route('admin.jobs.mower-workloads')),
                 suggestions: @json(route('admin.jobs.mower-suggestions')),
                 clientRemarks: @json(route('admin.jobs.client-remarks')),
+                clientHistory: @json(route('admin.jobs.client-history')),
+                jobId: {{ (int) $job->id }},
             };
         </script>
         <script src="{{ asset('js/job-form.js') }}?v={{ @filemtime(public_path('js/job-form.js')) ?: 1 }}"></script>
-        <script src="{{ asset('js/job-remarks.js') }}?v={{ @filemtime(public_path('js/job-remarks.js')) ?: 1 }}"></script>
         <script>
             $('#job-form').on('submit', function (event) {
                 event.preventDefault();

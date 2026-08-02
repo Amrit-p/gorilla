@@ -21,8 +21,11 @@ class JobRepository
         $query = $this->baseListQuery($filters)
             ->select([
                 'id',
-                'client_id',
+                'lead_id',
                 'zone_id',
+                'customer_name',
+                'phone',
+                'email',
                 'client_address',
                 'scheduled_date',
                 'scheduled_time',
@@ -41,6 +44,8 @@ class JobRepository
                 'incentive_percentage',
                 'equipment_type_id',
                 'job_level_id',
+                'client_rating_id',
+                'accounting_level_id',
                 'special_remarks',
                 'internal_notes',
                 'contract_id',
@@ -48,9 +53,7 @@ class JobRepository
                 'verified_by',
             ])
             ->with([
-                'client:id,name,address,customer_unique_id,phone,email,customer_type,client_rating_id',
-                'client.clientRating:id,name,description',
-                'client.lastJob:service_jobs.id,service_jobs.client_id,service_jobs.scheduled_date',
+                'clientRating:id,name,description',
                 'zone:id,name',
                 'recurrence:id,name',
                 'equipmentType:id,name,color_code',
@@ -69,10 +72,9 @@ class JobRepository
     {
         return Job::query()
             ->with([
-                'client:id,customer_unique_id,name,address,phone,email,customer_type,parking_status,pet_warning,zone_id,accounting_level_id,client_rating_id,payment_status,created_at',
-                'client.zone:id,name',
-                'client.accountingLevel:id,name',
-                'client.clientRating:id,name',
+                'zone:id,name',
+                'accountingLevel:id,name',
+                'clientRating:id,name',
                 'assignedEmployees:id,name,efficiency',
                 'doneByUser:id,name,efficiency',
                 'creator:id,name',
@@ -87,7 +89,6 @@ class JobRepository
     {
         return $this->baseListQuery($filters)
             ->with([
-                'client:id,name,customer_unique_id,address,phone,email,customer_type',
                 'zone:id,name',
                 'recurrence:id,name',
                 'equipmentType:id,name,color_code',

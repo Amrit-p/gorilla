@@ -16,12 +16,10 @@ final class JobListFilter
         if (! empty($filters['search'])) {
             $search = trim((string) $filters['search']);
             $query->where(function (Builder $q) use ($search): void {
-                $q->where('client_address', 'like', "%{$search}%")
-                    ->orWhereHas('client', function (Builder $clientQuery) use ($search): void {
-                        $clientQuery->where('name', 'like', "%{$search}%")
-                            ->orWhere('address', 'like', "%{$search}%")
-                            ->orWhere('customer_unique_id', 'like', "%{$search}%");
-                    })
+                $q->where('customer_name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('client_address', 'like', "%{$search}%")
                     ->orWhereHas('assignedEmployees', function (Builder $empQuery) use ($search): void {
                         $empQuery->where('name', 'like', "%{$search}%");
                     })
@@ -47,6 +45,10 @@ final class JobListFilter
             default => null,
         };
 
+        if (! empty($filters['scheduled_date'])) {
+            $query->whereDate('scheduled_date', $filters['scheduled_date']);
+        }
+
         if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
@@ -67,8 +69,8 @@ final class JobListFilter
             });
         }
 
-        if (! empty($filters['client_id'])) {
-            $query->where('client_id', $filters['client_id']);
+        if (! empty($filters['phone'])) {
+            $query->where('phone', $filters['phone']);
         }
 
         if (! empty($filters['recurrence_id'])) {

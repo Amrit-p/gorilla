@@ -59,10 +59,7 @@
                             <div class="flex items-start justify-between gap-2">
                                 <div class="min-w-0">
                                     <p class="truncate font-semibold text-slate-900">
-                                        @if ($job->client?->customer_unique_id)
-                                            #{{ $job->client->customer_unique_id }}
-                                        @endif
-                                        {{ $job->client?->name ?: 'Customer' }}
+                                        {{ $job->customerDisplayName() }}
                                     </p>
                                     <p class="mt-1 truncate text-sm text-slate-500">{{ $job->client_address }}</p>
                                     <p class="mt-2 text-xs text-slate-600">

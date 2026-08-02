@@ -1,13 +1,12 @@
 /**
- * Job form: step wizard, customer autofill, mower workloads & suggestions.
+ * Job form: step wizard, mower workloads & suggestions.
  */
 (function ($) {
     'use strict';
 
-    const STEPS = ['customer', 'site', 'mower'];
+    const STEPS = ['details', 'mower'];
     const NEXT_LABELS = {
-        customer: 'Continue to site details',
-        site: 'Continue to mower assignment',
+        details: 'Continue to mower assignment',
     };
 
     let maxReachedIndex = 0;
@@ -22,7 +21,7 @@
 
     function getCurrentStep() {
         const $active = $('.job-wizard-step.is-active').first();
-        return ($active.data('step') || 'customer').toString();
+        return ($active.data('step') || 'details').toString();
     }
 
     function ensureValidator() {
@@ -162,14 +161,12 @@
             $item.find('p.text-sm').toggleClass('text-slate-900', isActive || isComplete).toggleClass('text-slate-700', !isActive && !isComplete);
         });
 
-        $('#job-wizard-back').toggleClass('hidden', step === 'customer');
+        $('#job-wizard-back').toggleClass('hidden', step === 'details');
         $('#job-wizard-next').toggleClass('hidden', step === 'mower');
         $('#job-form-submit').toggleClass('hidden', step !== 'mower');
 
-        if (step === 'customer') {
-            $('#job-wizard-next').text(NEXT_LABELS.customer);
-        } else if (step === 'site') {
-            $('#job-wizard-next').text(NEXT_LABELS.site);
+        if (step === 'details') {
+            $('#job-wizard-next').text(NEXT_LABELS.details);
         }
     }
 
@@ -184,7 +181,7 @@
             return;
         }
 
-        $('#job-tab-customer, #job-tab-site, #job-tab-mower').addClass('hidden');
+        $('#job-tab-details, #job-tab-mower').addClass('hidden');
         $('#job-tab-' + step).removeClass('hidden');
 
         $('.job-wizard-step').removeClass('is-active');
@@ -353,7 +350,7 @@
 
         const isEdit = $('#job-form').find('input[name="_method"][value="PATCH"]').length > 0;
         maxReachedIndex = isEdit ? STEPS.length - 1 : 0;
-        switchJobTab('customer', { force: true });
+        switchJobTab('details', { force: true });
 
         $('#job-wizard-next').on('click', function () {
             if (!validateCurrentStep()) {
@@ -386,7 +383,10 @@
     }
 
     $('#job-client-id').on('change', function () {
-        fillFromClient($(this).find('option:selected'));
+        const $option = $(this).find('option:selected');
+        if ($option.length && $option.val()) {
+            fillFromClient($option);
+        }
         refreshWorkloads();
     });
 
@@ -409,10 +409,13 @@
         toggleJobPaymentReason();
         initWizard();
 
-        const $client = $('#job-client-id option:selected');
-        const isEditMode = $('#job-form').find('input[name="_method"][value="PATCH"]').length > 0;
-        if ($client.val() && !isEditMode) {
-            fillFromClient($client);
+        const $clientSelect = $('#job-client-id');
+        if ($clientSelect.is('select')) {
+            const $client = $clientSelect.find('option:selected');
+            const isEditMode = $('#job-form').find('input[name="_method"][value="PATCH"]').length > 0;
+            if ($client.val() && !isEditMode) {
+                fillFromClient($client);
+            }
         }
         syncJobEquipmentMarkerColor();
     });

@@ -3,7 +3,6 @@
 namespace Tests\Feature\Mower;
 
 use App\Enums\JobWorkflowStatus;
-use App\Models\Client;
 use App\Models\Job;
 use App\Models\Recurrence;
 use App\Models\User;
@@ -22,8 +21,6 @@ class AutoRescheduleJobsTest extends TestCase
 
     private User $admin;
 
-    private Client $client;
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -32,19 +29,6 @@ class AutoRescheduleJobsTest extends TestCase
         $this->seed(RecurrenceSeeder::class);
 
         $this->admin = User::query()->where('email', 'admin@mowingcrm.test')->firstOrFail();
-        $this->client = Client::query()->create([
-            'name' => 'Test Client',
-            'address' => '1 Test Rd',
-            'service_types' => ['Mowing'],
-            'weed_spray' => 'No',
-            're_completion_days' => '14 days',
-            'job_type' => 'Regular',
-            'safety_concerns' => [],
-            'payment_mode' => 'Cash',
-            'payment_status' => 'Done',
-            'customer_type' => 'Easy',
-            'charges' => 100,
-        ]);
     }
 
     public function test_completed_recurring_job_creates_new_job_with_correct_date(): void
@@ -61,7 +45,8 @@ class AutoRescheduleJobsTest extends TestCase
         $this->artisan('app:auto-reschedule-jobs')->assertSuccessful();
 
         $newJob = Job::query()
-            ->where('client_id', $this->client->id)
+            ->where('customer_name', 'Test Client')
+            ->where('phone', '555-0000')
             ->where('status', JobWorkflowStatus::PENDING->value)
             ->whereNull('rescheduled_at')
             ->firstOrFail();
@@ -171,7 +156,9 @@ class AutoRescheduleJobsTest extends TestCase
     private function jobPayload(int $recurrenceId, array $overrides = []): array
     {
         return array_merge([
-            'client_id' => $this->client->id,
+            'customer_name' => 'Test Client',
+            'phone' => '555-0000',
+            'email' => 'test.client@example.com',
             'client_address' => '1 Test Rd',
             'scheduled_date' => now()->toDateString(),
             'is_recurring' => true,

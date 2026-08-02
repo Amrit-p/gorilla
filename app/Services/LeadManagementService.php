@@ -82,7 +82,7 @@ class LeadManagementService
 
             $this->activityLogService->log($actor, 'lead.created', 'Lead created.', ['lead_id' => $lead->id]);
 
-            return $lead->fresh(['equipmentType:id,name,color_code', 'client:id,lead_id']);
+            return $lead->fresh(['equipmentType:id,name,color_code']);
         });
     }
 
@@ -100,7 +100,7 @@ class LeadManagementService
 
             $this->activityLogService->log($actor, 'lead.updated', 'Lead updated.', ['lead_id' => $lead->id]);
 
-            return $lead->fresh(['equipmentType:id,name,color_code', 'client:id,lead_id']);
+            return $lead->fresh(['equipmentType:id,name,color_code']);
         });
     }
 
@@ -128,7 +128,7 @@ class LeadManagementService
                 'status' => $status,
             ]);
 
-            return $lead->fresh(['equipmentType:id,name,color_code', 'client:id,lead_id']);
+            return $lead->fresh(['equipmentType:id,name,color_code']);
         });
     }
 
@@ -214,8 +214,8 @@ class LeadManagementService
         $lead->queued_for_scheduling = true;
         $lead->save();
 
-        $client = $this->leadConversionService->convertLeadToClient($lead, $actor);
-        $this->leadConversionService->logConversion($actor, $lead, $client);
+        $job = $this->leadConversionService->convertLeadToJob($lead, $actor);
+        $this->leadConversionService->logConversion($actor, $lead, $job);
 
         event(new LeadConvertedToClient($lead->fresh(), $actor));
 

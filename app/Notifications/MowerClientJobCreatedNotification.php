@@ -28,8 +28,8 @@ class MowerClientJobCreatedNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('New Client & Job Created by Mower')
-            ->line("{$this->createdBy->name} created a new client and job #{$this->job->id}.")
+            ->subject('New Job Created by Mower')
+            ->line("{$this->createdBy->name} created a new job #{$this->job->id}.")
             ->line('Address: '.($this->job->client_address ?? 'N/A'))
             ->line('Scheduled: '.($this->job->scheduled_date ?? 'TBD'))
             ->action('View Job', route('admin.jobs.show', $this->job));
@@ -42,10 +42,9 @@ class MowerClientJobCreatedNotification extends Notification
     {
         return [
             'job_id' => $this->job->id,
-            'client_id' => $this->job->client_id,
             'created_by_id' => $this->createdBy->id,
             'created_by_name' => $this->createdBy->name,
-            'message' => "{$this->createdBy->name} created a new client and job #{$this->job->id}.",
+            'message' => "{$this->createdBy->name} created a new job #{$this->job->id}.",
         ];
     }
 }

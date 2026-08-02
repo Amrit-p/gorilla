@@ -42,7 +42,9 @@ class MowerDashboardService
         $query = Job::query()
             ->select([
                 'id',
-                'client_id',
+                'customer_name',
+                'phone',
+                'email',
                 'client_address',
                 'latitude',
                 'longitude',
@@ -54,9 +56,7 @@ class MowerDashboardService
                 'payment_status',
                 'route_sequence',
             ])
-            ->with([
-                'client:id,customer_unique_id,name,phone,email,address',
-            ])
+            ->with([])
             ->where(function ($q) use ($mower) {
                 $q->whereHas('assignedEmployees', fn ($q) => $q->where('users.id', $mower->id))
                     ->orWhere('done_by_user_id', $mower->id);
@@ -89,6 +89,7 @@ class MowerDashboardService
                 JobWorkflowStatus::HOLD->value,
                 JobWorkflowStatus::COMPLETED->value,
             ]);
+
         return $query->get();
     }
 
@@ -97,7 +98,6 @@ class MowerDashboardService
         $this->assertAssigned($mower, $job);
 
         return $job->load([
-            'client:id,customer_unique_id,name,phone,email,address,service_types,parking_status,customer_type,pet_warning,additional_site_instructions,payment_mode,payment_status',
             'assignedEmployees:id,name,efficiency',
         ]);
     }
@@ -126,7 +126,6 @@ class MowerDashboardService
         ]);
 
         if ($status === JobWorkflowStatus::COMPLETED->value) {
-            $job->loadMissing('client');
             User::query()->role([CrmRoles::SALES_MANAGER, CrmRoles::OFFICE_MANAGER])->get()
                 ->each(function (User $manager) use ($job): void {
                     $manager->notify(new JobStatusChangedNotification($job));

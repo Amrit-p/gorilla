@@ -50,13 +50,21 @@ class AutoRescheduleJobs extends Command
 
             DB::transaction(function () use ($job, $nextDate, $managers, &$rescheduled): void {
                 $newJob = Job::create([
-                    'client_id' => $job->client_id,
                     'lead_id' => $job->lead_id,
                     'zone_id' => $job->zone_id,
                     'equipment_type_id' => $job->equipment_type_id,
                     'job_level_id' => $job->job_level_id,
                     'contract_id' => $job->contract_id,
                     'recurrence_id' => $job->recurrence_id,
+                    'accounting_level_id' => $job->accounting_level_id,
+                    'client_rating_id' => $job->client_rating_id,
+                    'customer_name' => $job->customer_name,
+                    'email' => $job->email,
+                    'phone' => $job->phone,
+                    'weed_spray' => $job->weed_spray,
+                    'job_type' => $job->job_type,
+                    'property_details' => $job->property_details,
+                    'notes' => $job->notes,
                     'client_address' => $job->client_address,
                     'latitude' => $job->latitude,
                     'longitude' => $job->longitude,
@@ -77,6 +85,8 @@ class AutoRescheduleJobs extends Command
                     'incentive_percentage' => $job->incentive_percentage,
                     'special_remarks' => $job->special_remarks,
                     'internal_notes' => $job->internal_notes,
+                    'payment_mode' => $job->payment_mode,
+                    'payment_status' => $job->payment_status,
                     'created_by' => $job->created_by,
                 ]);
 

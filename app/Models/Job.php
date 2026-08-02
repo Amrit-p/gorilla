@@ -10,7 +10,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable([
-    'client_id',
+    'customer_name',
+    'email',
+    'phone',
+    'weed_spray',
+    'job_type',
+    'property_details',
+    'notes',
+    'accounting_level_id',
+    'client_rating_id',
     'lead_id',
     'zone_id',
     'equipment_type_id',
@@ -84,14 +92,19 @@ class Job extends Model
         return $this->belongsTo(Zone::class);
     }
 
-    public function client(): BelongsTo
-    {
-        return $this->belongsTo(Client::class);
-    }
-
     public function lead(): BelongsTo
     {
         return $this->belongsTo(Lead::class);
+    }
+
+    public function accountingLevel(): BelongsTo
+    {
+        return $this->belongsTo(AccountingLevel::class);
+    }
+
+    public function clientRating(): BelongsTo
+    {
+        return $this->belongsTo(ClientRating::class);
     }
 
     public function equipmentType(): BelongsTo
@@ -102,6 +115,24 @@ class Job extends Model
     public function jobLevel(): BelongsTo
     {
         return $this->belongsTo(JobLevel::class);
+    }
+
+    /**
+     * Contact name on the job, with sensible fallbacks when name was never set.
+     */
+    public function customerDisplayName(): string
+    {
+        $name = trim((string) ($this->customer_name ?: ''));
+        if ($name !== '') {
+            return $name;
+        }
+
+        $address = trim((string) ($this->client_address ?: ''));
+        if ($address !== '') {
+            return $address;
+        }
+
+        return 'N/A';
     }
 
     public function creator(): BelongsTo

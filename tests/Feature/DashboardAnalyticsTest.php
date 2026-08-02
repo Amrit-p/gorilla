@@ -12,7 +12,6 @@ use App\Enums\LeadStatus;
 use App\Enums\LeadWeedSpray;
 use App\Enums\UserEfficiency;
 use App\Models\Checklist;
-use App\Models\Client;
 use App\Models\EquipmentType;
 use App\Models\Job;
 use App\Models\Lead;
@@ -44,16 +43,17 @@ class DashboardAnalyticsTest extends TestCase
 
     public function test_admin_dashboard_shows_revenue_and_job_metrics(): void
     {
-        $client = $this->createClient(150.00);
-        Job::query()->create($this->jobPayload($client->id, [
+        Job::query()->create($this->jobPayload([
             'status' => JobWorkflowStatus::COMPLETED->value,
             'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
             'scheduled_date' => now()->toDateString(),
+            'charges' => 150.00,
         ]));
 
-        Job::query()->create($this->jobPayload($client->id, [
+        Job::query()->create($this->jobPayload([
             'payment_status' => JobOperationalPaymentStatus::PENDING->value,
             'scheduled_date' => now()->toDateString(),
+            'charges' => 80.00,
         ]));
 
         Lead::query()->create($this->leadPayload(LeadStatus::NEW->value));
@@ -87,9 +87,8 @@ class DashboardAnalyticsTest extends TestCase
     public function test_mower_dashboard_shows_field_metrics(): void
     {
         $mower = $this->userWithRole(CrmRoles::MOWER);
-        $client = $this->createClient(80);
-
-        $job = Job::query()->create($this->jobPayload($client->id, [
+        $job = Job::query()->create($this->jobPayload([
+            'charges' => 80.00,
             'scheduled_date' => now()->toDateString(),
             'status' => JobWorkflowStatus::STARTED->value,
             'consumed_time_minutes' => null,
@@ -99,7 +98,8 @@ class DashboardAnalyticsTest extends TestCase
             'assignment_status' => $job->status,
         ]);
 
-        $done = Job::query()->create($this->jobPayload($client->id, [
+        $done = Job::query()->create($this->jobPayload([
+            'charges' => 80.00,
             'scheduled_date' => now()->toDateString(),
             'status' => JobWorkflowStatus::COMPLETED->value,
             'consumed_time_minutes' => 120,
@@ -128,9 +128,8 @@ class DashboardAnalyticsTest extends TestCase
     public function test_mower_performance_table_ajax_filters_by_date_range(): void
     {
         $mower = $this->userWithRole(CrmRoles::MOWER);
-        $client = $this->createClient(100);
-
-        $inRange = Job::query()->create($this->jobPayload($client->id, [
+        $inRange = Job::query()->create($this->jobPayload([
+            'charges' => 100.00,
             'scheduled_date' => now()->toDateString(),
             'status' => JobWorkflowStatus::COMPLETED->value,
             'consumed_time_minutes' => 90,
@@ -140,7 +139,8 @@ class DashboardAnalyticsTest extends TestCase
             'assignment_status' => $inRange->status,
         ]);
 
-        $outOfRange = Job::query()->create($this->jobPayload($client->id, [
+        $outOfRange = Job::query()->create($this->jobPayload([
+            'charges' => 100.00,
             'scheduled_date' => now()->subMonths(2)->toDateString(),
             'status' => JobWorkflowStatus::COMPLETED->value,
             'consumed_time_minutes' => 60,
@@ -200,31 +200,15 @@ class DashboardAnalyticsTest extends TestCase
         return $user;
     }
 
-    private function createClient(float $charges): Client
-    {
-        return Client::query()->create([
-            'name' => 'Analytics Client',
-            'address' => '1 Analytics Rd',
-            'service_types' => [ServiceTypes::all()[0]],
-            'weed_spray' => LeadWeedSpray::NO->value,
-            're_completion_days' => '14 days',
-            'job_type' => 'Regular',
-            'safety_concerns' => ['Pet'],
-            'payment_mode' => 'Cash',
-            'payment_status' => 'Done',
-            'customer_type' => JobCustomerType::EASY->value,
-            'charges' => $charges,
-        ]);
-    }
-
     /**
      * @param  array<string, mixed>  $overrides
      * @return array<string, mixed>
      */
-    private function jobPayload(int $clientId, array $overrides = []): array
+    private function jobPayload(array $overrides = []): array
     {
         return array_merge([
-            'client_id' => $clientId,
+            'customer_name' => 'Analytics Customer',
+            'phone' => '555-1000',
             'client_address' => '1 Analytics Rd',
             'scheduled_date' => now()->toDateString(),
             'scheduled_time' => '10:00',
@@ -235,6 +219,7 @@ class DashboardAnalyticsTest extends TestCase
             'payment_mode' => JobOperationalPaymentMode::CASH->value,
             'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
             'status' => JobWorkflowStatus::STARTED->value,
+            'charges' => 100.00,
             'created_by' => $this->admin->id,
         ], $overrides);
     }

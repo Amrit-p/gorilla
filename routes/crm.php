@@ -6,7 +6,6 @@
 
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\BackupController;
-use App\Http\Controllers\Admin\ClientManagementController;
 use App\Http\Controllers\Admin\Contractors\ContractController;
 use App\Http\Controllers\Admin\Contractors\ContractDocumentController;
 use App\Http\Controllers\Admin\Contractors\ContractorController;
@@ -244,25 +243,6 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
         Route::delete('/admin/leads/{lead}', [LeadManagementController::class, 'destroy'])->name('admin.leads.destroy');
     });
 
-    Route::middleware('crm.permission:'.CrmPermissions::MANAGE_CUSTOMERS)->group(function (): void {
-        Route::get('/admin/clients', [ClientManagementController::class, 'index'])->name('admin.clients.index');
-        Route::get('/admin/clients/import/sample', [ClientManagementController::class, 'downloadImportSample'])->name('admin.clients.import.sample');
-        Route::post('/admin/clients/import', [ClientManagementController::class, 'import'])->name('admin.clients.import');
-        Route::get('/admin/clients/export/excel', [ClientManagementController::class, 'exportExcel'])->name('admin.clients.export.excel');
-        Route::get('/admin/clients/export/pdf', [ClientManagementController::class, 'exportPdf'])->name('admin.clients.export.pdf');
-        Route::get('/admin/clients/create', [ClientManagementController::class, 'create'])->name('admin.clients.create');
-        Route::post('/admin/clients', [ClientManagementController::class, 'store'])->name('admin.clients.store');
-        Route::post('/admin/clients/reschedule', [ClientManagementController::class, 'bulkReschedule'])->name('admin.clients.reschedule');
-        Route::post('/admin/clients/hold', [ClientManagementController::class, 'bulkHold'])->name('admin.clients.hold');
-        Route::get('/admin/clients/{client}/edit', [ClientManagementController::class, 'edit'])->name('admin.clients.edit');
-        Route::get('/admin/clients/{client}/jobs', [ClientManagementController::class, 'jobsTab'])->name('admin.clients.jobs');
-        Route::get('/admin/clients/{client}/documents/{document}/download', [ClientManagementController::class, 'downloadDocument'])->name('admin.clients.documents.download');
-        Route::patch('/admin/clients/{client}', [ClientManagementController::class, 'update'])->name('admin.clients.update');
-        Route::delete('/admin/clients/{client}', [ClientManagementController::class, 'destroy'])->name('admin.clients.destroy');
-        Route::post('/admin/clients/{client}/restore', [ClientManagementController::class, 'restore'])->name('admin.clients.restore');
-        Route::get('/admin/clients/{client}', [ClientManagementController::class, 'show'])->name('admin.clients.show');
-    });
-
     Route::middleware('crm.permission:'.CrmPermissions::ASSIGN_JOBS)->group(function (): void {
         Route::get('/admin/jobs/create', [JobManagementController::class, 'create'])->name('admin.jobs.create');
         Route::get('/admin/jobs/mower-suggestions', [JobManagementController::class, 'mowerSuggestions'])->name('admin.jobs.mower-suggestions');
@@ -309,6 +289,9 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
                 Route::get('/notifications', [NotificationController::class, 'mowerIndex'])->name('notifications.index');
                 Route::get('/discussions', [MowerDiscussionController::class, 'index'])->name('discussions.index');
                 Route::get('/discussions/{discussion}', [MowerDiscussionController::class, 'show'])->name('discussions.show');
+                Route::get('/jobs/create', [MowerClientController::class, 'create'])->name('jobs.create');
+                Route::post('/jobs', [MowerClientController::class, 'store'])->name('jobs.store');
+                // Legacy aliases — same handlers as jobs.create/store
                 Route::get('/clients/create', [MowerClientController::class, 'create'])->name('clients.create');
                 Route::post('/clients', [MowerClientController::class, 'store'])->name('clients.store');
                 Route::get('/jobs/{job}', [MowerDashboardController::class, 'show'])->name('jobs.show');

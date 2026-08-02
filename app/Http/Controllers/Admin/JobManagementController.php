@@ -13,7 +13,6 @@ use App\Http\Requests\Admin\StoreJobRequest;
 use App\Http\Requests\Admin\UpdateJobRequest;
 use App\Http\Requests\Admin\UpdateJobStatusRequest;
 use App\Http\Requests\Admin\UploadJobImagesRequest;
-use App\Models\Client;
 use App\Models\Contract;
 use App\Models\Job;
 use App\Models\MowerRemark;
@@ -78,9 +77,7 @@ class JobManagementController extends Controller
     {
         $this->authorize('create', Job::class);
 
-        $clientId = $request->integer('client_id') ?: null;
-
-        return view('admin.jobs.create', $this->jobManagementService->formOptions($clientId));
+        return view('admin.jobs.create', $this->jobManagementService->formOptions());
     }
 
     public function store(StoreJobRequest $request): JsonResponse|RedirectResponse
@@ -116,9 +113,7 @@ class JobManagementController extends Controller
 
         $jobImages = $this->jobImageManagementService->presentAllForJob($job);
 
-        $customerHistory = $job->client
-            ? $this->clientStatisticsService->forJobShowSidebar($job->client, $job->id)
-            : null;
+        $customerHistory = $this->clientStatisticsService->forJobShowSidebar($job, $job->id);
 
         return view('admin.jobs.show', array_merge(
             [
@@ -129,7 +124,7 @@ class JobManagementController extends Controller
                 'afterImages' => $jobImages['after'],
                 'customerHistory' => $customerHistory,
             ],
-            $this->jobManagementService->formOptions($job->client_id)
+            $this->jobManagementService->formOptions()
         ));
     }
 
@@ -137,11 +132,11 @@ class JobManagementController extends Controller
     {
         $this->authorize('update', $job);
 
-        $job->load(['assignedEmployees:id,name,efficiency', 'client']);
+        $job->load(['assignedEmployees:id,name,efficiency']);
 
         return view('admin.jobs.edit', array_merge(
             ['job' => $job],
-            $this->jobManagementService->formOptions($job->client_id)
+            $this->jobManagementService->formOptions()
         ));
     }
 
@@ -211,15 +206,15 @@ class JobManagementController extends Controller
     {
         $this->authorize('viewAny', Job::class);
 
-        $clientId = (int) $request->query('client_id');
+        $jobId = (int) $request->query('job_id');
 
-        if (! $clientId) {
+        if (! $jobId) {
             return response()->json(['lastRemark' => null, 'allRemarks' => []]);
         }
 
         $remarks = MowerRemark::with('user:id,name')
-            ->where('client_id', $clientId)
-            ->latest()
+            ->where('job_id', $jobId)
+            ->latest('id')
             ->get()
             ->map(fn ($r) => [
                 'description' => $r->description,
@@ -237,22 +232,28 @@ class JobManagementController extends Controller
     {
         $this->authorize('viewAny', Job::class);
 
-        $clientId = (int) $request->query('client_id');
+        $jobId = (int) $request->query('job_id');
+        $phone = trim((string) $request->query('phone', ''));
+        $email = trim((string) $request->query('email', ''));
         $excludeJobId = (int) $request->query('exclude_job_id', 0);
 
-        if (! $clientId) {
+        $sourceJob = $jobId ? Job::query()->find($jobId) : null;
+        if ($sourceJob) {
+            $phone = $phone !== '' ? $phone : trim((string) $sourceJob->phone);
+            $email = $email !== '' ? $email : trim((string) $sourceJob->email);
+        }
+
+        if ($phone === '' && $email === '') {
             return response()->json([
-                'accounting_level' => null,
-                'service_dates' => [],
-                'notes_history' => [],
-                'remarks' => [],
+                'accounting_level' => $sourceJob?->accountingLevel?->name,
+                'service_history' => [],
+                'mower_remarks' => [],
             ]);
         }
 
-        $client = Client::with('accountingLevel')->find($clientId);
-
-        $pastJobs = Job::with('doneByUser:id,name')
-            ->where('client_id', $clientId)
+        $pastJobs = Job::with(['doneByUser:id,name', 'accountingLevel:id,name'])
+            ->when($phone !== '', fn ($q) => $q->where('phone', $phone))
+            ->when($phone === '' && $email !== '', fn ($q) => $q->where('email', $email))
             ->when($excludeJobId, fn ($q) => $q->where('id', '!=', $excludeJobId))
             ->whereNotNull('scheduled_date')
             ->orderByDesc('scheduled_date')
@@ -268,8 +269,13 @@ class JobManagementController extends Controller
             'internal_notes' => $j->internal_notes,
         ])->values()->all();
 
+        $jobIds = $pastJobs->pluck('id')->all();
+        if ($sourceJob) {
+            $jobIds[] = $sourceJob->id;
+        }
+
         $mowerRemarks = MowerRemark::with('user:id,name')
-            ->where('client_id', $clientId)
+            ->whereIn('job_id', array_values(array_unique($jobIds)))
             ->orderByDesc('created_at')
             ->get()
             ->map(fn ($r) => [
@@ -280,7 +286,7 @@ class JobManagementController extends Controller
             ])->values()->all();
 
         return response()->json([
-            'accounting_level' => $client?->accountingLevel?->name,
+            'accounting_level' => $sourceJob?->accountingLevel?->name ?? $pastJobs->first()?->accountingLevel?->name,
             'service_history' => $serviceHistory,
             'mower_remarks' => $mowerRemarks,
         ]);
@@ -617,7 +623,6 @@ class JobManagementController extends Controller
             'status' => $request->string('status')->toString(),
             'priority' => $request->string('priority')->toString(),
             'zone_id' => $request->string('zone_id')->toString(),
-            'client_id' => $request->string('client_id')->toString(),
             'contractor_id' => $request->string('contractor_id')->toString(),
             'recurrence_id' => $request->string('recurrence_id')->toString(),
             'assignment' => $request->string('assignment')->toString(),
