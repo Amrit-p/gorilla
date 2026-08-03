@@ -20,7 +20,7 @@ class LeadConversionService
     ) {}
 
     /**
-     * Convert a won/mature lead into a Hold job with full contact snapshot.
+     * Convert a won/mature lead into a Pending job with full contact snapshot.
      */
     public function convertLeadToJob(Lead $lead, User $actor): ?Job
     {
@@ -87,7 +87,7 @@ class LeadConversionService
             'scheduled_time' => $lead->lead_time,
             'payment_mode' => $lead->payment_mode,
             'payment_status' => $lead->payment_status,
-            'status' => JobWorkflowStatus::HOLD->value,
+            'status' => JobWorkflowStatus::PENDING->value,
             'created_by' => $actor->id,
             'estimated_duration_minutes' => EstimatedDurationMinutes::resolve(null),
             'charges' => $lead->charges,

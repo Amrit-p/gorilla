@@ -5,7 +5,6 @@ namespace App\Http\Requests\Admin\Concerns;
 use App\Enums\JobCustomerType;
 use App\Enums\JobOperationalPaymentMode;
 use App\Enums\JobOperationalPaymentStatus;
-use App\Enums\JobParkingStatus;
 use App\Enums\JobWorkflowStatus;
 use App\Enums\LeadJobType;
 use App\Enums\LeadWeedSpray;
@@ -28,8 +27,6 @@ trait ValidatesJobOperational
             'phone' => ['required', 'string', 'max:30'],
             'weed_spray' => ['nullable', Rule::in(LeadWeedSpray::values())],
             'job_type' => ['nullable', Rule::in(LeadJobType::values())],
-            'property_details' => ['nullable', 'string'],
-            'notes' => ['nullable', 'string'],
             'accounting_level_id' => ['nullable', 'exists:accounting_levels,id'],
             'client_rating_id' => ['nullable', 'exists:client_ratings,id'],
             'recurrence_id' => ['required', 'exists:recurrences,id'],
@@ -44,9 +41,7 @@ trait ValidatesJobOperational
             'estimated_duration_minutes' => ['required', 'integer', 'min:15', 'max:1440'],
             'required_services' => ['required', 'array', 'min:1'],
             'required_services.*' => ServiceTypes::itemRules(),
-            'parking_status' => ['required', Rule::in(JobParkingStatus::values())],
             'customer_type' => ['required', Rule::in(JobCustomerType::values())],
-            'pet_warning' => ['nullable', 'string', 'max:1000'],
             'images' => ['nullable', 'array'],
             'images.*' => ['image', 'max:5120'],
             'done_by_user_id' => [

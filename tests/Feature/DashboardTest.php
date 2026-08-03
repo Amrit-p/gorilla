@@ -308,10 +308,10 @@ class DashboardTest extends TestCase
             ->assertDontSee('45 min est.');
     }
 
-    public function test_three_week_grid_excludes_hold_jobs_but_includes_pending_and_completed(): void
+    public function test_three_week_grid_includes_hold_pending_and_completed_jobs(): void
     {
         Job::query()->create([
-            'customer_name' => 'Status Filter Client',
+            'customer_name' => 'Hold Schedule Client',
             'phone' => '555-0004',
             'client_address' => '8 Birch St',
             'scheduled_date' => now()->toDateString(),
@@ -329,6 +329,6 @@ class DashboardTest extends TestCase
         $this->actingAs($this->admin)
             ->get(route('dashboard.three-week-grid'))
             ->assertOk()
-            ->assertDontSee('1 job');
+            ->assertSee('1 job');
     }
 }

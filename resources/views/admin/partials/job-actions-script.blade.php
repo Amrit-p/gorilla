@@ -671,7 +671,6 @@
         const $btn = $(this);
         $('#remarks-job-form').data('jobId', $btn.data('id'));
         $('#remarks-job-form').find('[name="special_remarks"]').val($btn.data('special-remarks') || '');
-        $('#remarks-job-form').find('[name="internal_notes"]').val($btn.data('internal-notes') || '');
         openModal('remarks-job-modal');
     });
 

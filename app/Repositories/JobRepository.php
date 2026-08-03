@@ -34,7 +34,6 @@ class JobRepository
                 'status',
                 'priority',
                 'numeric_priority',
-                'parking_status',
                 'customer_type',
                 'payment_mode',
                 'payment_status',
@@ -54,6 +53,7 @@ class JobRepository
             ])
             ->with([
                 'clientRating:id,name,description',
+                'accountingLevel:id,name',
                 'zone:id,name',
                 'recurrence:id,name',
                 'equipmentType:id,name,color_code',
@@ -92,6 +92,8 @@ class JobRepository
                 'zone:id,name',
                 'recurrence:id,name',
                 'equipmentType:id,name,color_code',
+                'accountingLevel:id,name',
+                'clientRating:id,name',
                 'assignedEmployees:id,name',
                 'doneByUser:id,name',
                 'creator:id,name',

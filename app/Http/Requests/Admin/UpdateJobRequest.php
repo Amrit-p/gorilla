@@ -28,7 +28,6 @@ class UpdateJobRequest extends FormRequest
             'route_sequence' => ['required', 'integer', 'min:0'],
             'priority' => ['required', 'in:Low,Medium,High,Urgent'],
             'status' => ['required', Rule::in(JobWorkflowStatus::values())],
-            'internal_notes' => ['nullable', 'string'],
         ]);
     }
 }

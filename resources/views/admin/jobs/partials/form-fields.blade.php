@@ -39,36 +39,20 @@
 
 <div class="sm:col-span-2 border-t border-slate-200 pt-3">
     <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Site instructions</p>
-    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">Parking status</label>
-            <select name="parking_status" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                <option value="">Select parking status</option>
-                @foreach ($parkingStatuses as $parkingStatus)
-                    <option value="{{ $parkingStatus }}" @selected(old('parking_status', $jobModel?->parking_status) === $parkingStatus)>{{ $parkingStatus }}</option>
-                @endforeach
-            </select>
-        </div>
-        <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">Customer type</label>
-            <select name="customer_type" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                <option value="">Select customer type</option>
-                @foreach ($customerTypes as $customerType)
-                    <option value="{{ $customerType }}" @selected(old('customer_type', $jobModel?->customer_type) === $customerType)>{{ $customerType }}</option>
-                @endforeach
-            </select>
-        </div>
+    <div>
+        <label class="mb-1 block text-sm font-medium text-slate-700">Customer type</label>
+        <select name="customer_type" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+            <option value="">Select customer type</option>
+            @foreach ($customerTypes as $customerType)
+                <option value="{{ $customerType }}" @selected(old('customer_type', $jobModel?->customer_type) === $customerType)>{{ $customerType }}</option>
+            @endforeach
+        </select>
     </div>
 </div>
 
 <div class="sm:col-span-2">
     <label class="mb-1 block text-sm font-medium text-slate-700">Additional site instructions</label>
     <textarea name="site_instructions" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" rows="2">{{ old('site_instructions', $jobModel?->site_instructions) }}</textarea>
-</div>
-
-<div class="sm:col-span-2">
-    <label class="mb-1 block text-sm font-medium text-slate-700">Pet warning</label>
-    <textarea name="pet_warning" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" rows="2">{{ old('pet_warning', $jobModel?->pet_warning) }}</textarea>
 </div>
 
 <div class="sm:col-span-2">

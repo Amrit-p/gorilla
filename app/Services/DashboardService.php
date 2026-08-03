@@ -208,7 +208,11 @@ class DashboardService
             ->select(['id', 'zone_id', 'scheduled_date', 'status'])
             ->with('zone:id,name')
             ->whereBetween('scheduled_date', [$startDate->toDateString(), $endDate->toDateString()])
-            ->whereIn('status', [JobWorkflowStatus::PENDING->value, JobWorkflowStatus::COMPLETED->value])
+            ->whereIn('status', [
+                JobWorkflowStatus::PENDING->value,
+                JobWorkflowStatus::HOLD->value,
+                JobWorkflowStatus::COMPLETED->value,
+            ])
             ->when($filters['zone_id'] ?? null, fn ($q, $id) => $q->where('zone_id', $id))
             ->when($filters['worker_id'] ?? null, fn ($q, $id) => $q->whereHas(
                 'assignedEmployees', fn ($q) => $q->where('users.id', $id)

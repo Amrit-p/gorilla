@@ -5,13 +5,14 @@ namespace App\Services;
 use App\Enums\JobCustomerType;
 use App\Enums\JobOperationalPaymentMode;
 use App\Enums\JobOperationalPaymentStatus;
-use App\Enums\JobParkingStatus;
 use App\Enums\JobWorkflowStatus;
 use App\Enums\LeadJobType;
 use App\Enums\LeadWeedSpray;
 use App\Helpers\OptimizationHelper;
 use App\Jobs\GeocodeJobAddressJob;
+use App\Models\AccountingLevel;
 use App\Models\ActivityLog;
+use App\Models\ClientRating;
 use App\Models\Job;
 use App\Models\JobLevel;
 use App\Models\Recurrence;
@@ -78,7 +79,6 @@ class JobManagementService
                 ->orderBy('name')
                 ->get(['id', 'name', 'efficiency']),
             'serviceTypes' => ServiceTypes::all(),
-            'parkingStatuses' => JobParkingStatus::values(),
             'customerTypes' => JobCustomerType::values(),
             'paymentModes' => JobOperationalPaymentMode::values(),
             'paymentStatuses' => JobOperationalPaymentStatus::values(),
@@ -87,6 +87,8 @@ class JobManagementService
             'recurrences' => Recurrence::query()->orderBy('name')->get(['id', 'name']),
             'equipmentTypes' => EquipmentTypes::selectOptions(),
             'jobLevels' => JobLevel::query()->active()->ordered()->get(['id', 'name', 'color_code']),
+            'accountingLevels' => AccountingLevel::query()->active()->ordered()->get(['id', 'name']),
+            'clientRatings' => ClientRating::query()->active()->ordered()->get(['id', 'name', 'description']),
             'zones' => Zone::query()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(['id', 'name']),
             'workflowStatuses' => JobWorkflowStatus::values(),
             'listScopes' => array_merge([

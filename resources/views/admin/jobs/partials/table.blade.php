@@ -101,6 +101,11 @@
                         {{ $job->jobLevel->name }}
                     </span>
                 @endif
+                @if ($job->accountingLevel)
+                    <span class="mt-1 inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
+                        {{ $job->accountingLevel->name }}
+                    </span>
+                @endif
                 @if ($job->clientRating)
                     @php $rating = $job->clientRating; @endphp
                     <span class="mt-1 inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700" @if($rating->description) title="{{ $rating->description }}" @endif>
@@ -146,9 +151,6 @@
             {{-- Services --}}
             <td class="px-4 py-4">
                 <p class="text-sm text-slate-700">{{ is_array($job->required_services) ? implode(', ', $job->required_services) : '—' }}</p>
-                @if ($job->parking_status)
-                    <span class="mt-0.5 inline-block rounded-md bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500">{{ $job->parking_status }}</span>
-                @endif
             </td>
 
             {{-- Recurrence --}}
@@ -198,8 +200,7 @@
             <td class="w-36 max-w-0 px-4 py-4">
                 <button type="button" class="view-remarks-btn group/rem w-full overflow-hidden text-left"
                         data-id="{{ $job->id }}"
-                        data-special-remarks="{{ $job->special_remarks ?? '' }}"
-                        data-internal-notes="{{ $job->internal_notes ?? '' }}">
+                        data-special-remarks="{{ $job->special_remarks ?? '' }}">
                     @if ($job->special_remarks)
                         <p class="truncate text-sm text-slate-700 group-hover/rem:text-emerald-600">{{ $job->special_remarks }}</p>
                     @else

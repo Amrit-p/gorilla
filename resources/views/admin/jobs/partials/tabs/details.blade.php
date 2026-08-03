@@ -83,6 +83,32 @@
                     </div>
                 @endisset
 
+                @isset($accountingLevels)
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-700">Accounting level</label>
+                        <select name="accounting_level_id" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                            <option value="">— None —</option>
+                            @foreach ($accountingLevels as $level)
+                                <option value="{{ $level->id }}" @selected((string) old('accounting_level_id', $jobModel?->accounting_level_id) === (string) $level->id)>{{ $level->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endisset
+
+                @isset($clientRatings)
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-700">Customer rating</label>
+                        <select name="client_rating_id" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                            <option value="">— None —</option>
+                            @foreach ($clientRatings as $rating)
+                                <option value="{{ $rating->id }}" @selected((string) old('client_rating_id', $jobModel?->client_rating_id) === (string) $rating->id)>
+                                    {{ $rating->name }}{{ $rating->description ? ' — '.$rating->description : '' }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endisset
+
                 @isset($zones)
                     <div>
                         <label class="mb-1 block text-sm font-medium text-slate-700">Zone</label>
@@ -128,17 +154,7 @@
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Parking status</label>
-                    <select name="parking_status" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                        <option value="">Select parking status</option>
-                        @foreach ($parkingStatuses as $parkingStatus)
-                            <option value="{{ $parkingStatus }}" @selected(old('parking_status', $jobModel?->parking_status) === $parkingStatus)>{{ $parkingStatus }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Site type</label>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Customer Type</label>
                     <select name="customer_type" id="job-customer-type" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
                         <option value="">Select type</option>
                         @foreach ($customerTypes as $customerType)
@@ -186,20 +202,8 @@
                 <textarea name="site_instructions" id="job-site-instructions" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" rows="2">{{ old('site_instructions', $jobModel?->site_instructions) }}</textarea>
             </div>
             <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700">Pet warning</label>
-                <textarea name="pet_warning" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" rows="2">{{ old('pet_warning', $jobModel?->pet_warning) }}</textarea>
-            </div>
-            <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700">Property details</label>
-                <textarea name="property_details" rows="2" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">{{ old('property_details', $jobModel?->property_details) }}</textarea>
-            </div>
-            <div>
                 <label class="mb-1 block text-sm font-medium text-slate-700">Remarks</label>
                 <textarea name="special_remarks" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" rows="2">{{ old('special_remarks', $jobModel?->special_remarks) }}</textarea>
-            </div>
-            <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700">Internal notes</label>
-                <textarea name="notes" rows="2" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">{{ old('notes', $jobModel?->notes) }}</textarea>
             </div>
             <div>
                 <label class="mb-1 block text-sm font-medium text-slate-700">Attach images</label>

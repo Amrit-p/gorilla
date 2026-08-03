@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Mower;
 use App\Enums\JobCustomerType;
 use App\Enums\JobOperationalPaymentMode;
 use App\Enums\JobOperationalPaymentStatus;
-use App\Enums\JobParkingStatus;
 use App\Enums\LeadJobType;
 use App\Enums\LeadWeedSpray;
 use App\Helpers\OptimizationHelper;
@@ -37,7 +36,6 @@ class MowerClientController extends Controller
             'jobTypes' => LeadJobType::values(),
             'paymentModes' => JobOperationalPaymentMode::values(),
             'customerTypes' => JobCustomerType::values(),
-            'parkingStatuses' => JobParkingStatus::values(),
             'equipmentTypes' => EquipmentTypes::selectOptions(),
             'zones' => Zone::query()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(['id', 'name']),
         ]);
@@ -67,7 +65,6 @@ class MowerClientController extends Controller
             'customer_type' => $data['customer_type'],
             'payment_mode' => $data['payment_mode'],
             'payment_status' => JobOperationalPaymentStatus::PENDING->value,
-            'parking_status' => $data['parking_status'] ?? JobParkingStatus::EASY->value,
             'charges' => $data['charges'] ?? null,
             'scheduled_date' => $scheduledDate,
             'scheduled_time' => '08:00',
