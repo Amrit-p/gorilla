@@ -44,9 +44,4 @@
             @endforeach
         </select>
     </div>
-
-    <div class="mt-3">
-        <label class="mb-1 block text-sm font-medium text-slate-700">Internal notes</label>
-        <textarea name="internal_notes" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">{{ old('internal_notes', $jobModel?->internal_notes) }}</textarea>
-    </div>
 </div>

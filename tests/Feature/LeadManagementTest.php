@@ -72,6 +72,7 @@ class LeadManagementTest extends TestCase
             'phone' => $lead->mobile_number,
             'email' => $lead->email,
             'client_address' => $lead->address,
+            'status' => \App\Enums\JobWorkflowStatus::PENDING->value,
         ]);
     }
 

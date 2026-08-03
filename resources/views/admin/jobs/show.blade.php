@@ -62,35 +62,25 @@
                             <dd>{{ $job->job_type ?: '—' }} • {{ $job->weed_spray ?: '—' }}</dd>
                         </div>
                         <div>
-                            <dt class="text-slate-500">Parking / site type</dt>
-                            <dd>{{ $job->parking_status ?: '—' }} • {{ $job->customer_type ?: '—' }}</dd>
+                            <dt class="text-slate-500">Customer Type</dt>
+                            <dd>{{ $job->customer_type ?: '—' }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-slate-500">Accounting level</dt>
+                            <dd>{{ $job->accountingLevel?->name ?: '—' }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-slate-500">Customer rating</dt>
+                            <dd>{{ $job->clientRating?->name ?: '—' }}</dd>
                         </div>
                         <div>
                             <dt class="text-slate-500">Payment</dt>
                             <dd>{{ $job->payment_mode }} • {{ $job->payment_status }}</dd>
                         </div>
-                        @if ($job->pet_warning)
-                            <div class="sm:col-span-2">
-                                <dt class="text-slate-500">Pet warning</dt>
-                                <dd class="text-amber-800">{{ $job->pet_warning }}</dd>
-                            </div>
-                        @endif
                         @if ($job->site_instructions)
                             <div class="sm:col-span-2">
                                 <dt class="text-slate-500">Site instructions</dt>
                                 <dd class="whitespace-pre-wrap">{{ $job->site_instructions }}</dd>
-                            </div>
-                        @endif
-                        @if ($job->property_details)
-                            <div class="sm:col-span-2">
-                                <dt class="text-slate-500">Property details</dt>
-                                <dd class="whitespace-pre-wrap">{{ $job->property_details }}</dd>
-                            </div>
-                        @endif
-                        @if ($job->notes)
-                            <div class="sm:col-span-2">
-                                <dt class="text-slate-500">Notes</dt>
-                                <dd class="whitespace-pre-wrap">{{ $job->notes }}</dd>
                             </div>
                         @endif
                     </dl>

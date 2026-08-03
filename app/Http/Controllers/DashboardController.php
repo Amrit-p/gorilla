@@ -86,6 +86,8 @@ class DashboardController extends Controller
                 'zone:id,name',
                 'equipmentType:id,name,color_code',
                 'jobLevel:id,name,color_code',
+                'accountingLevel:id,name',
+                'clientRating:id,name,description',
                 'doneByUser:id,name',
                 'assignedEmployees:id,name',
                 'recurrence:id,name',

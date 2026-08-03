@@ -531,7 +531,6 @@ class JobManagementController extends Controller
 
         $validated = $request->validate([
             'special_remarks' => ['nullable', 'string'],
-            'internal_notes' => ['nullable', 'string'],
         ]);
 
         $job->update($validated);

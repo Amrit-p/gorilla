@@ -183,10 +183,8 @@
                 scheduled_date: { required: true, dateISO: true },
                 estimated_duration_minutes: { required: true, number: true, min: 15, max: 1440 },
                 'required_services[]': { required: true },
-                parking_status: { required: true },
                 customer_type: { required: true },
                 payment_mode: { required: true },
-                pet_warning: { maxlength: 1000 },
                 payment_pending_reason: {
                     required: function () {
                         return ['Pending', 'Partial'].includes($('#job-payment-status').val());
@@ -206,7 +204,6 @@
                 scheduled_date: { required: true, dateISO: true },
                 estimated_duration_minutes: { required: true, number: true, min: 15, max: 1440 },
                 'required_services[]': { required: true },
-                parking_status: { required: true },
                 customer_type: { required: true },
                 payment_mode: { required: true },
                 payment_pending_reason: {

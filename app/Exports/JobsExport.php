@@ -23,8 +23,8 @@ class JobsExport extends SpreadsheetExport
         'L' => ['header' => 'Status',              'width' => 14],
         'M' => ['header' => 'Priority',            'width' => 10],
         'N' => ['header' => 'Customer Type',       'width' => 15],
-        'O' => ['header' => 'Parking Status',      'width' => 15],
-        'P' => ['header' => 'Pet Warning',         'width' => 12],
+        'O' => ['header' => 'Accounting Level',    'width' => 16],
+        'P' => ['header' => 'Customer Rating',     'width' => 16],
         'Q' => ['header' => 'Payment Mode',        'width' => 14],
         'R' => ['header' => 'Payment Status',      'width' => 15],
         'S' => ['header' => 'Charges ($)',         'width' => 14],
@@ -34,9 +34,8 @@ class JobsExport extends SpreadsheetExport
         'W' => ['header' => 'Recurrence',          'width' => 14],
         'X' => ['header' => 'Site Instructions',   'width' => 28],
         'Y' => ['header' => 'Special Remarks',     'width' => 28],
-        'Z' => ['header' => 'Internal Notes',      'width' => 28],
-        'AA' => ['header' => 'Created By',          'width' => 16],
-        'AB' => ['header' => 'Created At',          'width' => 16],
+        'Z' => ['header' => 'Created By',          'width' => 16],
+        'AA' => ['header' => 'Created At',          'width' => 16],
     ];
 
     public function __construct(private readonly Collection $jobs) {}
@@ -48,15 +47,10 @@ class JobsExport extends SpreadsheetExport
 
     protected function getLastColumn(): string
     {
-        return 'AB';
+        return 'AA';
     }
 
     protected function getTitle(): string
-    {
-        return 'Jobs Report';
-    }
-
-    protected function getSheetName(): string
     {
         return 'Jobs';
     }
@@ -85,8 +79,8 @@ class JobsExport extends SpreadsheetExport
             $sheet->setCellValue('L'.$row, $job->status ?? '');
             $sheet->setCellValue('M'.$row, $job->priority ?? '');
             $sheet->setCellValue('N'.$row, $job->customer_type ?? '');
-            $sheet->setCellValue('O'.$row, $job->parking_status ?? '');
-            $sheet->setCellValue('P'.$row, $job->pet_warning ?? '');
+            $sheet->setCellValue('O'.$row, $job->accountingLevel?->name ?? '');
+            $sheet->setCellValue('P'.$row, $job->clientRating?->name ?? '');
             $sheet->setCellValue('Q'.$row, $job->payment_mode ?? '');
             $sheet->setCellValue('R'.$row, $job->payment_status ?? '');
             $sheet->setCellValue('S'.$row, $job->charges !== null ? (float) $job->charges : '');
@@ -96,18 +90,18 @@ class JobsExport extends SpreadsheetExport
             $sheet->setCellValue('W'.$row, $job->recurrence?->name ?? '');
             $sheet->setCellValue('X'.$row, $job->site_instructions ?? '');
             $sheet->setCellValue('Y'.$row, $job->special_remarks ?? '');
-            $sheet->setCellValue('Z'.$row, $job->internal_notes ?? '');
-            $sheet->setCellValue('AA'.$row, $job->creator?->name ?? '');
-            $sheet->setCellValue('AB'.$row, $job->created_at?->format('d/m/Y H:i') ?? '');
+            $sheet->setCellValue('Z'.$row, $job->creator?->name ?? '');
+            $sheet->setCellValue('AA'.$row, $job->created_at?->format('d/m/Y H:i') ?? '');
 
-            $this->applyRowStyle($sheet, $row, $i % 2 === 1, ['A', 'F', 'G', 'H', 'I', 'L', 'M', 'P', 'S', 'V', 'AB']);
+            $this->applyRowStyle($sheet, $row, $i % 2 === 1, ['A', 'F', 'G', 'H', 'I', 'L', 'M', 'S', 'V', 'AA']);
             $row++;
         }
 
         if ($this->jobs->isNotEmpty()) {
             $this->applyOutlineBorder($sheet, $row - 1);
             $sheet->getStyle('D5:D'.($row - 1))->getAlignment()->setWrapText(true);
-            $sheet->getStyle('X5:Z'.($row - 1))->getAlignment()->setWrapText(true);
+            $sheet->getStyle('J5:J'.($row - 1))->getAlignment()->setWrapText(true);
+            $sheet->getStyle('X5:Y'.($row - 1))->getAlignment()->setWrapText(true);
         }
     }
 }

@@ -4,7 +4,6 @@ namespace App\Http\Requests\Mower;
 
 use App\Enums\JobCustomerType;
 use App\Enums\JobOperationalPaymentMode;
-use App\Enums\JobParkingStatus;
 use App\Enums\LeadJobType;
 use App\Enums\LeadWeedSpray;
 use App\Models\Recurrence;
@@ -41,7 +40,6 @@ class StoreMowerQuickJobRequest extends FormRequest
             'equipment_type_id' => EquipmentTypes::idRules(),
             'customer_type' => ['required', Rule::in(JobCustomerType::values())],
             'payment_mode' => ['required', Rule::in(JobOperationalPaymentMode::values())],
-            'parking_status' => ['nullable', Rule::in(JobParkingStatus::values())],
             'charges' => ['nullable', 'numeric', 'min:0'],
             'scheduled_date' => ['nullable', 'date', 'after_or_equal:today'],
             'schedule_date' => ['nullable', 'date', 'after_or_equal:today'],
