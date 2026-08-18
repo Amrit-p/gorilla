@@ -54,6 +54,8 @@ class MowerReportExcelService
         ['key' => 'completed_earnings',   'label' => 'Completed',    'group' => 'blue',   'format' => '"$"#,##0.00',               'width' => 18, 'align' => 'right'],
         // Bonus total (pink) — date columns are appended by setupDynamicColumns()
         ['key' => 'bonus',                'label' => 'Total Bonus',  'group' => 'pink',   'format' => '"$"#,##0.00',               'width' => 18, 'align' => 'right'],
+        // Payout (emerald)
+        ['key' => 'payout',               'label' => 'Payout',       'group' => 'green',  'format' => '"$"#,##0.00',               'width' => 16, 'align' => 'right'],
     ];
 
     private array $columns        = [];
@@ -128,6 +130,8 @@ class MowerReportExcelService
             $this->groups[] = ['label' => 'Bonus', 'span' => 1 + count($uniqueDates), 'bg' => self::PINK_BG, 'fg' => self::PINK_FG];
         }
 
+        $this->groups[] = ['label' => 'Payout', 'span' => 1, 'bg' => self::GREEN_BG, 'fg' => self::GREEN_FG];
+
         $this->numericSumKeys = [
             'total_working_hours',
             'working_days',
@@ -141,6 +145,8 @@ class MowerReportExcelService
                 $this->numericSumKeys[] = 'bonus_date_' . $date;
             }
         }
+
+        $this->numericSumKeys[] = 'payout';
     }
 
     private function buildSpreadsheet(Collection $reportData): Spreadsheet

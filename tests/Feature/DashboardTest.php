@@ -2,11 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Enums\FollowupStatus;
+use App\Enums\JobOperationalPaymentStatus;
 use App\Enums\JobWorkflowStatus;
 use App\Enums\LeadPaymentStatus;
 use App\Enums\LeadStatus;
 use App\Enums\LeadWeedSpray;
 use App\Models\EquipmentType;
+use App\Models\Followup;
 use App\Models\Job;
 use App\Models\Lead;
 use App\Models\User;
@@ -120,12 +123,12 @@ class DashboardTest extends TestCase
         $this->actingAs($this->admin)
             ->get(route('dashboard.three-week-grid', ['search' => 'Search Mower']))
             ->assertOk()
-            ->assertSee('1 job');
+            ->assertSee('Jobs 1');
 
         $this->actingAs($this->admin)
             ->get(route('dashboard.three-week-grid', ['search' => 'Nonexistent Term']))
             ->assertOk()
-            ->assertDontSee('1 job');
+            ->assertDontSee('Jobs 1');
     }
 
     public function test_daily_jobs_table_supports_the_day_panels_extra_filters(): void
@@ -245,8 +248,8 @@ class DashboardTest extends TestCase
         $this->actingAs($this->admin)
             ->get(route('dashboard.three-week-grid'))
             ->assertOk()
-            ->assertSee('1 lead')
-            ->assertDontSee('2 leads');
+            ->assertSee('Leads 1')
+            ->assertDontSee('Leads 2');
 
         $this->actingAs($this->admin)
             ->get(route('dashboard.daily-leads-table', [
@@ -329,6 +332,59 @@ class DashboardTest extends TestCase
         $this->actingAs($this->admin)
             ->get(route('dashboard.three-week-grid'))
             ->assertOk()
-            ->assertSee('1 job');
+            ->assertSee('Jobs 1');
+    }
+
+    public function test_three_week_grid_shows_pending_payment_leads_and_follow_ups(): void
+    {
+        Job::query()->create([
+            'customer_name' => 'Pay Pending Client',
+            'phone' => '555-0005',
+            'client_address' => '9 Cedar St',
+            'scheduled_date' => now()->toDateString(),
+            'scheduled_time' => '10:00',
+            'estimated_duration_minutes' => 45,
+            'required_services' => [ServiceTypes::all()[0]],
+            'parking_status' => 'Easy',
+            'customer_type' => 'Easy',
+            'payment_mode' => 'Cash',
+            'payment_status' => JobOperationalPaymentStatus::PENDING->value,
+            'status' => JobWorkflowStatus::PENDING->value,
+            'created_by' => $this->admin->id,
+        ]);
+
+        Lead::query()->create([
+            'client_name' => 'Follow Lead',
+            'address' => '10 Oak St',
+            'service_types' => [ServiceTypes::all()[0]],
+            'weed_spray' => LeadWeedSpray::NO->value,
+            'equipment_type_id' => EquipmentType::query()->where('is_active', true)->value('id'),
+            'payment_status' => LeadPaymentStatus::PENDING->value,
+            're_completion_days' => '14 days',
+            'job_type' => 'Regular',
+            'payment_mode' => 'Cash',
+            'charges' => 80,
+            'status' => LeadStatus::FOLLOW_UP->value,
+            'lead_date' => now()->toDateString(),
+        ]);
+
+        Followup::query()->create([
+            'followable_type' => Job::class,
+            'followable_id' => Job::query()->latest('id')->value('id'),
+            'created_by' => $this->admin->id,
+            'outcome' => 'Call back tomorrow',
+            'status' => FollowupStatus::Pending->value,
+            'next_followup_at' => now(),
+        ]);
+
+        $this->actingAs($this->admin)
+            ->get(route('dashboard.three-week-grid'))
+            ->assertOk()
+            ->assertSee('Jobs')
+            ->assertSee('Leads')
+            ->assertSee('Follow-ups')
+            ->assertSee('Jobs 1')
+            ->assertSee('Leads 1')
+            ->assertSee('Follow-ups 2');
     }
 }

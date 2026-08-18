@@ -69,7 +69,13 @@ class FollowupController extends Controller
     {
         $this->authorizeAdmin();
 
-        $filters = $request->only(['search', 'status', 'followable_type']);
+        $filters = $request->only([
+            'search',
+            'status',
+            'followable_type',
+            'next_followup_from',
+            'next_followup_to',
+        ]);
         $followups = $this->followupService->paginatedFollowups($filters);
         $options = $this->followupService->formOptions();
 

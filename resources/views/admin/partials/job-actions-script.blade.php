@@ -147,9 +147,100 @@
 
     function closeModal(id) {
         $('#' + id).addClass('hidden').removeClass('flex');
+        if (id === 'customer-details-modal') {
+            document.body.style.overflow = '';
+        }
     }
-    $('[data-close-modal]').on('click', function() {
+    $(document).on('click', '[data-close-modal]', function() {
         closeModal($(this).data('close-modal'));
+    });
+
+    // Close customer-details modal when clicking the darkened backdrop
+    $(document).on('click', '#customer-details-modal', function (e) {
+        if (e.target === this) {
+            closeModal('customer-details-modal');
+        }
+    });
+
+    const customerDetailsUrlTemplate = @json(url('/admin/jobs/__JOB__/customer-details'));
+    let _customerDetailsJobId = null;
+
+    function customerDetailsUrl(jobId) {
+        return customerDetailsUrlTemplate.replace('__JOB__', String(jobId));
+    }
+
+    function openCustomerDetailsModal(jobId) {
+        if (!jobId) return;
+        _customerDetailsJobId = Number(jobId);
+        const $content = $('#customer-details-modal-content');
+        $content.html('<div class="flex items-center justify-center py-16 text-sm text-slate-400">Loading…</div>');
+        openModal('customer-details-modal');
+        document.body.style.overflow = 'hidden';
+
+        $.ajax({
+            url: customerDetailsUrl(_customerDetailsJobId),
+            method: 'GET',
+            headers: { Accept: 'text/html, */*' },
+            success: function (html) {
+                $content.html(html);
+            },
+            error: function (xhr) {
+                $content.html(
+                    '<div class="px-6 py-12 text-center text-sm text-rose-600">' +
+                    (xhr.responseJSON?.message || 'Failed to load customer details.') +
+                    '</div>'
+                );
+            }
+        });
+    }
+
+    function reloadCustomerDetailsModal() {
+        if (_customerDetailsJobId) {
+            openCustomerDetailsModal(_customerDetailsJobId);
+        }
+    }
+
+    window.openCustomerDetailsModal = openCustomerDetailsModal;
+
+    // Job name / dedicated links open the management popup instead of full page
+    $(document).on('click', 'a.js-open-customer-details, button.js-open-customer-details', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        openCustomerDetailsModal($(this).data('job-id'));
+    });
+
+    $(document).on('click', '.customer-details-verify', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const id = Number($(this).data('id'));
+        if (!id) return;
+        verifyJobs([id], 1);
+        setTimeout(reloadCustomerDetailsModal, 400);
+    });
+
+    $(document).on('click', '.customer-details-delete', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const id = Number($(this).data('id'));
+        if (!id) return;
+        if (!confirm('Delete this job?')) return;
+        deleteJobs([id]);
+        setTimeout(function () {
+            if (_customerDetailsJobId === id) {
+                closeModal('customer-details-modal');
+                document.body.style.overflow = '';
+                _customerDetailsJobId = null;
+            } else {
+                reloadCustomerDetailsModal();
+            }
+        }, 400);
+    });
+
+    $(document).on('keydown', function (e) {
+        if (e.key === 'Escape' && !$('#customer-details-modal').hasClass('hidden')) {
+            closeModal('customer-details-modal');
+            document.body.style.overflow = '';
+        }
     });
 
     // ── Tab switcher ────────────────────────────────────────────────────────

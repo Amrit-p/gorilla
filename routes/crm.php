@@ -275,6 +275,8 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
         Route::get('/admin/jobs/export/excel', [JobManagementController::class, 'exportExcel'])->name('admin.jobs.export.excel');
         Route::get('/admin/jobs/export/pdf', [JobManagementController::class, 'exportPdf'])->name('admin.jobs.export.pdf');
         Route::get('/admin/jobs/{job}', [JobManagementController::class, 'show'])->name('admin.jobs.show');
+        Route::get('/admin/jobs/{job}/customer-details', [JobManagementController::class, 'customerDetails'])
+            ->name('admin.jobs.customer-details');
         Route::get('/admin/maps', [MapRoutingController::class, 'index'])->name('admin.maps.index');
         Route::get('/admin/maps/jobs', [MapRoutingController::class, 'jobs'])->name('admin.maps.jobs');
         Route::redirect('/employee/mobile', '/mower')->name('employee.mobile.index');
@@ -324,6 +326,8 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
                     ->name('export');
                 Route::get('/export-pdf', [MowerReportController::class, 'exportPdf'])
                     ->name('export-pdf');
+                Route::patch('/payout', [MowerReportController::class, 'updatePayout'])
+                    ->name('payout.update');
             });
         });
     });

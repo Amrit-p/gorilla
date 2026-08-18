@@ -75,6 +75,7 @@ class JobRepository
                 'zone:id,name',
                 'accountingLevel:id,name',
                 'clientRating:id,name',
+                'recurrence:id,name',
                 'assignedEmployees:id,name,efficiency',
                 'doneByUser:id,name,efficiency',
                 'creator:id,name',

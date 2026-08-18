@@ -23,6 +23,9 @@ class MowerResponseReportDTO
         public int $working_days = 0,
         public float $total_bonus = 0.0,
         public array $individual_bonuses = [],
+        public float $calculated_payout = 0.0,
+        public float $payout = 0.0,
+        public bool $payout_is_manual = false,
     ) {
     }
 
@@ -45,6 +48,9 @@ class MowerResponseReportDTO
             working_days: $data['working_days'] ?? 0,
             total_bonus: $data['total_bonus'] ?? 0.0,
             individual_bonuses: $data['individual_bonuses'] ?? [],
+            calculated_payout: $data['calculated_payout'] ?? 0.0,
+            payout: $data['payout'] ?? 0.0,
+            payout_is_manual: $data['payout_is_manual'] ?? false,
         );
     }
 
@@ -68,6 +74,9 @@ class MowerResponseReportDTO
             'working_days'        => $this->working_days,
             'bonus'              => $this->total_bonus,
             'individual_bonuses' => $this->individual_bonuses,
+            'calculated_payout'  => $this->calculated_payout,
+            'payout'             => $this->payout,
+            'payout_is_manual'   => $this->payout_is_manual,
         ];
     }
 
@@ -169,6 +178,24 @@ class MowerResponseReportDTO
     public function withIndividualBonuses(array $individualBonuses): self
     {
         $this->individual_bonuses = $individualBonuses;
+        return $this;
+    }
+
+    public function withCalculatedPayout(float $calculatedPayout): self
+    {
+        $this->calculated_payout = $calculatedPayout;
+        return $this;
+    }
+
+    public function withPayout(float $payout): self
+    {
+        $this->payout = $payout;
+        return $this;
+    }
+
+    public function withPayoutIsManual(bool $payoutIsManual): self
+    {
+        $this->payout_is_manual = $payoutIsManual;
         return $this;
     }
 }

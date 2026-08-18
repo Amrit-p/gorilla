@@ -12,6 +12,7 @@ use App\Services\JobManagementService;
 use App\Support\CrmRoles;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -41,11 +42,15 @@ class MowerReportController extends Controller
         try {
             $dto = $request->toDTO();
             $reportData = $this->mowerReportService->generate($dto);
+            $canEditPayout = ! $request->user()->hasRole(CrmRoles::MOWER);
 
             return response()->json([
                 'html' => view('reports.mower.partials.table', [
                     'reportData' => $reportData,
                     'hideBonusColumn' => $dto->hideBonusColumn,
+                    'canEditPayout' => $canEditPayout,
+                    'periodStart' => $dto->start_date?->toDateString(),
+                    'periodEnd' => $dto->end_date?->toDateString(),
                 ])->render(),
             ]);
         } catch (\Exception $e) {
@@ -55,6 +60,32 @@ class MowerReportController extends Controller
                 'error' => 'Failed to generate mower report.',
             ], 500);
         }
+    }
+
+    public function updatePayout(Request $request): JsonResponse
+    {
+        abort_if($request->user()->hasRole(CrmRoles::MOWER), 403);
+
+        $validated = $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'amount' => ['required', 'numeric', 'min:0', 'max:9999999.99'],
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+        ]);
+
+        $payout = $this->mowerReportService->updatePayout(
+            (int) $validated['user_id'],
+            (float) $validated['amount'],
+            $validated['start_date'] ?? null,
+            $validated['end_date'] ?? null,
+            (int) $request->user()->id
+        );
+
+        return response()->json([
+            'success' => true,
+            'amount' => (float) $payout->amount,
+            'message' => 'Payout updated.',
+        ]);
     }
 
     public function jobs(MowerRequestReport $request): JsonResponse

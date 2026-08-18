@@ -3,8 +3,10 @@
 namespace Tests\Feature\Reports;
 
 use App\Http\Middleware\EnsureMowerChecklistComplete;
+use App\Models\Job;
 use App\Models\User;
 use App\Support\CrmRoles;
+use App\Support\ServiceTypes;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -81,5 +83,55 @@ class MowerReportControllerTest extends TestCase
         $response->assertSee('All zones');
         $response->assertSee('Any status');
         $response->assertDontSee('Completed but not verified');
+    }
+
+    public function test_office_manager_can_set_manual_payout(): void
+    {
+        Job::query()->create([
+            'customer_name' => 'Payout Client',
+            'phone' => '555-9000',
+            'client_address' => '1 Payout Rd',
+            'scheduled_date' => now()->toDateString(),
+            'scheduled_time' => '09:00',
+            'estimated_duration_minutes' => 60,
+            'required_services' => [ServiceTypes::all()[0] ?? 'Mowing'],
+            'parking_status' => 'Easy',
+            'customer_type' => 'Easy',
+            'payment_mode' => 'Cash',
+            'payment_status' => 'Received',
+            'status' => 'Completed',
+            'charges' => 100,
+            'incentive_percentage' => 10,
+            'done_by_user_id' => $this->mower->id,
+            'created_by' => $this->manager->id,
+        ]);
+
+        $this->actingAs($this->manager)
+            ->patchJson(route('reports.mower.payout.update'), [
+                'user_id' => $this->mower->id,
+                'amount' => 55.5,
+                'start_date' => now()->startOfMonth()->toDateString(),
+                'end_date' => now()->endOfMonth()->toDateString(),
+            ])
+            ->assertOk()
+            ->assertJson([
+                'success' => true,
+                'amount' => 55.5,
+            ]);
+
+        $this->assertDatabaseHas('mower_report_payouts', [
+            'user_id' => $this->mower->id,
+            'amount' => 55.5,
+        ]);
+    }
+
+    public function test_mower_cannot_set_manual_payout(): void
+    {
+        $this->actingAs($this->mower)
+            ->patchJson(route('reports.mower.payout.update'), [
+                'user_id' => $this->mower->id,
+                'amount' => 10,
+            ])
+            ->assertForbidden();
     }
 }

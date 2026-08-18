@@ -19,4 +19,12 @@ interface MowerReportInterface
      * @return Response
      */
     public function export(MowerRequestReportDTO $request): Response;
+
+    public function updatePayout(
+        int $userId,
+        float $amount,
+        ?string $periodStart,
+        ?string $periodEnd,
+        int $setBy
+    ): \App\Models\MowerReportPayout;
 }
