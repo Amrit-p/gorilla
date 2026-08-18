@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Collection;
 class FollowupRepository
 {
     /**
-     * @param  array{search?: string, status?: string, followable_type?: string}  $filters
+     * @param  array{search?: string, status?: string, followable_type?: string, next_followup_from?: string, next_followup_to?: string}  $filters
      */
     public function paginatedList(array $filters, int $perPage = 20): LengthAwarePaginator
     {
@@ -29,6 +29,14 @@ class FollowupRepository
         if (! empty($filters['search'])) {
             $search = trim((string) $filters['search']);
             $query->where('outcome', 'like', "%{$search}%");
+        }
+
+        if (! empty($filters['next_followup_from'])) {
+            $query->whereDate('next_followup_at', '>=', $filters['next_followup_from']);
+        }
+
+        if (! empty($filters['next_followup_to'])) {
+            $query->whereDate('next_followup_at', '<=', $filters['next_followup_to']);
         }
 
         return $query->paginate($perPage)->withQueryString();

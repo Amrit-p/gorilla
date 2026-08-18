@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\JobOperationalPaymentStatus;
 use App\Models\Job;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
 
 class ClientStatisticsService
 {
@@ -50,6 +51,81 @@ class ClientStatisticsService
                 'payment_status' => $relatedJob->payment_status,
                 'charges' => (float) $relatedJob->charges,
             ])->all(),
+        ];
+    }
+
+    /**
+     * Payload for the Customer Details management modal (single profile + history + totals).
+     *
+     * @return array{
+     *     job: Job,
+     *     next_date: string|null,
+     *     service_history: array<int, array{id: int, date: string|null, charges: float, mower: string, payment_status: string|null, is_paid: bool, is_verified: bool}>,
+     *     total_revenue: float,
+     *     payment_received: float,
+     *     balance_due: float
+     * }
+     */
+    public function forCustomerDetailsModal(Job $job): array
+    {
+        $job->loadMissing([
+            'zone:id,name',
+            'accountingLevel:id,name',
+            'clientRating:id,name',
+            'recurrence:id,name',
+            'doneByUser:id,name',
+            'assignedEmployees:id,name',
+        ]);
+
+        $historyJobs = $this->relatedJobsQuery($job)
+            ->with(['doneByUser:id,name', 'assignedEmployees:id,name'])
+            ->whereNotNull('scheduled_date')
+            ->orderByDesc('scheduled_date')
+            ->orderByDesc('scheduled_time')
+            ->limit(20)
+            ->get();
+
+        $totalRevenue = (float) $historyJobs->sum(fn (Job $j) => (float) ($j->charges ?? 0));
+        $paymentReceived = (float) $historyJobs
+            ->where('payment_status', JobOperationalPaymentStatus::RECEIVED->value)
+            ->sum(fn (Job $j) => (float) ($j->charges ?? 0));
+        $balanceDue = round($totalRevenue - $paymentReceived, 2);
+
+        // Past visits only — current job payment is managed in the sidebar.
+        $serviceHistory = $historyJobs
+            ->where('id', '!=', $job->id)
+            ->map(function (Job $related): array {
+                $mower = $related->doneByUser?->name
+                    ?? $related->assignedEmployees->pluck('name')->filter()->first()
+                    ?? '—';
+
+                return [
+                    'id' => $related->id,
+                    'date' => $related->scheduled_date?->format('d M Y'),
+                    'charges' => (float) ($related->charges ?? 0),
+                    'mower' => $mower,
+                    'payment_status' => $related->payment_status,
+                    'is_paid' => $related->payment_status === JobOperationalPaymentStatus::RECEIVED->value,
+                    'is_verified' => $related->verified_at !== null,
+                ];
+            })->values()->all();
+
+        $nextDate = null;
+        if ($job->scheduled_date && $job->recurrence) {
+            $resolved = $job->recurrence->resolve(Carbon::parse($job->scheduled_date));
+            $nextDate = $resolved?->format('d M Y');
+        }
+        if ($nextDate === null && $job->scheduled_date) {
+            $nextDate = $job->scheduled_date->format('d M Y');
+        }
+
+        return [
+            'job' => $job,
+            'next_date' => $nextDate,
+            'service_history' => $serviceHistory,
+            'total_revenue' => $totalRevenue,
+            'payment_received' => $paymentReceived,
+            'balance_due' => max(0, $balanceDue),
         ];
     }
 

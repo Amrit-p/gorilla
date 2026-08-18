@@ -308,3 +308,12 @@
         @endcan
     </form>
 </x-ui.modal>
+
+{{-- ── Customer Details (job click popup — no duplicate contact blocks) ───── --}}
+<div id="customer-details-modal" class="fixed inset-0 z-[1000] hidden items-center justify-center bg-slate-900/55 p-2 sm:p-4 lg:p-6">
+    <div class="flex max-h-[96vh] w-full max-w-7xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-900/10" onclick="event.stopPropagation()">
+        <div id="customer-details-modal-content" class="min-h-[70vh] overflow-y-auto">
+            <div class="flex items-center justify-center py-24 text-sm text-slate-400">Loading…</div>
+        </div>
+    </div>
+</div>

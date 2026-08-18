@@ -142,20 +142,15 @@
                 </div>
 
                 <div class="rounded-2xl border border-slate-200 bg-white p-5">
-                    <h3 class="text-sm font-semibold text-slate-900">Customer</h3>
+                    <div class="flex items-center justify-between gap-2">
+                        <h3 class="text-sm font-semibold text-slate-900">Customer summary</h3>
+                        <button type="button"
+                                class="js-open-customer-details text-xs font-semibold text-emerald-700 hover:underline"
+                                data-job-id="{{ $job->id }}">
+                            Open details
+                        </button>
+                    </div>
                     <dl class="mt-4 space-y-2.5 text-sm">
-                        <div class="flex justify-between gap-3">
-                            <dt class="text-slate-500">Name</dt>
-                            <dd class="font-medium text-slate-800">{{ $job->customerDisplayName() }}</dd>
-                        </div>
-                        <div class="flex justify-between gap-3">
-                            <dt class="text-slate-500">Phone</dt>
-                            <dd class="font-medium text-slate-800">{{ $job->phone ?: '—' }}</dd>
-                        </div>
-                        <div class="flex justify-between gap-3">
-                            <dt class="text-slate-500">Email</dt>
-                            <dd class="font-medium text-slate-800">{{ $job->email ?: '—' }}</dd>
-                        </div>
                         <div class="flex justify-between gap-3">
                             <dt class="text-slate-500">Zone</dt>
                             <dd class="font-medium text-slate-800">{{ $job->zone?->name ?? '—' }}</dd>

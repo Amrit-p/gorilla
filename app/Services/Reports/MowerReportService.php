@@ -10,9 +10,9 @@ use App\DTOS\Response\Reports\MowerResponseReportDTO;
 use App\Enums\JobOperationalPaymentMode;
 use App\Enums\JobOperationalPaymentStatus;
 use App\Enums\JobWorkflowStatus;
-use App\Models\ActivityLog;
 use App\Models\EmployeeBonus;
 use App\Models\Job;
+use App\Models\MowerReportPayout;
 use App\Support\QueryFilters\JobListFilter;
 use Illuminate\Support\Collection;
 
@@ -40,9 +40,18 @@ class MowerReportService implements MowerReportInterface
 
         $bonusByUser = $bonusRecords->groupBy('user_id');
 
+        $periodStart = $request->start_date?->toDateString();
+        $periodEnd = $request->end_date?->toDateString();
+        $periodKey = MowerReportPayout::periodKey($periodStart, $periodEnd);
+
+        $manualPayouts = MowerReportPayout::query()
+            ->whereIn('user_id', $userIds)
+            ->where('period_key', $periodKey)
+            ->pluck('amount', 'user_id');
+
         return $jobs
             ->groupBy('done_by_user_id')
-            ->map(function ($userJobs, $doneByUserId) use ($request, $bonusByUser) {
+            ->map(function ($userJobs, $doneByUserId) use ($bonusByUser, $manualPayouts) {
                 $user = $userJobs->first()->doneByUser;
                 $completed = JobWorkflowStatus::COMPLETED;
                 $cash = JobOperationalPaymentMode::CASH;
@@ -60,16 +69,16 @@ class MowerReportService implements MowerReportInterface
                 $totalCashEarned = $userJobs
                     ->where('payment_mode', $cash)
                     ->where('payment_status', $received)
-                    ->sum(fn($job) => $job->charges ?? 0);
+                    ->sum(fn ($job) => $job->charges ?? 0);
 
                 $totalOnlineEarned = $userJobs
                     ->where('payment_mode', $online)
                     ->where('payment_status', $received)
-                    ->sum(fn($job) => $job->charges ?? 0);
+                    ->sum(fn ($job) => $job->charges ?? 0);
 
                 $totalSales = $userJobs
                     ->where('payment_status', $received)
-                    ->sum(fn($job) => $job->charges ?? 0);
+                    ->sum(fn ($job) => $job->charges ?? 0);
 
                 $totalIncentiveAmount = $userJobs
                     ->where('payment_status', $received)
@@ -86,9 +95,16 @@ class MowerReportService implements MowerReportInterface
                 $workingDays = $completedJobs
                     ->pluck('scheduled_date')
                     ->filter()
-                    ->map(fn($d) => \Carbon\Carbon::parse($d)->toDateString())
+                    ->map(fn ($d) => \Carbon\Carbon::parse($d)->toDateString())
                     ->unique()
                     ->count();
+
+                $bonusTotal = (float) ($bonusByUser->get($doneByUserId, collect())->sum('amount'));
+                $calculatedPayout = round($totalIncentiveAmount + $bonusTotal, 2);
+                $hasManualPayout = $manualPayouts->has($doneByUserId);
+                $payout = $hasManualPayout
+                    ? (float) $manualPayouts->get($doneByUserId)
+                    : $calculatedPayout;
 
                 return (new MowerResponseReportDTO())
                     ->withUserId((int) $doneByUserId)
@@ -105,17 +121,43 @@ class MowerReportService implements MowerReportInterface
                     ->withTotalIncentiveAmount($totalIncentiveAmount)
                     ->withTotalWorkingHours($totalWorkingHours)
                     ->withWorkingDays($workingDays)
-                    ->withTotalBonus((float) ($bonusByUser->get($doneByUserId, collect())->sum('amount')))
+                    ->withTotalBonus($bonusTotal)
                     ->withIndividualBonuses(
                         $bonusByUser->get($doneByUserId, collect())
-                            ->groupBy(fn($r) => $r->bonus_date->format('Y-m-d'))
-                            ->map(fn($dayRecords) => (float) $dayRecords->sum('amount'))
+                            ->groupBy(fn ($r) => $r->bonus_date->format('Y-m-d'))
+                            ->map(fn ($dayRecords) => (float) $dayRecords->sum('amount'))
                             ->toArray()
                     )
+                    ->withCalculatedPayout($calculatedPayout)
+                    ->withPayout($payout)
+                    ->withPayoutIsManual($hasManualPayout)
                     ->toArray();
             })
-            ->sortByDesc(fn($dto) => $dto['total_sales'])
+            ->sortByDesc(fn ($dto) => $dto['total_sales'])
             ->values();
+    }
+
+    public function updatePayout(
+        int $userId,
+        float $amount,
+        ?string $periodStart,
+        ?string $periodEnd,
+        int $setBy
+    ): MowerReportPayout {
+        $periodKey = MowerReportPayout::periodKey($periodStart, $periodEnd);
+
+        return MowerReportPayout::query()->updateOrCreate(
+            [
+                'user_id' => $userId,
+                'period_key' => $periodKey,
+            ],
+            [
+                'period_start' => $periodStart,
+                'period_end' => $periodEnd,
+                'amount' => $amount,
+                'set_by' => $setBy,
+            ]
+        );
     }
 
     public function export(MowerRequestReportDTO $request): \Symfony\Component\HttpFoundation\Response

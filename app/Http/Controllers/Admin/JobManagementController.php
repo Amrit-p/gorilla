@@ -128,6 +128,16 @@ class JobManagementController extends Controller
         ));
     }
 
+    public function customerDetails(Job $job): View
+    {
+        $this->authorize('view', $job);
+
+        $job = $this->jobManagementService->findForShow($job->id) ?? $job;
+        $details = $this->clientStatisticsService->forCustomerDetailsModal($job);
+
+        return view('admin.jobs.partials.customer-details-modal-body', $details);
+    }
+
     public function edit(Job $job): View
     {
         $this->authorize('update', $job);

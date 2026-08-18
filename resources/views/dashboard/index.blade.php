@@ -30,6 +30,7 @@ $dashboardType = $analytics['type'] ?? 'admin';
 
         @if (in_array($dashboardType, ['admin', 'sales']))
         @include('dashboard.partials.admin-analytics', ['analytics' => $analytics])
+        @include('dashboard.partials.admin-three-week-schedule', ['threeWeekSchedule' => $threeWeekSchedule])
         @else
         @include('dashboard.partials.mower-analytics', ['analytics' => $analytics])
         @endif
@@ -106,10 +107,6 @@ $dashboardType = $analytics['type'] ?? 'admin';
             </div>
             @endif
         </div>
-
-        @if (in_array($dashboardType, ['admin', 'sales']))
-        @include('dashboard.partials.admin-three-week-schedule', ['threeWeekSchedule' => $threeWeekSchedule])
-        @endif
 
         @include('dashboard.partials.quick-actions')
 
@@ -387,9 +384,8 @@ $dashboardType = $analytics['type'] ?? 'admin';
                 return;
             }
 
-            var href = this.dataset.href;
-            if (href) {
-                window.location.href = href;
+            if (typeof window.openCustomerDetailsModal === 'function') {
+                window.openCustomerDetailsModal(id);
             }
         });
 

@@ -12,9 +12,8 @@
                     ->unique();
             @endphp
             <div
-                class="hold-job-card select-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm transition-colors hover:bg-slate-50"
+                class="hold-job-card js-open-customer-details select-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm transition-colors hover:bg-slate-50 cursor-pointer"
                 data-job-id="{{ $job->id }}"
-                @can('view-jobs') data-href="{{ route('admin.jobs.show', $job) }}" @endcan
             >
                 <div class="flex items-start justify-between gap-2">
                     <div class="min-w-0">

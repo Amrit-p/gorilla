@@ -2,10 +2,13 @@
 
 namespace App\Services;
 
+use App\Enums\FollowupStatus;
+use App\Enums\JobOperationalPaymentStatus;
 use App\Enums\JobWorkflowStatus;
 use App\Enums\LeadStatus;
 use App\Models\ActivityLog;
 use App\Models\DashboardPreference;
+use App\Models\Followup;
 use App\Models\Job;
 use App\Models\Lead;
 use App\Models\User;
@@ -205,7 +208,7 @@ class DashboardService
         $endDate = $startDate->copy()->addWeeks(3)->subDay();
 
         $jobs = Job::query()
-            ->select(['id', 'zone_id', 'scheduled_date', 'status'])
+            ->select(['id', 'zone_id', 'scheduled_date', 'status', 'payment_status'])
             ->with('zone:id,name')
             ->whereBetween('scheduled_date', [$startDate->toDateString(), $endDate->toDateString()])
             ->whereIn('status', [
@@ -232,7 +235,7 @@ class DashboardService
         $jobsByDate = $jobs->groupBy(fn ($job) => $job->scheduled_date->format('Y-m-d'));
 
         $leads = Lead::query()
-            ->select(['id', 'zone_id', 'lead_date'])
+            ->select(['id', 'zone_id', 'lead_date', 'status'])
             ->with('zone:id,name')
             ->whereNotNull('lead_date')
             ->whereNull('converted_at')
@@ -247,6 +250,25 @@ class DashboardService
             ->get();
 
         $leadsByDate = $leads->groupBy(fn ($lead) => $lead->lead_date->format('Y-m-d'));
+
+        $followups = Followup::query()
+            ->select(['id', 'next_followup_at', 'status'])
+            ->whereNotNull('next_followup_at')
+            ->where('status', FollowupStatus::Pending->value)
+            ->whereBetween('next_followup_at', [
+                $startDate->copy()->startOfDay(),
+                $endDate->copy()->endOfDay(),
+            ])
+            ->get();
+
+        $followupsByDate = $followups->groupBy(
+            fn ($followup) => $followup->next_followup_at->format('Y-m-d')
+        );
+
+        $pendingPaymentStatuses = [
+            JobOperationalPaymentStatus::PENDING->value,
+            JobOperationalPaymentStatus::PARTIAL->value,
+        ];
 
         $weeks = [];
         for ($w = 0; $w < 3; $w++) {
@@ -267,6 +289,15 @@ class DashboardService
                     ->map->count()
                     ->toArray();
 
+                $pendingJobs = $dayJobs->where('status', JobWorkflowStatus::PENDING->value)->count();
+                $pendingPaymentJobs = $dayJobs
+                    ->whereIn('payment_status', $pendingPaymentStatuses)
+                    ->count();
+                $leadFollowUps = $dayLeads
+                    ->where('status', LeadStatus::FOLLOW_UP->value)
+                    ->count();
+                $scheduledFollowUps = $followupsByDate->get($key, collect())->count();
+
                 $days[] = [
                     'date' => $key,
                     'day_name' => $day->format('l'),
@@ -274,18 +305,28 @@ class DashboardService
                     'is_today' => $day->isToday(),
                     'is_past' => $day->isPast() && ! $day->isToday(),
                     'total' => $dayJobs->count(),
+                    'pending' => $pendingJobs,
+                    'pending_payment' => $pendingPaymentJobs,
                     'zone_count' => count($zones),
                     'zones' => $zones,
                     'lead_total' => $dayLeads->count(),
                     'lead_zone_count' => count($leadZones),
                     'lead_zones' => $leadZones,
+                    'follow_up_total' => $leadFollowUps + $scheduledFollowUps,
                 ];
             }
+
+            $weekDays = $days;
             $weeks[] = [
                 'label' => 'Week '.($w + 1),
                 'week_number' => $weekStart->weekOfYear,
                 'start_date' => $weekStart->format('d M'),
                 'end_date' => $weekStart->copy()->addDays(6)->format('d M'),
+                'total_jobs' => array_sum(array_column($weekDays, 'total')),
+                'pending_jobs' => array_sum(array_column($weekDays, 'pending')),
+                'pending_payment_jobs' => array_sum(array_column($weekDays, 'pending_payment')),
+                'lead_total' => array_sum(array_column($weekDays, 'lead_total')),
+                'follow_up_total' => array_sum(array_column($weekDays, 'follow_up_total')),
                 'days' => $days,
             ];
         }
