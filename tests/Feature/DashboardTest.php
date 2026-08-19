@@ -377,6 +377,15 @@ class DashboardTest extends TestCase
             'next_followup_at' => now(),
         ]);
 
+        Followup::query()->create([
+            'followable_type' => Lead::class,
+            'followable_id' => Lead::query()->latest('id')->value('id'),
+            'created_by' => $this->admin->id,
+            'outcome' => 'Follow up with lead',
+            'status' => FollowupStatus::Pending->value,
+            'next_followup_at' => now(),
+        ]);
+
         $this->actingAs($this->admin)
             ->get(route('dashboard.three-week-grid'))
             ->assertOk()
@@ -385,6 +394,8 @@ class DashboardTest extends TestCase
             ->assertSee('Follow-ups')
             ->assertSee('Jobs 1')
             ->assertSee('Leads 1')
-            ->assertSee('Follow-ups 2');
+            ->assertSee('Follow-ups 2')
+            ->assertSee('title="Job"', false)
+            ->assertSee('title="Lead"', false);
     }
 }
