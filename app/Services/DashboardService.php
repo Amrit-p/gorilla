@@ -200,7 +200,7 @@ class DashboardService
      * Starts from the Monday of the current week.
      *
      * @param  array{zone_id?: int|null, worker_id?: int|null, search?: string|null}  $filters
-     * @return array<int, array{label: string, week_number: int, start_date: string, end_date: string, days: list<array>}>
+     * @return array<int, array{label: string, week_number: int, start_date: string, end_date: string, days: list<array<string, mixed>>}>
      */
     public function threeWeekScheduleSummary(array $filters = []): array
     {
@@ -252,7 +252,7 @@ class DashboardService
         $leadsByDate = $leads->groupBy(fn ($lead) => $lead->lead_date->format('Y-m-d'));
 
         $followups = Followup::query()
-            ->select(['id', 'next_followup_at', 'status'])
+            ->select(['id', 'followable_type', 'next_followup_at', 'status'])
             ->whereNotNull('next_followup_at')
             ->where('status', FollowupStatus::Pending->value)
             ->whereBetween('next_followup_at', [
@@ -293,10 +293,8 @@ class DashboardService
                 $pendingPaymentJobs = $dayJobs
                     ->whereIn('payment_status', $pendingPaymentStatuses)
                     ->count();
-                $leadFollowUps = $dayLeads
-                    ->where('status', LeadStatus::FOLLOW_UP->value)
-                    ->count();
-                $scheduledFollowUps = $followupsByDate->get($key, collect())->count();
+                $dayFollowups = $followupsByDate->get($key, collect());
+                $followUpTypes = $this->followUpTypesForDay($dayFollowups);
 
                 $days[] = [
                     'date' => $key,
@@ -312,7 +310,8 @@ class DashboardService
                     'lead_total' => $dayLeads->count(),
                     'lead_zone_count' => count($leadZones),
                     'lead_zones' => $leadZones,
-                    'follow_up_total' => $leadFollowUps + $scheduledFollowUps,
+                    'follow_up_total' => $dayFollowups->count(),
+                    'follow_up_types' => $followUpTypes,
                 ];
             }
 
@@ -332,6 +331,30 @@ class DashboardService
         }
 
         return $weeks;
+    }
+
+    /**
+     * Group a day's pending follow-ups by morph type (Job, Lead, Contractor).
+     *
+     * @return list<array{label: string, type: class-string, count: int}>
+     */
+    private function followUpTypesForDay(Collection $dayFollowups): array
+    {
+        $preferredOrder = array_flip(array_map(
+            static fn (string $type) => class_basename($type),
+            FollowupService::ALLOWED_FOLLOWABLE_TYPES
+        ));
+
+        return $dayFollowups
+            ->groupBy('followable_type')
+            ->map(fn (Collection $group, string $type) => [
+                'label' => class_basename($type),
+                'type' => $type,
+                'count' => $group->count(),
+            ])
+            ->sortBy(fn (array $row) => $preferredOrder[$row['label']] ?? $row['label'])
+            ->values()
+            ->all();
     }
 
     /**
