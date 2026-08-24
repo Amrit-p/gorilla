@@ -43,9 +43,39 @@ return new class extends Migration
 
     public function down(): void
     {
-        if (Schema::hasColumn('mower_remarks', 'job_id')) {
-            Schema::table('mower_remarks', function (Blueprint $table): void {
-                $table->dropConstrainedForeignId('job_id');
+        if (! Schema::hasColumn('mower_remarks', 'job_id')) {
+            return;
+        }
+
+        $this->dropForeignKeysFor('mower_remarks', 'job_id');
+
+        Schema::table('mower_remarks', function (Blueprint $table): void {
+            $table->dropColumn('job_id');
+        });
+    }
+
+    /**
+     * Drop the foreign key on a column. A historical rebuild of mower_remarks renamed
+     * the table, so the constraint does not always follow Laravel's
+     * {table}_{column}_foreign convention. SQLite only supports dropping by column.
+     */
+    private function dropForeignKeysFor(string $table, string $column): void
+    {
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            Schema::table($table, function (Blueprint $blueprint) use ($column): void {
+                $blueprint->dropForeign([$column]);
+            });
+
+            return;
+        }
+
+        foreach (Schema::getForeignKeys($table) as $foreignKey) {
+            if (! in_array($column, $foreignKey['columns'], true)) {
+                continue;
+            }
+
+            Schema::table($table, function (Blueprint $blueprint) use ($foreignKey): void {
+                $blueprint->dropForeign($foreignKey['name']);
             });
         }
     }

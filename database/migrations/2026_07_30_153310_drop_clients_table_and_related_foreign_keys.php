@@ -88,6 +88,19 @@ return new class extends Migration
             return;
         }
 
+        // Only SQLite needs the copy-and-rename dance. Dropping in place elsewhere is
+        // cheaper and avoids colliding with the mower_remarks_tmp_* constraint names a
+        // previous rebuild may already have left in the schema.
+        if (DB::connection()->getDriverName() !== 'sqlite') {
+            $this->dropForeignKeysFor('mower_remarks', 'client_id');
+
+            Schema::table('mower_remarks', function (Blueprint $table): void {
+                $table->dropColumn('client_id');
+            });
+
+            return;
+        }
+
         Schema::create('mower_remarks_tmp', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
@@ -118,18 +131,37 @@ return new class extends Migration
             return;
         }
 
-        // Drop foreign key if present (name varies by driver / history).
-        try {
-            Schema::table('service_jobs', function (Blueprint $table): void {
-                $table->dropForeign(['client_id']);
-            });
-        } catch (Throwable) {
-            // SQLite / already dropped
-        }
+        $this->dropForeignKeysFor('service_jobs', 'client_id');
 
         Schema::table('service_jobs', function (Blueprint $table): void {
             $table->dropColumn('client_id');
         });
+    }
+
+    /**
+     * Drop the foreign key on a column. Table renames in earlier migrations mean the
+     * constraint does not always follow Laravel's {table}_{column}_foreign convention,
+     * so the real name is resolved. SQLite only supports dropping by column.
+     */
+    private function dropForeignKeysFor(string $table, string $column): void
+    {
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            Schema::table($table, function (Blueprint $blueprint) use ($column): void {
+                $blueprint->dropForeign([$column]);
+            });
+
+            return;
+        }
+
+        foreach (Schema::getForeignKeys($table) as $foreignKey) {
+            if (! in_array($column, $foreignKey['columns'], true)) {
+                continue;
+            }
+
+            Schema::table($table, function (Blueprint $blueprint) use ($foreignKey): void {
+                $blueprint->dropForeign($foreignKey['name']);
+            });
+        }
     }
 
     private function dropClientDocuments(): void

@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\Contractors\ContractController;
 use App\Http\Controllers\Admin\Contractors\ContractDocumentController;
 use App\Http\Controllers\Admin\Contractors\ContractorController;
+use App\Http\Controllers\Admin\CrmBackupImportController;
 use App\Http\Controllers\Admin\DiscussionController;
 use App\Http\Controllers\Admin\EmployeeBonusController;
 use App\Http\Controllers\Admin\FollowupController;
@@ -40,6 +41,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Report\ChecklistReportController;
 use App\Http\Controllers\Report\MowerReportController;
 use App\Support\CrmPermissions;
+use App\Support\CrmRoles;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'active_user'])->group(function (): void {
@@ -97,6 +99,12 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
         Route::post('/admin/settings/backups/trigger', [BackupController::class, 'trigger'])->name('admin.settings.backups.trigger');
         Route::get('/admin/settings/backups/{databaseBackup}/download', [BackupController::class, 'download'])->name('admin.settings.backups.download');
         Route::delete('/admin/settings/backups/{databaseBackup}', [BackupController::class, 'destroy'])->name('admin.settings.backups.destroy');
+    });
+
+    // Hidden Gorilla CRM backup seeder — Office Manager only, intentionally not linked from the sidebar.
+    Route::middleware('role:'.CrmRoles::OFFICE_MANAGER)->group(function (): void {
+        Route::get('/admin/tools/crm-import', [CrmBackupImportController::class, 'index'])->name('admin.tools.crm-import.index');
+        Route::post('/admin/tools/crm-import', [CrmBackupImportController::class, 'store'])->name('admin.tools.crm-import.store');
     });
 
     // Mowers can view and export their own bonuses; policy + extractFilters enforce the user_id scope.
