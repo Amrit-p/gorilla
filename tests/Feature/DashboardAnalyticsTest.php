@@ -65,9 +65,35 @@ class DashboardAnalyticsTest extends TestCase
             ->assertSee('Total revenue (MTD)', false)
             ->assertSee('Pending payments', false)
             ->assertSee('Jobs today', false)
-            ->assertSee('Completed jobs (MTD)', false)
+            ->assertSee('Jobs tomorrow', false)
+            ->assertDontSee('Completed jobs (MTD)', false)
             ->assertSee('Mower performance', false)
             ->assertSee('$150.00', false);
+    }
+
+    public function test_tomorrow_card_counts_only_tomorrows_active_jobs(): void
+    {
+        // Counted: scheduled tomorrow, not cancelled.
+        Job::query()->create($this->jobPayload(['scheduled_date' => now()->addDay()->toDateString()]));
+        Job::query()->create($this->jobPayload(['scheduled_date' => now()->addDay()->toDateString()]));
+
+        // Not counted: cancelled tomorrow, plus today and the day after.
+        Job::query()->create($this->jobPayload([
+            'scheduled_date' => now()->addDay()->toDateString(),
+            'status' => 'Cancelled',
+        ]));
+        Job::query()->create($this->jobPayload(['scheduled_date' => now()->toDateString()]));
+        Job::query()->create($this->jobPayload(['scheduled_date' => now()->addDays(2)->toDateString()]));
+
+        $cards = app(DashboardAnalyticsService::class)->forUser($this->admin)['cards'];
+
+        $this->assertSame('Jobs tomorrow', $cards['jobs_tomorrow']['label']);
+        $this->assertSame('2', $cards['jobs_tomorrow']['value']);
+        $this->assertSame(
+            'Scheduled for '.now()->addDay()->format('D, d M'),
+            $cards['jobs_tomorrow']['subtitle']
+        );
+        $this->assertArrayNotHasKey('completed_jobs', $cards);
     }
 
     public function test_sales_dashboard_shows_conversion_metrics(): void

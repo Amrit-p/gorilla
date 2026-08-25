@@ -23,9 +23,9 @@
         :accent="$cards['jobs_today']['accent']"
     />
     <x-dashboard.stat-card
-        :label="$cards['completed_jobs']['label']"
-        :value="$cards['completed_jobs']['value']"
-        :subtitle="$cards['completed_jobs']['subtitle']"
-        :accent="$cards['completed_jobs']['accent']"
+        :label="$cards['jobs_tomorrow']['label']"
+        :value="$cards['jobs_tomorrow']['value']"
+        :subtitle="$cards['jobs_tomorrow']['subtitle']"
+        :accent="$cards['jobs_tomorrow']['accent']"
     />
 </div>

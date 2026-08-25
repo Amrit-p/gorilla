@@ -147,9 +147,11 @@ class DashboardAnalyticsService
             ->where('status', JobWorkflowStatus::COMPLETED->value)
             ->count();
 
-        $completedMtd = Job::query()
-            ->whereBetween('scheduled_date', [$monthStart, $today])
-            ->where('status', JobWorkflowStatus::COMPLETED->value)
+        $tomorrow = now()->addDay();
+
+        $jobsTomorrow = Job::query()
+            ->whereDate('scheduled_date', $tomorrow->toDateString())
+            ->whereNotIn('status', ['Cancelled'])
             ->count();
 
         return [
@@ -171,10 +173,10 @@ class DashboardAnalyticsService
                 'subtitle' => $completedToday.' completed today',
                 'accent' => 'sky',
             ],
-            'completed_jobs' => [
-                'label' => 'Completed jobs (MTD)',
-                'value' => (string) $completedMtd,
-                'subtitle' => 'Month to date',
+            'jobs_tomorrow' => [
+                'label' => 'Jobs tomorrow',
+                'value' => (string) $jobsTomorrow,
+                'subtitle' => 'Scheduled for '.$tomorrow->format('D, d M'),
                 'accent' => 'teal',
             ],
         ];
