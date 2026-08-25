@@ -34,17 +34,21 @@
         <div class="rounded-2xl border border-slate-200 bg-white p-5">
             <dl class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <div>
-                    <dt class="text-xs font-medium text-slate-500">Target</dt>
+                    <dt class="text-xs font-medium text-slate-500">{{ $followup->typeLabel() }}</dt>
                     <dd class="mt-1 text-sm font-semibold text-slate-900">
                         @php $followableUrl = $followup->followableUrl(); @endphp
                         @if ($followableUrl)
                             <a href="{{ $followableUrl }}" class="text-blue-600 hover:underline">
-                                {{ class_basename($followup->followable_type) }} #{{ $followup->followable_id }}
+                                {{ $followup->subjectLabel() }}
                             </a>
                         @else
-                            {{ class_basename($followup->followable_type) }} #{{ $followup->followable_id }}
+                            {{ $followup->subjectLabel() }}
                         @endif
                     </dd>
+                </div>
+                <div>
+                    <dt class="text-xs font-medium text-slate-500">Assigned to</dt>
+                    <dd class="mt-1 text-sm text-slate-900">{{ $followup->assignedTo?->name ?? 'Unassigned' }}</dd>
                 </div>
                 <div>
                     <dt class="text-xs font-medium text-slate-500">Created by</dt>
@@ -67,17 +71,17 @@
             </dl>
         </div>
 
-        {{-- Outcome --}}
+        {{-- Notes --}}
         <div class="rounded-2xl border border-slate-200 bg-white p-5">
-            <h3 class="mb-3 text-sm font-semibold text-slate-700">Outcome</h3>
-            <p class="whitespace-pre-wrap text-sm text-slate-900">{{ $followup->outcome }}</p>
+            <h3 class="mb-3 text-sm font-semibold text-slate-700">Notes</h3>
+            <p class="whitespace-pre-wrap text-sm text-slate-900">{{ $followup->notes }}</p>
         </div>
 
-        {{-- Notes --}}
-        @if ($followup->notes)
+        {{-- Outcome --}}
+        @if ($followup->outcome)
             <div class="rounded-2xl border border-slate-200 bg-white p-5">
-                <h3 class="mb-3 text-sm font-semibold text-slate-700">Notes</h3>
-                <p class="whitespace-pre-wrap text-sm text-slate-900">{{ $followup->notes }}</p>
+                <h3 class="mb-3 text-sm font-semibold text-slate-700">Outcome</h3>
+                <p class="whitespace-pre-wrap text-sm text-slate-900">{{ $followup->outcome }}</p>
             </div>
         @endif
 

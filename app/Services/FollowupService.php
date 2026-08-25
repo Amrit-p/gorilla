@@ -10,6 +10,7 @@ use App\Models\Lead;
 use App\Models\User;
 use App\Repositories\FollowupRepository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 
 class FollowupService
 {
@@ -26,7 +27,7 @@ class FollowupService
     ) {}
 
     /**
-     * @param  array{search?: string, status?: string, followable_type?: string}  $filters
+     * @param  array{search?: string, status?: string, followable_type?: string, assigned_to?: string, next_followup_from?: string, next_followup_to?: string}  $filters
      */
     public function paginatedFollowups(array $filters, int $perPage = 20): LengthAwarePaginator
     {
@@ -41,8 +42,11 @@ class FollowupService
         return $this->repository->forFollowable($type, $id)
             ->map(fn (Followup $f) => [
                 'id' => $f->id,
+                'title' => $f->title,
                 'outcome' => $f->outcome,
                 'notes' => $f->notes,
+                'assigned_to' => $f->assigned_to,
+                'assigned_to_name' => $f->assignedTo?->name,
                 'status' => $f->status->value,
                 'status_label' => $f->status->label(),
                 'next_followup_at' => $f->next_followup_at?->format('d M Y H:i'),
@@ -53,20 +57,31 @@ class FollowupService
             ->all();
     }
 
+    /**
+     * @param  array<string, mixed>  $data
+     */
     public function createFollowup(User $actor, array $data): Followup
     {
-        Followup::query()
-            ->where('followable_type', $data['followable_type'])
-            ->where('followable_id', $data['followable_id'])
-            ->where('status', FollowupStatus::Pending->value)
-            ->update(['status' => FollowupStatus::Completed->value]);
+        $followableType = $data['followable_type'] ?? null;
+        $followableId = $followableType !== null ? ($data['followable_id'] ?? null) : null;
+
+        // Only follow-ups pinned to a record supersede each other; general ones stand alone.
+        if ($followableType !== null && $followableId !== null) {
+            Followup::query()
+                ->where('followable_type', $followableType)
+                ->where('followable_id', $followableId)
+                ->where('status', FollowupStatus::Pending->value)
+                ->update(['status' => FollowupStatus::Completed->value]);
+        }
 
         $followup = Followup::query()->create([
-            'followable_type' => $data['followable_type'],
-            'followable_id' => $data['followable_id'],
+            'followable_type' => $followableType,
+            'followable_id' => $followableId,
+            'title' => $followableType === null ? trim((string) ($data['title'] ?? '')) : null,
             'created_by' => $actor->id,
-            'outcome' => trim((string) $data['outcome']),
-            'notes' => isset($data['notes']) ? trim((string) $data['notes']) : null,
+            'assigned_to' => $data['assigned_to'] ?? null,
+            'outcome' => $this->cleanOptionalText($data['outcome'] ?? null),
+            'notes' => trim((string) ($data['notes'] ?? '')),
             'status' => $data['status'] ?? FollowupStatus::Pending->value,
             'next_followup_at' => $data['next_followup_at'] ?? null,
         ]);
@@ -75,26 +90,45 @@ class FollowupService
             'followup_id' => $followup->id,
             'followable_type' => $followup->followable_type,
             'followable_id' => $followup->followable_id,
+            'assigned_to' => $followup->assigned_to,
         ]);
 
         return $followup;
     }
 
+    /**
+     * @param  array<string, mixed>  $data
+     */
     public function updateFollowup(User $actor, Followup $followup, array $data): Followup
     {
-        $followup->update([
-            'outcome' => trim((string) $data['outcome']),
-            'notes' => isset($data['notes']) ? trim((string) $data['notes']) : null,
+        $attributes = [
+            'assigned_to' => $data['assigned_to'] ?? null,
+            'outcome' => $this->cleanOptionalText($data['outcome'] ?? null),
+            'notes' => trim((string) ($data['notes'] ?? '')),
             'status' => $data['status'],
             'next_followup_at' => $data['next_followup_at'] ?? null,
-        ]);
+        ];
+
+        if ($followup->isGeneral()) {
+            $attributes['title'] = trim((string) ($data['title'] ?? ''));
+        }
+
+        $followup->update($attributes);
 
         $this->activityLogService->log($actor, 'followup.updated', 'Follow-up updated.', [
             'followup_id' => $followup->id,
             'status' => $data['status'],
+            'assigned_to' => $followup->assigned_to,
         ]);
 
         return $followup;
+    }
+
+    private function cleanOptionalText(?string $value): ?string
+    {
+        $value = trim((string) $value);
+
+        return $value === '' ? null : $value;
     }
 
     public function deleteFollowup(User $actor, Followup $followup): void
@@ -116,7 +150,21 @@ class FollowupService
         return [
             'statuses' => FollowupStatus::cases(),
             'followableTypes' => self::ALLOWED_FOLLOWABLE_TYPES,
+            'assignableUsers' => $this->assignableUsers(),
         ];
+    }
+
+    /**
+     * Active users a follow-up can be assigned to.
+     *
+     * @return Collection<int, User>
+     */
+    public function assignableUsers(): Collection
+    {
+        return User::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name']);
     }
 
     /**

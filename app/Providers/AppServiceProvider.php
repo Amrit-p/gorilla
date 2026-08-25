@@ -7,6 +7,7 @@ use App\Helpers\OptimizationHelper;
 use App\Listeners\HandleLeadConvertedToClient;
 use App\Models\Job;
 use App\Models\Lead;
+use App\Services\FollowupService;
 use App\Services\MailSettingsRegistrar;
 use App\Support\CrmPermissions;
 use App\Support\WebsiteSettings;
@@ -68,6 +69,15 @@ class AppServiceProvider extends ServiceProvider
         Job::saved($bumpCaches);
         Job::deleted($bumpCaches);
         Job::restored($bumpCaches);
+
+        View::composer('admin.partials.job-modals', function ($view): void {
+            $view->with(
+                'followupAssignableUsers',
+                CrmPermissions::canManageFollowups(auth()->user())
+                    ? app(FollowupService::class)->assignableUsers()
+                    : collect()
+            );
+        });
 
         View::composer(['components.layouts.*', 'components.auth.*', 'auth.*'], function ($view): void {
             $view->with('websiteBranding', WebsiteSettings::branding());

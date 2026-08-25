@@ -25,12 +25,54 @@ class DashboardTest extends TestCase
 
     private User $admin;
 
+    private User $mower;
+
     protected function setUp(): void
     {
         parent::setUp();
         $this->seed(RoleAndPermissionSeeder::class);
         $this->seed(MasterCatalogSeeder::class);
         $this->admin = User::query()->where('email', 'admin@mowingcrm.test')->firstOrFail();
+        $this->mower = User::query()->where('email', 'jake.morrison@mowingcrm.test')->firstOrFail();
+    }
+
+    public function test_dashboard_offers_a_quick_followup_button_to_users_who_manage_followups(): void
+    {
+        $this->actingAs($this->admin)
+            ->get(route('dashboard.index'))
+            ->assertOk()
+            ->assertSee('open-followup-modal')
+            ->assertSee('dashboard-followup-form')
+            ->assertSee('New Follow-Up');
+    }
+
+    public function test_dashboard_hides_the_quick_followup_button_without_permission(): void
+    {
+        $this->actingAs($this->mower)
+            ->get(route('dashboard.index'))
+            ->assertOk()
+            ->assertDontSee('open-followup-modal')
+            ->assertDontSee('dashboard-followup-form');
+    }
+
+    public function test_general_followup_can_be_created_from_the_dashboard(): void
+    {
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.followups.store'), [
+                'title' => 'Order replacement blades',
+                'notes' => 'Supplier quoted two-day delivery.',
+                'assigned_to' => $this->mower->id,
+                'status' => FollowupStatus::Pending->value,
+            ])
+            ->assertOk()
+            ->assertJsonStructure(['message', 'id']);
+
+        $this->assertDatabaseHas('followups', [
+            'title' => 'Order replacement blades',
+            'followable_type' => null,
+            'assigned_to' => $this->mower->id,
+            'created_by' => $this->admin->id,
+        ]);
     }
 
     public function test_dashboard_shows_real_metrics_not_placeholders(): void
@@ -372,7 +414,7 @@ class DashboardTest extends TestCase
             'followable_type' => Job::class,
             'followable_id' => Job::query()->latest('id')->value('id'),
             'created_by' => $this->admin->id,
-            'outcome' => 'Call back tomorrow',
+            'notes' => 'Call back tomorrow',
             'status' => FollowupStatus::Pending->value,
             'next_followup_at' => now(),
         ]);
@@ -381,9 +423,26 @@ class DashboardTest extends TestCase
             'followable_type' => Lead::class,
             'followable_id' => Lead::query()->latest('id')->value('id'),
             'created_by' => $this->admin->id,
-            'outcome' => 'Follow up with lead',
+            'notes' => 'Follow up with lead',
             'status' => FollowupStatus::Pending->value,
             'next_followup_at' => now(),
+        ]);
+
+        Followup::query()->create([
+            'title' => 'Order replacement blades',
+            'created_by' => $this->admin->id,
+            'notes' => 'Supplier quoted two-day delivery.',
+            'status' => FollowupStatus::Pending->value,
+            'next_followup_at' => now(),
+        ]);
+
+        // No next follow-up date — sits on the day it was created.
+        Followup::query()->create([
+            'title' => 'Call supplier about invoice',
+            'created_by' => $this->admin->id,
+            'notes' => 'Invoice is three weeks overdue.',
+            'status' => FollowupStatus::Pending->value,
+            'next_followup_at' => null,
         ]);
 
         $this->actingAs($this->admin)
@@ -394,8 +453,10 @@ class DashboardTest extends TestCase
             ->assertSee('Follow-ups')
             ->assertSee('Jobs 1')
             ->assertSee('Leads 1')
-            ->assertSee('Follow-ups 2')
-            ->assertSee('title="Job"', false)
-            ->assertSee('title="Lead"', false);
+            ->assertSee('Follow-ups 4')
+            // Only the day's total is shown — no per-type breakdown.
+            ->assertDontSee('title="Job"', false)
+            ->assertDontSee('title="Lead"', false)
+            ->assertDontSee('title="General"', false);
     }
 }

@@ -248,18 +248,29 @@
 
                     <div>
                         <label class="mb-1.5 block text-sm font-medium text-slate-700">
-                            Outcome <span class="text-red-500">*</span>
+                            Notes <span class="text-red-500">*</span>
                         </label>
-                        <textarea name="outcome" rows="3"
+                        <textarea name="notes" rows="3"
                                   class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-800 placeholder-slate-400 transition focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                                  placeholder="What happened in this follow-up…" required></textarea>
+                                  placeholder="What needs to happen, or what was discussed…" required></textarea>
                     </div>
 
                     <div>
-                        <label class="mb-1.5 block text-sm font-medium text-slate-700">Notes</label>
-                        <textarea name="notes" rows="2"
+                        <label class="mb-1.5 block text-sm font-medium text-slate-700">Outcome</label>
+                        <textarea name="outcome" rows="2"
                                   class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-800 placeholder-slate-400 transition focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                                  placeholder="Additional context (optional)…"></textarea>
+                                  placeholder="Result of this follow-up (optional)…"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="mb-1.5 block text-sm font-medium text-slate-700">Assigned to</label>
+                        <select name="assigned_to" id="followup-assigned-select"
+                                class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
+                            <option value="">Unassigned</option>
+                            @foreach ($followupAssignableUsers as $assignableUser)
+                                <option value="{{ $assignableUser->id }}">{{ $assignableUser->name }}</option>
+                            @endforeach
+                        </select>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">

@@ -19,18 +19,21 @@
                         @php $followableUrl = $followup->followableUrl(); @endphp
                         @if ($followableUrl)
                             <a href="{{ $followableUrl }}" class="text-sm font-semibold text-slate-900 hover:underline">
-                                {{ class_basename($followup->followable_type) }} #{{ $followup->followable_id }}
+                                {{ $followup->subjectLabel() }}
                             </a>
                         @else
                             <span class="text-sm font-semibold text-slate-900">
-                                {{ class_basename($followup->followable_type) }} #{{ $followup->followable_id }}
+                                {{ $followup->subjectLabel() }}
                             </span>
                         @endif
+                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+                            {{ $followup->typeLabel() }}
+                        </span>
                         <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{ $followup->status->badgeClass() }}">
                             {{ $followup->status->label() }}
                         </span>
                     </div>
-                    <p class="mt-1 line-clamp-2 text-sm text-slate-600">{{ $followup->outcome }}</p>
+                    <p class="mt-1 line-clamp-2 text-sm text-slate-600">{{ $followup->notes }}</p>
                     <p class="mt-1 text-xs text-slate-400">
                         Created {{ $followup->created_at->diffForHumans() }}
                         @if ($followup->assignedTo)

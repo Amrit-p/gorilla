@@ -156,25 +156,6 @@
                                                 <span class="text-base font-bold tabular-nums text-orange-900">{{ $day['follow_up_total'] }}</span>
                                             </div>
                                         @endcan
-
-                                        @foreach ($day['follow_up_types'] ?? [] as $followUpType)
-                                            @can(App\Support\CrmPermissions::MANAGE_FOLLOWUPS)
-                                                <a
-                                                    href="{{ route('admin.followups.index', ['next_followup_from' => $day['date'], 'next_followup_to' => $day['date'], 'status' => 'pending', 'followable_type' => $followUpType['type']]) }}"
-                                                    class="flex items-center gap-2 rounded-lg px-1 py-1 transition hover:bg-orange-50"
-                                                >
-                                                    <svg class="h-3.5 w-3.5 shrink-0 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3.75h10.5a.75.75 0 0 1 .75.75v15.75a.75.75 0 0 1-1.28.53L12 15.75l-4.72 4.53A.75.75 0 0 1 6 20.25V4.5a.75.75 0 0 1 .75-.75Z"/></svg>
-                                                    <span class="min-w-0 flex-1 truncate text-[11px] font-semibold text-orange-800" title="{{ $followUpType['label'] }}">{{ $followUpType['label'] }}</span>
-                                                    <span class="shrink-0 text-xs font-bold tabular-nums text-orange-700">{{ $followUpType['count'] }}</span>
-                                                </a>
-                                            @else
-                                                <div class="flex items-center gap-2 px-1 py-1">
-                                                    <svg class="h-3.5 w-3.5 shrink-0 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3.75h10.5a.75.75 0 0 1 .75.75v15.75a.75.75 0 0 1-1.28.53L12 15.75l-4.72 4.53A.75.75 0 0 1 6 20.25V4.5a.75.75 0 0 1 .75-.75Z"/></svg>
-                                                    <span class="min-w-0 flex-1 truncate text-[11px] font-semibold text-orange-800" title="{{ $followUpType['label'] }}">{{ $followUpType['label'] }}</span>
-                                                    <span class="shrink-0 text-xs font-bold tabular-nums text-orange-700">{{ $followUpType['count'] }}</span>
-                                                </div>
-                                            @endcan
-                                        @endforeach
                                     </div>
                                 @endif
 

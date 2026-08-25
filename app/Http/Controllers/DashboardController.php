@@ -10,6 +10,8 @@ use App\Models\User;
 use App\Services\ActivityLogService;
 use App\Services\DashboardAnalyticsService;
 use App\Services\DashboardService;
+use App\Services\FollowupService;
+use App\Support\CrmPermissions;
 use App\Support\CrmRoles;
 use App\Support\QueryFilters\JobListFilter;
 use App\Support\QueryFilters\LeadListFilter;
@@ -23,7 +25,8 @@ class DashboardController extends Controller
     public function __construct(
         private readonly DashboardService $dashboardService,
         private readonly DashboardAnalyticsService $dashboardAnalyticsService,
-        private readonly ActivityLogService $activityLogService
+        private readonly ActivityLogService $activityLogService,
+        private readonly FollowupService $followupService
     ) {}
 
     /**
@@ -53,6 +56,9 @@ class DashboardController extends Controller
                 ? User::query()->role(CrmRoles::MOWER)->where('is_active', true)->orderBy('name')->get(['id', 'name', 'efficiency'])
                 : collect(),
             'workflowStatuses' => $isAdmin ? JobWorkflowStatus::values() : [],
+            'followupOptions' => $user->can(CrmPermissions::MANAGE_FOLLOWUPS)
+                ? $this->followupService->formOptions()
+                : null,
         ]);
     }
 

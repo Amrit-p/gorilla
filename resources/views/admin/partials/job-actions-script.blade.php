@@ -846,6 +846,7 @@
     function resetFollowupForm() {
         $('#followup-job-form')[0].reset();
         $('#followup-status-select').val('pending');
+        $('#followup-assigned-select').val('');
         $('#followup-form-heading').text('New Follow-Up');
         $('#followup-form-new-btn').hide();
         $('#followup-form-error').addClass('hidden').text('');
@@ -857,6 +858,7 @@
         $('#followup-job-form textarea[name="outcome"]').val(f.outcome || '');
         $('#followup-job-form textarea[name="notes"]').val(f.notes || '');
         $('#followup-status-select').val(f.status || 'pending');
+        $('#followup-assigned-select').val(f.assigned_to || '');
         $('#followup-job-form [name="next_followup_at"]').val(f.next_followup_at_input || '');
         $('#followup-form-heading').text('Follow-Up — ' + (f.created_at || ''));
         $('#followup-form-new-btn').css('display', 'inline-flex');
@@ -893,7 +895,7 @@
                             '<div class="mb-1.5 flex items-center gap-1.5">' +
                                 followupStatusBadge(f.status, f.status_label) +
                             '</div>' +
-                            '<p class="truncate text-xs font-medium leading-snug text-slate-700">' + esc(f.outcome) + '</p>' +
+                            '<p class="truncate text-xs font-medium leading-snug text-slate-700">' + esc(f.notes) + '</p>' +
                             '<div class="mt-1.5 flex items-center justify-between gap-2">' +
                                 '<p class="text-[10px] text-slate-400">' + esc(f.created_by) + '</p>' +
                                 '<p class="shrink-0 text-[10px] tabular-nums text-slate-400">' + esc(f.created_at) + '</p>' +

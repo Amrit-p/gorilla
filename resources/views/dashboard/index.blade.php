@@ -185,6 +185,40 @@ $dashboardType = $analytics['type'] ?? 'admin';
     <div id="dashboard-hold-jobs-backdrop" class="fixed inset-0 z-40 hidden bg-black/25 backdrop-blur-[1px]"></div>
     @endif
 
+    @if ($followupOptions)
+    @php $followupTabOffset = in_array($dashboardType, ['admin', 'sales']) ? 'calc(50% - 3.5rem)' : '50%'; @endphp
+    <button id="open-followup-modal" type="button"
+        class="fixed right-0 z-30 flex h-12 w-12 items-center justify-center rounded-l-lg bg-emerald-600 text-white shadow-lg transition-colors hover:bg-emerald-700"
+        style="top: {{ $followupTabOffset }}; transform: translateY(-50%);"
+        title="New Follow-up">
+        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+    </button>
+
+    <x-ui.modal id="dashboard-followup-modal" title="New Follow-Up" maxWidth="max-w-3xl">
+        <form id="dashboard-followup-form" method="POST" action="{{ route('admin.followups.store') }}" class="space-y-5">
+            @csrf
+
+            @include('admin.followups._form', [
+                'followup' => null,
+                'options' => $followupOptions,
+            ])
+
+            <div id="dashboard-followup-error"
+                class="hidden rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"></div>
+
+            <div class="flex gap-3">
+                <x-ui.button type="submit" id="dashboard-followup-submit">Save follow-up</x-ui.button>
+                <button type="button" data-close-modal="dashboard-followup-modal"
+                    class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </x-ui.modal>
+    @endif
+
     <x-ui.modal id="dashboard-preferences-modal" title="Dashboard Preferences">
         <form id="dashboard-preferences-form" action="{{ route('dashboard.preferences.update') }}" method="POST" class="space-y-4">
             @csrf
@@ -256,6 +290,60 @@ $dashboardType = $analytics['type'] ?? 'admin';
         if (typeof window.crmInitDashboardCharts === 'function') {
             window.crmInitDashboardCharts();
         }
+
+        @if ($followupOptions)
+        // ── Quick follow-up creation ────────────────────────────────────
+        function openDashboardFollowupModal() {
+            $('#dashboard-followup-error').addClass('hidden').text('');
+            $('#dashboard-followup-modal').removeClass('hidden').addClass('flex');
+        }
+
+        function closeDashboardFollowupModal() {
+            $('#dashboard-followup-modal').addClass('hidden').removeClass('flex');
+        }
+
+        $('#open-followup-modal').on('click', openDashboardFollowupModal);
+        $('[data-close-modal="dashboard-followup-modal"]').on('click', closeDashboardFollowupModal);
+
+        $('#dashboard-followup-form').on('submit', function(event) {
+            event.preventDefault();
+            var $form = $(this);
+            var $submit = $('#dashboard-followup-submit');
+            var $error = $('#dashboard-followup-error');
+
+            $error.addClass('hidden').text('');
+            $submit.prop('disabled', true).addClass('opacity-60');
+
+            $.ajax({
+                url: $form.attr('action'),
+                method: 'POST',
+                data: $form.serialize(),
+                headers: {
+                    Accept: 'application/json'
+                },
+                success: function(response) {
+                    closeDashboardFollowupModal();
+                    $form[0].reset();
+                    $('#followable_id').val('');
+                    $('#followable_type').trigger('change');
+                    showDashboardAlert(response.message || 'Follow-up saved.');
+                    if (typeof window.crmShiftWeek === 'function') {
+                        window.crmShiftWeek(0);
+                    }
+                },
+                error: function(xhr) {
+                    var errors = xhr.responseJSON?.errors || {};
+                    var message = Object.values(errors)[0]?.[0] ||
+                        xhr.responseJSON?.message ||
+                        'Unable to save the follow-up.';
+                    $error.removeClass('hidden').text(message);
+                },
+                complete: function() {
+                    $submit.prop('disabled', false).removeClass('opacity-60');
+                },
+            });
+        });
+        @endif
 
         @if(in_array($dashboardType, ['admin', 'sales']))
         var holdJobsUrl = @json(route('dashboard.hold-jobs'));

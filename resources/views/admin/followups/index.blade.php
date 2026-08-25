@@ -24,7 +24,7 @@
         <form id="followup-filter-form" method="GET" action="{{ route('admin.followups.index') }}"
               class="flex flex-wrap gap-3 rounded-2xl border border-slate-200 bg-white p-4">
             <input type="text" name="search" value="{{ $filters['search'] ?? '' }}"
-                   placeholder="Search outcome…"
+                   placeholder="Search notes, outcome, title…"
                    class="filter w-full rounded-md border border-slate-300 px-3 py-2 text-sm sm:w-64">
             <select name="status" class="filter rounded-md border border-slate-300 px-3 py-2 text-sm">
                 <option value="">All statuses</option>
@@ -36,9 +36,22 @@
             </select>
             <select name="followable_type" class="filter rounded-md border border-slate-300 px-3 py-2 text-sm">
                 <option value="">All types</option>
+                <option value="{{ \App\Models\Followup::GENERAL_TYPE }}"
+                        @selected(($filters['followable_type'] ?? '') === \App\Models\Followup::GENERAL_TYPE)>
+                    {{ \App\Models\Followup::GENERAL_LABEL }}
+                </option>
                 @foreach ($options['followableTypes'] as $type)
                     <option value="{{ $type }}" @selected(($filters['followable_type'] ?? '') === $type)>
                         {{ class_basename($type) }}
+                    </option>
+                @endforeach
+            </select>
+            <select name="assigned_to" class="filter rounded-md border border-slate-300 px-3 py-2 text-sm">
+                <option value="">All assignees</option>
+                @foreach ($options['assignableUsers'] as $assignableUser)
+                    <option value="{{ $assignableUser->id }}"
+                            @selected((int) ($filters['assigned_to'] ?? 0) === $assignableUser->id)>
+                        {{ $assignableUser->name }}
                     </option>
                 @endforeach
             </select>

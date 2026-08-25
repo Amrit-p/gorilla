@@ -9,10 +9,19 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Followup extends Model
 {
+    /**
+     * Filter/select value used for follow-ups that have no polymorphic target.
+     */
+    public const GENERAL_TYPE = 'general';
+
+    public const GENERAL_LABEL = 'General';
+
     protected $fillable = [
         'followable_type',
         'followable_id',
+        'title',
         'created_by',
+        'assigned_to',
         'outcome',
         'notes',
         'status',
@@ -34,6 +43,41 @@ class Followup extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function assignedTo(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    /**
+     * A general follow-up is a standalone reminder with a title instead of a linked record.
+     */
+    public function isGeneral(): bool
+    {
+        return $this->followable_type === null;
+    }
+
+    /**
+     * Type name shown in lists and filters: "General", "Job", "Lead", …
+     */
+    public function typeLabel(): string
+    {
+        return $this->isGeneral()
+            ? self::GENERAL_LABEL
+            : class_basename($this->followable_type);
+    }
+
+    /**
+     * Short heading for the follow-up: the title for general ones, "Job #12" otherwise.
+     */
+    public function subjectLabel(): string
+    {
+        if ($this->isGeneral()) {
+            return $this->title ?: 'General follow-up';
+        }
+
+        return class_basename($this->followable_type)." #{$this->followable_id}";
+    }
+
     public function followableUrl(): ?string
     {
         return match ($this->followable_type) {
@@ -46,6 +90,10 @@ class Followup extends Model
 
     public function followableLabel(): string
     {
+        if ($this->isGeneral()) {
+            return $this->title ?: 'General follow-up';
+        }
+
         $id = $this->followable_id;
         $followable = $this->followable;
 

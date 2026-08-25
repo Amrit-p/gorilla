@@ -32,6 +32,9 @@ class FollowupController extends Controller
 
         return response()->json([
             'statuses' => array_map(fn ($s) => ['value' => $s->value, 'label' => $s->label()], $options['statuses']),
+            'assignableUsers' => $options['assignableUsers']
+                ->map(fn ($user) => ['id' => $user->id, 'name' => $user->name])
+                ->all(),
         ]);
     }
 
@@ -73,6 +76,7 @@ class FollowupController extends Controller
             'search',
             'status',
             'followable_type',
+            'assigned_to',
             'next_followup_from',
             'next_followup_to',
         ]);
@@ -114,7 +118,7 @@ class FollowupController extends Controller
     {
         $this->authorizeAdmin();
 
-        $followup->load(['followable', 'createdBy']);
+        $followup->load(['followable', 'createdBy', 'assignedTo']);
 
         return view('admin.followups.show', compact('followup'));
     }
