@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Traits\HasFollowups;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -170,5 +171,34 @@ class Job extends Model
     public function contract(): BelongsTo
     {
         return $this->belongsTo(Contract::class);
+    }
+
+    /** Payouts that settle this job. The unique pivot key allows at most one. */
+    public function payouts(): BelongsToMany
+    {
+        return $this->belongsToMany(MowerPayout::class, 'mower_payout_job', 'job_id', 'mower_payout_id')
+            ->withTimestamps();
+    }
+
+    /**
+     * Whether the mower has been paid out for this job. Deliberately not named
+     * "paid": on this model `payment_status` already means the customer paying
+     * us, which is what the dashboard's "Unpaid" counts refer to.
+     */
+    public function hasMowerPayout(): bool
+    {
+        return $this->payouts()->exists();
+    }
+
+    /** @param  Builder<self>  $query */
+    public function scopeWithMowerPayout(Builder $query): void
+    {
+        $query->whereHas('payouts');
+    }
+
+    /** @param  Builder<self>  $query */
+    public function scopeWithoutMowerPayout(Builder $query): void
+    {
+        $query->whereDoesntHave('payouts');
     }
 }

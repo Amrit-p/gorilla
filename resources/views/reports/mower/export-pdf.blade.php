@@ -82,15 +82,14 @@
     @php $showBonus = !($hideBonusColumn ?? false); @endphp
     <table>
         <colgroup>
-            <col style="width:{{ $showBonus ? '22%' : '27%' }}">  {{-- Name --}}
-            <col style="width:{{ $showBonus ? '13%' : '17%' }}">  {{-- Total Hours --}}
-            <col style="width:{{ $showBonus ? '13%' : '17%' }}">  {{-- Working Days --}}
-            <col style="width:{{ $showBonus ? '13%' : '17%' }}">  {{-- Jobs Completed --}}
-            <col style="width:{{ $showBonus ? '17%' : '22%' }}">  {{-- Earnings Completed --}}
+            <col style="width:{{ $showBonus ? '28%' : '32%' }}">  {{-- Name --}}
+            <col style="width:{{ $showBonus ? '15%' : '17%' }}">  {{-- Total Hours --}}
+            <col style="width:{{ $showBonus ? '15%' : '17%' }}">  {{-- Working Days --}}
+            <col style="width:{{ $showBonus ? '14%' : '16%' }}">  {{-- Jobs Completed --}}
+            <col style="width:{{ $showBonus ? '16%' : '18%' }}">  {{-- Earnings Completed --}}
             @if($showBonus)
-                <col style="width:10%">  {{-- Bonus --}}
+                <col style="width:12%">  {{-- Bonus --}}
             @endif
-            <col style="width:12%">  {{-- Payout --}}
         </colgroup>
         <thead>
             <tr class="group-row">
@@ -100,7 +99,6 @@
                 @if($showBonus)
                     <th colspan="1" class="pink">Bonus</th>
                 @endif
-                <th colspan="1" class="green">Payout</th>
             </tr>
             <tr class="sub-row">
                 <th class="green-left">Name</th>
@@ -111,7 +109,6 @@
                 @if($showBonus)
                     <th class="pink">Bonus</th>
                 @endif
-                <th class="green" style="text-align:right">Amount</th>
             </tr>
         </thead>
         <tbody>
@@ -123,7 +120,6 @@
                         'total_jobs_completed' => 0,
                         'completed_earnings'   => 0,
                         'bonus'                => 0,
-                        'payout'               => 0,
                     ];
                 @endphp
                 @foreach ($reportData as $mower)
@@ -141,7 +137,6 @@
                         @if($showBonus)
                             <td class="right pink">${{ number_format((float) data_get($mower, 'bonus', 0), 2) }}</td>
                         @endif
-                        <td class="right green">${{ number_format((float) data_get($mower, 'payout', 0), 2) }}</td>
                     </tr>
                 @endforeach
                 <tr class="totals-row">
@@ -153,10 +148,9 @@
                     @if($showBonus)
                         <td class="right">${{ number_format($totals['bonus'], 2) }}</td>
                     @endif
-                    <td class="right">${{ number_format($totals['payout'], 2) }}</td>
                 </tr>
             @else
-                <tr><td colspan="{{ $showBonus ? 7 : 6 }}" class="no-records">No mower report data available.</td></tr>
+                <tr><td colspan="{{ $showBonus ? 6 : 5 }}" class="no-records">No mower report data available.</td></tr>
             @endif
         </tbody>
     </table>

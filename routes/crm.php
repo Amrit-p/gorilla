@@ -27,7 +27,6 @@ use App\Http\Controllers\Admin\Masters\ServiceTypeController;
 use App\Http\Controllers\Admin\Masters\ZoneController;
 use App\Http\Controllers\Admin\RolePermissionController;
 use App\Http\Controllers\Admin\SalaryCalculatorController;
-use App\Http\Controllers\Admin\SalaryReceiptController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -120,16 +119,15 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
         Route::delete('/admin/employee-bonuses/{employeeBonus}', [EmployeeBonusController::class, 'destroy'])->name('admin.employee-bonuses.destroy');
     });
 
-    // Mowers can view and export their own salary receipts; policy + extractFilters enforce the mower_id scope.
-    Route::get('/admin/salary-receipts', [SalaryReceiptController::class, 'index'])->name('admin.salary-receipts.index');
-    Route::get('/admin/salary-receipts/{salaryReceipt}', [SalaryReceiptController::class, 'show'])->name('admin.salary-receipts.show');
-    Route::get('/admin/salary-receipts/{salaryReceipt}/export/pdf', [SalaryReceiptController::class, 'exportPdf'])->name('admin.salary-receipts.export.pdf');
-
     Route::middleware('crm.permission:'.CrmPermissions::MANAGE_SALARY_CALCULATOR)->group(function (): void {
         Route::get('/admin/salary-calculator', [SalaryCalculatorController::class, 'index'])->name('admin.salary-calculator.index');
         Route::get('/admin/salary-calculator/months', [SalaryCalculatorController::class, 'months'])->name('admin.salary-calculator.months');
+        Route::get('/admin/salary-calculator/jobs', [SalaryCalculatorController::class, 'jobs'])->name('admin.salary-calculator.jobs');
+        Route::get('/admin/salary-calculator/month-payouts', [SalaryCalculatorController::class, 'monthPayouts'])->name('admin.salary-calculator.month-payouts');
+        Route::get('/admin/salary-calculator/payouts/{mowerPayout}/jobs', [SalaryCalculatorController::class, 'payoutJobs'])->name('admin.salary-calculator.payouts.jobs');
+        Route::post('/admin/salary-calculator/selection', [SalaryCalculatorController::class, 'selection'])->name('admin.salary-calculator.selection');
         Route::post('/admin/salary-calculator', [SalaryCalculatorController::class, 'store'])->name('admin.salary-calculator.store');
-        Route::delete('/admin/salary-receipts/{salaryReceipt}', [SalaryReceiptController::class, 'destroy'])->name('admin.salary-receipts.destroy');
+        Route::delete('/admin/salary-calculator/payouts/{mowerPayout}', [SalaryCalculatorController::class, 'destroyPayout'])->name('admin.salary-calculator.payouts.destroy');
     });
 
     Route::middleware('crm.permission:'.CrmPermissions::MANAGE_MASTERS)->prefix('admin/masters')->name('admin.masters.')->group(function (): void {
@@ -334,8 +332,6 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
                     ->name('export');
                 Route::get('/export-pdf', [MowerReportController::class, 'exportPdf'])
                     ->name('export-pdf');
-                Route::patch('/payout', [MowerReportController::class, 'updatePayout'])
-                    ->name('payout.update');
             });
         });
     });

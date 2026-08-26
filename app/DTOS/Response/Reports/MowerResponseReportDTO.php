@@ -7,7 +7,7 @@ namespace App\DTOS\Response\Reports;
 class MowerResponseReportDTO
 {
     public function __construct(
-        public string $name = "",
+        public string $name = '',
         public int $user_id = 0,
         public int $total_jobs_completed = 0,
         public int $total_jobs_started = 0,
@@ -23,11 +23,7 @@ class MowerResponseReportDTO
         public int $working_days = 0,
         public float $total_bonus = 0.0,
         public array $individual_bonuses = [],
-        public float $calculated_payout = 0.0,
-        public float $payout = 0.0,
-        public bool $payout_is_manual = false,
-    ) {
-    }
+    ) {}
 
     public static function fromArray(array $data): self
     {
@@ -48,16 +44,13 @@ class MowerResponseReportDTO
             working_days: $data['working_days'] ?? 0,
             total_bonus: $data['total_bonus'] ?? 0.0,
             individual_bonuses: $data['individual_bonuses'] ?? [],
-            calculated_payout: $data['calculated_payout'] ?? 0.0,
-            payout: $data['payout'] ?? 0.0,
-            payout_is_manual: $data['payout_is_manual'] ?? false,
         );
     }
 
     public function toArray(): array
     {
         return [
-            'name'    => $this->name,
+            'name' => $this->name,
             'user_id' => $this->user_id,
             'total_jobs_completed' => $this->total_jobs_completed,
             'total_jobs_started' => $this->total_jobs_started,
@@ -71,78 +64,86 @@ class MowerResponseReportDTO
             'total_incentive_amount' => $this->total_incentive_amount,
             'total_earnings' => $this->calculateTotalEarnings(),
             'total_working_hours' => $this->total_working_hours,
-            'working_days'        => $this->working_days,
-            'bonus'              => $this->total_bonus,
+            'working_days' => $this->working_days,
+            'bonus' => $this->total_bonus,
             'individual_bonuses' => $this->individual_bonuses,
-            'calculated_payout'  => $this->calculated_payout,
-            'payout'             => $this->payout,
-            'payout_is_manual'   => $this->payout_is_manual,
         ];
     }
 
     public function withTotalSales(float $totalSales): self
     {
         $this->total_sales = $totalSales;
+
         return $this;
     }
 
     public function withTotalCashEarned(int $totalCashEarned): self
     {
         $this->total_cash_earned = $totalCashEarned;
+
         return $this;
     }
 
     public function withTotalOnlineEarned(int $totalOnlineEarned): self
     {
         $this->total_online_earned = $totalOnlineEarned;
+
         return $this;
     }
 
     public function withTotalJobsCompleted(int $totalJobsCompleted): self
     {
         $this->total_jobs_completed = $totalJobsCompleted;
+
         return $this;
     }
 
     public function withTotalJobsStarted(int $totalJobsStarted): self
     {
         $this->total_jobs_started = $totalJobsStarted;
+
         return $this;
     }
 
     public function withTotalJobsPending(int $totalJobsPending): self
     {
         $this->total_jobs_pending = $totalJobsPending;
+
         return $this;
     }
 
     public function withCompletedEarnings(float $completedEarnings): self
     {
         $this->completed_earnings = $completedEarnings;
+
         return $this;
     }
 
     public function withStartedEarnings(float $startedEarnings): self
     {
         $this->started_earnings = $startedEarnings;
+
         return $this;
     }
 
     public function withPendingEarnings(float $pendingEarnings): self
     {
         $this->pending_earnings = $pendingEarnings;
+
         return $this;
     }
 
     public function withName(string $name): self
     {
         $this->name = $name;
+
         return $this;
     }
 
     public function withUserId(int $userId): self
     {
         $this->user_id = $userId;
+
         return $this;
     }
 
@@ -154,48 +155,35 @@ class MowerResponseReportDTO
     public function withTotalIncentiveAmount(float $totalIncentiveAmount): self
     {
         $this->total_incentive_amount = $totalIncentiveAmount;
+
         return $this;
     }
 
     public function withTotalWorkingHours(float $totalWorkingHours): self
     {
         $this->total_working_hours = $totalWorkingHours;
+
         return $this;
     }
 
     public function withWorkingDays(int $workingDays): self
     {
         $this->working_days = $workingDays;
+
         return $this;
     }
 
     public function withTotalBonus(float $totalBonus): self
     {
         $this->total_bonus = $totalBonus;
+
         return $this;
     }
 
     public function withIndividualBonuses(array $individualBonuses): self
     {
         $this->individual_bonuses = $individualBonuses;
-        return $this;
-    }
 
-    public function withCalculatedPayout(float $calculatedPayout): self
-    {
-        $this->calculated_payout = $calculatedPayout;
-        return $this;
-    }
-
-    public function withPayout(float $payout): self
-    {
-        $this->payout = $payout;
-        return $this;
-    }
-
-    public function withPayoutIsManual(bool $payoutIsManual): self
-    {
-        $this->payout_is_manual = $payoutIsManual;
         return $this;
     }
 }

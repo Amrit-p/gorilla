@@ -12,9 +12,10 @@ use App\Enums\JobOperationalPaymentStatus;
 use App\Enums\JobWorkflowStatus;
 use App\Models\EmployeeBonus;
 use App\Models\Job;
-use App\Models\MowerReportPayout;
 use App\Support\QueryFilters\JobListFilter;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Symfony\Component\HttpFoundation\Response;
 
 class MowerReportService implements MowerReportInterface
 {
@@ -34,24 +35,15 @@ class MowerReportService implements MowerReportInterface
 
         $bonusRecords = EmployeeBonus::query()
             ->whereIn('user_id', $userIds)
-            ->when($request->start_date, fn($q) => $q->whereDate('bonus_date', '>=', $request->start_date))
-            ->when($request->end_date, fn($q) => $q->whereDate('bonus_date', '<=', $request->end_date))
+            ->when($request->start_date, fn ($q) => $q->whereDate('bonus_date', '>=', $request->start_date))
+            ->when($request->end_date, fn ($q) => $q->whereDate('bonus_date', '<=', $request->end_date))
             ->get(['user_id', 'amount', 'bonus_date']);
 
         $bonusByUser = $bonusRecords->groupBy('user_id');
 
-        $periodStart = $request->start_date?->toDateString();
-        $periodEnd = $request->end_date?->toDateString();
-        $periodKey = MowerReportPayout::periodKey($periodStart, $periodEnd);
-
-        $manualPayouts = MowerReportPayout::query()
-            ->whereIn('user_id', $userIds)
-            ->where('period_key', $periodKey)
-            ->pluck('amount', 'user_id');
-
         return $jobs
             ->groupBy('done_by_user_id')
-            ->map(function ($userJobs, $doneByUserId) use ($bonusByUser, $manualPayouts) {
+            ->map(function ($userJobs, $doneByUserId) use ($bonusByUser) {
                 $user = $userJobs->first()->doneByUser;
                 $completed = JobWorkflowStatus::COMPLETED;
                 $cash = JobOperationalPaymentMode::CASH;
@@ -95,18 +87,13 @@ class MowerReportService implements MowerReportInterface
                 $workingDays = $completedJobs
                     ->pluck('scheduled_date')
                     ->filter()
-                    ->map(fn ($d) => \Carbon\Carbon::parse($d)->toDateString())
+                    ->map(fn ($d) => Carbon::parse($d)->toDateString())
                     ->unique()
                     ->count();
 
                 $bonusTotal = (float) ($bonusByUser->get($doneByUserId, collect())->sum('amount'));
-                $calculatedPayout = round($totalIncentiveAmount + $bonusTotal, 2);
-                $hasManualPayout = $manualPayouts->has($doneByUserId);
-                $payout = $hasManualPayout
-                    ? (float) $manualPayouts->get($doneByUserId)
-                    : $calculatedPayout;
 
-                return (new MowerResponseReportDTO())
+                return (new MowerResponseReportDTO)
                     ->withUserId((int) $doneByUserId)
                     ->withName($user?->name ?? 'Unknown')
                     ->withTotalJobsCompleted($completedJobs->count())
@@ -128,41 +115,16 @@ class MowerReportService implements MowerReportInterface
                             ->map(fn ($dayRecords) => (float) $dayRecords->sum('amount'))
                             ->toArray()
                     )
-                    ->withCalculatedPayout($calculatedPayout)
-                    ->withPayout($payout)
-                    ->withPayoutIsManual($hasManualPayout)
                     ->toArray();
             })
             ->sortByDesc(fn ($dto) => $dto['total_sales'])
             ->values();
     }
 
-    public function updatePayout(
-        int $userId,
-        float $amount,
-        ?string $periodStart,
-        ?string $periodEnd,
-        int $setBy
-    ): MowerReportPayout {
-        $periodKey = MowerReportPayout::periodKey($periodStart, $periodEnd);
-
-        return MowerReportPayout::query()->updateOrCreate(
-            [
-                'user_id' => $userId,
-                'period_key' => $periodKey,
-            ],
-            [
-                'period_start' => $periodStart,
-                'period_end' => $periodEnd,
-                'amount' => $amount,
-                'set_by' => $setBy,
-            ]
-        );
-    }
-
-    public function export(MowerRequestReportDTO $request): \Symfony\Component\HttpFoundation\Response
+    public function export(MowerRequestReportDTO $request): Response
     {
         $reportData = $this->generate($request);
+
         return $this->mowerReportExcelExporter->export($reportData, $request->hideBonusColumn);
     }
 }

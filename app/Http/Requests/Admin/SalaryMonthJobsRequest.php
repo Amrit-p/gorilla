@@ -7,7 +7,7 @@ use App\Support\CrmPermissions;
 use App\Support\CrmRoles;
 use Illuminate\Foundation\Http\FormRequest;
 
-class GenerateSalaryReceiptRequest extends FormRequest
+class SalaryMonthJobsRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -34,7 +34,6 @@ class GenerateSalaryReceiptRequest extends FormRequest
             ],
             'year' => ['required', 'integer', 'min:2000', 'max:2100'],
             'month' => ['required', 'integer', 'min:1', 'max:12'],
-            'percentage' => ['required', 'numeric', 'min:0', 'max:100'],
         ];
     }
 }

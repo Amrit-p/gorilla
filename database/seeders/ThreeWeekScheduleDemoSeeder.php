@@ -18,7 +18,6 @@ use App\Models\Followup;
 use App\Models\Job;
 use App\Models\JobLevel;
 use App\Models\Lead;
-use App\Models\MowerReportPayout;
 use App\Models\Recurrence;
 use App\Models\User;
 use App\Models\Zone;
@@ -28,7 +27,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Demo data for the 3-week dashboard schedule + mower report payouts.
+ * Demo data for the 3-week dashboard schedule.
  * Dates are relative to "now" so the grid is never empty after seeding.
  *
  * Run: php artisan db:seed --class=ThreeWeekScheduleDemoSeeder
@@ -69,9 +68,8 @@ class ThreeWeekScheduleDemoSeeder extends Seeder
         $this->seedPastVisits($admin, $mowers, $zones, $jobLevelId, $serviceTypes);
         $this->seedLeads($weekStart, $admin, $zones, $equipmentTypeId, $recurrenceId, $serviceTypes);
         $this->seedFollowups($weekStart, $admin);
-        $this->seedMowerPayouts($admin, $mowers);
 
-        $this->command?->info('Three-week schedule demo data seeded (jobs, past visits, leads, follow-ups, sample payouts).');
+        $this->command?->info('Three-week schedule demo data seeded (jobs, past visits, leads, follow-ups).');
     }
 
     private function seedJobs(
@@ -394,28 +392,6 @@ class ThreeWeekScheduleDemoSeeder extends Seeder
                 'status' => FollowupStatus::Pending->value,
                 'next_followup_at' => $due,
             ]);
-        }
-    }
-
-    private function seedMowerPayouts(User $admin, $mowers): void
-    {
-        $periodStart = now()->startOfMonth()->toDateString();
-        $periodEnd = now()->endOfMonth()->toDateString();
-        $periodKey = MowerReportPayout::periodKey($periodStart, $periodEnd);
-
-        foreach ($mowers as $i => $mower) {
-            MowerReportPayout::query()->updateOrCreate(
-                [
-                    'user_id' => $mower->id,
-                    'period_key' => $periodKey,
-                ],
-                [
-                    'period_start' => $periodStart,
-                    'period_end' => $periodEnd,
-                    'amount' => 120 + ($i * 35),
-                    'set_by' => $admin->id,
-                ]
-            );
         }
     }
 }

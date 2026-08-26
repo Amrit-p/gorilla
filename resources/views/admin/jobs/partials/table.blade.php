@@ -3,6 +3,12 @@
         request('list_scope') === \App\Support\CrmConstants::JOB_LIST_SCOPE_DELETED &&
         (auth()->user()?->hasRole(\App\Support\CrmRoles::OFFICE_MANAGER) ?? false);
     $canReorder = auth()->user()?->can('manage-job-records') && ! $viewingDeleted;
+    // Payout mode (salary calculator drill-down) renders the full table, and
+    // additionally locks the rows a mower has already been paid out for. Route
+    // reordering stays off there: route_sequence is a per-day order, so dragging
+    // inside a month-wide list would scramble it.
+    $payoutMode = $payoutMode ?? false;
+    $canReorder = $canReorder && ! $payoutMode;
 @endphp
 
 <x-jobs.bulk-toolbar :viewing-deleted="$viewingDeleted" />
@@ -47,10 +53,11 @@
         </thead>
         <tbody class="divide-y divide-slate-100">
     @forelse ($jobs as $job)
-        <tr class="job-row group divide-x divide-slate-100 transition-colors data-[selected=true]:bg-emerald-50/70 data-[selected=true]:shadow-[inset_3px_0_0_#10b981] data-[bulk-mode=true]:cursor-pointer {{ job_row_color_class($job) }}" data-job-id="{{ $job->id }}" data-est-minutes="{{ $job->estimated_duration_minutes ?? '' }}" data-selected="false" data-bulk-mode="false">
+        @php $jobPayoutId = $job->mower_payout_id ?? null; $jobAlreadyPaid = $jobPayoutId !== null; @endphp
+        <tr class="job-row group divide-x divide-slate-100 transition-colors data-[selected=true]:bg-emerald-50/70 data-[selected=true]:shadow-[inset_3px_0_0_#10b981] data-[bulk-mode=true]:cursor-pointer {{ job_row_color_class($job) }}" data-job-id="{{ $job->id }}" data-est-minutes="{{ $job->estimated_duration_minutes ?? '' }}" data-selected="false" data-bulk-mode="false" data-mower-paid="{{ $jobAlreadyPaid ? 'true' : 'false' }}" @if ($payoutMode) data-charges="{{ $job->charges ?? 0 }}" data-consumed-minutes="{{ $job->consumed_time_minutes ?? 0 }}" @endif>
 
                 <td class="w-8 px-2 py-4">
-                <input type="checkbox" class="job-select-checkbox h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" data-job-id="{{ $job->id }}" aria-label="Select job">
+                <input type="checkbox" class="job-select-checkbox h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" data-job-id="{{ $job->id }}" aria-label="Select job" @if ($jobAlreadyPaid) title="Already paid out - select it to edit that payout" @endif>
             </td>
 
             @if ($canReorder)
@@ -179,6 +186,27 @@
             {{-- Mowers --}}
             <td class="whitespace-nowrap px-4 py-4">
                 <p class="text-sm text-slate-700">{{ $job->doneByUser?->name ?: '—' }}</p>
+                @if ($jobAlreadyPaid)
+                    @can('manage-salary-calculator')
+                        <button type="button"
+                                class="js-open-payout mt-1 inline-flex items-center gap-1 rounded-md border border-emerald-300 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700 transition-colors hover:bg-emerald-100"
+                                data-payout-id="{{ $jobPayoutId }}" data-job-id="{{ $job->id }}"
+                                title="Mower paid for this job - click to view or edit the payout">
+                            <svg class="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/>
+                            </svg>
+                            Mower paid
+                        </button>
+                    @else
+                        <span class="mt-1 inline-flex items-center gap-1 rounded-md border border-emerald-300 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700"
+                              title="The mower has been paid out for this job">
+                            <svg class="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/>
+                            </svg>
+                            Mower paid
+                        </span>
+                    @endcan
+                @endif
                 @if ($job->assignedEmployees->isNotEmpty())
                     <p class="text-xs text-slate-500">{{ $job->assignedEmployees->pluck('name')->join(', ') }}</p>
                 @endif

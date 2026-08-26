@@ -118,17 +118,10 @@
         @endcan
 
         @can('manage-salary-calculator')
-            <div class="sidebar-accordion" data-open="{{ $accordionOpen(['admin.salary-calculator.*', 'admin.salary-receipts.*']) ? 'true' : 'false' }}">
-                <button type="button" class="sidebar-accordion-trigger {{ $linkClass(['admin.salary-calculator.*', 'admin.salary-receipts.*']) }} w-full text-left" title="Salary Calculator">
-                    <svg class="h-[18px] w-[18px] shrink-0 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 14l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <span class="sidebar-text flex-1">Salary Calculator</span>
-                    <svg class="sidebar-accordion-chevron h-4 w-4 shrink-0 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                </button>
-                <div class="sidebar-accordion-panel mt-0.5 space-y-0.5">
-                    <a href="{{ route('admin.salary-calculator.index') }}" class="{{ $linkClass(['admin.salary-calculator.index'], true) }}">Calculate salary</a>
-                    <a href="{{ route('admin.salary-receipts.index') }}" class="{{ $linkClass(['admin.salary-receipts.*'], true) }}">All receipts</a>
-                </div>
-            </div>
+            <a href="{{ route('admin.salary-calculator.index') }}" class="{{ $linkClass(['admin.salary-calculator.*']) }}" title="Salary Calculator">
+                <svg class="h-[18px] w-[18px] shrink-0 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 14l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span class="sidebar-text flex-1">Salary Calculator</span>
+            </a>
         @endcan
 
         @can('manage-contractors')

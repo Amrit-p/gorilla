@@ -3,6 +3,7 @@
 namespace Tests\Feature\Reports;
 
 use App\Http\Middleware\EnsureMowerChecklistComplete;
+use App\Models\EmployeeBonus;
 use App\Models\Job;
 use App\Models\User;
 use App\Support\CrmRoles;
@@ -85,7 +86,43 @@ class MowerReportControllerTest extends TestCase
         $response->assertDontSee('Completed but not verified');
     }
 
-    public function test_office_manager_can_set_manual_payout(): void
+    public function test_report_table_has_no_payout_column(): void
+    {
+        $this->createCompletedJobForMower();
+
+        EmployeeBonus::query()->create([
+            'user_id' => $this->mower->id,
+            'amount' => 25,
+            'description' => 'Spot bonus',
+            'bonus_date' => now()->toDateString(),
+            'created_by' => $this->manager->id,
+        ]);
+
+        $html = $this->actingAs($this->manager)
+            ->getJson(route('reports.mower.report'))
+            ->assertOk()
+            ->json('html');
+
+        $this->assertStringNotContainsString('Payout', $html);
+        $this->assertStringNotContainsString('mower-payout-input', $html);
+        // The bonus column stays, so its $25.00 is still rendered.
+        $this->assertStringContainsString('$25.00', $html);
+    }
+
+    public function test_excel_and_pdf_exports_render_without_the_payout_column(): void
+    {
+        $this->createCompletedJobForMower();
+
+        $this->actingAs($this->manager)
+            ->get(route('reports.mower.export'))
+            ->assertOk();
+
+        $this->actingAs($this->manager)
+            ->get(route('reports.mower.export-pdf'))
+            ->assertOk();
+    }
+
+    private function createCompletedJobForMower(): void
     {
         Job::query()->create([
             'customer_name' => 'Payout Client',
@@ -105,33 +142,5 @@ class MowerReportControllerTest extends TestCase
             'done_by_user_id' => $this->mower->id,
             'created_by' => $this->manager->id,
         ]);
-
-        $this->actingAs($this->manager)
-            ->patchJson(route('reports.mower.payout.update'), [
-                'user_id' => $this->mower->id,
-                'amount' => 55.5,
-                'start_date' => now()->startOfMonth()->toDateString(),
-                'end_date' => now()->endOfMonth()->toDateString(),
-            ])
-            ->assertOk()
-            ->assertJson([
-                'success' => true,
-                'amount' => 55.5,
-            ]);
-
-        $this->assertDatabaseHas('mower_report_payouts', [
-            'user_id' => $this->mower->id,
-            'amount' => 55.5,
-        ]);
-    }
-
-    public function test_mower_cannot_set_manual_payout(): void
-    {
-        $this->actingAs($this->mower)
-            ->patchJson(route('reports.mower.payout.update'), [
-                'user_id' => $this->mower->id,
-                'amount' => 10,
-            ])
-            ->assertForbidden();
     }
 }

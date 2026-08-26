@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Enums\JobWorkflowStatus;
 use App\Models\ActivityLog;
 use App\Models\Job;
+use App\Support\MowerPayoutLookup;
 use App\Support\QueryFilters\JobListFilter;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -51,6 +52,7 @@ class JobRepository
                 'verified_at',
                 'verified_by',
             ])
+            ->addSelect(['mower_payout_id' => MowerPayoutLookup::forJob()])
             ->with([
                 'clientRating:id,name,description',
                 'accountingLevel:id,name',
