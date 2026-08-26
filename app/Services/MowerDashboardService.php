@@ -5,10 +5,10 @@ namespace App\Services;
 use App\Enums\JobImageKind;
 use App\Enums\JobOperationalPaymentStatus;
 use App\Enums\JobWorkflowStatus;
-use App\Helpers\OptimizationHelper;
+// use App\Helpers\OptimizationHelper;
 use App\Models\Job;
 use App\Models\User;
-use App\Notifications\JobStatusChangedNotification;
+// use App\Notifications\JobStatusChangedNotification;
 use App\Support\CrmRoles;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
@@ -126,13 +126,14 @@ class MowerDashboardService
             'status' => $status,
         ]);
 
-        if ($status === JobWorkflowStatus::COMPLETED->value) {
-            User::query()->role([CrmRoles::SALES_MANAGER, CrmRoles::OFFICE_MANAGER])->get()
-                ->each(function (User $manager) use ($job): void {
-                    $manager->notify(new JobStatusChangedNotification($job));
-                    OptimizationHelper::forgetNotificationUnreadCount($manager->id);
-                });
-        }
+        // Notification on job completion disabled.
+        // if ($status === JobWorkflowStatus::COMPLETED->value) {
+        //     User::query()->role([CrmRoles::SALES_MANAGER, CrmRoles::OFFICE_MANAGER])->get()
+        //         ->each(function (User $manager) use ($job): void {
+        //             $manager->notify(new JobStatusChangedNotification($job));
+        //             OptimizationHelper::forgetNotificationUnreadCount($manager->id);
+        //         });
+        // }
 
         return $job;
     }

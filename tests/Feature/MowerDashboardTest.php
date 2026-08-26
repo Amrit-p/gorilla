@@ -441,7 +441,7 @@ class MowerDashboardTest extends TestCase
             ->assertSee('Job verified — read only');
     }
 
-    public function test_completing_job_notifies_sales_and_office_managers(): void
+    public function test_completing_job_does_not_notify_managers(): void
     {
         Notification::fake();
 
@@ -459,8 +459,8 @@ class MowerDashboardTest extends TestCase
             ])
             ->assertOk();
 
-        Notification::assertSentTo($salesManager, JobStatusChangedNotification::class);
-        Notification::assertSentTo($officeManager, JobStatusChangedNotification::class);
+        Notification::assertNotSentTo($salesManager, JobStatusChangedNotification::class);
+        Notification::assertNotSentTo($officeManager, JobStatusChangedNotification::class);
     }
 
     public function test_non_completed_status_does_not_notify_managers(): void
