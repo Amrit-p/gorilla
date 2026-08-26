@@ -218,6 +218,19 @@
         setTimeout(reloadCustomerDetailsModal, 400);
     });
 
+    $(document).on('click', '.customer-details-verify-all', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const ids = String($(this).data('ids') || '')
+            .split(',')
+            .map(Number)
+            .filter(Boolean);
+        if (!ids.length) return;
+        if (!confirm('Verify ' + ids.length + ' job' + (ids.length > 1 ? 's' : '') + ' at this address?')) return;
+        verifyJobs(ids, 1);
+        setTimeout(reloadCustomerDetailsModal, 400);
+    });
+
     $(document).on('click', '.customer-details-delete', function (e) {
         e.preventDefault();
         e.stopPropagation();

@@ -9,7 +9,7 @@
     $assigned = $job->assignedEmployees->pluck('name')->filter()->implode(', ')
         ?: ($job->doneByUser?->name ?? '—');
     $freq = $job->recurrence?->name ?: ($job->is_recurring ? 'Recurring' : 'One-time');
-    $isPaid = $job->payment_status === \App\Enums\JobOperationalPaymentStatus::RECEIVED->value;
+    $paidJobs = collect($address_jobs)->where('is_paid', true)->count();
 @endphp
 
 <div class="customer-details-shell flex min-h-[70vh] flex-col" data-job-id="{{ $job->id }}">
@@ -26,9 +26,9 @@
                 <p class="mt-0.5 truncate text-sm text-slate-500">
                     <span class="font-medium text-slate-700">{{ $job->customerDisplayName() }}</span>
                     <span class="mx-1.5 text-slate-300">·</span>
-                    Job #{{ $job->id }}
+                    {{ $group_address ?: 'No address on file' }}
                     <span class="mx-1.5 text-slate-300">·</span>
-                    {{ $services }}
+                    {{ $total_jobs }} {{ $total_jobs === 1 ? 'job' : 'jobs' }}
                 </p>
             </div>
         </div>
@@ -125,94 +125,101 @@
             </div>
         </div>
 
-        {{-- Center: past visits only (current job payment lives in the sidebar) --}}
+        {{-- Center: every job booked at this address, each with its own payment detail --}}
         <div class="flex flex-col border-b border-slate-200 bg-white px-8 py-6 lg:border-b-0 lg:border-r">
             <div class="mb-4 flex items-end justify-between gap-3">
                 <div>
-                    <p class="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Past visits</p>
+                    <p class="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Jobs at this address</p>
                     <p class="mt-1 text-sm text-slate-500">
-                        {{ count($service_history) }} previous {{ count($service_history) === 1 ? 'job' : 'jobs' }}
+                        {{ $total_jobs }} {{ $total_jobs === 1 ? 'job' : 'jobs' }}
                         <span class="text-slate-300">·</span>
-                        payment for this job is on the right
+                        {{ $paidJobs }} paid
+                        <span class="text-slate-300">·</span>
+                        {{ $total_jobs - $paidJobs }} outstanding
                     </p>
                 </div>
             </div>
 
             <div class="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1" style="max-height: min(58vh, 560px)">
-                @forelse ($service_history as $row)
-                    <div class="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3.5 transition hover:border-slate-300 hover:bg-slate-50/60">
-                        <div class="min-w-0 flex-1">
-                            <div class="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-                                <span class="text-[15px] font-semibold text-slate-900">{{ $row['date'] ?? '—' }}</span>
-                                <span class="text-sm text-slate-500">{{ $row['mower'] }}</span>
+                @forelse ($address_jobs as $row)
+                    <div class="rounded-2xl border px-4 py-3.5 transition {{ $row['is_current'] ? 'border-emerald-300 bg-emerald-50/50' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/60' }}"
+                         data-address-job-id="{{ $row['id'] }}">
+                        <div class="flex flex-wrap items-start justify-between gap-3">
+                            <div class="min-w-0 flex-1">
+                                <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                                    <span class="text-[15px] font-semibold text-slate-900">{{ $row['date'] ?? 'Unscheduled' }}</span>
+                                    @if ($row['time'])
+                                        <span class="text-sm text-slate-500">{{ $row['time'] }}</span>
+                                    @endif
+                                    <x-jobs.status-badge :status="$row['status']" />
+                                    @if ($row['is_current'])
+                                        <span class="inline-flex rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">This job</span>
+                                    @endif
+                                    @if ($row['is_verified'])
+                                        <span class="inline-flex rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Verified</span>
+                                    @endif
+                                </div>
+                                <p class="mt-1 truncate text-sm text-slate-500">
+                                    Job #{{ $row['id'] }}
+                                    <span class="mx-1 text-slate-300">·</span>
+                                    {{ $row['services'] }}
+                                    <span class="mx-1 text-slate-300">·</span>
+                                    {{ $row['mower'] }}
+                                </p>
+                            </div>
+                            <div class="shrink-0 text-right">
+                                <p class="text-lg font-bold {{ $row['is_paid'] ? 'text-emerald-700' : 'text-amber-800' }}">
+                                    ${{ number_format($row['charges'], 2) }}
+                                </p>
+                                <p class="mt-0.5 text-xs text-slate-500">{{ $row['payment_mode'] ?: 'No pay mode' }}</p>
                             </div>
                         </div>
-                        <div class="flex shrink-0 items-center gap-2">
-                            @if ($row['is_paid'])
-                                <span class="text-sm font-semibold text-emerald-700">${{ number_format($row['charges'], 2) }}</span>
-                                <span class="inline-flex rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700">Paid</span>
-                            @else
-                                <span class="text-sm font-semibold text-amber-800">${{ number_format($row['charges'], 2) }}</span>
-                                <span class="inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800">Unpaid</span>
-                            @endif
+
+                        <div class="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
+                            <div class="flex flex-wrap items-center gap-2">
+                                @if ($row['is_paid'])
+                                    <span class="inline-flex rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700">Paid</span>
+                                @else
+                                    <span class="inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800">{{ $row['payment_status'] ?: 'Pending' }}</span>
+                                @endif
+                                @if ($row['payment_pending_reason'])
+                                    <span class="text-xs text-amber-700">{{ $row['payment_pending_reason'] }}</span>
+                                @endif
+                            </div>
+                            <div class="flex shrink-0 flex-wrap items-center gap-2">
+                                @if ($canVerify && ! $row['is_verified'])
+                                    <button type="button"
+                                            class="customer-details-verify inline-flex items-center justify-center rounded-lg border border-emerald-400 bg-emerald-50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-emerald-700 hover:bg-emerald-100"
+                                            data-id="{{ $row['id'] }}">
+                                        Verify
+                                    </button>
+                                @endif
+                                @if ($canDelete)
+                                    <button type="button"
+                                            class="customer-details-delete inline-flex items-center justify-center rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-rose-600 hover:bg-rose-50"
+                                            data-id="{{ $row['id'] }}"
+                                            title="Delete job">
+                                        Delete
+                                    </button>
+                                @endif
+                                <a href="{{ route('admin.jobs.show', $row['id']) }}"
+                                   class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-slate-600 hover:bg-slate-100">
+                                    Open
+                                </a>
+                            </div>
                         </div>
                     </div>
                 @empty
                     <div class="flex h-40 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 px-6 text-center">
-                        <p class="text-sm font-medium text-slate-500">No previous visits yet</p>
-                        <p class="mt-1 text-xs text-slate-400">Manage this job’s payment in the sidebar →</p>
+                        <p class="text-sm font-medium text-slate-500">No jobs found for this address</p>
                     </div>
                 @endforelse
             </div>
         </div>
 
-        {{-- Right sidebar: manage payment for this job, then edit --}}
+        {{-- Right sidebar: address-wide payment totals, then edit --}}
         <aside class="flex flex-col bg-slate-50 px-7 py-6">
-            <p class="mb-4 text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Payment detail</p>
-
-            <div class="mb-4 rounded-2xl border border-slate-200 bg-white p-4">
-                <div class="space-y-3.5">
-                    <div class="flex items-center justify-between gap-3">
-                        <span class="text-xs font-semibold uppercase tracking-wide text-slate-400">This job #{{ $job->id }}</span>
-                        <span class="text-lg font-bold text-slate-900">${{ number_format((float) ($job->charges ?? 0), 2) }}</span>
-                    </div>
-                    <div class="flex items-center justify-between gap-3">
-                        <span class="text-sm text-slate-500">Pay mode</span>
-                        <span class="text-sm font-semibold text-slate-800">{{ $job->payment_mode ?: '—' }}</span>
-                    </div>
-                    <div class="flex items-center justify-between gap-3">
-                        <span class="text-sm text-slate-500">Status</span>
-                        @if ($isPaid)
-                            <span class="inline-flex rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold uppercase text-emerald-700">Received</span>
-                        @else
-                            <span class="inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold uppercase text-amber-800">{{ $job->payment_status ?: 'Pending' }}</span>
-                        @endif
-                    </div>
-                    @if ($job->payment_pending_reason)
-                        <div class="rounded-xl bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-800">
-                            {{ $job->payment_pending_reason }}
-                        </div>
-                    @endif
-
-                    <div class="flex flex-wrap gap-2 border-t border-slate-100 pt-3">
-                        @if (! $isPaid && $canVerify && ! $job->isVerified())
-                            <button type="button"
-                                    class="customer-details-verify inline-flex flex-1 items-center justify-center rounded-xl border border-emerald-400 bg-emerald-50 px-3 py-2.5 text-xs font-bold uppercase tracking-wide text-emerald-700 hover:bg-emerald-100"
-                                    data-id="{{ $job->id }}">
-                                Verify payment
-                            </button>
-                        @endif
-                        @if ($canDelete)
-                            <button type="button"
-                                    class="customer-details-delete inline-flex items-center justify-center rounded-xl border border-rose-200 bg-white px-3 py-2.5 text-xs font-bold uppercase tracking-wide text-rose-600 hover:bg-rose-50"
-                                    data-id="{{ $job->id }}"
-                                    title="Delete job">
-                                Delete
-                            </button>
-                        @endif
-                    </div>
-                </div>
-            </div>
+            <p class="mb-4 text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Payment summary</p>
 
             <div class="space-y-3">
                 <div class="rounded-2xl bg-slate-800 px-5 py-4 text-white">
@@ -228,6 +235,14 @@
                     <p class="mt-1 text-3xl font-bold tracking-tight">${{ number_format($balance_due, 2) }}</p>
                 </div>
             </div>
+
+            @if ($canVerify && collect($address_jobs)->where('is_verified', false)->isNotEmpty())
+                <button type="button"
+                        class="customer-details-verify-all mt-4 w-full rounded-2xl border border-emerald-400 bg-white px-4 py-3 text-xs font-bold uppercase tracking-wide text-emerald-700 transition hover:bg-emerald-50"
+                        data-ids="{{ collect($address_jobs)->where('is_verified', false)->pluck('id')->implode(',') }}">
+                    Verify all unverified
+                </button>
+            @endif
 
             <div class="mt-auto space-y-2.5 pt-6">
                 @if ($canUpdate)

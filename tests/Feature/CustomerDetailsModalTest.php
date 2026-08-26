@@ -26,9 +26,12 @@ class CustomerDetailsModalTest extends TestCase
         $this->admin = User::query()->where('email', 'admin@mowingcrm.test')->firstOrFail();
     }
 
-    public function test_customer_details_modal_renders_without_duplicate_contact_blocks(): void
+    /**
+     * @param  array<string, mixed>  $overrides
+     */
+    private function makeJob(array $overrides = []): Job
     {
-        $job = Job::query()->create([
+        return Job::query()->create(array_merge([
             'customer_name' => 'Modal Client',
             'phone' => '555-4444',
             'email' => 'modal.client@example.test',
@@ -44,7 +47,12 @@ class CustomerDetailsModalTest extends TestCase
             'status' => JobWorkflowStatus::PENDING->value,
             'charges' => 80,
             'created_by' => $this->admin->id,
-        ]);
+        ], $overrides));
+    }
+
+    public function test_customer_details_modal_renders_without_duplicate_contact_blocks(): void
+    {
+        $job = $this->makeJob();
 
         $html = $this->actingAs($this->admin)
             ->get(route('admin.jobs.customer-details', $job))
@@ -63,24 +71,105 @@ class CustomerDetailsModalTest extends TestCase
         $this->assertSame(1, substr_count($html, 'modal.client@example.test'));
     }
 
+    public function test_modal_lists_every_job_grouped_by_address_with_its_own_payment_detail(): void
+    {
+        $current = $this->makeJob([
+            'scheduled_date' => now()->toDateString(),
+            'charges' => 80,
+        ]);
+
+        // Same address, different contact details — still part of the address group.
+        $paid = $this->makeJob([
+            'phone' => '555-9999',
+            'email' => 'someone.else@example.test',
+            'client_address' => '99 popup ave  ',
+            'scheduled_date' => now()->subWeek()->toDateString(),
+            'payment_mode' => 'Online',
+            'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+            'status' => JobWorkflowStatus::COMPLETED->value,
+            'charges' => 120,
+        ]);
+
+        $unpaid = $this->makeJob([
+            'scheduled_date' => now()->subMonth()->toDateString(),
+            'charges' => 50,
+        ]);
+
+        $otherAddress = $this->makeJob([
+            'client_address' => '7 Elsewhere Rd',
+            'charges' => 999,
+        ]);
+
+        $html = $this->actingAs($this->admin)
+            ->get(route('admin.jobs.customer-details', $current))
+            ->assertOk()
+            ->assertSee('Jobs at this address', false)
+            ->assertSee('3 jobs', false)
+            ->getContent();
+
+        $this->assertStringContainsString('data-address-job-id="'.$current->id.'"', $html);
+        $this->assertStringContainsString('data-address-job-id="'.$paid->id.'"', $html);
+        $this->assertStringContainsString('data-address-job-id="'.$unpaid->id.'"', $html);
+        $this->assertStringNotContainsString('data-address-job-id="'.$otherAddress->id.'"', $html);
+
+        // Per-job payment detail: amount, pay mode and paid/pending state.
+        $this->assertStringContainsString('$120.00', $html);
+        $this->assertStringContainsString('Online', $html);
+        $this->assertStringContainsString('Paid', $html);
+
+        // Totals cover the whole address group, not just the clicked job.
+        $this->assertStringContainsString('$250.00', $html);
+        $this->assertStringContainsString('$130.00', $html);
+        $this->assertStringNotContainsString('$999.00', $html);
+    }
+
+    public function test_admin_gets_verify_and_delete_controls_for_each_job_in_the_group(): void
+    {
+        $current = $this->makeJob();
+        $verified = $this->makeJob([
+            'scheduled_date' => now()->subWeek()->toDateString(),
+            'verified_at' => now(),
+            'verified_by' => $this->admin->id,
+        ]);
+
+        $html = $this->actingAs($this->admin)
+            ->get(route('admin.jobs.customer-details', $current))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertMatchesRegularExpression(
+            '/customer-details-verify[^>]*data-id="'.$current->id.'"/s',
+            $html
+        );
+        $this->assertMatchesRegularExpression(
+            '/customer-details-delete[^>]*data-id="'.$current->id.'"/s',
+            $html
+        );
+        $this->assertMatchesRegularExpression(
+            '/customer-details-delete[^>]*data-id="'.$verified->id.'"/s',
+            $html
+        );
+
+        // An already-verified job keeps its delete control but loses the verify button.
+        $this->assertDoesNotMatchRegularExpression(
+            '/customer-details-verify[^>]*data-id="'.$verified->id.'"/s',
+            $html
+        );
+    }
+
     public function test_job_show_page_no_longer_repeats_customer_contact_in_sidebar(): void
     {
-        $job = Job::query()->create([
+        $job = $this->makeJob([
             'customer_name' => 'Show Client',
             'phone' => '555-3333',
             'email' => 'show.client@example.test',
             'client_address' => '12 Show St',
-            'scheduled_date' => now()->toDateString(),
             'scheduled_time' => '10:00',
             'estimated_duration_minutes' => 45,
-            'required_services' => [ServiceTypes::all()[0] ?? 'Mowing'],
-            'parking_status' => 'Easy',
-            'customer_type' => 'Easy',
             'payment_mode' => 'Online',
             'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
             'status' => JobWorkflowStatus::COMPLETED->value,
             'charges' => 100,
-            'created_by' => $this->admin->id,
         ]);
 
         $this->actingAs($this->admin)
