@@ -10,10 +10,11 @@ use App\DTOS\Response\Reports\MowerResponseReportDTO;
 use App\Enums\JobOperationalPaymentMode;
 use App\Enums\JobOperationalPaymentStatus;
 use App\Enums\JobWorkflowStatus;
-use App\Models\EmployeeBonus;
 use App\Models\Job;
+use App\Models\MowerPayout;
 use App\Support\QueryFilters\JobListFilter;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -32,18 +33,15 @@ class MowerReportService implements MowerReportInterface
             ->get();
 
         $userIds = $jobs->pluck('done_by_user_id')->unique()->values()->toArray();
+        $jobIds = $jobs->pluck('id')->all();
 
-        $bonusRecords = EmployeeBonus::query()
-            ->whereIn('user_id', $userIds)
-            ->when($request->start_date, fn ($q) => $q->whereDate('bonus_date', '>=', $request->start_date))
-            ->when($request->end_date, fn ($q) => $q->whereDate('bonus_date', '<=', $request->end_date))
-            ->get(['user_id', 'amount', 'bonus_date']);
-
-        $bonusByUser = $bonusRecords->groupBy('user_id');
+        $payoutsByUser = $this->payoutsSettlingJobs($userIds, $jobIds)
+            ->get(['id', 'user_id', 'amount', 'bonus', 'created_at'])
+            ->groupBy('user_id');
 
         return $jobs
             ->groupBy('done_by_user_id')
-            ->map(function ($userJobs, $doneByUserId) use ($bonusByUser) {
+            ->map(function ($userJobs, $doneByUserId) use ($payoutsByUser) {
                 $user = $userJobs->first()->doneByUser;
                 $completed = JobWorkflowStatus::COMPLETED;
                 $cash = JobOperationalPaymentMode::CASH;
@@ -91,7 +89,9 @@ class MowerReportService implements MowerReportInterface
                     ->unique()
                     ->count();
 
-                $bonusTotal = (float) ($bonusByUser->get($doneByUserId, collect())->sum('amount'));
+                $userPayouts = $payoutsByUser->get($doneByUserId, collect());
+                $bonusTotal = (float) $userPayouts->sum(fn ($payout) => (float) $payout->bonus);
+                $payoutTotal = (float) $userPayouts->sum(fn ($payout) => (float) $payout->amount);
 
                 return (new MowerResponseReportDTO)
                     ->withUserId((int) $doneByUserId)
@@ -109,16 +109,58 @@ class MowerReportService implements MowerReportInterface
                     ->withTotalWorkingHours($totalWorkingHours)
                     ->withWorkingDays($workingDays)
                     ->withTotalBonus($bonusTotal)
+                    ->withTotalPayout($payoutTotal)
                     ->withIndividualBonuses(
-                        $bonusByUser->get($doneByUserId, collect())
-                            ->groupBy(fn ($r) => $r->bonus_date->format('Y-m-d'))
-                            ->map(fn ($dayRecords) => (float) $dayRecords->sum('amount'))
+                        $userPayouts
+                            ->groupBy(fn ($payout) => $payout->created_at->format('Y-m-d'))
+                            ->map(fn ($dayPayouts) => (float) $dayPayouts->sum(fn ($payout) => (float) $payout->bonus))
                             ->toArray()
                     )
                     ->toArray();
             })
             ->sortByDesc(fn ($dto) => $dto['total_sales'])
             ->values();
+    }
+
+    /**
+     * The payouts behind one mower's payout and bonus totals, i.e. those settling
+     * the jobs the report's filters selected, newest first. Feeds the payouts
+     * modal shared with the salary calculator.
+     *
+     * @return Collection<int, MowerPayout>
+     */
+    public function payoutsForMower(MowerRequestReportDTO $request, int $userId): Collection
+    {
+        $jobIds = $this->jobListFilter->apply(Job::query(), $request->toArray())
+            ->where('done_by_user_id', $userId)
+            ->pluck('id')
+            ->all();
+
+        if ($jobIds === []) {
+            return collect();
+        }
+
+        return $this->payoutsSettlingJobs([$userId], $jobIds)
+            ->with('creator:id,name')
+            ->withCount('jobs')
+            ->orderByDesc('created_at')
+            ->get();
+    }
+
+    /**
+     * A mower's payout and bonus totals come from the payouts that settle the jobs
+     * the report is showing, so both figures and the drill-down stay in step with
+     * the filters, whose date range applies to the jobs rather than the payouts.
+     *
+     * @param  array<int, int|string>  $userIds
+     * @param  array<int, int>  $jobIds
+     * @return Builder<MowerPayout>
+     */
+    private function payoutsSettlingJobs(array $userIds, array $jobIds): Builder
+    {
+        return MowerPayout::query()
+            ->whereIn('user_id', $userIds)
+            ->whereHas('jobs', fn ($query) => $query->whereIn('service_jobs.id', $jobIds));
     }
 
     public function export(MowerRequestReportDTO $request): Response

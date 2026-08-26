@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Report;
 
 use App\Contracts\Reports\MowerReportInterface;
+use App\DTOS\Request\Reports\MowerRequestReportDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Reports\MowerRequestReport;
+use App\Models\User;
 use App\Repositories\JobRepository;
 use App\Services\JobManagementService;
 use App\Support\CrmRoles;
@@ -74,6 +76,44 @@ class MowerReportController extends Controller
         return response()->json([
             'html' => view('admin.jobs.partials.table', compact('jobs'))->render(),
         ]);
+    }
+
+    /**
+     * The payouts behind a mower's payout and bonus totals, rendered into the
+     * payouts modal shared with the salary calculator.
+     */
+    public function payouts(MowerRequestReport $request): JsonResponse
+    {
+        $dto = $request->toDTO();
+
+        // The payout and bonus columns are hidden from mowers, so their drill-down is too.
+        abort_if($dto->hideBonusColumn, 403);
+
+        $extra = $request->validate([
+            'done_by_user_id' => ['required', 'integer'],
+        ]);
+
+        $mower = User::findOrFail((int) $extra['done_by_user_id']);
+        $payouts = $this->mowerReportService->payoutsForMower($dto, $mower->id);
+
+        return response()->json([
+            'html' => view('admin.salary.calculator.partials.payouts-table', [
+                'payouts' => $payouts,
+                'mower' => $mower,
+            ])->render(),
+            'label' => $this->dateRangeLabel($dto),
+            'count' => $payouts->count(),
+        ]);
+    }
+
+    /** The report's active date range, for the payouts modal heading. */
+    private function dateRangeLabel(MowerRequestReportDTO $dto): ?string
+    {
+        if (! $dto->start_date && ! $dto->end_date) {
+            return null;
+        }
+
+        return ($dto->start_date?->format('d M Y') ?? '…').' – '.($dto->end_date?->format('d M Y') ?? '…');
     }
 
     public function export(MowerRequestReport $request): Response

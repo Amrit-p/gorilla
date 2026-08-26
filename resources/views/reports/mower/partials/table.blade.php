@@ -2,7 +2,7 @@
     <table class="w-full text-sm divide-y divide-slate-200">
         @php
             $showBonus = !($hideBonusColumn ?? false);
-            $colspan = $showBonus ? 6 : 5;
+            $colspan = $showBonus ? 7 : 5;
         @endphp
         <thead class="bg-slate-50 text-slate-600 uppercase text-xs">
             <tr class="divide-x divide-slate-200">
@@ -10,7 +10,7 @@
                 <th colspan="1" class="px-4 py-3 text-center font-semibold tracking-wide bg-yellow-100 text-yellow-800">Jobs</th>
                 <th colspan="1" class="px-4 py-3 text-center font-semibold tracking-wide bg-blue-100 text-blue-800">Total Sale</th>
                 @if($showBonus)
-                    <th colspan="1" class="px-4 py-3 text-center font-semibold tracking-wide bg-pink-100 text-pink-800">Bonus</th>
+                    <th colspan="2" class="px-4 py-3 text-center font-semibold tracking-wide bg-purple-100 text-purple-800">Payout</th>
                 @endif
             </tr>
             <tr class="divide-x divide-slate-200 border-t border-slate-200">
@@ -22,9 +22,10 @@
                 <th class="px-4 py-2 text-center font-medium bg-yellow-50 text-yellow-700">Completed</th>
                 {{-- Earnings --}}
                 <th class="px-4 py-2 text-right font-medium bg-blue-50 text-blue-700">Completed</th>
-                {{-- Bonus --}}
+                {{-- Payout --}}
                 @if($showBonus)
-                    <th class="px-4 py-2 text-right font-medium bg-pink-50 text-pink-700">Bonus</th>
+                    <th class="px-4 py-2 text-right font-medium bg-purple-50 text-purple-700">Payout</th>
+                    <th class="px-4 py-2 text-right font-medium bg-purple-50 text-purple-700">Bonus</th>
                 @endif
             </tr>
         </thead>
@@ -37,6 +38,7 @@
                             'working_days'         => 0,
                             'total_jobs_completed' => 0,
                             'completed_earnings'   => 0,
+                            'payout'               => 0,
                             'bonus'                => 0,
                         ];
                     @endphp
@@ -80,11 +82,18 @@
                                 data-label="Completed Earnings">
                                 ${{ number_format((float) data_get($mower, 'completed_earnings', 0), 2) }}
                             </td>
-                            {{-- Bonus --}}
+                            {{-- Payout --}}
                             @if($showBonus)
-                                <td class="px-4 py-3 text-right {{ $userId ? 'mower-bonus-cell cursor-pointer hover:bg-pink-50 hover:text-pink-700' : '' }}"
+                                <td class="px-4 py-3 text-right {{ $userId ? 'mower-payout-cell cursor-pointer hover:bg-purple-50 hover:text-purple-700' : '' }}"
                                     data-user-id="{{ $userId }}"
-                                    data-mower-name="{{ data_get($mower, 'name') }}">
+                                    data-mower-name="{{ data_get($mower, 'name') }}"
+                                    title="View the payouts behind this total">
+                                    ${{ number_format((float) data_get($mower, 'payout', 0), 2) }}
+                                </td>
+                                <td class="px-4 py-3 text-right {{ $userId ? 'mower-payout-cell cursor-pointer hover:bg-purple-50 hover:text-purple-700' : '' }}"
+                                    data-user-id="{{ $userId }}"
+                                    data-mower-name="{{ data_get($mower, 'name') }}"
+                                    title="View the payouts behind this total">
                                     ${{ number_format((float) data_get($mower, 'bonus', 0), 2) }}
                                 </td>
                             @endif
@@ -97,6 +106,7 @@
                         <td class="px-4 py-3 text-center">{{ $totals['total_jobs_completed'] }}</td>
                         <td class="px-4 py-3 text-right">${{ number_format($totals['completed_earnings'], 2) }}</td>
                         @if($showBonus)
+                            <td class="px-4 py-3 text-right">${{ number_format($totals['payout'], 2) }}</td>
                             <td class="px-4 py-3 text-right">${{ number_format($totals['bonus'], 2) }}</td>
                         @endif
                     </tr>

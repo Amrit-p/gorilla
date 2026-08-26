@@ -328,6 +328,8 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
                     ->name('report');
                 Route::get('/jobs', [MowerReportController::class, 'jobs'])
                     ->name('jobs');
+                Route::get('/payouts', [MowerReportController::class, 'payouts'])
+                    ->name('payouts');
                 Route::get('/export', [MowerReportController::class, 'export'])
                     ->name('export');
                 Route::get('/export-pdf', [MowerReportController::class, 'exportPdf'])

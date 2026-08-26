@@ -22,6 +22,7 @@ class MowerResponseReportDTO
         public float $total_working_hours = 0.0,
         public int $working_days = 0,
         public float $total_bonus = 0.0,
+        public float $total_payout = 0.0,
         public array $individual_bonuses = [],
     ) {}
 
@@ -43,6 +44,7 @@ class MowerResponseReportDTO
             total_working_hours: $data['total_working_hours'] ?? 0.0,
             working_days: $data['working_days'] ?? 0,
             total_bonus: $data['total_bonus'] ?? 0.0,
+            total_payout: $data['total_payout'] ?? 0.0,
             individual_bonuses: $data['individual_bonuses'] ?? [],
         );
     }
@@ -66,6 +68,7 @@ class MowerResponseReportDTO
             'total_working_hours' => $this->total_working_hours,
             'working_days' => $this->working_days,
             'bonus' => $this->total_bonus,
+            'payout' => $this->total_payout,
             'individual_bonuses' => $this->individual_bonuses,
         ];
     }
@@ -176,6 +179,13 @@ class MowerResponseReportDTO
     public function withTotalBonus(float $totalBonus): self
     {
         $this->total_bonus = $totalBonus;
+
+        return $this;
+    }
+
+    public function withTotalPayout(float $totalPayout): self
+    {
+        $this->total_payout = $totalPayout;
 
         return $this;
     }

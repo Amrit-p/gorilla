@@ -44,13 +44,13 @@ class MowerReportExcelService
 
     private const BLUE_SFG = '1D4ED8'; // blue-700
 
-    private const PINK_BG = 'FCE7F3'; // pink-100
+    private const PURPLE_BG = 'EDE9FE'; // violet-100
 
-    private const PINK_FG = '9D174D'; // pink-800
+    private const PURPLE_FG = '5B21B6'; // violet-800
 
-    private const PINK_SUB = 'FDF2F8'; // pink-50
+    private const PURPLE_SUB = 'F5F3FF'; // violet-50
 
-    private const PINK_SFG = 'BE185D'; // pink-700
+    private const PURPLE_SFG = '6D28D9'; // violet-700
 
     private const BORDER_COLOR = 'CBD5E1'; // slate-300
 
@@ -62,7 +62,7 @@ class MowerReportExcelService
 
     private const DATA_FONT_SIZE = 10;
 
-    /** Base columns — bonus columns are appended dynamically per export. */
+    /** Base columns — per-date bonus columns are appended dynamically per export. */
     private const BASE_COLUMNS = [
         // Mower (green)
         ['key' => 'name',                 'label' => 'Name',         'group' => 'green',  'format' => NumberFormat::FORMAT_TEXT,   'width' => 26, 'align' => 'left'],
@@ -72,8 +72,9 @@ class MowerReportExcelService
         ['key' => 'total_jobs_completed', 'label' => 'Completed',    'group' => 'yellow', 'format' => NumberFormat::FORMAT_NUMBER, 'width' => 14, 'align' => 'center'],
         // Earnings (blue)
         ['key' => 'completed_earnings',   'label' => 'Completed',    'group' => 'blue',   'format' => '"$"#,##0.00',               'width' => 18, 'align' => 'right'],
-        // Bonus total (pink) — date columns are appended by setupDynamicColumns()
-        ['key' => 'bonus',                'label' => 'Total Bonus',  'group' => 'pink',   'format' => '"$"#,##0.00',               'width' => 18, 'align' => 'right'],
+        // Payout (purple) — per-date bonus columns are appended by setupDynamicColumns()
+        ['key' => 'payout',               'label' => 'Payout',       'group' => 'purple', 'format' => '"$"#,##0.00',               'width' => 18, 'align' => 'right'],
+        ['key' => 'bonus',                'label' => 'Bonus',        'group' => 'purple', 'format' => '"$"#,##0.00',               'width' => 18, 'align' => 'right'],
     ];
 
     private array $columns = [];
@@ -86,7 +87,7 @@ class MowerReportExcelService
         'green' => ['bg' => self::GREEN_SUB,  'fg' => self::GREEN_SFG],
         'yellow' => ['bg' => self::YELLOW_SUB, 'fg' => self::YELLOW_SFG],
         'blue' => ['bg' => self::BLUE_SUB,   'fg' => self::BLUE_SFG],
-        'pink' => ['bg' => self::PINK_SUB,   'fg' => self::PINK_SFG],
+        'purple' => ['bg' => self::PURPLE_SUB, 'fg' => self::PURPLE_SFG],
     ];
 
     private array $numericSumKeys = [];
@@ -123,7 +124,7 @@ class MowerReportExcelService
 
         $this->columns = array_values(array_filter(
             self::BASE_COLUMNS,
-            fn ($col) => ! ($this->hideBonusColumn && $col['key'] === 'bonus')
+            fn ($col) => ! ($this->hideBonusColumn && in_array($col['key'], ['payout', 'bonus'], true))
         ));
 
         if (! $this->hideBonusColumn) {
@@ -132,7 +133,7 @@ class MowerReportExcelService
                 $this->columns[] = [
                     'key' => 'bonus_date_'.$date,
                     'label' => $label,
-                    'group' => 'pink',
+                    'group' => 'purple',
                     'format' => '"$"#,##0.00',
                     'width' => 16,
                     'align' => 'right',
@@ -147,7 +148,7 @@ class MowerReportExcelService
         ];
 
         if (! $this->hideBonusColumn) {
-            $this->groups[] = ['label' => 'Bonus', 'span' => 1 + count($uniqueDates), 'bg' => self::PINK_BG, 'fg' => self::PINK_FG];
+            $this->groups[] = ['label' => 'Payout', 'span' => 2 + count($uniqueDates), 'bg' => self::PURPLE_BG, 'fg' => self::PURPLE_FG];
         }
 
         $this->numericSumKeys = [
@@ -158,6 +159,7 @@ class MowerReportExcelService
         ];
 
         if (! $this->hideBonusColumn) {
+            $this->numericSumKeys[] = 'payout';
             $this->numericSumKeys[] = 'bonus';
             foreach ($uniqueDates as $date) {
                 $this->numericSumKeys[] = 'bonus_date_'.$date;

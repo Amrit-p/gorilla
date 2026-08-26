@@ -23,7 +23,7 @@
     thead tr.group-row th.green  { background: #d1fae5; color: #065f46; }
     thead tr.group-row th.yellow { background: #fef3c7; color: #92400e; }
     thead tr.group-row th.blue   { background: #dbeafe; color: #1e40af; }
-    thead tr.group-row th.pink   { background: #fce7f3; color: #9d174d; }
+    thead tr.group-row th.purple { background: #ede9fe; color: #5b21b6; }
 
     /* Sub-header row */
     thead tr.sub-row th {
@@ -36,7 +36,7 @@
     thead tr.sub-row th.green  { background: #ecfdf5; color: #047857; }
     thead tr.sub-row th.yellow { background: #fffbeb; color: #b45309; text-align: center; }
     thead tr.sub-row th.blue   { background: #eff6ff; color: #1d4ed8; text-align: right; }
-    thead tr.sub-row th.pink   { background: #fdf2f8; color: #be185d; text-align: right; }
+    thead tr.sub-row th.purple { background: #f5f3ff; color: #6d28d9; text-align: right; }
     thead tr.sub-row th.green-left   { background: #ecfdf5; color: #047857; text-align: left; }
     thead tr.sub-row th.green-center { background: #ecfdf5; color: #047857; text-align: center; }
 
@@ -50,7 +50,7 @@
     tbody tr:nth-child(even) td.green  { background: #f0fdf4; }
     tbody tr:nth-child(even) td.yellow { background: #fefce8; }
     tbody tr:nth-child(even) td.blue   { background: #eff6ff; }
-    tbody tr:nth-child(even) td.pink   { background: #fdf4ff; }
+    tbody tr:nth-child(even) td.purple { background: #f5f3ff; }
     tbody tr:nth-child(odd) td { background: #ffffff; }
 
     td.left   { text-align: left; }
@@ -82,12 +82,13 @@
     @php $showBonus = !($hideBonusColumn ?? false); @endphp
     <table>
         <colgroup>
-            <col style="width:{{ $showBonus ? '28%' : '32%' }}">  {{-- Name --}}
-            <col style="width:{{ $showBonus ? '15%' : '17%' }}">  {{-- Total Hours --}}
-            <col style="width:{{ $showBonus ? '15%' : '17%' }}">  {{-- Working Days --}}
-            <col style="width:{{ $showBonus ? '14%' : '16%' }}">  {{-- Jobs Completed --}}
-            <col style="width:{{ $showBonus ? '16%' : '18%' }}">  {{-- Earnings Completed --}}
+            <col style="width:{{ $showBonus ? '24%' : '32%' }}">  {{-- Name --}}
+            <col style="width:{{ $showBonus ? '13%' : '17%' }}">  {{-- Total Hours --}}
+            <col style="width:{{ $showBonus ? '13%' : '17%' }}">  {{-- Working Days --}}
+            <col style="width:{{ $showBonus ? '12%' : '16%' }}">  {{-- Jobs Completed --}}
+            <col style="width:{{ $showBonus ? '14%' : '18%' }}">  {{-- Earnings Completed --}}
             @if($showBonus)
+                <col style="width:12%">  {{-- Payout --}}
                 <col style="width:12%">  {{-- Bonus --}}
             @endif
         </colgroup>
@@ -97,7 +98,7 @@
                 <th colspan="1" class="yellow">Jobs</th>
                 <th colspan="1" class="blue">Total Sale</th>
                 @if($showBonus)
-                    <th colspan="1" class="pink">Bonus</th>
+                    <th colspan="2" class="purple">Payout</th>
                 @endif
             </tr>
             <tr class="sub-row">
@@ -107,7 +108,8 @@
                 <th class="yellow">Completed</th>
                 <th class="blue">Completed</th>
                 @if($showBonus)
-                    <th class="pink">Bonus</th>
+                    <th class="purple">Payout</th>
+                    <th class="purple">Bonus</th>
                 @endif
             </tr>
         </thead>
@@ -119,6 +121,7 @@
                         'working_days'         => 0,
                         'total_jobs_completed' => 0,
                         'completed_earnings'   => 0,
+                        'payout'               => 0,
                         'bonus'                => 0,
                     ];
                 @endphp
@@ -135,7 +138,8 @@
                         <td class="center yellow">{{ data_get($mower, 'total_jobs_completed') }}</td>
                         <td class="right blue">${{ number_format((float) data_get($mower, 'completed_earnings', 0), 2) }}</td>
                         @if($showBonus)
-                            <td class="right pink">${{ number_format((float) data_get($mower, 'bonus', 0), 2) }}</td>
+                            <td class="right purple">${{ number_format((float) data_get($mower, 'payout', 0), 2) }}</td>
+                            <td class="right purple">${{ number_format((float) data_get($mower, 'bonus', 0), 2) }}</td>
                         @endif
                     </tr>
                 @endforeach
@@ -146,11 +150,12 @@
                     <td class="center">{{ $totals['total_jobs_completed'] }}</td>
                     <td class="right">${{ number_format($totals['completed_earnings'], 2) }}</td>
                     @if($showBonus)
+                        <td class="right">${{ number_format($totals['payout'], 2) }}</td>
                         <td class="right">${{ number_format($totals['bonus'], 2) }}</td>
                     @endif
                 </tr>
             @else
-                <tr><td colspan="{{ $showBonus ? 6 : 5 }}" class="no-records">No mower report data available.</td></tr>
+                <tr><td colspan="{{ $showBonus ? 7 : 5 }}" class="no-records">No mower report data available.</td></tr>
             @endif
         </tbody>
     </table>

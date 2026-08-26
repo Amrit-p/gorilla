@@ -26,6 +26,40 @@
 
     <x-reports.mower-jobs-modal :employees="$employees" :workflowStatuses="$workflowStatuses" />
 
+    @unless ($hideBonusColumn)
+        {{-- The payout and bonus totals drill down into the payouts behind them,
+             using the same modal as the salary calculator. --}}
+        <x-salary.payouts-modal :list-url="route('reports.mower.payouts')" />
+
+        <script>
+            (function() {
+                function currentFilters() {
+                    const form = document.getElementById('job-filter-form');
+
+                    return form ? Object.fromEntries(new FormData(form).entries()) : {};
+                }
+
+                $(document).on('click', '.mower-payout-cell', function() {
+                    const userId = $(this).data('user-id');
+                    if (!userId) return;
+
+                    window.salaryPayoutsModal.open({
+                        params: {
+                            ...currentFilters(),
+                            done_by_user_id: userId
+                        },
+                        subtitle: $(this).data('mower-name'),
+                    });
+                });
+
+                // Editing or deleting a payout moves the report's payout and bonus totals.
+                window.addEventListener('payouts:changed', function() {
+                    loadMowerReports();
+                });
+            })();
+        </script>
+    @endunless
+
     <script>
         $(document).ready(function() {
             loadMowerReports();

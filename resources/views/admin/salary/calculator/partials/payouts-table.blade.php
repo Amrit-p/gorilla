@@ -1,11 +1,16 @@
 {{--
-    The list of payouts for one mower and month, rendered into the payouts modal
-    opened from the monthly breakdown's "Payouts" column. Editing reuses the
-    shared payout modal via .js-open-payout; deleting hits the destroy route.
+    The list of a mower's payouts, rendered into the payouts modal opened from the
+    salary calculator's "Payouts" column and from the mower report's payout and
+    bonus columns. Editing and deleting are for salary calculator managers only;
+    everyone else gets the read-only list.
 --}}
+@php
+    $canManagePayouts = auth()->user()?->can('manage-salary-calculator') ?? false;
+@endphp
+
 @if ($payouts->isEmpty())
     <div class="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-10 text-center text-sm text-slate-400">
-        No payouts recorded for {{ $mower->name }} this month.
+        No payouts recorded for {{ $mower->name }} in this period.
     </div>
 @else
     <div class="overflow-hidden rounded-xl border border-slate-200">
@@ -17,7 +22,9 @@
                     <th class="px-4 py-3 text-right">Amount</th>
                     <th class="px-4 py-3 text-right">Bonus</th>
                     <th class="px-4 py-3 text-center">Jobs</th>
-                    <th class="px-4 py-3 text-right">Actions</th>
+                    @if ($canManagePayouts)
+                        <th class="px-4 py-3 text-right">Actions</th>
+                    @endif
                 </tr>
             </thead>
             <tbody>
@@ -47,6 +54,7 @@
                                 <span class="text-slate-400">0</span>
                             @endif
                         </td>
+                        @if ($canManagePayouts)
                         <td class="px-4 py-3">
                             <div class="flex items-center justify-end gap-2">
                                 <button type="button"
@@ -71,10 +79,11 @@
                                 </button>
                             </div>
                         </td>
+                        @endif
                     </tr>
                     @if ($payout->comment)
                         <tr class="border-b border-slate-100 last:border-0" data-payout-comment-for="{{ $payout->id }}">
-                            <td colspan="6" class="px-4 pb-3 pt-0 text-xs italic text-slate-500">“{{ $payout->comment }}”</td>
+                            <td colspan="{{ $canManagePayouts ? 6 : 5 }}" class="px-4 pb-3 pt-0 text-xs italic text-slate-500">“{{ $payout->comment }}”</td>
                         </tr>
                     @endif
                 @endforeach
