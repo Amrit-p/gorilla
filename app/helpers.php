@@ -15,6 +15,40 @@ if (! function_exists('crm_pagination')) {
     }
 }
 
+if (! function_exists('crm_per_page')) {
+    /**
+     * Resolve the page size a CRM list table was asked for.
+     *
+     * The "All" choice never means "select everything": it resolves to a fixed
+     * chunk size so each query stays bounded, and the table streams the
+     * remaining chunks over AJAX as the user scrolls.
+     *
+     * @return array{value: string, per_page: int, infinite: bool}
+     */
+    function crm_per_page(Request $request): array
+    {
+        $requested = $request->string('per_page')->toString();
+
+        if ($requested === CrmConstants::PAGINATION_ALL) {
+            return [
+                'value' => CrmConstants::PAGINATION_ALL,
+                'per_page' => CrmConstants::infiniteScrollChunk(),
+                'infinite' => true,
+            ];
+        }
+
+        $perPage = in_array((int) $requested, CrmConstants::paginationOptions(), true)
+            ? (int) $requested
+            : crm_pagination();
+
+        return [
+            'value' => (string) $perPage,
+            'per_page' => $perPage,
+            'infinite' => false,
+        ];
+    }
+}
+
 if (! function_exists('crm_ajax_html')) {
     /**
      * Standard AJAX list response for Gorilla CRM index pages.

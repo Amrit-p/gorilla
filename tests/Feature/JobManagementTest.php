@@ -591,6 +591,138 @@ class JobManagementTest extends TestCase
         $this->assertDatabaseHas('service_jobs', ['id' => $job->id]);
     }
 
+    public function test_jobs_index_uses_the_selected_page_size(): void
+    {
+        config(['mowing.pagination_options' => [2, 5]]);
+        $this->createJobs(3);
+
+        $html = (string) $this->actingAs($this->admin)
+            ->getJson(route('admin.jobs.index', ['per_page' => 2]))
+            ->assertOk()
+            ->json('html');
+
+        $this->assertSame(2, $this->countJobRows($html));
+    }
+
+    public function test_jobs_index_falls_back_to_the_default_page_size_for_an_unknown_value(): void
+    {
+        config(['mowing.pagination_options' => [2, 5], 'mowing.default_pagination' => 2]);
+        $this->createJobs(3);
+
+        $html = (string) $this->actingAs($this->admin)
+            ->getJson(route('admin.jobs.index', ['per_page' => 999]))
+            ->assertOk()
+            ->json('html');
+
+        $this->assertSame(2, $this->countJobRows($html));
+    }
+
+    public function test_all_page_size_loads_one_chunk_and_offers_the_next(): void
+    {
+        config(['mowing.infinite_scroll_chunk' => 2]);
+        $this->createJobs(5);
+
+        $html = (string) $this->actingAs($this->admin)
+            ->getJson(route('admin.jobs.index', ['per_page' => 'all']))
+            ->assertOk()
+            ->json('html');
+
+        // "All" must never dump every row into one response.
+        $this->assertSame(2, $this->countJobRows($html));
+        $this->assertStringContainsString('crm-scroll-sentinel', $html);
+        $this->assertStringContainsString('data-next-page="2"', $html);
+        $this->assertStringContainsString('data-last-page="3"', $html);
+    }
+
+    public function test_infinite_scroll_request_returns_the_next_chunk_of_rows_only(): void
+    {
+        config(['mowing.infinite_scroll_chunk' => 2]);
+        $this->createJobs(5);
+
+        $html = (string) $this->actingAs($this->admin)
+            ->getJson(route('admin.jobs.index', [
+                'per_page' => 'all',
+                'page' => 3,
+                'rows_only' => 1,
+            ]))
+            ->assertOk()
+            ->json('html');
+
+        $this->assertSame(1, $this->countJobRows($html));
+        $this->assertStringNotContainsString('<table', $html);
+        $this->assertStringNotContainsString('crm-scroll-sentinel', $html);
+    }
+
+    public function test_infinite_scroll_chunk_past_the_last_page_renders_no_empty_state(): void
+    {
+        config(['mowing.infinite_scroll_chunk' => 2]);
+        $this->createJobs(2);
+
+        $html = (string) $this->actingAs($this->admin)
+            ->getJson(route('admin.jobs.index', [
+                'per_page' => 'all',
+                'page' => 5,
+                'rows_only' => 1,
+            ]))
+            ->assertOk()
+            ->json('html');
+
+        $this->assertSame(0, $this->countJobRows($html));
+        $this->assertStringNotContainsString('No jobs found.', $html);
+    }
+
+    public function test_jobs_index_page_renders_the_page_size_picker(): void
+    {
+        config(['mowing.infinite_scroll_chunk' => 2]);
+        $this->createJobs(5);
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.jobs.index', ['per_page' => 'all']))
+            ->assertOk()
+            ->assertSee('id="crm-per-page"', false)
+            ->assertSee('crm-scroll-sentinel', false)
+            ->assertSee('data-next-page="2"', false);
+    }
+
+    public function test_scroll_chunks_keep_the_active_filters(): void
+    {
+        config(['mowing.infinite_scroll_chunk' => 2]);
+        $this->createJobs(5);
+        Job::query()->create(array_merge($this->jobPayload(), [
+            'customer_name' => 'Unrelated Client',
+            'created_by' => $this->admin->id,
+        ]));
+
+        $html = (string) $this->actingAs($this->admin)
+            ->getJson(route('admin.jobs.index', [
+                'per_page' => 'all',
+                'search' => 'Paged Client',
+                'page' => 3,
+                'rows_only' => 1,
+            ]))
+            ->assertOk()
+            ->json('html');
+
+        $this->assertSame(1, $this->countJobRows($html));
+        $this->assertStringNotContainsString('Unrelated Client', $html);
+    }
+
+    private function countJobRows(string $html): int
+    {
+        return substr_count($html, '<tr class="job-row');
+    }
+
+    /**
+     * @return array<int, Job>
+     */
+    private function createJobs(int $count): array
+    {
+        return array_map(fn (int $index): Job => Job::query()->create(array_merge($this->jobPayload(), [
+            'customer_name' => "Paged Client {$index}",
+            'created_by' => $this->admin->id,
+        ])), range(1, $count));
+    }
+
     private function createJob(): Job
     {
         return Job::query()->create(array_merge($this->jobPayload(), [

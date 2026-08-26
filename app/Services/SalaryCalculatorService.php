@@ -9,6 +9,7 @@ use App\Enums\JobWorkflowStatus;
 use App\Models\Job;
 use App\Models\MowerPayout;
 use App\Models\User;
+use App\Support\CrmConstants;
 use App\Support\CrmRoles;
 use App\Support\MowerPayoutLookup;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -69,9 +70,10 @@ class SalaryCalculatorService
      *
      * @return LengthAwarePaginator<int, Job>
      */
-    public function jobsForMonth(User $mower, int $year, int $month, int $perPage = 10): LengthAwarePaginator
+    public function jobsForMonth(User $mower, int $year, int $month, ?int $perPage = null): LengthAwarePaginator
     {
         [$start, $end] = $this->monthBounds($year, $month);
+        $perPage ??= CrmConstants::defaultPagination();
 
         return $this->completedJobsQuery($mower)
             ->whereBetween('scheduled_date', [$start->toDateString(), $end->toDateString()])

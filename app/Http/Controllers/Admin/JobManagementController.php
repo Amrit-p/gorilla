@@ -58,17 +58,28 @@ class JobManagementController extends Controller
             $filters['list_scope'] = '';
         }
 
-        $jobs = $this->jobManagementService->paginatedJobs(
-            $filters,
-            (int) config('mowing.default_pagination', 15)
-        );
+        $pageSize = crm_per_page($request);
+
+        $jobs = $this->jobManagementService->paginatedJobs($filters, $pageSize['per_page']);
+
+        $tableData = [
+            'jobs' => $jobs,
+            'perPage' => $pageSize['value'],
+            'infiniteScroll' => $pageSize['infinite'],
+        ];
 
         if (crm_wants_partial($request)) {
-            return crm_ajax_html('admin.jobs.partials.table', compact('jobs'));
+            // Infinite scroll appends the next chunk onto the table already on
+            // screen, so it asks for the rows alone; everything else (filters,
+            // page links, page-size change) re-renders the whole table.
+            return $request->boolean('rows_only')
+                ? crm_ajax_html('admin.jobs.partials.rows', $tableData + ['showEmptyState' => false])
+                : crm_ajax_html('admin.jobs.partials.table', $tableData);
         }
 
         return view('admin.jobs.index', array_merge(
-            ['jobs' => $jobs, 'filters' => $filters],
+            $tableData,
+            ['filters' => $filters],
             $this->jobManagementService->formOptions()
         ));
     }

@@ -12,6 +12,12 @@ return [
     */
     'default_pagination' => 15,
 
+    /** Page-size choices offered on CRM list tables. The "All" choice is added on top of these. */
+    'pagination_options' => [15, 25, 50, 100],
+
+    /** Rows fetched per AJAX request while the "All" page size streams a list on scroll. */
+    'infinite_scroll_chunk' => 100,
+
     /** First auto-generated Gorilla CRM user ID (user_unique_id). */
     'user_unique_id_start' => 1001,
 

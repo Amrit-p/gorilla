@@ -1,6 +1,8 @@
 @php
     $monthLabel = \Illuminate\Support\Carbon::create($year, $month, 1)->format('F Y');
     $paidOnPage = collect($jobs->items())->filter(fn ($job) => ($job->mower_payout_id ?? null) !== null)->count();
+    // Chunked "All" keeps appending rows, so a per-page count would go stale.
+    $infiniteScroll = $infiniteScroll ?? false;
 @endphp
 
 {{--
@@ -20,7 +22,7 @@
                 <p class="text-sm font-semibold text-slate-900">{{ $mower->name }} &middot; {{ $monthLabel }}</p>
                 <p class="text-xs text-slate-500">
                     {{ $jobs->total() }} completed {{ \Illuminate\Support\Str::plural('job', $jobs->total()) }}
-                    @if ($paidOnPage > 0)
+                    @if ($paidOnPage > 0 && ! $infiniteScroll)
                         &middot; {{ $paidOnPage }} already paid out on this page
                     @endif
                     &middot; select rows, then use <span class="font-medium text-emerald-700">Payout</span> in the toolbar to create or edit
@@ -41,6 +43,14 @@
             No completed jobs for {{ $mower->name }} in {{ $monthLabel }}.
         </div>
     @else
-        @include('admin.jobs.partials.table', ['jobs' => $jobs, 'payoutMode' => true])
+        @include('admin.jobs.partials.table', [
+            'jobs' => $jobs,
+            'payoutMode' => true,
+            'chunkUrl' => route('admin.salary-calculator.jobs'),
+            'chunkParams' => ['mower_id' => $mower->id, 'year' => $year, 'month' => $month],
+            'reloadFn' => 'crmReloadSalaryJobsTable',
+            // The drill-down has no filter bar; the month is fixed by chunkParams.
+            'filtersFn' => '',
+        ])
     @endif
 </div>

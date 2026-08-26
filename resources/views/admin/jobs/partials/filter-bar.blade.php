@@ -326,6 +326,8 @@
         return {
             ...Object.fromEntries(params.entries()),
             list_scope: $('#job-list-scope').val(),
+            // Rendered by the pagination component, so absent on lists without it.
+            per_page: $('#crm-per-page').val() || '',
         }
     }
 
@@ -389,8 +391,8 @@
         {{ $filterCallback }}(getFilters());
     });
 
-    $(document).on('click', '#{{ $tableContainer }} .pagination a', function(e) {
-        e.preventDefault();
-        {{ $filterCallback }}(getFilters());
-    });
+    {{-- The shared pagination component calls this with { per_page, page }. --}}
+    window.crmReloadJobsTable = function(params) {
+        {{ $filterCallback }}({ ...getFilters(), ...(params || {}) });
+    };
 </script>

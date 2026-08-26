@@ -60,15 +60,30 @@ class SalaryCalculatorController extends Controller
         $year = (int) $request->validated('year');
         $month = (int) $request->validated('month');
 
-        $jobs = $this->salaryCalculatorService->jobsForMonth($mower, $year, $month);
+        $pageSize = crm_per_page($request);
+        $jobs = $this->salaryCalculatorService->jobsForMonth($mower, $year, $month, $pageSize['per_page']);
+
+        $viewData = [
+            'jobs' => $jobs,
+            'mower' => $mower,
+            'year' => $year,
+            'month' => $month,
+            'perPage' => $pageSize['value'],
+            'infiniteScroll' => $pageSize['infinite'],
+        ];
+
+        // Infinite scroll appends the next chunk onto the table already on screen,
+        // so it asks for the rows alone rather than the whole drill-down.
+        $view = $request->boolean('rows_only')
+            ? view('admin.jobs.partials.rows', [
+                'jobs' => $jobs,
+                'payoutMode' => true,
+                'showEmptyState' => false,
+            ])
+            : view('admin.salary.calculator.partials.jobs-table', $viewData);
 
         return response()->json([
-            'html' => view('admin.salary.calculator.partials.jobs-table', [
-                'jobs' => $jobs,
-                'mower' => $mower,
-                'year' => $year,
-                'month' => $month,
-            ])->render(),
+            'html' => $view->render(),
             'month_label' => Carbon::create($year, $month, 1)->format('F Y'),
         ]);
     }

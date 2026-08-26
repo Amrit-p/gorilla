@@ -62,6 +62,7 @@
 
     {{-- Job selection registry powering #job-bulk-toolbar --}}
     <script src="{{ asset('js/job-bulk-toolbar.js') }}?v={{ @filemtime(public_path('js/job-bulk-toolbar.js')) ?: 1 }}"></script>
+    <script src="{{ asset('js/crm-table-pagination.js') }}?v={{ @filemtime(public_path('js/crm-table-pagination.js')) ?: 1 }}"></script>
     @include('admin.partials.job-actions-script', ['filterCallback' => 'reloadSalaryJobsTable'])
 
     <style>
@@ -148,11 +149,17 @@
                 return $('.salary-jobs-row[data-month="' + month + '"]');
             }
 
-            function loadJobs(mowerId, year, month, page) {
+            function loadJobs(mowerId, year, month, page, perPage) {
                 const $row = slotFor(month);
                 const $slot = $row.find('.salary-jobs-slot');
 
-                openMonth = { mowerId: mowerId, year: year, month: month, page: page || 1 };
+                openMonth = {
+                    mowerId: mowerId,
+                    year: year,
+                    month: month,
+                    page: page || 1,
+                    perPage: perPage || (openMonth ? openMonth.perPage : '') || '',
+                };
 
                 $row.removeClass('hidden');
                 $('.salary-month-row').removeClass('is-open');
@@ -162,7 +169,13 @@
                 $.ajax({
                     url: jobsUrl,
                     method: 'GET',
-                    data: { mower_id: mowerId, year: year, month: month, page: openMonth.page },
+                    data: {
+                        mower_id: mowerId,
+                        year: year,
+                        month: month,
+                        page: openMonth.page,
+                        per_page: openMonth.perPage,
+                    },
                     success: function (res) {
                         $slot.html(res.html);
                     },
@@ -175,7 +188,14 @@
             // Called by job-actions-script after any bulk job action, and after a payout.
             window.reloadSalaryJobsTable = function () {
                 if (!openMonth) { return; }
-                loadJobs(openMonth.mowerId, openMonth.year, openMonth.month, openMonth.page);
+                loadJobs(openMonth.mowerId, openMonth.year, openMonth.month, openMonth.page, openMonth.perPage);
+            };
+
+            // Called by the shared pagination component with { per_page, page }.
+            window.crmReloadSalaryJobsTable = function (params) {
+                if (!openMonth) { return; }
+                params = params || {};
+                loadJobs(openMonth.mowerId, openMonth.year, openMonth.month, params.page, params.per_page);
             };
 
             $(document).on('change', '#salary-mower-select, #salary-year-select', loadMonths);
@@ -196,25 +216,13 @@
 
             $(document).on('click', '.salary-jobs-close', collapseAll);
 
-            // Keep the shared paginator inside the expanded row instead of navigating.
-            $(document).on('click', '.salary-jobs-slot nav a, .salary-jobs-slot .pagination a', function (e) {
-                e.preventDefault();
-                if (!openMonth) return;
-
-                const href = $(this).attr('href');
-                if (!href) return;
-
-                const page = new URL(href, window.location.origin).searchParams.get('page');
-                loadJobs(openMonth.mowerId, openMonth.year, openMonth.month, page || 1);
-            });
-
             window.addEventListener('jobs:payout-recorded', function () {
                 const reopen = openMonth;
                 loadMonths();
                 if (reopen) {
                     // Re-open the same month once the refreshed table is in the DOM.
                     setTimeout(function () {
-                        loadJobs(reopen.mowerId, reopen.year, reopen.month, reopen.page);
+                        loadJobs(reopen.mowerId, reopen.year, reopen.month, reopen.page, reopen.perPage);
                     }, 350);
                 }
             });

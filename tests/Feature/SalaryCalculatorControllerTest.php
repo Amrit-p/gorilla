@@ -173,6 +173,9 @@ class SalaryCalculatorControllerTest extends TestCase
 
     public function test_jobs_endpoint_paginates_the_drill_down(): void
     {
+        // The drill-down now follows the shared CRM page sizes, so pin the default.
+        config(['mowing.default_pagination' => 10]);
+
         foreach (range(1, 12) as $day) {
             $this->createJob(sprintf('2026-03-%02d', $day), charges: 100, minutes: 60);
         }
@@ -202,6 +205,79 @@ class SalaryCalculatorControllerTest extends TestCase
             ->json('html');
 
         $this->assertSame(2, substr_count($secondPage, 'aria-label="Select job"'));
+    }
+
+    public function test_jobs_endpoint_renders_the_shared_page_size_picker(): void
+    {
+        $this->createJob('2026-03-10', charges: 100, minutes: 60);
+
+        $html = $this->actingAs($this->admin)
+            ->getJson(route('admin.salary-calculator.jobs', [
+                'mower_id' => $this->mower->id,
+                'year' => 2026,
+                'month' => 3,
+            ]))
+            ->assertOk()
+            ->json('html');
+
+        $this->assertStringContainsString('id="crm-per-page"', $html);
+        // The picker reloads the drill-down, not the main jobs list.
+        $this->assertStringContainsString('data-reload="crmReloadSalaryJobsTable"', $html);
+    }
+
+    public function test_jobs_endpoint_all_page_size_loads_one_chunk_and_offers_the_next(): void
+    {
+        config(['mowing.infinite_scroll_chunk' => 2]);
+
+        foreach (range(1, 5) as $day) {
+            $this->createJob(sprintf('2026-03-%02d', $day), charges: 100, minutes: 60);
+        }
+
+        $html = $this->actingAs($this->admin)
+            ->getJson(route('admin.salary-calculator.jobs', [
+                'mower_id' => $this->mower->id,
+                'year' => 2026,
+                'month' => 3,
+                'per_page' => 'all',
+            ]))
+            ->assertOk()
+            ->json('html');
+
+        $this->assertSame(2, substr_count($html, 'aria-label="Select job"'));
+        $this->assertStringContainsString('crm-scroll-sentinel', $html);
+        $this->assertStringContainsString('data-next-page="2"', $html);
+        $this->assertStringContainsString('data-last-page="3"', $html);
+        // The sentinel must carry the month it is streaming.
+        $this->assertStringContainsString('year&quot;:2026', $html);
+        $this->assertStringContainsString('month&quot;:3', $html);
+    }
+
+    public function test_jobs_endpoint_returns_payout_aware_rows_only_for_a_scroll_chunk(): void
+    {
+        config(['mowing.infinite_scroll_chunk' => 2]);
+
+        foreach (range(1, 5) as $day) {
+            $this->createJob(sprintf('2026-03-%02d', $day), charges: 100, minutes: 60);
+        }
+
+        $html = $this->actingAs($this->admin)
+            ->getJson(route('admin.salary-calculator.jobs', [
+                'mower_id' => $this->mower->id,
+                'year' => 2026,
+                'month' => 3,
+                'per_page' => 'all',
+                'page' => 3,
+                'rows_only' => 1,
+            ]))
+            ->assertOk()
+            ->json('html');
+
+        $this->assertSame(1, substr_count($html, 'aria-label="Select job"'));
+        $this->assertStringNotContainsString('<table', $html);
+        $this->assertStringNotContainsString('crm-scroll-sentinel', $html);
+        // Payout mode must survive the chunk, or the payout modal loses its totals.
+        $this->assertStringContainsString('data-charges=', $html);
+        $this->assertStringContainsString('data-consumed-minutes=', $html);
     }
 
     public function test_selection_endpoint_returns_one_group_for_a_single_mower(): void
