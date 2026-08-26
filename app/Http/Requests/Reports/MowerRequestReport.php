@@ -13,46 +13,46 @@ class MowerRequestReport extends FormRequest
     public function rules(): array
     {
         return [
-            'search'            => [
-                'nullable',
-                'string'
-            ],
-            'list_scope'        => [
+            'search' => [
                 'nullable',
                 'string',
-                'in:today,upcoming,done,hold'
             ],
-            'status'            => [
+            'list_scope' => [
                 'nullable',
                 'string',
-                'in:started,completed,hold,cancelled'
+                'in:today,upcoming,done,hold',
             ],
-            'priority'          => [
+            'status' => [
                 'nullable',
                 'string',
-                'in:low,medium,high'
+                'in:started,completed,hold,cancelled',
             ],
-            'sortBy'            => [
+            'priority' => [
                 'nullable',
                 'string',
-                'in:name,total_jobs_completed,total_jobs_pending,total_cash_earned,total_online_earned,total_sales,incentive_percentage'
+                'in:low,medium,high',
             ],
-            'sortDirection'     => [
+            'sortBy' => [
+                'nullable',
+                'string',
+                'in:name,total_jobs_completed,total_jobs_pending,total_cash_earned,total_online_earned,total_sales,incentive_percentage',
+            ],
+            'sortDirection' => [
                 'nullable',
                 'string',
                 'in:asc,desc',
             ],
-            'date_range'        => [
+            'date_range' => [
                 'nullable',
-                'array'
+                'array',
             ],
-            'date_range.start'  => [
+            'date_range.start' => [
                 'nullable',
                 'date',
-                'date_format:Y-m-d'
+                'date_format:Y-m-d',
             ],
 
-            'date_range.end'    => [
+            'date_range.end' => [
                 'nullable',
                 'date',
                 'date_format:Y-m-d',
@@ -114,7 +114,7 @@ class MowerRequestReport extends FormRequest
             }
         }
 
-        if (!empty($data)) {
+        if (! empty($data)) {
             $this->merge($data);
         }
     }
@@ -123,17 +123,17 @@ class MowerRequestReport extends FormRequest
     {
         $data = $this->validated();
 
-        $userId = $this->user()->hasRole(CrmRoles::MOWER)
-            ? $this->user()->id
-            : '';
+        $isMower = $this->user()->hasRole(CrmRoles::MOWER);
+        $userId = $isMower ? $this->user()->id : '';
 
-        $data['start_date']    = $this->date('date_range.start')?->toDateString();
-        $data['end_date']      = $this->date('date_range.end')?->toDateString();
-        $data['user_id']       = (string) $userId;
-        $data['job_level_id']  = $this->integer('job_level_id') ?: null;
+        $data['start_date'] = $this->date('date_range.start')?->toDateString();
+        $data['end_date'] = $this->date('date_range.end')?->toDateString();
+        $data['user_id'] = (string) $userId;
+        $data['job_level_id'] = $this->integer('job_level_id') ?: null;
 
         $dto = MowerRequestReportDTO::fromArray($data);
-        $dto->hideBonusColumn = !CrmRoles::MOWER_SHOW_BONUS && $this->user()->hasRole(CrmRoles::MOWER);
+        $dto->hideBonusColumn = ! CrmRoles::MOWER_SHOW_BONUS && $isMower;
+        $dto->hideSalesColumn = $isMower;
 
         return $dto;
     }

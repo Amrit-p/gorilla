@@ -12,6 +12,7 @@ use App\Models\EquipmentType;
 use App\Models\Followup;
 use App\Models\Job;
 use App\Models\Lead;
+use App\Models\MowerPayout;
 use App\Models\User;
 use App\Support\ServiceTypes;
 use Database\Seeders\MasterCatalogSeeder;
@@ -268,6 +269,49 @@ class DashboardTest extends TestCase
             ]))
             ->assertOk()
             ->assertSee('Range Client');
+    }
+
+    public function test_daily_jobs_table_marks_jobs_the_mower_has_already_been_paid_for(): void
+    {
+        $paidJob = $this->createDayPanelJob('Paid Client', '555-0003');
+        $unpaidJob = $this->createDayPanelJob('Unpaid Client', '555-0004');
+
+        $payout = MowerPayout::query()->create([
+            'user_id' => $this->mower->id,
+            'amount' => 120,
+            'bonus' => 0,
+            'created_by' => $this->admin->id,
+        ]);
+        $payout->jobs()->attach($paidJob->id);
+
+        $response = $this->actingAs($this->admin)
+            ->get(route('dashboard.daily-jobs-table', ['date' => now()->toDateString()]))
+            ->assertOk()
+            ->assertSee('Mower paid')
+            ->assertSee('data-payout-id="'.$payout->id.'"', false)
+            ->assertSee('data-job-id="'.$paidJob->id.'" data-est-minutes="60" data-selected="false" data-bulk-mode="false" data-mower-paid="true"', false);
+
+        $response->assertSee('data-job-id="'.$unpaidJob->id.'" data-est-minutes="60" data-selected="false" data-bulk-mode="false" data-mower-paid="false"', false);
+    }
+
+    private function createDayPanelJob(string $customerName, string $phone): Job
+    {
+        return Job::query()->create([
+            'customer_name' => $customerName,
+            'phone' => $phone,
+            'client_address' => '20 Maple Ave',
+            'scheduled_date' => now()->toDateString(),
+            'scheduled_time' => '09:30',
+            'estimated_duration_minutes' => 60,
+            'required_services' => [ServiceTypes::all()[0]],
+            'parking_status' => 'Easy',
+            'customer_type' => 'Easy',
+            'payment_mode' => 'Cash',
+            'payment_status' => 'Received',
+            'status' => JobWorkflowStatus::COMPLETED->value,
+            'done_by_user_id' => $this->mower->id,
+            'created_by' => $this->admin->id,
+        ]);
     }
 
     public function test_three_week_grid_and_daily_leads_table_exclude_leads_converted_to_customer(): void

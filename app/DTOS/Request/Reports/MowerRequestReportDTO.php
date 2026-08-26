@@ -6,16 +6,16 @@ namespace App\DTOS\Request\Reports;
 
 use Illuminate\Support\Carbon;
 
-class MowerRequestReportDTO  
+class MowerRequestReportDTO
 {
     public function __construct(
-        public string $search = "",
-        public string $list_scope = "",
-        public string $status = "",
-        public string $priority = "",
-        public string $user_id = "",
-        public Carbon|null $start_date = null,
-        public Carbon|null $end_date = null,
+        public string $search = '',
+        public string $list_scope = '',
+        public string $status = '',
+        public string $priority = '',
+        public string $user_id = '',
+        public ?Carbon $start_date = null,
+        public ?Carbon $end_date = null,
         public ?int $equipment_type_id = null,
         public ?string $customer_type = null,
         public ?string $service_type = null,
@@ -27,8 +27,8 @@ class MowerRequestReportDTO
         public ?string $payment_status = null,
         public ?int $job_level_id = null,
         public ?bool $hideBonusColumn = false,
-    ) {
-    }
+        public ?bool $hideSalesColumn = false,
+    ) {}
 
     public static function fromArray(array $data): self
     {
@@ -51,6 +51,7 @@ class MowerRequestReportDTO
             payment_status: isset($data['payment_status']) ? $data['payment_status'] : null,
             job_level_id: isset($data['job_level_id']) ? (int) $data['job_level_id'] : null,
             hideBonusColumn: isset($data['hideBonusColumn']) ? (bool) $data['hideBonusColumn'] : false,
+            hideSalesColumn: isset($data['hideSalesColumn']) ? (bool) $data['hideSalesColumn'] : false,
         );
     }
 
@@ -75,95 +76,112 @@ class MowerRequestReportDTO
             'payment_status' => $this->payment_status,
             'job_level_id' => $this->job_level_id,
             'hideBonusColumn' => $this->hideBonusColumn,
+            'hideSalesColumn' => $this->hideSalesColumn,
         ];
     }
 
     public function withSearch(string $search): self
     {
         $this->search = $search;
+
         return $this;
     }
 
     public function withListScope(string $listScope): self
     {
         $this->list_scope = $listScope;
+
         return $this;
     }
 
     public function withStatus(string $status): self
     {
         $this->status = $status;
+
         return $this;
     }
 
     public function withPriority(string $priority): self
     {
         $this->priority = $priority;
+
         return $this;
     }
 
     public function withUserId(string|int $user_id): self
     {
         $this->user_id = (string) $user_id;
+
         return $this;
     }
+
     public function withStartDate(Carbon $start_date): self
     {
         $this->start_date = $start_date;
+
         return $this;
     }
 
     public function withEndDate(Carbon $end_date): self
     {
         $this->end_date = $end_date;
+
         return $this;
     }
 
     public function withEquipmentTypeId(int $equipment_type_id): self
     {
         $this->equipment_type_id = $equipment_type_id;
+
         return $this;
     }
-    
+
     public function withCustomerType(string $customer_type): self
     {
         $this->customer_type = $customer_type;
+
         return $this;
     }
 
     public function withServiceType(string $service_type): self
     {
         $this->service_type = $service_type;
+
         return $this;
     }
 
     public function withClientId(int|string $client_id): self
     {
         $this->client_id = $client_id;
+
         return $this;
     }
 
     public function withAssignment(string $assignment): self
     {
         $this->assignment = $assignment;
+
         return $this;
     }
 
     public function withPaymentMode(string $payment_mode): self
     {
         $this->payment_mode = $payment_mode;
+
         return $this;
     }
 
     public function withPaymentStatus(string $payment_status): self
     {
         $this->payment_status = $payment_status;
+
         return $this;
     }
 
     public function withJobLevelId(int $job_level_id): self
     {
         $this->job_level_id = $job_level_id;
+
         return $this;
     }
 }

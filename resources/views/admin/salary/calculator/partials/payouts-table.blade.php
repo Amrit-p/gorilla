@@ -1,11 +1,14 @@
 {{--
     The list of a mower's payouts, rendered into the payouts modal opened from the
     salary calculator's "Payouts" column and from the mower report's payout and
-    bonus columns. Editing and deleting are for salary calculator managers only;
-    everyone else gets the read-only list.
+    bonus columns. Editing, deleting and the jobs-in-a-payout drill-down are for
+    salary calculator managers only; everyone else gets the read-only list.
 --}}
 @php
     $canManagePayouts = auth()->user()?->can('manage-salary-calculator') ?? false;
+    // Callers that hide bonuses from the viewer hide them here too; everyone else sees them.
+    $showBonus = $showBonus ?? true;
+    $columnCount = 4 + ($showBonus ? 1 : 0) + ($canManagePayouts ? 1 : 0);
 @endphp
 
 @if ($payouts->isEmpty())
@@ -20,7 +23,9 @@
                     <th class="px-4 py-3">Created</th>
                     <th class="px-4 py-3">Created by</th>
                     <th class="px-4 py-3 text-right">Amount</th>
-                    <th class="px-4 py-3 text-right">Bonus</th>
+                    @if ($showBonus)
+                        <th class="px-4 py-3 text-right">Bonus</th>
+                    @endif
                     <th class="px-4 py-3 text-center">Jobs</th>
                     @if ($canManagePayouts)
                         <th class="px-4 py-3 text-right">Actions</th>
@@ -37,9 +42,13 @@
                             {{ $payout->creator?->name ?? '—' }}
                         </td>
                         <td class="px-4 py-3 text-right tabular-nums text-slate-800">${{ number_format((float) $payout->amount, 2) }}</td>
-                        <td class="px-4 py-3 text-right tabular-nums {{ (float) $payout->bonus > 0 ? 'text-pink-700' : 'text-slate-500' }}">${{ number_format((float) $payout->bonus, 2) }}</td>
+                        @if ($showBonus)
+                            <td class="px-4 py-3 text-right tabular-nums {{ (float) $payout->bonus > 0 ? 'text-pink-700' : 'text-slate-500' }}">${{ number_format((float) $payout->bonus, 2) }}</td>
+                        @endif
                         <td class="px-4 py-3 text-center tabular-nums">
-                            @if ($payout->jobs_count > 0)
+                            @if ($payout->jobs_count > 0 && ! $canManagePayouts)
+                                <span class="text-slate-700">{{ $payout->jobs_count }}</span>
+                            @elseif ($payout->jobs_count > 0)
                                 <button type="button"
                                         class="salary-payout-jobs-cell inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-200"
                                         data-payout-id="{{ $payout->id }}"
@@ -83,7 +92,7 @@
                     </tr>
                     @if ($payout->comment)
                         <tr class="border-b border-slate-100 last:border-0" data-payout-comment-for="{{ $payout->id }}">
-                            <td colspan="{{ $canManagePayouts ? 6 : 5 }}" class="px-4 pb-3 pt-0 text-xs italic text-slate-500">“{{ $payout->comment }}”</td>
+                            <td colspan="{{ $columnCount }}" class="px-4 pb-3 pt-0 text-xs italic text-slate-500">“{{ $payout->comment }}”</td>
                         </tr>
                     @endif
                 @endforeach

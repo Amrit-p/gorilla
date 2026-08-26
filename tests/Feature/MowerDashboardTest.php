@@ -9,6 +9,7 @@ use App\Enums\JobParkingStatus;
 use App\Enums\JobWorkflowStatus;
 use App\Enums\UserEfficiency;
 use App\Http\Middleware\EnsureMowerChecklistComplete;
+use App\Models\EquipmentType;
 use App\Models\Job;
 use App\Models\User;
 use App\Notifications\JobStatusChangedNotification;
@@ -266,6 +267,71 @@ class MowerDashboardTest extends TestCase
             ->assertSee('Read-only')
             ->assertSee('Before photos')
             ->assertSee('Open in Maps', false);
+    }
+
+    public function test_job_show_page_hides_customer_contact_details(): void
+    {
+        $job = $this->createAssignedJob($this->mower, [
+            'customer_name' => 'Jane Contact',
+            'phone' => '0412345678',
+            'email' => 'jane.contact@example.com',
+            'client_address' => '10 Field Rd',
+        ]);
+
+        $this->actingAs($this->mower)
+            ->get(route('mower.jobs.show', $job))
+            ->assertOk()
+            ->assertDontSee('Jane Contact')
+            ->assertDontSee('0412345678')
+            ->assertDontSee('jane.contact@example.com')
+            ->assertSee('10 Field Rd');
+    }
+
+    public function test_job_show_page_displays_job_details(): void
+    {
+        $equipmentType = EquipmentType::query()->where('is_active', true)->firstOrFail();
+
+        $job = $this->createAssignedJob($this->mower, [
+            'equipment_type_id' => $equipmentType->id,
+            'customer_type' => JobCustomerType::HARD->value,
+        ]);
+
+        $this->actingAs($this->mower)
+            ->get(route('mower.jobs.show', $job))
+            ->assertOk()
+            ->assertSee('Job details')
+            ->assertSee('Equipment type')
+            ->assertSee($equipmentType->name)
+            ->assertSee('Customer type')
+            ->assertSee(JobCustomerType::HARD->value);
+    }
+
+    public function test_job_show_page_shows_amount_for_cash_jobs(): void
+    {
+        $job = $this->createAssignedJob($this->mower, [
+            'payment_mode' => JobOperationalPaymentMode::CASH->value,
+            'charges' => 120,
+        ]);
+
+        $this->actingAs($this->mower)
+            ->get(route('mower.jobs.show', $job))
+            ->assertOk()
+            ->assertSee('Amount to collect')
+            ->assertSee('$120.00');
+    }
+
+    public function test_job_show_page_hides_amount_for_online_jobs(): void
+    {
+        $job = $this->createAssignedJob($this->mower, [
+            'payment_mode' => JobOperationalPaymentMode::ONLINE->value,
+            'charges' => 120,
+        ]);
+
+        $this->actingAs($this->mower)
+            ->get(route('mower.jobs.show', $job))
+            ->assertOk()
+            ->assertDontSee('Amount to collect')
+            ->assertDontSee('$120.00');
     }
 
     public function test_employee_mobile_redirects_to_mower_dashboard(): void

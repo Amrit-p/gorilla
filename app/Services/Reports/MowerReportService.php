@@ -167,6 +167,6 @@ class MowerReportService implements MowerReportInterface
     {
         $reportData = $this->generate($request);
 
-        return $this->mowerReportExcelExporter->export($reportData, $request->hideBonusColumn);
+        return $this->mowerReportExcelExporter->export($reportData, $request->hideBonusColumn, $request->hideSalesColumn);
     }
 }

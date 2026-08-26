@@ -31,6 +31,7 @@ class MowerReportController extends Controller
         $data = [
             'filters' => $dto->toArray(),
             'hideBonusColumn' => $dto->hideBonusColumn,
+            'hideSalesColumn' => $dto->hideSalesColumn,
             'isMower' => $request->user()->hasRole(CrmRoles::MOWER),
             ...$this->jobManagementService->formOptions(),
         ];
@@ -48,6 +49,7 @@ class MowerReportController extends Controller
                 'html' => view('reports.mower.partials.table', [
                     'reportData' => $reportData,
                     'hideBonusColumn' => $dto->hideBonusColumn,
+                    'hideSalesColumn' => $dto->hideSalesColumn,
                 ])->render(),
             ]);
         } catch (\Exception $e) {
@@ -66,8 +68,11 @@ class MowerReportController extends Controller
             'page' => ['nullable', 'integer', 'min:1'],
         ]);
 
+        $dto = $request->toDTO();
+        $this->assertOwnReportRow($dto, (int) $extra['done_by_user_id']);
+
         $filters = array_merge(
-            $request->toDTO()->toArray(),
+            $dto->toArray(),
             ['done_by_user_id' => $extra['done_by_user_id']]
         );
 
@@ -79,19 +84,18 @@ class MowerReportController extends Controller
     }
 
     /**
-     * The payouts behind a mower's payout and bonus totals, rendered into the
-     * payouts modal shared with the salary calculator.
+     * The payouts behind a mower's payout total, rendered into the payouts modal
+     * shared with the salary calculator. Mowers reach it for their own payouts.
      */
     public function payouts(MowerRequestReport $request): JsonResponse
     {
         $dto = $request->toDTO();
 
-        // The payout and bonus columns are hidden from mowers, so their drill-down is too.
-        abort_if($dto->hideBonusColumn, 403);
-
         $extra = $request->validate([
             'done_by_user_id' => ['required', 'integer'],
         ]);
+
+        $this->assertOwnReportRow($dto, (int) $extra['done_by_user_id']);
 
         $mower = User::findOrFail((int) $extra['done_by_user_id']);
         $payouts = $this->mowerReportService->payoutsForMower($dto, $mower->id);
@@ -100,10 +104,20 @@ class MowerReportController extends Controller
             'html' => view('admin.salary.calculator.partials.payouts-table', [
                 'payouts' => $payouts,
                 'mower' => $mower,
+                'showBonus' => ! $dto->hideBonusColumn,
             ])->render(),
             'label' => $this->dateRangeLabel($dto),
             'count' => $payouts->count(),
         ]);
+    }
+
+    /**
+     * A mower's report is scoped to themselves, so their drill-downs are too.
+     * Roles that see every mower leave the DTO's user filter empty.
+     */
+    private function assertOwnReportRow(MowerRequestReportDTO $dto, int $userId): void
+    {
+        abort_if($dto->user_id !== '' && (int) $dto->user_id !== $userId, 403);
     }
 
     /** The report's active date range, for the payouts modal heading. */
@@ -138,6 +152,7 @@ class MowerReportController extends Controller
             return Pdf::loadView('reports.mower.export-pdf', [
                 'reportData' => $reportData,
                 'hideBonusColumn' => $dto->hideBonusColumn,
+                'hideSalesColumn' => $dto->hideSalesColumn,
             ])->setPaper('a4', 'landscape')
                 ->download('mower_report_'.now()->format('Y_m_d').'.pdf');
         } catch (\Exception $e) {

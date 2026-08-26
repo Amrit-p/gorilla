@@ -13,6 +13,7 @@ use App\Services\DashboardService;
 use App\Services\FollowupService;
 use App\Support\CrmPermissions;
 use App\Support\CrmRoles;
+use App\Support\MowerPayoutLookup;
 use App\Support\QueryFilters\JobListFilter;
 use App\Support\QueryFilters\LeadListFilter;
 use Illuminate\Http\JsonResponse;
@@ -98,6 +99,8 @@ class DashboardController extends Controller
                 'assignedEmployees:id,name',
                 'recurrence:id,name',
             ])
+            // Powers the "Mower paid" badge in the shared job table partial.
+            ->addSelect(['mower_payout_id' => MowerPayoutLookup::forJob()])
             ->when(($validated['status'] ?? null) !== 'Cancelled', fn ($q) => $q->whereNotIn('status', ['Cancelled']));
 
         $jobListFilter->apply($query, [

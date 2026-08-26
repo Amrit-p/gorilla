@@ -83,6 +83,8 @@ class MowerReportExcelService
 
     private bool $hideBonusColumn = false;
 
+    private bool $hideSalesColumn = false;
+
     private array $subColors = [
         'green' => ['bg' => self::GREEN_SUB,  'fg' => self::GREEN_SFG],
         'yellow' => ['bg' => self::YELLOW_SUB, 'fg' => self::YELLOW_SFG],
@@ -92,9 +94,10 @@ class MowerReportExcelService
 
     private array $numericSumKeys = [];
 
-    public function export(Collection $reportData, bool $hideBonusColumn = false): StreamedResponse
+    public function export(Collection $reportData, bool $hideBonusColumn = false, bool $hideSalesColumn = false): StreamedResponse
     {
         $this->hideBonusColumn = $hideBonusColumn;
+        $this->hideSalesColumn = $hideSalesColumn;
         $spreadsheet = $this->buildSpreadsheet($reportData);
         $filename = $this->filenameForNow().'.xlsx';
 
@@ -122,9 +125,14 @@ class MowerReportExcelService
         ksort($allDates);
         $uniqueDates = array_keys($allDates);
 
+        $hiddenKeys = array_merge(
+            $this->hideBonusColumn ? ['bonus'] : [],
+            $this->hideSalesColumn ? ['completed_earnings'] : [],
+        );
+
         $this->columns = array_values(array_filter(
             self::BASE_COLUMNS,
-            fn ($col) => ! ($this->hideBonusColumn && in_array($col['key'], ['payout', 'bonus'], true))
+            fn ($col) => ! in_array($col['key'], $hiddenKeys, true)
         ));
 
         if (! $this->hideBonusColumn) {
@@ -141,30 +149,55 @@ class MowerReportExcelService
             }
         }
 
-        $this->groups = [
-            ['label' => 'Mower',    'span' => 3, 'bg' => self::GREEN_BG,  'fg' => self::GREEN_FG],
-            ['label' => 'Jobs',     'span' => 1, 'bg' => self::YELLOW_BG, 'fg' => self::YELLOW_FG],
-            ['label' => 'Total Sale', 'span' => 1, 'bg' => self::BLUE_BG,   'fg' => self::BLUE_FG],
-        ];
-
-        if (! $this->hideBonusColumn) {
-            $this->groups[] = ['label' => 'Payout', 'span' => 2 + count($uniqueDates), 'bg' => self::PURPLE_BG, 'fg' => self::PURPLE_FG];
-        }
+        $this->groups = $this->groupHeadersFor($this->columns);
 
         $this->numericSumKeys = [
             'total_working_hours',
             'working_days',
             'total_jobs_completed',
             'completed_earnings',
+            'payout',
         ];
 
         if (! $this->hideBonusColumn) {
-            $this->numericSumKeys[] = 'payout';
             $this->numericSumKeys[] = 'bonus';
             foreach ($uniqueDates as $date) {
                 $this->numericSumKeys[] = 'bonus_date_'.$date;
             }
         }
+    }
+
+    /**
+     * The merged top header row, derived from the columns that survived filtering
+     * so a hidden column shrinks its group instead of leaving a gap.
+     *
+     * @param  array<int, array<string, mixed>>  $columns
+     * @return array<int, array{label: string, span: int, bg: string, fg: string}>
+     */
+    private function groupHeadersFor(array $columns): array
+    {
+        $labels = [
+            'green' => ['label' => 'Mower', 'bg' => self::GREEN_BG, 'fg' => self::GREEN_FG],
+            'yellow' => ['label' => 'Jobs', 'bg' => self::YELLOW_BG, 'fg' => self::YELLOW_FG],
+            'blue' => ['label' => 'Total Sale', 'bg' => self::BLUE_BG, 'fg' => self::BLUE_FG],
+            'purple' => ['label' => 'Payout', 'bg' => self::PURPLE_BG, 'fg' => self::PURPLE_FG],
+        ];
+
+        $groups = [];
+        $currentGroup = null;
+
+        foreach ($columns as $column) {
+            if ($column['group'] === $currentGroup) {
+                $groups[count($groups) - 1]['span']++;
+
+                continue;
+            }
+
+            $currentGroup = $column['group'];
+            $groups[] = [...$labels[$currentGroup], 'span' => 1];
+        }
+
+        return $groups;
     }
 
     private function buildSpreadsheet(Collection $reportData): Spreadsheet

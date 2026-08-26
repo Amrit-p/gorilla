@@ -1,11 +1,18 @@
 @php
+    use App\Enums\JobOperationalPaymentMode;
+
     $mapsUrl = $job->latitude && $job->longitude
         ? 'https://www.google.com/maps/dir/?api=1&destination='.$job->latitude.','.$job->longitude
         : ($job->client_address ? 'https://www.google.com/maps/search/?api=1&query='.urlencode($job->client_address) : null);
+
+    $showChargeAmount = $job->charges !== null && in_array($job->payment_mode, [
+        JobOperationalPaymentMode::CASH->value,
+        JobOperationalPaymentMode::BOTH->value,
+    ], true);
 @endphp
 
 <x-layouts.mower
-    :title="$job->customerDisplayName()"
+    :title="$job->client_address ?: 'Job'"
     :show-back="true"
     :back-url="route('mower.index')"
 >
@@ -41,29 +48,31 @@
         </section>
 
         <section class="rounded-2xl bg-white p-4 shadow-sm">
-            <h2 class="text-sm font-semibold text-slate-900">Contact</h2>
+            <h2 class="text-sm font-semibold text-slate-900">Job details</h2>
             <p class="mt-1 text-xs text-slate-500">Read-only — contact office to change.</p>
             <dl class="mt-3 space-y-2 text-sm">
-                <div class="flex justify-between gap-4">
-                    <dt class="text-slate-500">Name</dt>
-                    <dd class="text-right font-medium text-slate-900">{{ $job->customerDisplayName() }}</dd>
-                </div>
-                @if ($job->phone)
+                @if ($job->equipmentType)
                     <div class="flex justify-between gap-4">
-                        <dt class="text-slate-500">Phone</dt>
-                        <dd><a href="tel:{{ preg_replace('/\D+/', '', $job->phone) }}" class="font-medium text-emerald-700">{{ $job->phone }}</a></dd>
-                    </div>
-                @endif
-                @if ($job->email)
-                    <div class="flex justify-between gap-4">
-                        <dt class="text-slate-500">Email</dt>
-                        <dd class="text-right text-slate-900">{{ $job->email }}</dd>
+                        <dt class="text-slate-500">Equipment type</dt>
+                        <dd class="text-right font-medium text-slate-900">{{ $job->equipmentType->name }}</dd>
                     </div>
                 @endif
                 @if ($job->customer_type)
                     <div class="flex justify-between gap-4">
-                        <dt class="text-slate-500">Type</dt>
-                        <dd class="text-right">{{ $job->customer_type }}</dd>
+                        <dt class="text-slate-500">Customer type</dt>
+                        <dd class="text-right font-medium text-slate-900">{{ $job->customer_type }}</dd>
+                    </div>
+                @endif
+                @if ($job->payment_mode)
+                    <div class="flex justify-between gap-4">
+                        <dt class="text-slate-500">Payment mode</dt>
+                        <dd class="text-right font-medium text-slate-900">{{ $job->payment_mode }}</dd>
+                    </div>
+                @endif
+                @if ($showChargeAmount)
+                    <div class="flex justify-between gap-4">
+                        <dt class="text-slate-500">Amount to collect</dt>
+                        <dd class="text-right font-semibold text-emerald-700">${{ number_format((float) $job->charges, 2) }}</dd>
                     </div>
                 @endif
                 @if ($job->site_instructions)

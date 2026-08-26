@@ -99,6 +99,7 @@ class MowerDashboardService
 
         return $job->load([
             'assignedEmployees:id,name,efficiency',
+            'equipmentType:id,name',
         ]);
     }
 
