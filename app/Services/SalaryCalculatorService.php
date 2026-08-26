@@ -221,6 +221,8 @@ class SalaryCalculatorService
                     'amount' => $sales,
                     'bonus' => 0.0,
                     'comment' => null,
+                    'created_at' => null,
+                    'created_by_name' => null,
                 ];
             })
             ->values()
@@ -245,7 +247,7 @@ class SalaryCalculatorService
 
         return MowerPayout::query()
             ->whereIn('id', $selectedByPayout->keys()->all())
-            ->with(['user:id,name', 'jobs:id,charges,consumed_time_minutes'])
+            ->with(['user:id,name', 'creator:id,name', 'jobs:id,charges,consumed_time_minutes'])
             ->get()
             ->map(fn (MowerPayout $payout) => [
                 'mode' => 'update',
@@ -261,6 +263,8 @@ class SalaryCalculatorService
                 'amount' => (float) $payout->amount,
                 'bonus' => (float) $payout->bonus,
                 'comment' => $payout->comment,
+                'created_at' => $payout->created_at?->format('d M Y, H:i'),
+                'created_by_name' => $payout->creator?->name,
             ])
             ->values()
             ->all();

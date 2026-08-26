@@ -103,6 +103,15 @@
                         ? '<button type="button" class="job-payout-delete text-[11px] font-medium text-red-600 hover:underline" data-payout-id="' + group.payout_id + '">Delete this payout</button>'
                         : '';
 
+                    // Provenance of the payout being corrected, so the admin can see
+                    // who recorded it and when before changing the figures.
+                    const meta = isUpdate
+                        ? '<p class="border-b border-slate-100 bg-slate-50/70 px-4 py-2 text-[11px] text-slate-500">' +
+                              'Created ' + escapeHtml(group.created_at || '—') +
+                              ' by ' + escapeHtml(group.created_by_name || 'Unknown') +
+                          '</p>'
+                        : '';
+
                     return '' +
                         '<section class="rounded-xl border border-' + accent + '-200 bg-white shadow-sm" data-group-index="' + index + '">' +
                             '<header class="flex items-center gap-3 border-b border-slate-100 bg-' + accent + '-50/60 px-4 py-3">' +
@@ -113,6 +122,7 @@
                                 '</div>' +
                                 badge +
                             '</header>' +
+                            meta +
                             '<div class="grid gap-3 px-4 py-3 sm:grid-cols-2">' +
                                 '<div>' +
                                     '<label class="text-xs font-medium text-slate-600">Amount <span class="text-red-500">*</span></label>' +

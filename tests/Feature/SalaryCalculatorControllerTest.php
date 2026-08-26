@@ -396,6 +396,36 @@ class SalaryCalculatorControllerTest extends TestCase
         $this->assertSame('First run', $card['comment']);
     }
 
+    public function test_edit_card_reports_when_the_payout_was_created_and_by_whom(): void
+    {
+        $job = $this->createJob('2026-03-10', charges: 250, minutes: 90);
+        $payoutId = $this->payout([$job->id], 200, 15, 'First run');
+
+        $payout = MowerPayout::query()->findOrFail($payoutId);
+
+        $card = $this->actingAs($this->admin)
+            ->postJson(route('admin.salary-calculator.selection'), ['job_ids' => [$job->id]])
+            ->assertOk()
+            ->json('groups.0');
+
+        $this->assertSame($payout->created_at->format('d M Y, H:i'), $card['created_at']);
+        $this->assertSame($this->admin->name, $card['created_by_name']);
+    }
+
+    public function test_new_payout_card_carries_no_creation_details(): void
+    {
+        $job = $this->createJob('2026-03-10', charges: 250, minutes: 90);
+
+        $card = $this->actingAs($this->admin)
+            ->postJson(route('admin.salary-calculator.selection'), ['job_ids' => [$job->id]])
+            ->assertOk()
+            ->json('groups.0');
+
+        $this->assertSame('create', $card['mode']);
+        $this->assertNull($card['created_at']);
+        $this->assertNull($card['created_by_name']);
+    }
+
     public function test_selection_mixes_create_and_edit_cards(): void
     {
         $paid = $this->createJob('2026-03-10', charges: 250, minutes: 90);
