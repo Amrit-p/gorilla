@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\JobWorkflowStatus;
 use App\Enums\LeadJobType;
 use App\Enums\LeadPaymentMode;
 use App\Enums\LeadReCompletionDays;
@@ -72,7 +73,7 @@ class LeadManagementTest extends TestCase
             'phone' => $lead->mobile_number,
             'email' => $lead->email,
             'client_address' => $lead->address,
-            'status' => \App\Enums\JobWorkflowStatus::PENDING->value,
+            'status' => JobWorkflowStatus::PENDING->value,
         ]);
     }
 
@@ -216,6 +217,17 @@ class LeadManagementTest extends TestCase
             ->postJson(route('admin.leads.store'), $payload)
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['equipment_type_id']);
+    }
+
+    public function test_recurrence_is_required_when_creating_a_lead(): void
+    {
+        $payload = $this->validLeadPayload();
+        unset($payload['recurrence_id']);
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.leads.store'), $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['recurrence_id']);
     }
 
     /**

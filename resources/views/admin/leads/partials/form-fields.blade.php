@@ -58,7 +58,7 @@
         </div>
 
         <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">Recurrence</label>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Recurrence <span class="text-red-500">*</span></label>
             <select name="recurrence_id" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" required>
                 <option value="">Select recurrence</option>
                 @foreach ($recurrences as $recurrence)
