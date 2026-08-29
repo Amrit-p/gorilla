@@ -112,6 +112,7 @@ class SalaryCalculatorControllerTest extends TestCase
         $this->assertStringContainsString('job-bulk-toolbar', $html);
         $this->assertStringContainsString('job-bulk-payout', $html);
         $this->assertStringContainsString('job-bulk-assign', $html);
+        $this->assertStringContainsString('job-bulk-status', $html);
         $this->assertStringContainsString('job-payout-modal', $html);
         // It mounts under the shared container id so selection JS binds to it.
         $this->assertStringContainsString('id="jobs-table-container"', $html);

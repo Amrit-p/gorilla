@@ -216,6 +216,9 @@ class JobManagementTest extends TestCase
         $this->assertStringContainsString('Amritsar Contact', $html);
         $this->assertStringContainsString('9876543210', $html);
         $this->assertStringNotContainsString('>N/A<', $html);
+        // The row action menu ships the status button seeded with the job's current status.
+        $this->assertStringContainsString('class="status-job', $html);
+        $this->assertStringContainsString('data-status="'.JobWorkflowStatus::HOLD->value.'"', $html);
     }
 
     public function test_mower_suggestions_endpoint_returns_recommendation(): void

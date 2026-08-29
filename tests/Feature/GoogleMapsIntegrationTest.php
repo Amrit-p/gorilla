@@ -170,6 +170,8 @@ class GoogleMapsIntegrationTest extends TestCase
         $this->assertSame('555-0100', $mapped['client_phone']);
         $this->assertSame('mapclient@example.com', $mapped['client_email']);
         $this->assertSame(route('admin.jobs.show', $job), $mapped['show_url']);
+        // The map popup's status button seeds its dropdown from this field.
+        $this->assertSame(JobWorkflowStatus::STARTED->value, $mapped['status']);
     }
 
     public function test_map_jobs_endpoint_includes_client_last_job_and_mower(): void
