@@ -17,7 +17,7 @@ class SettingsSeeder extends Seeder
         $defaults = array_merge($defaults, [
             'map_provider' => 'mapbox',
             'default_currency' => 'USD',
-            'default_timezone' => 'UTC',
+            'default_timezone' => 'Pacific/Auckland',
             'notification_email_enabled' => '1',
             'notification_in_app_enabled' => '1',
             'mail_use_database' => '0',

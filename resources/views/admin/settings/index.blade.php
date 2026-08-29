@@ -96,7 +96,14 @@
                     <x-ui.input label="Company name" name="company_name" :value="$settings['company_name'] ?? 'Mowing CRM'" required />
                     <x-ui.input label="Company phone" name="company_phone" :value="$settings['company_phone'] ?? ''" />
                     <x-ui.input label="Company email" name="company_email" type="email" :value="$settings['company_email'] ?? ''" />
-                    <x-ui.input label="Default timezone" name="default_timezone" :value="$settings['default_timezone'] ?? 'UTC'" required />
+                    <x-ui.select
+                        label="Default timezone"
+                        name="default_timezone"
+                        placeholder=""
+                        :options="array_combine(timezone_identifiers_list(), timezone_identifiers_list())"
+                        :value="$settings['default_timezone'] ?? config('app.timezone')"
+                        required
+                    />
                 </div>
             </section>
 

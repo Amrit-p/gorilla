@@ -9,6 +9,7 @@ use App\Models\Job;
 use App\Models\Lead;
 use App\Services\FollowupService;
 use App\Services\MailSettingsRegistrar;
+use App\Services\TimezoneSettingsRegistrar;
 use App\Support\CrmPermissions;
 use App\Support\WebsiteSettings;
 use Illuminate\Support\Facades\Cache;
@@ -104,5 +105,8 @@ class AppServiceProvider extends ServiceProvider
 
         // Overlay SMTP / mailer values when Super Admin enables database-driven mail in Settings.
         MailSettingsRegistrar::applyFromDatabase();
+
+        // Apply the business timezone chosen in Admin -> Website Settings.
+        TimezoneSettingsRegistrar::applyFromDatabase();
     }
 }

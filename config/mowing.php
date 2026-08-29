@@ -36,6 +36,7 @@ return [
         'company_name' => env('APP_NAME', 'Mowing CRM'),
         'company_phone' => '',
         'company_email' => '',
+        'default_timezone' => 'Pacific/Auckland',
         'seo_meta_title' => '',
         'seo_meta_description' => '',
         'seo_meta_keywords' => '',
