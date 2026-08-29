@@ -125,9 +125,10 @@ class CustomerDetailsModalTest extends TestCase
 
     public function test_admin_gets_verify_and_delete_controls_for_each_job_in_the_group(): void
     {
-        $current = $this->makeJob();
+        $current = $this->makeJob(['status' => JobWorkflowStatus::COMPLETED->value]);
         $verified = $this->makeJob([
             'scheduled_date' => now()->subWeek()->toDateString(),
+            'status' => JobWorkflowStatus::COMPLETED->value,
             'verified_at' => now(),
             'verified_by' => $this->admin->id,
         ]);
@@ -155,6 +156,105 @@ class CustomerDetailsModalTest extends TestCase
             '/customer-details-verify[^>]*data-id="'.$verified->id.'"/s',
             $html
         );
+    }
+
+    public function test_customer_details_modal_shell_does_not_block_delegated_click_handlers(): void
+    {
+        $html = $this->actingAs($this->admin)
+            ->get(route('admin.jobs.index'))
+            ->assertOk()
+            ->getContent();
+
+        $shell = strstr($html, 'id="customer-details-modal"');
+        $this->assertIsString($shell, 'Customer details modal shell is missing from the page.');
+
+        // The verify/delete/close controls are wired with document-level delegation,
+        // so no wrapper inside the modal may stop clicks from bubbling to document.
+        $this->assertStringNotContainsString(
+            'event.stopPropagation()',
+            substr($shell, 0, 600)
+        );
+    }
+
+    public function test_verify_button_is_withheld_from_jobs_that_are_not_completed(): void
+    {
+        $pending = $this->makeJob(['status' => JobWorkflowStatus::PENDING->value]);
+        $completed = $this->makeJob([
+            'scheduled_date' => now()->subWeek()->toDateString(),
+            'status' => JobWorkflowStatus::COMPLETED->value,
+        ]);
+
+        $html = $this->actingAs($this->admin)
+            ->get(route('admin.jobs.customer-details', $pending))
+            ->assertOk()
+            ->getContent();
+
+        // The bulk-verify endpoint rejects anything that is not Completed, so the
+        // modal must not offer a clickable Verify control for a Pending job.
+        $this->assertDoesNotMatchRegularExpression(
+            '/customer-details-verify[^>]*data-id="'.$pending->id.'"/s',
+            $html
+        );
+        $this->assertMatchesRegularExpression(
+            '/customer-details-verify[^>]*data-id="'.$completed->id.'"/s',
+            $html
+        );
+
+        // Only the Completed job is offered to the bulk action.
+        $this->assertMatchesRegularExpression(
+            '/customer-details-verify-all[^>]*data-ids="'.$completed->id.'"/s',
+            $html
+        );
+    }
+
+    public function test_verified_jobs_get_an_unverify_control_and_can_be_unverified(): void
+    {
+        $verified = $this->makeJob([
+            'status' => JobWorkflowStatus::COMPLETED->value,
+            'verified_at' => now(),
+            'verified_by' => $this->admin->id,
+        ]);
+
+        $html = $this->actingAs($this->admin)
+            ->get(route('admin.jobs.customer-details', $verified))
+            ->assertOk()
+            ->getContent();
+
+        // A verified job swaps its Verify control for Unverify.
+        $this->assertMatchesRegularExpression(
+            '/customer-details-unverify[^>]*data-id="'.$verified->id.'"/s',
+            $html
+        );
+        $this->assertDoesNotMatchRegularExpression(
+            '/customer-details-verify[^>]*data-id="'.$verified->id.'"/s',
+            $html
+        );
+
+        // Unverifying has no status precondition, unlike verifying.
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.jobs.bulk.verify'), [
+                'job_ids' => [$verified->id],
+                'verified' => 0,
+            ])
+            ->assertOk()
+            ->assertJsonPath('message', 'Job verification removed.');
+
+        $this->assertNull($verified->fresh()->verified_at);
+    }
+
+    public function test_bulk_verify_rejects_a_pending_job(): void
+    {
+        $pending = $this->makeJob(['status' => JobWorkflowStatus::PENDING->value]);
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.jobs.bulk.verify'), [
+                'job_ids' => [$pending->id],
+                'verified' => 1,
+            ])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'None of the selected jobs can be verified. Jobs must be Completed.');
+
+        $this->assertNull($pending->fresh()->verified_at);
     }
 
     public function test_job_show_page_no_longer_repeats_customer_contact_in_sidebar(): void

@@ -147,18 +147,32 @@
 
     function closeModal(id) {
         $('#' + id).addClass('hidden').removeClass('flex');
-        if (id === 'customer-details-modal') {
-            document.body.style.overflow = '';
-        }
     }
+
+    /**
+     * Hides the customer-details modal and restores page scroll.
+     * Kept separate from closeModal() because pages that load several action
+     * scripts (e.g. the dashboard) redeclare that global and would drop the
+     * body-overflow reset, leaving the page behind the modal unscrollable.
+     */
+    function closeCustomerDetailsModal() {
+        $('#customer-details-modal').addClass('hidden').removeClass('flex');
+        document.body.style.overflow = '';
+    }
+
     $(document).on('click', '[data-close-modal]', function() {
-        closeModal($(this).data('close-modal'));
+        const modalId = $(this).data('close-modal');
+        if (modalId === 'customer-details-modal') {
+            closeCustomerDetailsModal();
+            return;
+        }
+        closeModal(modalId);
     });
 
     // Close customer-details modal when clicking the darkened backdrop
     $(document).on('click', '#customer-details-modal', function (e) {
         if (e.target === this) {
-            closeModal('customer-details-modal');
+            closeCustomerDetailsModal();
         }
     });
 
@@ -209,13 +223,49 @@
         openCustomerDetailsModal($(this).data('job-id'));
     });
 
+    /**
+     * Renders feedback inside the modal. The page-level #job-alert sits behind the
+     * modal's backdrop (and on the dashboard it is an inline, non-fixed element),
+     * so failures reported there are invisible while the modal is open.
+     */
+    function showCustomerDetailsAlert(message, isError = false) {
+        const $shell = $('#customer-details-modal-content .customer-details-shell');
+        if (!$shell.length) return;
+
+        $shell.find('.customer-details-alert').remove();
+        $('<div>')
+            .addClass('customer-details-alert border-b px-8 py-3 text-sm font-medium ' + (isError
+                ? 'border-rose-200 bg-rose-50 text-rose-700'
+                : 'border-emerald-200 bg-emerald-50 text-emerald-700'))
+            .text(message)
+            .insertAfter($shell.children().first());
+    }
+
     $(document).on('click', '.customer-details-verify', function (e) {
         e.preventDefault();
         e.stopPropagation();
         const id = Number($(this).data('id'));
         if (!id) return;
-        verifyJobs([id], 1);
-        setTimeout(reloadCustomerDetailsModal, 400);
+        verifyJobs([id], 1, {
+            onSuccess: reloadCustomerDetailsModal,
+            onError: function (message) {
+                showCustomerDetailsAlert(message, true);
+            }
+        });
+    });
+
+    $(document).on('click', '.customer-details-unverify', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const id = Number($(this).data('id'));
+        if (!id) return;
+        if (!confirm('Remove verification from this job?')) return;
+        verifyJobs([id], 0, {
+            onSuccess: reloadCustomerDetailsModal,
+            onError: function (message) {
+                showCustomerDetailsAlert(message, true);
+            }
+        });
     });
 
     $(document).on('click', '.customer-details-verify-all', function (e) {
@@ -227,8 +277,12 @@
             .filter(Boolean);
         if (!ids.length) return;
         if (!confirm('Verify ' + ids.length + ' job' + (ids.length > 1 ? 's' : '') + ' at this address?')) return;
-        verifyJobs(ids, 1);
-        setTimeout(reloadCustomerDetailsModal, 400);
+        verifyJobs(ids, 1, {
+            onSuccess: reloadCustomerDetailsModal,
+            onError: function (message) {
+                showCustomerDetailsAlert(message, true);
+            }
+        });
     });
 
     $(document).on('click', '.customer-details-delete', function (e) {
@@ -240,8 +294,7 @@
         deleteJobs([id]);
         setTimeout(function () {
             if (_customerDetailsJobId === id) {
-                closeModal('customer-details-modal');
-                document.body.style.overflow = '';
+                closeCustomerDetailsModal();
                 _customerDetailsJobId = null;
             } else {
                 reloadCustomerDetailsModal();
@@ -251,8 +304,7 @@
 
     $(document).on('keydown', function (e) {
         if (e.key === 'Escape' && !$('#customer-details-modal').hasClass('hidden')) {
-            closeModal('customer-details-modal');
-            document.body.style.overflow = '';
+            closeCustomerDetailsModal();
         }
     });
 
@@ -687,7 +739,12 @@
             ids.length > 1 ? 'Assigned selected jobs.' : 'Job assigned.', 'Failed to assign.');
     });
 
-    function verifyJobs(ids, verified = 1) {
+    /**
+     * `hooks` may carry onSuccess(res) / onError(message, xhr) callbacks so a caller
+     * can react to the outcome; the customer-details modal uses them to reload only
+     * on success and to surface failures in its own banner.
+     */
+    function verifyJobs(ids, verified = 1, hooks = {}) {
         if (!ids || !ids.length) return;
 
         $.ajax({
@@ -698,9 +755,15 @@
             success: function(res) {
                 showJobAlert(res.message || (ids.length > 1 ? 'Selected jobs verified.' : 'Job verification updated.'));
                 refreshJobsTable();
+                if (hooks.onSuccess) hooks.onSuccess(res);
             },
             error: function(xhr) {
-                showJobAlert(extractErrorMessage(xhr, 'Failed to verify selected jobs.'), true);
+                const message = extractErrorMessage(xhr, 'Failed to verify selected jobs.');
+                if (hooks.onError) {
+                    hooks.onError(message, xhr);
+                    return;
+                }
+                showJobAlert(message, true);
             }
         });
     }

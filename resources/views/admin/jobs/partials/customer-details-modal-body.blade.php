@@ -10,6 +10,7 @@
         ?: ($job->doneByUser?->name ?? '—');
     $freq = $job->recurrence?->name ?: ($job->is_recurring ? 'Recurring' : 'One-time');
     $paidJobs = collect($address_jobs)->where('is_paid', true)->count();
+    $verifiableJobIds = collect($address_jobs)->where('can_verify', true)->pluck('id');
 @endphp
 
 <div class="customer-details-shell flex min-h-[70vh] flex-col" data-job-id="{{ $job->id }}">
@@ -187,12 +188,24 @@
                                 @endif
                             </div>
                             <div class="flex shrink-0 flex-wrap items-center gap-2">
-                                @if ($canVerify && ! $row['is_verified'])
+                                @if ($canVerify && $row['is_verified'])
+                                    <button type="button"
+                                            class="customer-details-unverify inline-flex items-center justify-center rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-amber-700 hover:bg-amber-100"
+                                            data-id="{{ $row['id'] }}"
+                                            title="Remove verification from this job">
+                                        Unverify
+                                    </button>
+                                @elseif ($canVerify && $row['can_verify'])
                                     <button type="button"
                                             class="customer-details-verify inline-flex items-center justify-center rounded-lg border border-emerald-400 bg-emerald-50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-emerald-700 hover:bg-emerald-100"
                                             data-id="{{ $row['id'] }}">
                                         Verify
                                     </button>
+                                @elseif ($canVerify)
+                                    <span class="inline-flex cursor-not-allowed items-center justify-center rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-slate-400"
+                                          title="Only a Completed job can be verified.">
+                                        Verify
+                                    </span>
                                 @endif
                                 @if ($canDelete)
                                     <button type="button"
@@ -236,11 +249,11 @@
                 </div>
             </div>
 
-            @if ($canVerify && collect($address_jobs)->where('is_verified', false)->isNotEmpty())
+            @if ($canVerify && $verifiableJobIds->isNotEmpty())
                 <button type="button"
                         class="customer-details-verify-all mt-4 w-full rounded-2xl border border-emerald-400 bg-white px-4 py-3 text-xs font-bold uppercase tracking-wide text-emerald-700 transition hover:bg-emerald-50"
-                        data-ids="{{ collect($address_jobs)->where('is_verified', false)->pluck('id')->implode(',') }}">
-                    Verify all unverified
+                        data-ids="{{ $verifiableJobIds->implode(',') }}">
+                    Verify all completed
                 </button>
             @endif
 

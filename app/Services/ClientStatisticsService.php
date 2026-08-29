@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\JobOperationalPaymentStatus;
+use App\Enums\JobWorkflowStatus;
 use App\Models\Job;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
@@ -64,7 +65,7 @@ class ClientStatisticsService
      *     job: Job,
      *     next_date: string|null,
      *     group_address: string,
-     *     address_jobs: array<int, array{id: int, is_current: bool, date: string|null, time: string|null, status: string|null, services: string, charges: float, mower: string, payment_mode: string|null, payment_status: string|null, payment_pending_reason: string|null, is_paid: bool, is_verified: bool}>,
+     *     address_jobs: array<int, array{id: int, is_current: bool, date: string|null, time: string|null, status: string|null, services: string, charges: float, mower: string, payment_mode: string|null, payment_status: string|null, payment_pending_reason: string|null, is_paid: bool, is_verified: bool, can_verify: bool}>,
      *     total_jobs: int,
      *     total_revenue: float,
      *     payment_received: float,
@@ -114,7 +115,7 @@ class ClientStatisticsService
     /**
      * One row of the modal's job list, carrying that job's own payment detail.
      *
-     * @return array{id: int, is_current: bool, date: string|null, time: string|null, status: string|null, services: string, charges: float, mower: string, payment_mode: string|null, payment_status: string|null, payment_pending_reason: string|null, is_paid: bool, is_verified: bool}
+     * @return array{id: int, is_current: bool, date: string|null, time: string|null, status: string|null, services: string, charges: float, mower: string, payment_mode: string|null, payment_status: string|null, payment_pending_reason: string|null, is_paid: bool, is_verified: bool, can_verify: bool}
      */
     private function presentAddressJob(Job $job, int $currentJobId): array
     {
@@ -136,6 +137,11 @@ class ClientStatisticsService
             'payment_pending_reason' => $job->payment_pending_reason,
             'is_paid' => $job->payment_status === JobOperationalPaymentStatus::RECEIVED->value,
             'is_verified' => $job->verified_at !== null,
+            // Mirrors JobManagementController::jobVerificationErrors(): only a
+            // Completed job may be verified, so the modal never offers a button
+            // the bulk-verify endpoint would reject.
+            'can_verify' => $job->verified_at === null
+                && $job->status === JobWorkflowStatus::COMPLETED->value,
         ];
     }
 
