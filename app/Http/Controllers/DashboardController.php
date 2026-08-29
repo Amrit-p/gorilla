@@ -228,10 +228,13 @@ class DashboardController extends Controller
     /**
      * AJAX: server-rendered card list of jobs on hold, for the dashboard's Hold Jobs panel.
      */
-    public function holdJobs(): Response
+    public function holdJobs(Request $request): Response
     {
+        $search = $request->string('search')->toString();
+
         return response(view('dashboard.partials.hold-jobs-list', [
-            'jobs' => $this->dashboardService->holdJobs(),
+            'jobs' => $this->dashboardService->holdJobs($search),
+            'search' => $search,
         ]));
     }
 

@@ -155,6 +155,23 @@ $dashboardType = $analytics['type'] ?? 'admin';
                 </svg>
             </button>
         </div>
+        <div class="shrink-0 border-b border-slate-200 bg-white px-4 py-3">
+            <div class="relative">
+                <span class="pointer-events-none absolute inset-y-0 left-2.5 flex items-center">
+                    <svg class="h-3.5 w-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+                    </svg>
+                </span>
+                <input type="text" id="hold-jobs-search" autocomplete="off"
+                    placeholder="Search name, phone, address, date, mower, status..."
+                    class="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-8 pr-8 text-xs text-slate-700 placeholder-slate-400 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100">
+                <button type="button" id="hold-jobs-search-clear" class="absolute inset-y-0 right-2 hidden items-center text-slate-400 transition-colors hover:text-slate-600">
+                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
         <div class="flex-1 overflow-auto p-4" style="scrollbar-gutter: stable">
             @can('assign-jobs')
             <p class="mb-2 text-[11px] text-slate-400">Hold a job card to select it, then reschedule multiple jobs at once.</p>
@@ -348,36 +365,96 @@ $dashboardType = $analytics['type'] ?? 'admin';
         @if(in_array($dashboardType, ['admin', 'sales']))
         var holdJobsUrl = @json(route('dashboard.hold-jobs'));
 
-        function loadHoldJobs() {
-            $('#dashboard-hold-jobs-content').addClass('hidden').empty();
-            $('#dashboard-hold-jobs-error').removeClass('flex').addClass('hidden');
-            $('#dashboard-hold-jobs-loader').removeClass('hidden').addClass('flex');
+        var holdJobsSearchTimer = null;
+        var holdJobsRequest = null;
+        var HOLD_JOBS_SEARCH_DEBOUNCE_MS = 300;
 
-            $.ajax({
+        // `silent` keeps the current cards on screen (dimmed) while the search request runs.
+        function loadHoldJobs(options) {
+            var settings = options || {};
+            var search = $.trim($('#hold-jobs-search').val() || '');
+
+            if (holdJobsRequest) {
+                holdJobsRequest.abort();
+                holdJobsRequest = null;
+            }
+
+            $('#dashboard-hold-jobs-error').removeClass('flex').addClass('hidden');
+
+            if (settings.silent) {
+                $('#dashboard-hold-jobs-content').addClass('opacity-50');
+            } else {
+                $('#dashboard-hold-jobs-content').addClass('hidden').empty();
+                $('#dashboard-hold-jobs-loader').removeClass('hidden').addClass('flex');
+            }
+
+            holdJobsRequest = $.ajax({
                 url: holdJobsUrl,
                 method: 'GET',
+                data: {
+                    search: search
+                },
                 headers: {
                     Accept: 'text/html, */*'
                 },
                 success: function(html) {
-                    $('#dashboard-hold-jobs-loader').removeClass('flex').addClass('hidden');
                     var $content = $('#dashboard-hold-jobs-content');
-                    $content.html(html).removeClass('hidden');
+                    $content.html(html).removeClass('hidden opacity-50');
                     var count = $content.find('.hold-job-card').length;
-                    $('#dashboard-hold-jobs-subtitle').text(count + ' ' + (count === 1 ? 'job' : 'jobs') + ' on hold');
+                    $('#dashboard-hold-jobs-subtitle').text(
+                        count + ' ' + (count === 1 ? 'job' : 'jobs') + (search ? ' matched' : ' on hold')
+                    );
+                    if (typeof syncHoldJobsBulkBar === 'function') {
+                        syncHoldJobsBulkBar();
+                    }
                 },
-                error: function() {
-                    $('#dashboard-hold-jobs-loader').removeClass('flex').addClass('hidden');
+                error: function(xhr, status) {
+                    if (status === 'abort') {
+                        return;
+                    }
+                    $('#dashboard-hold-jobs-content').removeClass('opacity-50');
                     $('#dashboard-hold-jobs-error').removeClass('hidden').addClass('flex');
                     $('#dashboard-hold-jobs-subtitle').text('');
                 },
+                complete: function() {
+                    $('#dashboard-hold-jobs-loader').removeClass('flex').addClass('hidden');
+                },
             });
         }
+
+        $('#hold-jobs-search').on('input', function() {
+            var hasValue = $.trim(this.value || '') !== '';
+            $('#hold-jobs-search-clear').toggleClass('hidden', !hasValue).toggleClass('flex', hasValue);
+
+            clearTimeout(holdJobsSearchTimer);
+            holdJobsSearchTimer = setTimeout(function() {
+                loadHoldJobs({
+                    silent: true
+                });
+            }, HOLD_JOBS_SEARCH_DEBOUNCE_MS);
+        });
+
+        $('#hold-jobs-search').on('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                clearTimeout(holdJobsSearchTimer);
+                loadHoldJobs({
+                    silent: true
+                });
+            }
+        });
+
+        $('#hold-jobs-search-clear').on('click', function() {
+            $('#hold-jobs-search').val('').trigger('input').trigger('focus');
+        });
 
         function openHoldJobsPanel() {
             $('#dashboard-hold-jobs-panel').css('right', '0');
             $('#dashboard-hold-jobs-backdrop').removeClass('hidden');
             $('body').css('overflow', 'hidden');
+            clearTimeout(holdJobsSearchTimer);
+            $('#hold-jobs-search').val('');
+            $('#hold-jobs-search-clear').removeClass('flex').addClass('hidden');
             loadHoldJobs();
         }
 
@@ -391,9 +468,16 @@ $dashboardType = $analytics['type'] ?? 'admin';
         $('#close-hold-jobs-panel').on('click', closeHoldJobsPanel);
         $('#dashboard-hold-jobs-backdrop').on('click', closeHoldJobsPanel);
         $(document).on('keydown', function(event) {
-            if (event.key === 'Escape') {
-                closeHoldJobsPanel();
+            if (event.key !== 'Escape') {
+                return;
             }
+
+            if ($(event.target).is('#hold-jobs-search') && $.trim($(event.target).val() || '') !== '') {
+                $('#hold-jobs-search').val('').trigger('input');
+                return;
+            }
+
+            closeHoldJobsPanel();
         });
 
         window.reloadHoldJobsPanel = function() {

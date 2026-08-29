@@ -12,6 +12,7 @@ use App\Models\Followup;
 use App\Models\Job;
 use App\Models\Lead;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -339,15 +340,30 @@ class DashboardService
 
     /**
      * Company-wide backlog of jobs on hold, earliest scheduled date first.
+     * An optional search term is matched against every column shown on a hold card.
      *
      * @return Collection<int, Job>
      */
-    public function holdJobs(): Collection
+    public function holdJobs(?string $search = null): Collection
     {
+        $search = trim((string) $search);
+
         return Job::query()
-            ->select(['id', 'customer_name', 'phone', 'client_address', 'scheduled_date', 'scheduled_time', 'estimated_duration_minutes', 'status', 'payment_status', 'done_by_user_id'])
+            ->select(['id', 'customer_name', 'email', 'phone', 'client_address', 'scheduled_date', 'scheduled_time', 'estimated_duration_minutes', 'status', 'payment_status', 'done_by_user_id'])
             ->with(['assignedEmployees:id,name', 'doneByUser:id,name'])
             ->where('status', JobWorkflowStatus::HOLD->value)
+            ->when($search !== '', function (Builder $query) use ($search): void {
+                $query->where(function (Builder $inner) use ($search): void {
+                    $columns = ['customer_name', 'email', 'phone', 'client_address', 'scheduled_date', 'scheduled_time', 'estimated_duration_minutes', 'status', 'payment_status'];
+
+                    foreach ($columns as $column) {
+                        $inner->orWhere($column, 'like', "%{$search}%");
+                    }
+
+                    $inner->orWhereHas('assignedEmployees', fn (Builder $employees) => $employees->where('name', 'like', "%{$search}%"))
+                        ->orWhereHas('doneByUser', fn (Builder $user) => $user->where('name', 'like', "%{$search}%"));
+                });
+            })
             ->orderBy('scheduled_date')
             ->orderBy('scheduled_time')
             ->get();

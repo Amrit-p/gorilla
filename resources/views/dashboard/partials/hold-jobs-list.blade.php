@@ -1,6 +1,6 @@
 @if ($jobs->isEmpty())
     <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
-        No jobs on hold.
+        {{ filled($search ?? null) ? 'No hold jobs match this search.' : 'No jobs on hold.' }}
     </div>
 @else
     <div class="space-y-2">

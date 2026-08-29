@@ -397,6 +397,91 @@ class DashboardTest extends TestCase
             ->assertDontSee('45 min est.');
     }
 
+    public function test_hold_jobs_panel_search_matches_any_column(): void
+    {
+        $mower = User::query()->create([
+            'name' => 'Searchable Mower',
+            'email' => 'searchable-mower@mowingcrm.test',
+            'password' => bcrypt('password'),
+            'is_active' => true,
+        ]);
+
+        $matching = Job::query()->create([
+            'customer_name' => 'Alpha Client',
+            'phone' => '555-1111',
+            'client_address' => '11 Willow Ave',
+            'scheduled_date' => now()->addDay()->toDateString(),
+            'scheduled_time' => '09:30',
+            'estimated_duration_minutes' => 60,
+            'required_services' => [ServiceTypes::all()[0]],
+            'parking_status' => 'Easy',
+            'customer_type' => 'Easy',
+            'payment_mode' => 'Cash',
+            'payment_status' => 'Received',
+            'status' => JobWorkflowStatus::HOLD->value,
+            'created_by' => $this->admin->id,
+        ]);
+        $matching->assignedEmployees()->attach($mower->id, ['assignment_date' => $matching->scheduled_date]);
+
+        Job::query()->create([
+            'customer_name' => 'Beta Client',
+            'phone' => '555-2222',
+            'client_address' => '22 Spruce Ct',
+            'scheduled_date' => now()->addDays(2)->toDateString(),
+            'scheduled_time' => '11:00',
+            'estimated_duration_minutes' => 45,
+            'required_services' => [ServiceTypes::all()[0]],
+            'parking_status' => 'Easy',
+            'customer_type' => 'Easy',
+            'payment_mode' => 'Cash',
+            'payment_status' => 'Pending',
+            'status' => JobWorkflowStatus::HOLD->value,
+            'created_by' => $this->admin->id,
+        ]);
+
+        // Customer name.
+        $this->actingAs($this->admin)
+            ->get(route('dashboard.hold-jobs', ['search' => 'Alpha']))
+            ->assertOk()
+            ->assertSee('Alpha Client')
+            ->assertDontSee('Beta Client');
+
+        // Address.
+        $this->actingAs($this->admin)
+            ->get(route('dashboard.hold-jobs', ['search' => 'Spruce']))
+            ->assertOk()
+            ->assertSee('Beta Client')
+            ->assertDontSee('Alpha Client');
+
+        // Assigned mower name.
+        $this->actingAs($this->admin)
+            ->get(route('dashboard.hold-jobs', ['search' => 'Searchable Mower']))
+            ->assertOk()
+            ->assertSee('Alpha Client')
+            ->assertDontSee('Beta Client');
+
+        // Payment status.
+        $this->actingAs($this->admin)
+            ->get(route('dashboard.hold-jobs', ['search' => 'Pending']))
+            ->assertOk()
+            ->assertSee('Beta Client')
+            ->assertDontSee('Alpha Client');
+
+        // Scheduled date.
+        $this->actingAs($this->admin)
+            ->get(route('dashboard.hold-jobs', ['search' => now()->addDay()->toDateString()]))
+            ->assertOk()
+            ->assertSee('Alpha Client')
+            ->assertDontSee('Beta Client');
+
+        // No matches.
+        $this->actingAs($this->admin)
+            ->get(route('dashboard.hold-jobs', ['search' => 'zzz-no-match']))
+            ->assertOk()
+            ->assertSee('No hold jobs match this search.')
+            ->assertDontSee('Alpha Client');
+    }
+
     public function test_three_week_grid_includes_hold_pending_and_completed_jobs(): void
     {
         Job::query()->create([
