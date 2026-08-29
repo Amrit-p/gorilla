@@ -287,23 +287,48 @@ class MowerDashboardTest extends TestCase
             ->assertSee('10 Field Rd');
     }
 
-    public function test_job_show_page_displays_job_details(): void
+    public function test_job_show_page_displays_job_details_without_equipment_type(): void
     {
         $equipmentType = EquipmentType::query()->where('is_active', true)->firstOrFail();
 
         $job = $this->createAssignedJob($this->mower, [
             'equipment_type_id' => $equipmentType->id,
             'customer_type' => JobCustomerType::HARD->value,
+            'required_services' => [ServiceTypes::all()[0]],
+            'payment_mode' => JobOperationalPaymentMode::ONLINE->value,
         ]);
 
         $this->actingAs($this->mower)
             ->get(route('mower.jobs.show', $job))
             ->assertOk()
             ->assertSee('Job details')
-            ->assertSee('Equipment type')
-            ->assertSee($equipmentType->name)
+            ->assertDontSee('Equipment type')
             ->assertSee('Customer type')
-            ->assertSee(JobCustomerType::HARD->value);
+            ->assertSee(JobCustomerType::HARD->value)
+            ->assertSee('Service type')
+            ->assertSee(ServiceTypes::all()[0])
+            ->assertSee('Payment mode')
+            ->assertSee(JobOperationalPaymentMode::ONLINE->value);
+    }
+
+    public function test_job_show_page_shows_placeholder_for_empty_job_details(): void
+    {
+        $job = $this->createAssignedJob($this->mower, [
+            'customer_type' => null,
+            'required_services' => [],
+            'payment_mode' => null,
+        ]);
+
+        $html = $this->actingAs($this->mower)
+            ->get(route('mower.jobs.show', $job))
+            ->assertOk()
+            ->assertSee('Customer type')
+            ->assertSee('Service type')
+            ->assertSee('Payment mode')
+            ->getContent();
+
+        $placeholderRow = '<dd class="text-right font-medium text-slate-900">—</dd>';
+        $this->assertSame(3, substr_count($html, $placeholderRow));
     }
 
     public function test_job_show_page_shows_amount_for_cash_jobs(): void

@@ -5,6 +5,10 @@
         ? 'https://www.google.com/maps/dir/?api=1&destination='.$job->latitude.','.$job->longitude
         : ($job->client_address ? 'https://www.google.com/maps/search/?api=1&query='.urlencode($job->client_address) : null);
 
+    $serviceTypes = is_array($job->required_services) && count($job->required_services) > 0
+        ? implode(', ', $job->required_services)
+        : '—';
+
     $showChargeAmount = $job->charges !== null && in_array($job->payment_mode, [
         JobOperationalPaymentMode::CASH->value,
         JobOperationalPaymentMode::BOTH->value,
@@ -51,24 +55,18 @@
             <h2 class="text-sm font-semibold text-slate-900">Job details</h2>
             <p class="mt-1 text-xs text-slate-500">Read-only — contact office to change.</p>
             <dl class="mt-3 space-y-2 text-sm">
-                @if ($job->equipmentType)
-                    <div class="flex justify-between gap-4">
-                        <dt class="text-slate-500">Equipment type</dt>
-                        <dd class="text-right font-medium text-slate-900">{{ $job->equipmentType->name }}</dd>
-                    </div>
-                @endif
-                @if ($job->customer_type)
-                    <div class="flex justify-between gap-4">
-                        <dt class="text-slate-500">Customer type</dt>
-                        <dd class="text-right font-medium text-slate-900">{{ $job->customer_type }}</dd>
-                    </div>
-                @endif
-                @if ($job->payment_mode)
-                    <div class="flex justify-between gap-4">
-                        <dt class="text-slate-500">Payment mode</dt>
-                        <dd class="text-right font-medium text-slate-900">{{ $job->payment_mode }}</dd>
-                    </div>
-                @endif
+                <div class="flex justify-between gap-4">
+                    <dt class="text-slate-500">Customer type</dt>
+                    <dd class="text-right font-medium text-slate-900">{{ $job->customer_type ?: '—' }}</dd>
+                </div>
+                <div class="flex justify-between gap-4">
+                    <dt class="text-slate-500">Service type</dt>
+                    <dd class="text-right font-medium text-slate-900">{{ $serviceTypes }}</dd>
+                </div>
+                <div class="flex justify-between gap-4">
+                    <dt class="text-slate-500">Payment mode</dt>
+                    <dd class="text-right font-medium text-slate-900">{{ $job->payment_mode ?: '—' }}</dd>
+                </div>
                 @if ($showChargeAmount)
                     <div class="flex justify-between gap-4">
                         <dt class="text-slate-500">Amount to collect</dt>
