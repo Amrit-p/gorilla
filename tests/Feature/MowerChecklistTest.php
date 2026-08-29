@@ -6,9 +6,11 @@ use App\Models\Checklist;
 use App\Models\ChecklistPoint;
 use App\Models\MowerChecklistSubmission;
 use App\Models\User;
+use App\Support\CrmConstants;
 use App\Support\CrmRoles;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
@@ -33,11 +35,11 @@ class MowerChecklistTest extends TestCase
     private function createSubmission(int $pointId, ?string $date = null): void
     {
         DB::table('mower_checklist_submissions')->insert([
-            'user_id'            => $this->mower->id,
+            'user_id' => $this->mower->id,
             'checklist_point_id' => $pointId,
-            'date'               => $date ?? now()->toDateString(),
-            'created_at'         => now()->toDateTimeString(),
-            'updated_at'         => now()->toDateTimeString(),
+            'date' => $date ?? now()->toDateString(),
+            'created_at' => now()->toDateTimeString(),
+            'updated_at' => now()->toDateTimeString(),
         ]);
     }
 
@@ -50,15 +52,15 @@ class MowerChecklistTest extends TestCase
         $checklist = Checklist::create(['name' => 'Safety Checklist']);
         $point = ChecklistPoint::create([
             'checklist_id' => $checklist->id,
-            'heading'      => 'Helmet',
-            'text'         => 'Wear a helmet.',
-            'sort_order'   => 0,
+            'heading' => 'Helmet',
+            'text' => 'Wear a helmet.',
+            'sort_order' => 0,
         ]);
 
         $submission = MowerChecklistSubmission::create([
-            'user_id'            => $this->mower->id,
+            'user_id' => $this->mower->id,
             'checklist_point_id' => $point->id,
-            'date'               => today()->toDateString(),
+            'date' => today()->toDateString(),
         ]);
 
         $this->assertTrue($submission->user->is($this->mower));
@@ -69,15 +71,15 @@ class MowerChecklistTest extends TestCase
         $checklist = Checklist::create(['name' => 'Safety Checklist']);
         $point = ChecklistPoint::create([
             'checklist_id' => $checklist->id,
-            'heading'      => 'Vest',
-            'text'         => 'Wear a hi-vis vest.',
-            'sort_order'   => 0,
+            'heading' => 'Vest',
+            'text' => 'Wear a hi-vis vest.',
+            'sort_order' => 0,
         ]);
 
         $submission = MowerChecklistSubmission::create([
-            'user_id'            => $this->mower->id,
+            'user_id' => $this->mower->id,
             'checklist_point_id' => $point->id,
-            'date'               => today()->toDateString(),
+            'date' => today()->toDateString(),
         ]);
 
         $this->assertTrue($submission->checklistPoint->is($point));
@@ -88,18 +90,18 @@ class MowerChecklistTest extends TestCase
         $checklist = Checklist::create(['name' => 'Safety Checklist']);
         $point = ChecklistPoint::create([
             'checklist_id' => $checklist->id,
-            'heading'      => 'Blades',
-            'text'         => 'Inspect blades.',
-            'sort_order'   => 0,
+            'heading' => 'Blades',
+            'text' => 'Inspect blades.',
+            'sort_order' => 0,
         ]);
 
         $submission = MowerChecklistSubmission::create([
-            'user_id'            => $this->mower->id,
+            'user_id' => $this->mower->id,
             'checklist_point_id' => $point->id,
-            'date'               => '2025-06-01',
+            'date' => '2025-06-01',
         ]);
 
-        $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $submission->date);
+        $this->assertInstanceOf(Carbon::class, $submission->date);
         $this->assertSame('2025-06-01', $submission->date->toDateString());
     }
 
@@ -109,7 +111,7 @@ class MowerChecklistTest extends TestCase
 
     public function test_non_mower_user_bypasses_checklist_middleware(): void
     {
-        $admin = User::query()->where('email', 'admin@mowingcrm.test')->firstOrFail();
+        $admin = User::query()->where('email', CrmConstants::ADMIN_EMAIL)->firstOrFail();
 
         $this->actingAs($admin)
             ->get(route('mower.index'))
@@ -130,10 +132,10 @@ class MowerChecklistTest extends TestCase
         // Archive the only point so no active points remain
         ChecklistPoint::create([
             'checklist_id' => $checklist->id,
-            'heading'      => 'Archived',
-            'text'         => 'This point is archived.',
-            'sort_order'   => 0,
-            'is_archived'  => true,
+            'heading' => 'Archived',
+            'text' => 'This point is archived.',
+            'sort_order' => 0,
+            'is_archived' => true,
         ]);
 
         $this->actingAs($this->mower)
@@ -146,9 +148,9 @@ class MowerChecklistTest extends TestCase
         $checklist = Checklist::create(['name' => 'Safety Checklist']);
         $point = ChecklistPoint::create([
             'checklist_id' => $checklist->id,
-            'heading'      => 'Helmet',
-            'text'         => 'Wear a helmet.',
-            'sort_order'   => 0,
+            'heading' => 'Helmet',
+            'text' => 'Wear a helmet.',
+            'sort_order' => 0,
         ]);
 
         $this->createSubmission($point->id);
@@ -163,9 +165,9 @@ class MowerChecklistTest extends TestCase
         $checklist = Checklist::create(['name' => 'Safety Checklist']);
         ChecklistPoint::create([
             'checklist_id' => $checklist->id,
-            'heading'      => 'Helmet',
-            'text'         => 'Wear a helmet.',
-            'sort_order'   => 0,
+            'heading' => 'Helmet',
+            'text' => 'Wear a helmet.',
+            'sort_order' => 0,
         ]);
 
         $this->actingAs($this->mower)
@@ -178,15 +180,15 @@ class MowerChecklistTest extends TestCase
         $checklist = Checklist::create(['name' => 'Safety Checklist']);
         $pointA = ChecklistPoint::create([
             'checklist_id' => $checklist->id,
-            'heading'      => 'Helmet',
-            'text'         => 'Wear a helmet.',
-            'sort_order'   => 0,
+            'heading' => 'Helmet',
+            'text' => 'Wear a helmet.',
+            'sort_order' => 0,
         ]);
         ChecklistPoint::create([
             'checklist_id' => $checklist->id,
-            'heading'      => 'Vest',
-            'text'         => 'Wear a vest.',
-            'sort_order'   => 1,
+            'heading' => 'Vest',
+            'text' => 'Wear a vest.',
+            'sort_order' => 1,
         ]);
 
         $this->createSubmission($pointA->id);
@@ -201,9 +203,9 @@ class MowerChecklistTest extends TestCase
         $checklist = Checklist::create(['name' => 'Safety Checklist']);
         $point = ChecklistPoint::create([
             'checklist_id' => $checklist->id,
-            'heading'      => 'Helmet',
-            'text'         => 'Wear a helmet.',
-            'sort_order'   => 0,
+            'heading' => 'Helmet',
+            'text' => 'Wear a helmet.',
+            'sort_order' => 0,
         ]);
 
         $this->createSubmission($point->id, now()->subDay()->toDateString());
@@ -222,9 +224,9 @@ class MowerChecklistTest extends TestCase
         $checklist = Checklist::create(['name' => 'Safety Checklist']);
         ChecklistPoint::create([
             'checklist_id' => $checklist->id,
-            'heading'      => 'Helmet',
-            'text'         => 'Wear a helmet.',
-            'sort_order'   => 0,
+            'heading' => 'Helmet',
+            'text' => 'Wear a helmet.',
+            'sort_order' => 0,
         ]);
 
         $this->actingAs($this->mower)
@@ -238,9 +240,9 @@ class MowerChecklistTest extends TestCase
         $checklist = Checklist::create(['name' => 'Safety Checklist']);
         $point = ChecklistPoint::create([
             'checklist_id' => $checklist->id,
-            'heading'      => 'Helmet',
-            'text'         => 'Wear a helmet.',
-            'sort_order'   => 0,
+            'heading' => 'Helmet',
+            'text' => 'Wear a helmet.',
+            'sort_order' => 0,
         ]);
 
         $this->createSubmission($point->id);
@@ -255,27 +257,27 @@ class MowerChecklistTest extends TestCase
         $checklist = Checklist::create(['name' => 'Safety Checklist']);
         $pointA = ChecklistPoint::create([
             'checklist_id' => $checklist->id,
-            'heading'      => 'Helmet',
-            'text'         => 'Wear a helmet.',
-            'sort_order'   => 0,
+            'heading' => 'Helmet',
+            'text' => 'Wear a helmet.',
+            'sort_order' => 0,
         ]);
         $pointB = ChecklistPoint::create([
             'checklist_id' => $checklist->id,
-            'heading'      => 'Vest',
-            'text'         => 'Wear a vest.',
-            'sort_order'   => 1,
+            'heading' => 'Vest',
+            'text' => 'Wear a vest.',
+            'sort_order' => 1,
         ]);
 
         $this->actingAs($this->mower)
             ->post(route('mower.checklist.submit'), [
-                'point_ids'    => [$pointA->id, $pointB->id],
+                'point_ids' => [$pointA->id, $pointB->id],
                 'acknowledged' => '1',
             ])
             ->assertRedirect(route('mower.index'));
 
         $this->assertDatabaseCount('mower_checklist_submissions', 2);
         $this->assertDatabaseHas('mower_checklist_submissions', [
-            'user_id'            => $this->mower->id,
+            'user_id' => $this->mower->id,
             'checklist_point_id' => $pointA->id,
         ]);
     }
@@ -285,9 +287,9 @@ class MowerChecklistTest extends TestCase
         $checklist = Checklist::create(['name' => 'Safety Checklist']);
         $point = ChecklistPoint::create([
             'checklist_id' => $checklist->id,
-            'heading'      => 'Helmet',
-            'text'         => 'Wear a helmet.',
-            'sort_order'   => 0,
+            'heading' => 'Helmet',
+            'text' => 'Wear a helmet.',
+            'sort_order' => 0,
         ]);
 
         $payload = ['point_ids' => [$point->id], 'acknowledged' => '1'];
@@ -303,21 +305,21 @@ class MowerChecklistTest extends TestCase
         $checklist = Checklist::create(['name' => 'Safety Checklist']);
         ChecklistPoint::create([
             'checklist_id' => $checklist->id,
-            'heading'      => 'Helmet',
-            'text'         => 'Wear a helmet.',
-            'sort_order'   => 0,
+            'heading' => 'Helmet',
+            'text' => 'Wear a helmet.',
+            'sort_order' => 0,
         ]);
         $pointB = ChecklistPoint::create([
             'checklist_id' => $checklist->id,
-            'heading'      => 'Vest',
-            'text'         => 'Wear a vest.',
-            'sort_order'   => 1,
+            'heading' => 'Vest',
+            'text' => 'Wear a vest.',
+            'sort_order' => 1,
         ]);
 
         // Only submitting one of two required points
         $this->actingAs($this->mower)
             ->post(route('mower.checklist.submit'), [
-                'point_ids'    => [$pointB->id],
+                'point_ids' => [$pointB->id],
                 'acknowledged' => '1',
             ])
             ->assertRedirect()
@@ -331,14 +333,14 @@ class MowerChecklistTest extends TestCase
         $checklist = Checklist::create(['name' => 'Safety Checklist']);
         $point = ChecklistPoint::create([
             'checklist_id' => $checklist->id,
-            'heading'      => 'Helmet',
-            'text'         => 'Wear a helmet.',
-            'sort_order'   => 0,
+            'heading' => 'Helmet',
+            'text' => 'Wear a helmet.',
+            'sort_order' => 0,
         ]);
 
         $this->actingAs($this->mower)
             ->post(route('mower.checklist.submit'), [
-                'point_ids'    => [$point->id],
+                'point_ids' => [$point->id],
                 'acknowledged' => '0',
             ])
             ->assertRedirect()
@@ -353,7 +355,7 @@ class MowerChecklistTest extends TestCase
 
         $this->actingAs($this->mower)
             ->post(route('mower.checklist.submit'), [
-                'point_ids'    => [],
+                'point_ids' => [],
                 'acknowledged' => '1',
             ])
             ->assertRedirect()

@@ -13,6 +13,7 @@ use App\Models\Job;
 use App\Models\Lead;
 use App\Models\Recurrence;
 use App\Models\User;
+use App\Support\CrmConstants;
 use App\Support\ServiceTypes;
 use Database\Seeders\MasterCatalogSeeder;
 use Database\Seeders\RecurrenceSeeder;
@@ -32,7 +33,7 @@ class LeadManagementTest extends TestCase
         $this->seed(RoleAndPermissionSeeder::class);
         $this->seed(MasterCatalogSeeder::class);
         $this->seed(RecurrenceSeeder::class);
-        $this->admin = User::query()->where('email', 'admin@mowingcrm.test')->firstOrFail();
+        $this->admin = User::query()->where('email', CrmConstants::ADMIN_EMAIL)->firstOrFail();
     }
 
     public function test_lead_can_be_created_via_ajax_with_map_coordinates(): void

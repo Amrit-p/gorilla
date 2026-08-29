@@ -25,10 +25,10 @@ class UpdateUserRequest extends FormRequest
 
         return array_merge($this->userFieldRules(requirePassword: false), [
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($userId)],
-            'role' => ['required', 'string', Rule::in(array_merge(
+            'role' => ['required', 'string', Rule::in(array_values(array_unique(array_merge(
                 config('roles.assignable', []),
-                [config('roles.super_admin')]
-            ))],
+                CrmPermissions::rbacAssignableRoleLabelsFor($this->user())
+            ))))],
         ]);
     }
 

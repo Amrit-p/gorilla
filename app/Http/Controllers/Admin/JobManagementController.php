@@ -52,9 +52,9 @@ class JobManagementController extends Controller
 
         $filters = $this->exportFilters($request);
 
-        // The "Deleted jobs" scope (soft-deleted records) is restricted to office managers.
+        // The "Deleted jobs" scope (soft-deleted records) is restricted to administrators.
         if ($filters['list_scope'] === CrmConstants::JOB_LIST_SCOPE_DELETED
-            && ! CrmPermissions::isOfficeManager($request->user())) {
+            && ! CrmPermissions::isAdministrator($request->user())) {
             $filters['list_scope'] = '';
         }
 

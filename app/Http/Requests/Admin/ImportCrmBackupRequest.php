@@ -9,7 +9,7 @@ class ImportCrmBackupRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return (bool) $this->user()?->hasRole(CrmRoles::OFFICE_MANAGER);
+        return (bool) $this->user()?->hasAnyRole(CrmRoles::administrative());
     }
 
     /**

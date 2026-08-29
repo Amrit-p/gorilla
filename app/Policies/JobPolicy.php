@@ -65,7 +65,7 @@ class JobPolicy
             return false;
         }
 
-        if ($user->hasRole(CrmRoles::OFFICE_MANAGER)) {
+        if ($user->hasAnyRole(CrmRoles::administrative())) {
             return true;
         }
 
@@ -84,7 +84,7 @@ class JobPolicy
             return false;
         }
 
-        if ($user->hasRole(CrmRoles::OFFICE_MANAGER)) {
+        if ($user->hasAnyRole(CrmRoles::administrative())) {
             return true;
         }
 

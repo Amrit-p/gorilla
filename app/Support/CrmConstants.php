@@ -7,6 +7,12 @@ namespace App\Support;
  */
 final class CrmConstants
 {
+    /** Seeded sign-in account for the unrestricted Admin role. */
+    public const ADMIN_EMAIL = 'admin@gorillamowing.co.nz';
+
+    /** Seeded sign-in account for the Office Manager role. */
+    public const OFFICE_MANAGER_EMAIL = 'manager@gorillamowing.co.nz';
+
     public const DEFAULT_PAGINATION = 15;
 
     /**

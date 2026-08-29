@@ -9,6 +9,7 @@ use App\Models\Job;
 use App\Models\Lead;
 use App\Models\User;
 use App\Services\FollowupService;
+use App\Support\CrmConstants;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -25,7 +26,7 @@ class FollowupTest extends TestCase
     {
         parent::setUp();
         $this->seed(RoleAndPermissionSeeder::class);
-        $this->admin = User::query()->where('email', 'admin@mowingcrm.test')->firstOrFail();
+        $this->admin = User::query()->where('email', CrmConstants::ADMIN_EMAIL)->firstOrFail();
         $this->mower = User::query()->where('email', 'jake.morrison@mowingcrm.test')->firstOrFail();
     }
 

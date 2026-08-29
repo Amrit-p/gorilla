@@ -10,6 +10,7 @@ use App\Imports\GorillaCrmBackupImport;
 use App\Models\Job;
 use App\Models\Lead;
 use App\Models\User;
+use App\Support\CrmConstants;
 use App\Support\CrmRoles;
 use Database\Seeders\AccountingLevelSeeder;
 use Database\Seeders\MasterCatalogSeeder;
@@ -37,7 +38,7 @@ class CrmBackupImportTest extends TestCase
         $this->seed(RecurrenceSeeder::class);
         $this->seed(AccountingLevelSeeder::class);
 
-        $this->admin = User::query()->where('email', 'admin@mowingcrm.test')->firstOrFail();
+        $this->admin = User::query()->where('email', CrmConstants::ADMIN_EMAIL)->firstOrFail();
     }
 
     public function test_office_manager_can_open_the_hidden_import_page(): void

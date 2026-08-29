@@ -11,6 +11,7 @@ return [
 
     'permissions' => [
         'view_dashboard',
+        'view_business_analytics',
         'manage_leads',
         'manage_customers',
         'manage_jobs',
@@ -30,16 +31,37 @@ return [
     ],
 
     'roles' => [
+        'admin' => [
+            'label' => 'Admin',
+            'description' => 'Unrestricted owner access, including all revenue and payroll figures.',
+            'permissions' => '*',
+        ],
         'office_manager' => [
             'label' => 'Office Manager',
-            'description' => 'Full administrative access (Gorilla admin).',
-            'permissions' => '*',
+            'description' => 'Day-to-day operations. Excludes revenue analytics, mower report, salary calculator, and bonuses.',
+            'permissions' => [
+                'view_dashboard',
+                'manage_leads',
+                'manage_customers',
+                'manage_jobs',
+                'assign_jobs',
+                'create_jobs',
+                'manage_users',
+                'manage_masters',
+                'upload_job_images',
+                'view_checklist_report',
+                'manage_discussions',
+                'manage_contractors',
+                'manage_followups',
+                'verify_jobs',
+            ],
         ],
         'sales_manager' => [
             'label' => 'Sales Manager',
             'description' => 'Lead and customer management.',
             'permissions' => [
                 'view_dashboard',
+                'view_business_analytics',
                 'manage_leads',
                 'manage_customers',
                 'manage_jobs',
@@ -73,6 +95,7 @@ return [
 
     /** Roles selectable on the RBAC screen. */
     'rbac_assignable_role_keys' => [
+        'admin',
         'office_manager',
         'sales_manager',
         'mower',

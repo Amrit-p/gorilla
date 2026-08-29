@@ -4,7 +4,7 @@ use App\Support\CrmPermissions;
 use App\Support\CrmRoles;
 
 return [
-    'super_admin' => CrmRoles::OFFICE_MANAGER,
+    'super_admin' => CrmRoles::ADMIN,
 
     'assignable' => CrmPermissions::assignableRoleLabels(),
 

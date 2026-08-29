@@ -18,6 +18,7 @@ use App\Models\JobLevel;
 use App\Models\Lead;
 use App\Models\Recurrence;
 use App\Models\User;
+use App\Support\CrmConstants;
 use App\Support\ServiceTypes;
 use Database\Seeders\JobLevelSeeder;
 use Database\Seeders\MasterCatalogSeeder;
@@ -41,7 +42,7 @@ class CrmModuleTest extends TestCase
         $this->seed(RecurrenceSeeder::class);
         $this->seed(JobLevelSeeder::class);
 
-        $this->admin = User::query()->where('email', 'admin@mowingcrm.test')->firstOrFail();
+        $this->admin = User::query()->where('email', CrmConstants::ADMIN_EMAIL)->firstOrFail();
     }
 
     public function test_lead_create_page_is_accessible(): void

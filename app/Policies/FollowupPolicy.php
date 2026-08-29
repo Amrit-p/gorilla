@@ -26,12 +26,12 @@ class FollowupPolicy
     public function update(User $user, Followup $followup): bool
     {
         return $user->id === $followup->created_by
-            || CrmPermissions::isOfficeManager($user);
+            || CrmPermissions::isAdministrator($user);
     }
 
     public function delete(User $user, Followup $followup): bool
     {
         return $user->id === $followup->created_by
-            || CrmPermissions::isOfficeManager($user);
+            || CrmPermissions::isAdministrator($user);
     }
 }

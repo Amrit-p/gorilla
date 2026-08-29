@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Checklist;
 use App\Models\ChecklistPoint;
 use App\Models\User;
+use App\Support\CrmConstants;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -19,7 +20,7 @@ class ChecklistTest extends TestCase
     {
         parent::setUp();
         $this->seed(RoleAndPermissionSeeder::class);
-        $this->admin = User::query()->where('email', 'admin@mowingcrm.test')->firstOrFail();
+        $this->admin = User::query()->where('email', CrmConstants::ADMIN_EMAIL)->firstOrFail();
     }
 
     // -----------------------------------------------------------------------
@@ -30,7 +31,7 @@ class ChecklistTest extends TestCase
     {
         $this->actingAs($this->admin)
             ->postJson(route('admin.masters.checklists.store'), [
-                'name'   => 'Safety Checklist',
+                'name' => 'Safety Checklist',
                 'points' => [
                     ['heading' => 'Helmet', 'text' => 'Wear a helmet at all times.', 'sort_order' => 0],
                     ['heading' => 'Vest',   'text' => 'Hi-vis vest required.',        'sort_order' => 1],
@@ -49,7 +50,7 @@ class ChecklistTest extends TestCase
 
         $this->actingAs($this->admin)
             ->postJson(route('admin.masters.checklists.store'), [
-                'name'   => 'Daily Inspection',
+                'name' => 'Daily Inspection',
                 'points' => [
                     ['heading' => 'Check oil', 'text' => 'Check oil level.', 'sort_order' => 0],
                 ],
@@ -62,7 +63,7 @@ class ChecklistTest extends TestCase
     {
         $this->actingAs($this->admin)
             ->postJson(route('admin.masters.checklists.store'), [
-                'name'   => 'Empty Checklist',
+                'name' => 'Empty Checklist',
                 'points' => [],
             ])
             ->assertUnprocessable()
@@ -94,12 +95,12 @@ class ChecklistTest extends TestCase
     public function test_removed_point_is_archived_on_update(): void
     {
         $checklist = Checklist::create(['name' => 'Pre-Work Checklist']);
-        $keep      = ChecklistPoint::create(['checklist_id' => $checklist->id, 'heading' => 'PPE',    'text' => 'Wear PPE.',    'sort_order' => 0]);
-        $remove    = ChecklistPoint::create(['checklist_id' => $checklist->id, 'heading' => 'Gloves', 'text' => 'Wear gloves.', 'sort_order' => 1]);
+        $keep = ChecklistPoint::create(['checklist_id' => $checklist->id, 'heading' => 'PPE',    'text' => 'Wear PPE.',    'sort_order' => 0]);
+        $remove = ChecklistPoint::create(['checklist_id' => $checklist->id, 'heading' => 'Gloves', 'text' => 'Wear gloves.', 'sort_order' => 1]);
 
         $this->actingAs($this->admin)
             ->patchJson(route('admin.masters.checklists.update', $checklist), [
-                'name'   => 'Pre-Work Checklist',
+                'name' => 'Pre-Work Checklist',
                 'points' => [
                     // $remove is intentionally omitted from the submission
                     ['id' => $keep->id, 'heading' => 'PPE', 'text' => 'Wear PPE.', 'sort_order' => 0],
@@ -119,16 +120,16 @@ class ChecklistTest extends TestCase
     public function test_content_change_archives_old_point_and_creates_replacement(): void
     {
         $checklist = Checklist::create(['name' => 'Inspection List']);
-        $original  = ChecklistPoint::create([
+        $original = ChecklistPoint::create([
             'checklist_id' => $checklist->id,
-            'heading'      => 'Old Heading',
-            'text'         => 'Original text.',
-            'sort_order'   => 0,
+            'heading' => 'Old Heading',
+            'text' => 'Original text.',
+            'sort_order' => 0,
         ]);
 
         $this->actingAs($this->admin)
             ->patchJson(route('admin.masters.checklists.update', $checklist), [
-                'name'   => 'Inspection List',
+                'name' => 'Inspection List',
                 'points' => [
                     ['id' => $original->id, 'heading' => 'New Heading', 'text' => 'Updated text.', 'sort_order' => 0],
                 ],
@@ -157,16 +158,16 @@ class ChecklistTest extends TestCase
     public function test_only_text_change_also_triggers_archiving(): void
     {
         $checklist = Checklist::create(['name' => 'Text Change List']);
-        $original  = ChecklistPoint::create([
+        $original = ChecklistPoint::create([
             'checklist_id' => $checklist->id,
-            'heading'      => 'Same Heading',
-            'text'         => 'Original body.',
-            'sort_order'   => 0,
+            'heading' => 'Same Heading',
+            'text' => 'Original body.',
+            'sort_order' => 0,
         ]);
 
         $this->actingAs($this->admin)
             ->patchJson(route('admin.masters.checklists.update', $checklist), [
-                'name'   => 'Text Change List',
+                'name' => 'Text Change List',
                 'points' => [
                     ['id' => $original->id, 'heading' => 'Same Heading', 'text' => 'Updated body.', 'sort_order' => 0],
                 ],
@@ -187,12 +188,12 @@ class ChecklistTest extends TestCase
     public function test_sort_order_change_does_not_archive_point(): void
     {
         $checklist = Checklist::create(['name' => 'Reorder Checklist']);
-        $pointA    = ChecklistPoint::create(['checklist_id' => $checklist->id, 'heading' => 'Step A', 'text' => 'Do A.', 'sort_order' => 0]);
-        $pointB    = ChecklistPoint::create(['checklist_id' => $checklist->id, 'heading' => 'Step B', 'text' => 'Do B.', 'sort_order' => 1]);
+        $pointA = ChecklistPoint::create(['checklist_id' => $checklist->id, 'heading' => 'Step A', 'text' => 'Do A.', 'sort_order' => 0]);
+        $pointB = ChecklistPoint::create(['checklist_id' => $checklist->id, 'heading' => 'Step B', 'text' => 'Do B.', 'sort_order' => 1]);
 
         $this->actingAs($this->admin)
             ->patchJson(route('admin.masters.checklists.update', $checklist), [
-                'name'   => 'Reorder Checklist',
+                'name' => 'Reorder Checklist',
                 'points' => [
                     ['id' => $pointA->id, 'heading' => 'Step A', 'text' => 'Do A.', 'sort_order' => 1],
                     ['id' => $pointB->id, 'heading' => 'Step B', 'text' => 'Do B.', 'sort_order' => 0],
@@ -218,11 +219,11 @@ class ChecklistTest extends TestCase
     public function test_new_point_can_be_added_during_update(): void
     {
         $checklist = Checklist::create(['name' => 'Growing Checklist']);
-        $existing  = ChecklistPoint::create(['checklist_id' => $checklist->id, 'heading' => 'Point 1', 'text' => 'Text 1.', 'sort_order' => 0]);
+        $existing = ChecklistPoint::create(['checklist_id' => $checklist->id, 'heading' => 'Point 1', 'text' => 'Text 1.', 'sort_order' => 0]);
 
         $this->actingAs($this->admin)
             ->patchJson(route('admin.masters.checklists.update', $checklist), [
-                'name'   => 'Growing Checklist',
+                'name' => 'Growing Checklist',
                 'points' => [
                     ['id' => $existing->id, 'heading' => 'Point 1', 'text' => 'Text 1.', 'sort_order' => 0],
                     ['heading' => 'Point 2', 'text' => 'Text 2.', 'sort_order' => 1],
@@ -234,8 +235,8 @@ class ChecklistTest extends TestCase
         $this->assertSame(2, $checklist->points()->count());
         $this->assertDatabaseHas('checklist_points', [
             'checklist_id' => $checklist->id,
-            'heading'      => 'Point 2',
-            'is_archived'  => false,
+            'heading' => 'Point 2',
+            'is_archived' => false,
         ]);
     }
 

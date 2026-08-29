@@ -40,6 +40,7 @@ class AppServiceProvider extends ServiceProvider
         );
 
         Gate::define('view-dashboard', static fn ($user) => CrmPermissions::canViewDashboard($user));
+        Gate::define('view-business-analytics', static fn ($user) => CrmPermissions::canViewBusinessAnalytics($user));
         Gate::define('manage-leads', static fn ($user) => CrmPermissions::canManageLeads($user));
         Gate::define('manage-customers', static fn ($user) => CrmPermissions::canManageCustomers($user));
         Gate::define('view-jobs', static fn ($user) => CrmPermissions::canViewJobs($user));

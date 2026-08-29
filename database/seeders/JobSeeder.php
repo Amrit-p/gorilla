@@ -13,6 +13,7 @@ use App\Models\Job;
 use App\Models\JobLevel;
 use App\Models\User;
 use App\Models\Zone;
+use App\Support\CrmConstants;
 use App\Support\ServiceTypes;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -29,7 +30,7 @@ class JobSeeder extends Seeder
         $mowerIds = $mowers->pluck('id')->values();
         $mowerIncentives = $mowers->pluck('incentive_percentage', 'id');
 
-        $adminId = User::where('email', 'admin@mowingcrm.test')->value('id');
+        $adminId = User::where('email', CrmConstants::ADMIN_EMAIL)->value('id');
         $jobLevelIds = JobLevel::orderBy('sort_order')->pluck('id')->values();
         $zoneIds = Zone::query()->where('is_active', true)->orderBy('sort_order')->pluck('id')->values();
         $serviceTypes = ServiceTypes::all();

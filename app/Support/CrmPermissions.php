@@ -15,6 +15,8 @@ final class CrmPermissions
 {
     public const VIEW_DASHBOARD = 'view_dashboard';
 
+    public const VIEW_BUSINESS_ANALYTICS = 'view_business_analytics';
+
     public const MANAGE_LEADS = 'manage_leads';
 
     public const MANAGE_CUSTOMERS = 'manage_customers';
@@ -97,6 +99,26 @@ final class CrmPermissions
     }
 
     /**
+     * RBAC dropdown scoped to the acting user: only an Admin may hand out the Admin role,
+     * otherwise an Office Manager could grant itself the figures it is not meant to see.
+     *
+     * @return array<int, string>
+     */
+    public static function rbacAssignableRoleLabelsFor(?User $user): array
+    {
+        $labels = self::rbacAssignableRoleLabels();
+
+        if ($user?->hasRole(CrmRoles::ADMIN)) {
+            return $labels;
+        }
+
+        return array_values(array_filter(
+            $labels,
+            static fn (string $label): bool => $label !== CrmRoles::ADMIN
+        ));
+    }
+
+    /**
      * @param  array<int, string>  $roleKeys
      * @return array<int, string>
      */
@@ -111,6 +133,12 @@ final class CrmPermissions
     public static function canViewDashboard(?User $user): bool
     {
         return $user?->can(self::VIEW_DASHBOARD) ?? false;
+    }
+
+    /** Revenue stat cards, Business Analytics panel, and the jobs-by-status chart. */
+    public static function canViewBusinessAnalytics(?User $user): bool
+    {
+        return $user?->can(self::VIEW_BUSINESS_ANALYTICS) ?? false;
     }
 
     public static function canManageLeads(?User $user): bool
@@ -180,6 +208,12 @@ final class CrmPermissions
     public static function isOfficeManager(?User $user): bool
     {
         return $user?->hasRole(CrmRoles::OFFICE_MANAGER) ?? false;
+    }
+
+    /** Admin or Office Manager: the roles that reach every operational screen. */
+    public static function isAdministrator(?User $user): bool
+    {
+        return $user?->hasAnyRole(CrmRoles::administrative()) ?? false;
     }
 
     public static function canManageEmployeeBonuses(?User $user): bool

@@ -60,7 +60,7 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
         ->middleware('crm.permission:'.CrmPermissions::VIEW_DASHBOARD)
         ->name('dashboard.preferences.update');
     Route::get('/dashboard/analytics/charts', [DashboardController::class, 'analyticsCharts'])
-        ->middleware('crm.permission:'.CrmPermissions::VIEW_DASHBOARD)
+        ->middleware('crm.permission:'.CrmPermissions::VIEW_BUSINESS_ANALYTICS)
         ->name('dashboard.analytics.charts');
     Route::get('/dashboard/mower-performance-table', [DashboardController::class, 'mowerPerformanceTable'])
         ->middleware('crm.permission:'.CrmPermissions::VIEW_DASHBOARD)
@@ -101,7 +101,7 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
     });
 
     // Hidden Gorilla CRM backup seeder — Office Manager only, intentionally not linked from the sidebar.
-    Route::middleware('role:'.CrmRoles::OFFICE_MANAGER)->group(function (): void {
+    Route::middleware('role:'.implode('|', CrmRoles::administrative()))->group(function (): void {
         Route::get('/admin/tools/crm-import', [CrmBackupImportController::class, 'index'])->name('admin.tools.crm-import.index');
         Route::post('/admin/tools/crm-import', [CrmBackupImportController::class, 'store'])->name('admin.tools.crm-import.store');
     });

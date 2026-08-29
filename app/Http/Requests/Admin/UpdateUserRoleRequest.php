@@ -27,7 +27,7 @@ class UpdateUserRoleRequest extends FormRequest
             'role' => [
                 'required',
                 'string',
-                Rule::in(CrmPermissions::rbacAssignableRoleLabels()),
+                Rule::in(CrmPermissions::rbacAssignableRoleLabelsFor($this->user())),
             ],
         ];
     }

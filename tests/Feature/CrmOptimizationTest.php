@@ -41,7 +41,7 @@ class CrmOptimizationTest extends TestCase
         $this->seed(RoleAndPermissionSeeder::class);
         $this->seed(MasterCatalogSeeder::class);
         $this->seed(ChecklistSeeder::class);
-        $this->admin = User::query()->where('email', 'admin@mowingcrm.test')->firstOrFail();
+        $this->admin = User::query()->where('email', CrmConstants::ADMIN_EMAIL)->firstOrFail();
     }
 
     public function test_crm_constants_and_global_helpers(): void

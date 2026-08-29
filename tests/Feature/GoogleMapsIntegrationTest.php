@@ -20,6 +20,7 @@ use App\Models\Lead;
 use App\Models\Recurrence;
 use App\Models\Setting;
 use App\Models\User;
+use App\Support\CrmConstants;
 use App\Support\GoogleMapsSettings;
 use App\Support\ServiceTypes;
 use Database\Seeders\MasterCatalogSeeder;
@@ -40,7 +41,7 @@ class GoogleMapsIntegrationTest extends TestCase
         $this->seed(RoleAndPermissionSeeder::class);
         $this->seed(MasterCatalogSeeder::class);
         $this->seed(RecurrenceSeeder::class);
-        $this->admin = User::query()->where('email', 'admin@mowingcrm.test')->firstOrFail();
+        $this->admin = User::query()->where('email', CrmConstants::ADMIN_EMAIL)->firstOrFail();
     }
 
     public function test_api_key_resolves_from_settings_over_env(): void

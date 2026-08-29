@@ -29,7 +29,7 @@ class SalaryCalculatorServiceTest extends TestCase
         $this->seed(RoleAndPermissionSeeder::class);
 
         $this->admin = User::factory()->create(['is_active' => true]);
-        $this->admin->assignRole(CrmRoles::OFFICE_MANAGER);
+        $this->admin->assignRole(CrmRoles::ADMIN);
 
         $this->mower = User::factory()->create(['is_active' => true]);
         $this->mower->assignRole(CrmRoles::MOWER);

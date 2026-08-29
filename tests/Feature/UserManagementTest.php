@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\UserEfficiency;
 use App\Enums\UserStatus;
 use App\Models\User;
+use App\Support\CrmConstants;
 use App\Support\CrmRoles;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -20,7 +21,7 @@ class UserManagementTest extends TestCase
     {
         parent::setUp();
         $this->seed(RoleAndPermissionSeeder::class);
-        $this->admin = User::query()->where('email', 'admin@mowingcrm.test')->firstOrFail();
+        $this->admin = User::query()->where('email', CrmConstants::ADMIN_EMAIL)->firstOrFail();
     }
 
     public function test_admin_user_has_unique_id_from_seed(): void
@@ -39,11 +40,11 @@ class UserManagementTest extends TestCase
         $this->actingAs($this->admin)
             ->postJson(route('admin.users.store'), $payload)
             ->assertOk()
-            ->assertJsonPath('user.user_unique_id', 1004);
+            ->assertJsonPath('user.user_unique_id', 1005);
 
         $this->assertDatabaseHas('users', [
             'email' => 'sales.new@example.com',
-            'user_unique_id' => 1004,
+            'user_unique_id' => 1005,
             'efficiency' => UserEfficiency::AVERAGE->value,
             'status' => UserStatus::ACTIVE->value,
             'is_active' => true,
@@ -56,7 +57,7 @@ class UserManagementTest extends TestCase
     public function test_edit_user_via_ajax_updates_fields_and_role(): void
     {
         $user = User::factory()->create([
-            'user_unique_id' => 1004,
+            'user_unique_id' => 1006,
             'efficiency' => UserEfficiency::BEGINNER->value,
             'status' => UserStatus::ACTIVE->value,
             'is_active' => true,

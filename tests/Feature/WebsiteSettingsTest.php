@@ -6,6 +6,7 @@ use App\Helpers\OptimizationHelper;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\TimezoneSettingsRegistrar;
+use App\Support\CrmConstants;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -22,7 +23,7 @@ class WebsiteSettingsTest extends TestCase
         parent::setUp();
         $this->seed(RoleAndPermissionSeeder::class);
         $this->seed(SettingsSeeder::class);
-        $this->admin = User::query()->where('email', 'admin@mowingcrm.test')->firstOrFail();
+        $this->admin = User::query()->where('email', CrmConstants::ADMIN_EMAIL)->firstOrFail();
     }
 
     public function test_login_page_shows_site_name_from_settings(): void

@@ -13,6 +13,7 @@ use App\Models\JobLevel;
 use App\Models\Recurrence;
 use App\Models\User;
 use App\Notifications\JobPendingFollowUpNotification;
+use App\Support\CrmConstants;
 use App\Support\CrmRoles;
 use App\Support\ServiceTypes;
 use Database\Seeders\JobLevelSeeder;
@@ -37,7 +38,7 @@ class SendPendingJobFollowUpRemindersTest extends TestCase
         $this->seed(MasterCatalogSeeder::class);
         $this->seed(RecurrenceSeeder::class);
         $this->seed(JobLevelSeeder::class);
-        $this->admin = User::query()->where('email', 'admin@mowingcrm.test')->firstOrFail();
+        $this->admin = User::query()->where('email', CrmConstants::ADMIN_EMAIL)->firstOrFail();
     }
 
     public function test_sends_reminders_for_pending_jobs_with_no_update_for_2_days(): void

@@ -29,7 +29,9 @@ $dashboardType = $analytics['type'] ?? 'admin';
         <div id="dashboard-alert" class="hidden"></div>
 
         @if (in_array($dashboardType, ['admin', 'sales']))
+        @can('view-business-analytics')
         @include('dashboard.partials.admin-analytics', ['analytics' => $analytics])
+        @endcan
         @include('dashboard.partials.admin-three-week-schedule', ['threeWeekSchedule' => $threeWeekSchedule])
         @else
         @include('dashboard.partials.mower-analytics', ['analytics' => $analytics])
@@ -115,6 +117,7 @@ $dashboardType = $analytics['type'] ?? 'admin';
         @endif
 
         @if ($dashboardType === 'admin' || $dashboardType === 'sales')
+        @can('view-business-analytics')
         <div class="grid grid-cols-1 gap-4 xl:grid-cols-3">
             <div class="xl:col-span-2">
                 @include('dashboard.partials.analytics-tabs')
@@ -127,6 +130,7 @@ $dashboardType = $analytics['type'] ?? 'admin';
                 :labels="$analytics['charts']['jobs_by_status']['labels'] ?? []"
                 :datasets="$analytics['charts']['jobs_by_status']['datasets'] ?? []" />
         </div>
+        @endcan
         @endif
 
     </div>

@@ -14,6 +14,7 @@ use App\Models\JobLevel;
 use App\Models\Recurrence;
 use App\Models\User;
 use App\Notifications\JobVerifiedNotification;
+use App\Support\CrmConstants;
 use App\Support\CrmRoles;
 use App\Support\ServiceTypes;
 use Database\Seeders\JobLevelSeeder;
@@ -39,7 +40,7 @@ class JobManagementTest extends TestCase
         $this->seed(MasterCatalogSeeder::class);
         $this->seed(RecurrenceSeeder::class);
         $this->seed(JobLevelSeeder::class);
-        $this->admin = User::query()->where('email', 'admin@mowingcrm.test')->firstOrFail();
+        $this->admin = User::query()->where('email', CrmConstants::ADMIN_EMAIL)->firstOrFail();
         $this->mower = User::factory()->create([
             'is_active' => true,
             'efficiency' => UserEfficiency::GOOD->value,

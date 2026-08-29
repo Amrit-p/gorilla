@@ -21,6 +21,7 @@ use App\Models\Lead;
 use App\Models\Recurrence;
 use App\Models\User;
 use App\Models\Zone;
+use App\Support\CrmConstants;
 use App\Support\ServiceTypes;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
@@ -36,7 +37,7 @@ class ThreeWeekScheduleDemoSeeder extends Seeder
 {
     public function run(): void
     {
-        $admin = User::query()->where('email', 'admin@mowingcrm.test')->first();
+        $admin = User::query()->where('email', CrmConstants::ADMIN_EMAIL)->first();
         $mowers = User::query()
             ->whereIn('email', [
                 'jake.morrison@mowingcrm.test',

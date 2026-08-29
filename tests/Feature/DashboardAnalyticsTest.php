@@ -18,6 +18,7 @@ use App\Models\Lead;
 use App\Models\MowerChecklistSubmission;
 use App\Models\User;
 use App\Services\DashboardAnalyticsService;
+use App\Support\CrmConstants;
 use App\Support\CrmRoles;
 use App\Support\ServiceTypes;
 use Database\Seeders\ChecklistSeeder;
@@ -38,7 +39,7 @@ class DashboardAnalyticsTest extends TestCase
         $this->seed(RoleAndPermissionSeeder::class);
         $this->seed(MasterCatalogSeeder::class);
         $this->seed(ChecklistSeeder::class);
-        $this->admin = User::query()->where('email', 'admin@mowingcrm.test')->firstOrFail();
+        $this->admin = User::query()->where('email', CrmConstants::ADMIN_EMAIL)->firstOrFail();
     }
 
     public function test_admin_dashboard_shows_revenue_and_job_metrics(): void

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Support\CrmConstants;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -22,7 +23,7 @@ class AuthenticationTest extends TestCase
         $this->seed(RoleAndPermissionSeeder::class);
 
         /** @var User $admin */
-        $admin = User::query()->where('email', 'admin@mowingcrm.test')->firstOrFail();
+        $admin = User::query()->where('email', CrmConstants::ADMIN_EMAIL)->firstOrFail();
 
         $this->actingAs($admin)
             ->get(route('dashboard.index'))

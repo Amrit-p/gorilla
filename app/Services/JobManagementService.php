@@ -97,7 +97,7 @@ class JobManagementService
                 'done' => 'Done',
                 'completed_unverified' => 'Completed but not verified',
                 'hold' => 'Hold',
-            ], CrmPermissions::isOfficeManager(auth()->user()) ? [
+            ], CrmPermissions::isAdministrator(auth()->user()) ? [
                 'deleted' => 'Deleted jobs',
             ] : []),
             'mowerWorkloads' => $this->mowerAssignmentService->mowerWorkloads(now()->toDateString()),

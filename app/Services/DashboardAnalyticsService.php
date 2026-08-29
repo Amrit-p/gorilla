@@ -20,7 +20,7 @@ class DashboardAnalyticsService
 {
     public function dashboardTypeFor(User $user): string
     {
-        if ($user->hasRole(CrmRoles::OFFICE_MANAGER)) {
+        if ($user->hasAnyRole(CrmRoles::administrative())) {
             return 'admin';
         }
 

@@ -7,6 +7,7 @@ use App\Models\Job;
 use App\Models\Recurrence;
 use App\Models\User;
 use App\Notifications\JobAutoRescheduledNotification;
+use App\Support\CrmConstants;
 use App\Support\CrmRoles;
 use Database\Seeders\MasterCatalogSeeder;
 use Database\Seeders\RecurrenceSeeder;
@@ -28,7 +29,7 @@ class AutoRescheduleJobsTest extends TestCase
         $this->seed(MasterCatalogSeeder::class);
         $this->seed(RecurrenceSeeder::class);
 
-        $this->admin = User::query()->where('email', 'admin@mowingcrm.test')->firstOrFail();
+        $this->admin = User::query()->where('email', CrmConstants::ADMIN_EMAIL)->firstOrFail();
     }
 
     public function test_completed_recurring_job_creates_new_job_with_correct_date(): void

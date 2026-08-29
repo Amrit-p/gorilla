@@ -7,6 +7,7 @@ use App\Models\Contract;
 use App\Models\ContractDocument;
 use App\Models\Contractor;
 use App\Models\User;
+use App\Support\CrmConstants;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -25,7 +26,7 @@ class ContractorsTest extends TestCase
     {
         parent::setUp();
         $this->seed(RoleAndPermissionSeeder::class);
-        $this->admin = User::query()->where('email', 'admin@mowingcrm.test')->firstOrFail();
+        $this->admin = User::query()->where('email', CrmConstants::ADMIN_EMAIL)->firstOrFail();
         $this->mower = User::query()->where('email', 'jake.morrison@mowingcrm.test')->firstOrFail();
     }
 

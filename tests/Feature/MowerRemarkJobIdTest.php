@@ -12,6 +12,7 @@ use App\Http\Middleware\EnsureMowerChecklistComplete;
 use App\Models\Job;
 use App\Models\MowerRemark;
 use App\Models\User;
+use App\Support\CrmConstants;
 use App\Support\CrmRoles;
 use App\Support\ServiceTypes;
 use Database\Seeders\MasterCatalogSeeder;
@@ -34,7 +35,7 @@ class MowerRemarkJobIdTest extends TestCase
         $this->seed(MasterCatalogSeeder::class);
         $this->withoutMiddleware(EnsureMowerChecklistComplete::class);
 
-        $this->admin = User::query()->where('email', 'admin@mowingcrm.test')->firstOrFail();
+        $this->admin = User::query()->where('email', CrmConstants::ADMIN_EMAIL)->firstOrFail();
         $this->mower = User::factory()->create([
             'is_active' => true,
             'efficiency' => UserEfficiency::GOOD->value,

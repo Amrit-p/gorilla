@@ -22,7 +22,7 @@ class MowerDashboardService
 
     public function assertAssigned(User $mower, Job $job): void
     {
-        if ($mower->hasRole(CrmRoles::OFFICE_MANAGER)) {
+        if ($mower->hasAnyRole(CrmRoles::administrative())) {
             return;
         }
 

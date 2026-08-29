@@ -14,6 +14,7 @@ use App\Models\Job;
 use App\Models\Lead;
 use App\Models\MowerPayout;
 use App\Models\User;
+use App\Support\CrmConstants;
 use App\Support\ServiceTypes;
 use Database\Seeders\MasterCatalogSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
@@ -33,7 +34,7 @@ class DashboardTest extends TestCase
         parent::setUp();
         $this->seed(RoleAndPermissionSeeder::class);
         $this->seed(MasterCatalogSeeder::class);
-        $this->admin = User::query()->where('email', 'admin@mowingcrm.test')->firstOrFail();
+        $this->admin = User::query()->where('email', CrmConstants::ADMIN_EMAIL)->firstOrFail();
         $this->mower = User::query()->where('email', 'jake.morrison@mowingcrm.test')->firstOrFail();
     }
 

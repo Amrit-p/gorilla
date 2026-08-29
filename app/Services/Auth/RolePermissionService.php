@@ -4,15 +4,14 @@ namespace App\Services\Auth;
 
 use App\Models\User;
 use App\Services\ActivityLogService;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use App\Support\CrmPermissions;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class RolePermissionService
 {
     public function __construct(
         private readonly ActivityLogService $activityLogService
-    ) {
-    }
+    ) {}
 
     /**
      * Paginated users with current role assignment for admin table.
@@ -26,11 +25,13 @@ class RolePermissionService
     }
 
     /**
-     * Return available roles to populate role dropdown.
+     * Return available roles to populate role dropdown, scoped to the acting user.
+     *
+     * @return array<int, string>
      */
-    public function availableRoles(): array
+    public function availableRoles(?User $actor = null): array
     {
-        return CrmPermissions::rbacAssignableRoleLabels();
+        return CrmPermissions::rbacAssignableRoleLabelsFor($actor);
     }
 
     /**

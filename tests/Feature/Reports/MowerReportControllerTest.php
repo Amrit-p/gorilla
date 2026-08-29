@@ -28,7 +28,7 @@ class MowerReportControllerTest extends TestCase
         $this->withoutMiddleware(EnsureMowerChecklistComplete::class);
 
         $this->manager = User::factory()->create(['is_active' => true]);
-        $this->manager->assignRole(CrmRoles::OFFICE_MANAGER);
+        $this->manager->assignRole(CrmRoles::ADMIN);
 
         $this->mower = User::factory()->create(['is_active' => true]);
         $this->mower->assignRole(CrmRoles::MOWER);

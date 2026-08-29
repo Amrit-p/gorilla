@@ -14,6 +14,7 @@ use App\Models\Job;
 use App\Models\MowerChecklistSubmission;
 use App\Models\User;
 use App\Services\JobImageManagementService;
+use App\Support\CrmConstants;
 use App\Support\CrmRoles;
 use App\Support\ServiceTypes;
 use Database\Seeders\ChecklistSeeder;
@@ -41,7 +42,7 @@ class JobImageManagementTest extends TestCase
         $this->seed(MasterCatalogSeeder::class);
         $this->seed(ChecklistSeeder::class);
 
-        $this->admin = User::query()->where('email', 'admin@mowingcrm.test')->firstOrFail();
+        $this->admin = User::query()->where('email', CrmConstants::ADMIN_EMAIL)->firstOrFail();
         $this->mower = User::factory()->create([
             'is_active' => true,
             'efficiency' => UserEfficiency::GOOD->value,

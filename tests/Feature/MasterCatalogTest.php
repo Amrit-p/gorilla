@@ -10,6 +10,7 @@ use App\Models\Recurrence;
 use App\Models\ServiceType;
 use App\Models\User;
 use App\Models\Zone;
+use App\Support\CrmConstants;
 use App\Support\MasterCatalog;
 use App\Support\ServiceTypes;
 use Database\Seeders\MasterCatalogSeeder;
@@ -28,7 +29,7 @@ class MasterCatalogTest extends TestCase
         parent::setUp();
         $this->seed(RoleAndPermissionSeeder::class);
         $this->seed(MasterCatalogSeeder::class);
-        $this->admin = User::query()->where('email', 'admin@mowingcrm.test')->firstOrFail();
+        $this->admin = User::query()->where('email', CrmConstants::ADMIN_EMAIL)->firstOrFail();
     }
 
     public function test_service_type_crud_and_cache(): void

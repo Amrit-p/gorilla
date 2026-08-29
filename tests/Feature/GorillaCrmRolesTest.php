@@ -7,6 +7,7 @@ use App\Models\Checklist;
 use App\Models\Job;
 use App\Models\MowerChecklistSubmission;
 use App\Models\User;
+use App\Support\CrmConstants;
 use App\Support\CrmPermissions;
 use App\Support\CrmRoles;
 use Database\Seeders\ChecklistSeeder;
@@ -65,13 +66,16 @@ class GorillaCrmRolesTest extends TestCase
             ]);
         }
 
+        $admin = Role::findByName(CrmRoles::ADMIN, 'web');
+        $this->assertGreaterThanOrEqual(count(CrmPermissions::all()), $admin->permissions->count());
+
         $officeManager = Role::findByName(CrmRoles::OFFICE_MANAGER, 'web');
-        $this->assertGreaterThanOrEqual(count(CrmPermissions::all()), $officeManager->permissions->count());
+        $this->assertLessThan(count(CrmPermissions::all()), $officeManager->permissions->count());
     }
 
     public function test_office_manager_can_access_admin_and_operations_routes(): void
     {
-        $user = User::query()->where('email', 'admin@mowingcrm.test')->firstOrFail();
+        $user = User::query()->where('email', CrmConstants::OFFICE_MANAGER_EMAIL)->firstOrFail();
 
         $this->actingAs($user)
             ->get(route('dashboard.index'))
@@ -92,6 +96,103 @@ class GorillaCrmRolesTest extends TestCase
         $this->actingAs($user)
             ->get(route('admin.users.index'))
             ->assertOk();
+    }
+
+    public function test_office_manager_cannot_reach_revenue_and_payroll_screens(): void
+    {
+        $user = User::query()->where('email', CrmConstants::OFFICE_MANAGER_EMAIL)->firstOrFail();
+
+        $this->actingAs($user)->get(route('reports.mower.index'))->assertForbidden();
+        $this->actingAs($user)->get(route('admin.salary-calculator.index'))->assertForbidden();
+        $this->actingAs($user)->get(route('admin.employee-bonuses.index'))->assertForbidden();
+        $this->actingAs($user)->get(route('dashboard.analytics.charts'))->assertForbidden();
+
+        $this->assertFalse($user->can(CrmPermissions::VIEW_BUSINESS_ANALYTICS));
+        $this->assertFalse($user->can(CrmPermissions::VIEW_MOWER_REPORT));
+        $this->assertFalse($user->can(CrmPermissions::MANAGE_SALARY_CALCULATOR));
+        $this->assertFalse($user->can(CrmPermissions::MANAGE_EMPLOYEE_BONUSES));
+    }
+
+    public function test_office_manager_dashboard_hides_revenue_cards_and_business_analytics(): void
+    {
+        $user = User::query()->where('email', CrmConstants::OFFICE_MANAGER_EMAIL)->firstOrFail();
+
+        $this->actingAs($user)
+            ->get(route('dashboard.index'))
+            ->assertOk()
+            ->assertDontSee('Total revenue (MTD)')
+            ->assertDontSee('Business Analytics')
+            ->assertDontSee('Jobs by status')
+            ->assertDontSee(route('reports.mower.index'), false)
+            ->assertDontSee(route('admin.salary-calculator.index'), false)
+            ->assertDontSee(route('admin.employee-bonuses.index'), false)
+            ->assertSee("Today's schedule", false);
+    }
+
+    public function test_admin_dashboard_still_shows_revenue_cards_and_business_analytics(): void
+    {
+        $user = User::query()->where('email', CrmConstants::ADMIN_EMAIL)->firstOrFail();
+
+        $this->actingAs($user)
+            ->get(route('dashboard.index'))
+            ->assertOk()
+            ->assertSee('Total revenue (MTD)')
+            ->assertSee('Business Analytics')
+            ->assertSee('Jobs by status');
+
+        $this->actingAs($user)->get(route('reports.mower.index'))->assertOk();
+        $this->actingAs($user)->get(route('admin.salary-calculator.index'))->assertOk();
+        $this->actingAs($user)->get(route('admin.employee-bonuses.index'))->assertOk();
+    }
+
+    public function test_office_manager_keeps_job_payment_visibility(): void
+    {
+        $user = User::query()->where('email', CrmConstants::OFFICE_MANAGER_EMAIL)->firstOrFail();
+
+        $job = Job::query()->create([
+            'customer_name' => 'Paying Client',
+            'phone' => '555-0199',
+            'email' => 'paying.client@example.com',
+            'client_address' => '9 Test St',
+            'scheduled_date' => now()->toDateString(),
+            'scheduled_time' => '09:00',
+            'estimated_duration_minutes' => 60,
+            'required_services' => ['Mulching'],
+            'status' => JobWorkflowStatus::COMPLETED->value,
+            'priority' => 'Medium',
+            'payment_mode' => 'Cash',
+            'payment_status' => 'Pending',
+            'parking_status' => 'Easy',
+            'customer_type' => 'Easy',
+            'charges' => 250.00,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('admin.jobs.show', $job))
+            ->assertOk()
+            ->assertSee('250.00');
+
+        $this->assertTrue($user->can(CrmPermissions::VERIFY_JOBS));
+    }
+
+    public function test_office_manager_cannot_assign_the_admin_role(): void
+    {
+        $officeManager = User::query()->where('email', CrmConstants::OFFICE_MANAGER_EMAIL)->firstOrFail();
+        $target = $this->userWithRole(CrmRoles::MOWER);
+
+        $this->actingAs($officeManager)
+            ->patchJson(route('admin.rbac.users.role.update', $target), ['role' => CrmRoles::ADMIN])
+            ->assertUnprocessable();
+
+        $this->assertFalse($target->fresh()->hasRole(CrmRoles::ADMIN));
+
+        $admin = User::query()->where('email', CrmConstants::ADMIN_EMAIL)->firstOrFail();
+
+        $this->actingAs($admin)
+            ->patchJson(route('admin.rbac.users.role.update', $target), ['role' => CrmRoles::ADMIN])
+            ->assertOk();
+
+        $this->assertTrue($target->fresh()->hasRole(CrmRoles::ADMIN));
     }
 
     public function test_sales_manager_can_manage_leads_and_view_jobs(): void

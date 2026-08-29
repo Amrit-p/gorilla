@@ -7,6 +7,8 @@ namespace App\Support;
  */
 final class CrmRoles
 {
+    public const ADMIN = 'Admin';
+
     public const OFFICE_MANAGER = 'Office Manager';
 
     public const SALES_MANAGER = 'Sales Manager';
@@ -18,6 +20,16 @@ final class CrmRoles
      * (table view, PDF export, Excel export). false = hidden for Mowers.
      */
     public const MOWER_SHOW_BONUS = false;
+
+    /**
+     * Roles that bypass per-record ownership checks and reach every admin screen.
+     *
+     * @return array<int, string>
+     */
+    public static function administrative(): array
+    {
+        return [self::ADMIN, self::OFFICE_MANAGER];
+    }
 
     /**
      * @return array<int, string>

@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\UpdateUserRoleRequest;
 use App\Models\User;
 use App\Services\Auth\RolePermissionService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class RolePermissionController extends Controller
@@ -18,13 +19,13 @@ class RolePermissionController extends Controller
     /**
      * Show user-role assignment screen.
      */
-    public function index(): View
+    public function index(Request $request): View
     {
         return view('admin.rbac.index', [
             'users' => $this->rolePermissionService->paginatedUsersWithRoles(
                 (int) config('mowing.default_pagination', 15)
             ),
-            'roles' => $this->rolePermissionService->availableRoles(),
+            'roles' => $this->rolePermissionService->availableRoles($request->user()),
         ]);
     }
 
