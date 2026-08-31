@@ -125,6 +125,39 @@ class GoogleMapsIntegrationTest extends TestCase
             ->assertSee('crmAddressPickerQueue', false);
     }
 
+    public function test_region_codes_default_to_new_zealand(): void
+    {
+        $this->assertSame(['nz'], GoogleMapsSettings::regionCodes());
+    }
+
+    public function test_region_codes_parse_a_comma_separated_list(): void
+    {
+        config(['google-maps.region_codes' => 'NZ, au ,']);
+
+        $this->assertSame(['nz', 'au'], GoogleMapsSettings::regionCodes());
+    }
+
+    public function test_region_codes_are_empty_when_unrestricted(): void
+    {
+        config(['google-maps.region_codes' => '']);
+
+        $this->assertSame([], GoogleMapsSettings::regionCodes());
+    }
+
+    public function test_address_picker_restricts_autocomplete_to_new_zealand(): void
+    {
+        Setting::query()->updateOrCreate(
+            ['key' => 'google_maps_api_key'],
+            ['value' => 'test-google-key']
+        );
+        OptimizationHelper::forgetSettings();
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.leads.create'))
+            ->assertOk()
+            ->assertSee('regionCodes: ["nz"]', false);
+    }
+
     public function test_map_jobs_endpoint_returns_geocoded_jobs_with_equipment_color(): void
     {
         $equipment = EquipmentType::query()->where('is_active', true)->firstOrFail();

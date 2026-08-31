@@ -191,7 +191,15 @@
 
                 try {
                     const { PlaceAutocompleteElement } = await google.maps.importLibrary('places');
-                    const placeAutocomplete = new PlaceAutocompleteElement({});
+
+                    // Empty list means no restriction, so only pass the option when codes are configured.
+                    const autocompleteOptions = {};
+                    const regionCodes = Array.isArray(config.regionCodes) ? config.regionCodes : [];
+                    if (regionCodes.length) {
+                        autocompleteOptions.includedRegionCodes = regionCodes;
+                    }
+
+                    const placeAutocomplete = new PlaceAutocompleteElement(autocompleteOptions);
                     const placeholder =
                         input.getAttribute('placeholder') || config.placeholder || 'Start typing an address...';
 

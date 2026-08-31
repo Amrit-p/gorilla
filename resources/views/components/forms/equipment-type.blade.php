@@ -5,6 +5,8 @@
     'equipmentTypes' => null,
     'selected' => null,
     'hint' => null,
+    'required' => false,
+    'selectClass' => 'w-full rounded-md border border-slate-300 px-3 py-2 text-sm',
 ])
 
 @php
@@ -15,11 +17,14 @@
 @endphp
 
 <div {{ $attributes->merge(['class' => '']) }}>
-    <label for="{{ $fieldId }}" class="mb-1 block text-sm font-medium text-slate-700">{{ $label }}</label>
+    <label for="{{ $fieldId }}" class="mb-1 block text-sm font-medium text-slate-700">
+        {{ $label }}@if ($required) <span class="text-red-500">*</span>@endif
+    </label>
     <select
         name="{{ $name }}"
         id="{{ $fieldId }}"
-        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+        class="{{ $selectClass }}"
+        @required($required)
     >
         <option value="">Select equipment</option>
         @foreach ($options as $equipmentType)

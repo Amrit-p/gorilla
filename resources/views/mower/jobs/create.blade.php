@@ -22,6 +22,21 @@
         <form method="POST" action="{{ route('mower.jobs.store') }}" enctype="multipart/form-data" class="space-y-3">
             @csrf
 
+            <section class="rounded-2xl bg-white p-4 shadow-sm space-y-2">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Property Address</p>
+                <x-maps.address-picker
+                    prefix="job"
+                    address-name="address"
+                    address-label="Property address"
+                    placeholder="Start typing an address..."
+                    map-height="280px"
+                    :required="true"
+                    :address-value="old('address')"
+                    :latitude-value="old('latitude')"
+                    :longitude-value="old('longitude')"
+                />
+            </section>
+
             <section class="rounded-2xl bg-white p-4 shadow-sm space-y-3">
                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Services</p>
 
@@ -42,16 +57,6 @@
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Job type</label>
-                    <select name="job_type" class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base">
-                        <option value="">Select job type</option>
-                        @foreach ($jobTypes as $jobType)
-                            <option value="{{ $jobType }}" @selected(old('job_type') === $jobType)>{{ $jobType }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div>
                     <label class="mb-1 block text-sm font-medium text-slate-700">Recurrence</label>
                     <select name="recurrence_id" class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base">
                         @foreach ($recurrenceOptions as $recurrenceOption)
@@ -64,24 +69,21 @@
                     id="job-equipment-type-id"
                     :equipment-types="$equipmentTypes ?? null"
                     :selected="old('equipment_type_id')"
+                    :required="true"
+                    select-class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base"
                 />
+
+                <div>
+                    <label for="job-van-number" class="mb-1 block text-sm font-medium text-slate-700">Van number <span class="text-red-500">*</span></label>
+                    <input type="text" name="van_number" id="job-van-number" value="{{ old('van_number') }}" required
+                        maxlength="50"
+                        class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base"
+                        placeholder="e.g. VAN-3">
+                </div>
             </section>
 
             <section class="rounded-2xl bg-white p-4 shadow-sm space-y-3">
                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Contact Details</p>
-
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Customer name</label>
-                    <input type="text" name="customer_name" value="{{ old('customer_name') }}"
-                        class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base"
-                        placeholder="Optional — defaults to address">
-                </div>
-
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Mobile number <span class="text-red-500">*</span></label>
-                    <input type="tel" name="phone" value="{{ old('phone') }}" required
-                        class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base">
-                </div>
 
                 <div>
                     <label class="mb-1 block text-sm font-medium text-slate-700">Customer type</label>
@@ -94,8 +96,8 @@
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Payment mode</label>
-                    <select name="payment_mode" class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base">
+                    <label for="job-payment-mode" class="mb-1 block text-sm font-medium text-slate-700">Payment mode <span class="text-red-500">*</span></label>
+                    <select name="payment_mode" id="job-payment-mode" required class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base">
                         <option value="">Select payment mode</option>
                         @foreach ($paymentModes as $paymentMode)
                             <option value="{{ $paymentMode }}" @selected(old('payment_mode') === $paymentMode)>{{ $paymentMode }}</option>
@@ -103,22 +105,15 @@
                     </select>
                 </div>
 
-                @isset($zones)
-                    <div>
-                        <label class="mb-1 block text-sm font-medium text-slate-700">Zone</label>
-                        <select name="zone_id" class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base">
-                            <option value="">Select zone</option>
-                            @foreach ($zones as $zone)
-                                <option value="{{ $zone->id }}" @selected((string) old('zone_id') === (string) $zone->id)>{{ $zone->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                @endisset
-
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Charges ($)</label>
-                    <input type="number" name="charges" step="0.01" min="0" value="{{ old('charges') }}"
+                    <label for="job-charges" class="mb-1 block text-sm font-medium text-slate-700">
+                        Amount ($)
+                        <span id="job-charges-required" class="text-red-500 {{ in_array(old('payment_mode'), $chargesRequiredPaymentModes, true) ? '' : 'hidden' }}">*</span>
+                    </label>
+                    <input type="number" name="charges" id="job-charges" step="0.01" min="0" value="{{ old('charges') }}"
+                        @required(in_array(old('payment_mode'), $chargesRequiredPaymentModes, true))
                         class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base">
+                    <p class="mt-1 text-xs text-slate-500">Required for {{ implode(' and ', $chargesRequiredPaymentModes) }} payments.</p>
                 </div>
 
                 <div>
@@ -128,29 +123,21 @@
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Site instructions</label>
-                    <textarea name="additional_site_instructions" rows="2"
-                        class="w-full rounded-xl border border-slate-300 px-3 py-3 text-base">{{ old('additional_site_instructions') }}</textarea>
+                    <label for="job-status" class="mb-1 block text-sm font-medium text-slate-700">Job status <span class="text-red-500">*</span></label>
+                    <select name="status" id="job-status" required class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base">
+                        {{-- NOTE: 'Started' option hidden, matching mower.jobs.show. Remove the @continue below to re-enable. --}}
+                        @foreach ($workflowStatuses as $workflowStatus)
+                            @continue($workflowStatus === \App\Enums\JobWorkflowStatus::STARTED->value)
+                            <option value="{{ $workflowStatus }}" @selected(old('status', $defaultStatus) === $workflowStatus)>{{ $workflowStatus }}</option>
+                        @endforeach
+                    </select>
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Remarks</label>
-                    <textarea name="special_remarks" rows="2"
+                    <label for="job-comments" class="mb-1 block text-sm font-medium text-slate-700">Comments <span class="text-red-500">*</span></label>
+                    <textarea name="special_remarks" id="job-comments" rows="3" required
                         class="w-full rounded-xl border border-slate-300 px-3 py-3 text-base">{{ old('special_remarks') }}</textarea>
                 </div>
-            </section>
-
-            <section class="rounded-2xl bg-white p-4 shadow-sm space-y-2">
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Property Address</p>
-                <x-maps.address-picker
-                    prefix="job"
-                    address-name="address"
-                    address-label="Property address"
-                    map-height="280px"
-                    :address-value="old('address')"
-                    :latitude-value="old('latitude')"
-                    :longitude-value="old('longitude')"
-                />
             </section>
 
             <button type="submit"
@@ -159,4 +146,31 @@
             </button>
         </form>
     </div>
+
+    @push('scripts')
+        <script>
+            (function () {
+                var modesRequiringAmount = @json($chargesRequiredPaymentModes);
+                var paymentMode = document.getElementById('job-payment-mode');
+                var charges = document.getElementById('job-charges');
+                var marker = document.getElementById('job-charges-required');
+
+                if (!paymentMode || !charges) {
+                    return;
+                }
+
+                function syncAmountRequirement() {
+                    var isRequired = modesRequiringAmount.indexOf(paymentMode.value) !== -1;
+                    charges.required = isRequired;
+
+                    if (marker) {
+                        marker.classList.toggle('hidden', !isRequired);
+                    }
+                }
+
+                paymentMode.addEventListener('change', syncAmountRequirement);
+                syncAmountRequirement();
+            })();
+        </script>
+    @endpush
 </x-layouts.mower>

@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'lead_id',
     'zone_id',
     'equipment_type_id',
+    'van_number',
     'job_level_id',
     'contract_id',
     'recurrence_id',

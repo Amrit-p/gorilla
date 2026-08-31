@@ -4,7 +4,7 @@ namespace App\Http\Requests\Mower;
 
 use App\Enums\JobCustomerType;
 use App\Enums\JobOperationalPaymentMode;
-use App\Enums\LeadJobType;
+use App\Enums\JobWorkflowStatus;
 use App\Enums\LeadWeedSpray;
 use App\Models\Recurrence;
 use App\Support\CrmPermissions;
@@ -15,6 +15,16 @@ use Illuminate\Validation\Rule;
 
 class StoreMowerQuickJobRequest extends FormRequest
 {
+    /**
+     * Payment modes that collect money on site, so the amount must be stated.
+     *
+     * @var array<int, string>
+     */
+    public const PAYMENT_MODES_REQUIRING_CHARGES = [
+        JobOperationalPaymentMode::CASH->value,
+        JobOperationalPaymentMode::BOTH->value,
+    ];
+
     public function authorize(): bool
     {
         return (bool) $this->user()?->can(CrmPermissions::UPLOAD_JOB_IMAGES);
@@ -26,8 +36,6 @@ class StoreMowerQuickJobRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'customer_name' => ['nullable', 'string', 'max:120'],
-            'phone' => ['required', 'string', 'max:30'],
             'email' => ['nullable', 'email', 'max:120'],
             'address' => ['required', 'string', 'max:255'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],
@@ -35,22 +43,39 @@ class StoreMowerQuickJobRequest extends FormRequest
             'service_types' => ['required', 'array', 'min:1'],
             'service_types.*' => ServiceTypes::itemRules(),
             'weed_spray' => ['required', Rule::in(LeadWeedSpray::values())],
-            'job_type' => ['required', Rule::in(LeadJobType::values())],
             'recurrence_id' => ['required', 'integer', Rule::exists(Recurrence::class, 'id')->where('is_active', true)],
-            'equipment_type_id' => EquipmentTypes::idRules(),
+            'equipment_type_id' => EquipmentTypes::mowerIdRules(),
+            'van_number' => ['required', 'string', 'max:50'],
             'customer_type' => ['required', Rule::in(JobCustomerType::values())],
             'payment_mode' => ['required', Rule::in(JobOperationalPaymentMode::values())],
-            'charges' => ['nullable', 'numeric', 'min:0'],
+            'charges' => [
+                Rule::requiredIf(fn (): bool => in_array($this->input('payment_mode'), self::PAYMENT_MODES_REQUIRING_CHARGES, true)),
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
             'scheduled_date' => ['nullable', 'date', 'after_or_equal:today'],
             'schedule_date' => ['nullable', 'date', 'after_or_equal:today'],
-            'zone_id' => ['nullable', 'exists:zones,id'],
-            'additional_site_instructions' => ['nullable', 'string', 'max:5000'],
-            'site_instructions' => ['nullable', 'string', 'max:5000'],
-            'special_remarks' => ['nullable', 'string', 'max:5000'],
+            'special_remarks' => ['required', 'string', 'max:5000'],
+            'status' => ['required', Rule::in(JobWorkflowStatus::values())],
             'images' => ['nullable', 'array', 'max:20'],
             'images.*' => ['image', 'max:5120'],
             'documents' => ['nullable', 'array', 'max:20'],
             'documents.*' => ['file', 'mimes:pdf,doc,docx,xls,xlsx,png,jpg,jpeg,webp', 'max:10240'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function attributes(): array
+    {
+        return [
+            'van_number' => 'van number',
+            'equipment_type_id' => 'equipment type',
+            'special_remarks' => 'comments',
+            'status' => 'job status',
+            'charges' => 'amount',
         ];
     }
 }

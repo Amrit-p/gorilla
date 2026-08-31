@@ -62,6 +62,10 @@
                             <dd>{{ $job->job_type ?: '—' }} • {{ $job->weed_spray ?: '—' }}</dd>
                         </div>
                         <div>
+                            <dt class="text-slate-500">Equipment / van</dt>
+                            <dd>{{ $job->equipmentType?->name ?: '—' }} • {{ $job->van_number ?: '—' }}</dd>
+                        </div>
+                        <div>
                             <dt class="text-slate-500">Customer Type</dt>
                             <dd>{{ $job->customer_type ?: '—' }}</dd>
                         </div>

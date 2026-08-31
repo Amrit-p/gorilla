@@ -7,6 +7,13 @@ use Illuminate\Validation\Rule;
 class EquipmentTypes
 {
     /**
+     * Equipment a mower may pick when raising a job from the field.
+     *
+     * @var array<int, string>
+     */
+    public const MOWER_SELECTABLE = ['Red Mower', 'Yellow Mower'];
+
+    /**
      * @return array<int, string>
      */
     public static function all(): array
@@ -40,6 +47,31 @@ class EquipmentTypes
     public static function selectOptions(): array
     {
         return self::options();
+    }
+
+    /**
+     * Active equipment restricted to what a mower may pick in the field.
+     *
+     * @return array<int, array{id: int, name: string, color_code: string}>
+     */
+    public static function mowerSelectOptions(): array
+    {
+        return array_values(array_filter(
+            self::options(),
+            static fn (array $option): bool => in_array($option['name'], self::MOWER_SELECTABLE, true)
+        ));
+    }
+
+    /**
+     * @return array<int, mixed>
+     */
+    public static function mowerIdRules(): array
+    {
+        return [
+            'required',
+            'integer',
+            Rule::in(array_column(self::mowerSelectOptions(), 'id')),
+        ];
     }
 
     /**

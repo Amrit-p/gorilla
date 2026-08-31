@@ -75,6 +75,25 @@ final class GoogleMapsSettings
     }
 
     /**
+     * CLDR region codes that Places autocomplete is limited to.
+     * An empty list lets suggestions come from anywhere.
+     *
+     * @return array<int, string>
+     */
+    public static function regionCodes(): array
+    {
+        $configured = config('google-maps.region_codes', 'nz');
+        $codes = is_array($configured) ? $configured : explode(',', (string) $configured);
+
+        $normalized = array_filter(array_map(
+            static fn (mixed $code): string => strtolower(trim((string) $code)),
+            $codes
+        ));
+
+        return array_values(array_slice($normalized, 0, 15));
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public static function loaderConfig(): array

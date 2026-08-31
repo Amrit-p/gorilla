@@ -39,7 +39,7 @@ class MowerClientControllerTest extends TestCase
         $this->completeChecklistForMower($this->mower);
 
         $this->recurrence = Recurrence::create(['name' => 'Weekly', 'is_active' => true, 'sort_order' => 1]);
-        $this->equipmentTypeId = (int) EquipmentType::query()->where('is_active', true)->value('id');
+        $this->equipmentTypeId = (int) EquipmentType::query()->where('name', 'Red Mower')->value('id');
     }
 
     public function test_mower_can_view_create_job_page(): void
@@ -69,15 +69,16 @@ class MowerClientControllerTest extends TestCase
 
         $response = $this->actingAs($this->mower)->post(route('mower.jobs.store'), [
             'address' => '123 Test Street, Auckland',
-            'phone' => '0211234567',
-            'customer_name' => 'Test Customer',
             'service_types' => ['Mulching'],
             'weed_spray' => 'Yes',
             'recurrence_id' => $this->recurrence->id,
             'equipment_type_id' => $this->equipmentTypeId,
-            'job_type' => 'Regular',
+            'van_number' => 'VAN-3',
             'payment_mode' => 'Cash',
+            'charges' => 120.50,
             'customer_type' => 'Easy',
+            'special_remarks' => 'Gate code 1234, mow the back lawn first.',
+            'status' => 'Hold',
             'schedule_date' => now()->toDateString(),
         ]);
 
@@ -86,13 +87,19 @@ class MowerClientControllerTest extends TestCase
 
         $this->assertDatabaseHas('service_jobs', [
             'client_address' => '123 Test Street, Auckland',
-            'phone' => '0211234567',
-            'customer_name' => 'Test Customer',
+            'customer_name' => '123 Test Street, Auckland',
             'payment_status' => 'Pending',
+            'phone' => null,
+            'zone_id' => null,
+            'van_number' => 'VAN-3',
+            'equipment_type_id' => $this->equipmentTypeId,
+            'special_remarks' => 'Gate code 1234, mow the back lawn first.',
+            'status' => 'Hold',
+            'site_instructions' => null,
             'done_by_user_id' => $this->mower->id,
         ]);
 
-        $job = Job::query()->where('phone', '0211234567')->first();
+        $job = Job::query()->where('client_address', '123 Test Street, Auckland')->first();
         $this->assertNotNull($job);
         $this->assertSame(60, (int) $job->estimated_duration_minutes);
         Notification::assertSentTo($officeManager, MowerClientJobCreatedNotification::class,
@@ -108,7 +115,143 @@ class MowerClientControllerTest extends TestCase
     {
         $response = $this->actingAs($this->mower)->post(route('mower.jobs.store'), []);
 
-        $response->assertSessionHasErrors(['address', 'phone', 'service_types', 'weed_spray', 'recurrence_id', 'equipment_type_id', 'job_type', 'payment_mode', 'customer_type']);
+        $response->assertSessionHasErrors(['address', 'service_types', 'weed_spray', 'recurrence_id', 'equipment_type_id', 'van_number', 'payment_mode', 'customer_type', 'special_remarks', 'status']);
+        $response->assertSessionDoesntHaveErrors(['job_type', 'phone', 'additional_site_instructions']);
+    }
+
+    public function test_amount_is_required_for_cash_and_both_payment_modes(): void
+    {
+        foreach (['Cash', 'Both'] as $paymentMode) {
+            $response = $this->actingAs($this->mower)->post(
+                route('mower.jobs.store'),
+                $this->validPayload(['payment_mode' => $paymentMode, 'charges' => null])
+            );
+
+            $response->assertSessionHasErrors('charges');
+        }
+    }
+
+    public function test_amount_is_optional_for_online_payment_mode(): void
+    {
+        Notification::fake();
+
+        $response = $this->actingAs($this->mower)->post(
+            route('mower.jobs.store'),
+            $this->validPayload(['payment_mode' => 'Online', 'charges' => null])
+        );
+
+        $response->assertRedirect(route('mower.index'));
+        $this->assertDatabaseHas('service_jobs', [
+            'payment_mode' => 'Online',
+            'charges' => null,
+        ]);
+    }
+
+    public function test_mower_can_only_pick_red_or_yellow_mower_equipment(): void
+    {
+        $blockedEquipmentId = (int) EquipmentType::query()->where('name', 'Honda')->value('id');
+
+        $response = $this->actingAs($this->mower)->post(
+            route('mower.jobs.store'),
+            $this->validPayload(['equipment_type_id' => $blockedEquipmentId])
+        );
+
+        $response->assertSessionHasErrors('equipment_type_id');
+
+        $yellowMowerId = (int) EquipmentType::query()->where('name', 'Yellow Mower')->value('id');
+
+        $response = $this->actingAs($this->mower)->post(
+            route('mower.jobs.store'),
+            $this->validPayload(['equipment_type_id' => $yellowMowerId])
+        );
+
+        $response->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('service_jobs', [
+            'equipment_type_id' => $yellowMowerId,
+        ]);
+    }
+
+    public function test_create_job_page_only_offers_red_and_yellow_mower_equipment(): void
+    {
+        $response = $this->actingAs($this->mower)->get(route('mower.jobs.create'));
+
+        $response->assertOk();
+        $this->assertSame(
+            ['Red Mower', 'Yellow Mower'],
+            array_column($response->viewData('equipmentTypes'), 'name')
+        );
+        $response->assertDontSee('name="job_type"', false);
+        $response->assertDontSee('name="zone_id"', false);
+        $response->assertDontSee('name="customer_name"', false);
+        $response->assertDontSee('name="phone"', false);
+        $response->assertDontSee('name="additional_site_instructions"', false);
+        $response->assertSee('name="van_number"', false);
+        $response->assertSee('name="status"', false);
+        $response->assertSee('Comments');
+    }
+
+    public function test_property_address_is_the_first_section_on_the_create_page(): void
+    {
+        $response = $this->actingAs($this->mower)->get(route('mower.jobs.create'));
+
+        $response->assertOk();
+        $content = $response->getContent();
+
+        $this->assertLessThan(
+            strpos($content, 'Services'),
+            strpos($content, 'Property Address'),
+            'Property Address should be rendered before the Services section.'
+        );
+        $response->assertSee('id="job-address-input"', false);
+        $response->assertSee('regionCodes: ["nz"]', false);
+    }
+
+    public function test_job_status_must_be_a_valid_workflow_status(): void
+    {
+        $response = $this->actingAs($this->mower)->post(
+            route('mower.jobs.store'),
+            $this->validPayload(['status' => 'Nonsense'])
+        );
+
+        $response->assertSessionHasErrors('status');
+    }
+
+    public function test_created_job_is_assigned_to_the_logged_in_mower(): void
+    {
+        Notification::fake();
+
+        $otherMower = User::factory()->create(['is_active' => true]);
+        $otherMower->assignRole(CrmRoles::MOWER);
+
+        $this->actingAs($this->mower)->post(route('mower.jobs.store'), $this->validPayload());
+
+        $job = Job::query()->where('client_address', '123 Test Street, Auckland')->firstOrFail();
+
+        $this->assertSame($this->mower->id, $job->done_by_user_id);
+        $this->assertSame($this->mower->id, $job->created_by);
+        $this->assertNotSame($otherMower->id, $job->done_by_user_id);
+    }
+
+    /**
+     * @param  array<string, mixed>  $overrides
+     * @return array<string, mixed>
+     */
+    private function validPayload(array $overrides = []): array
+    {
+        return array_merge([
+            'address' => '123 Test Street, Auckland',
+            'service_types' => ['Mulching'],
+            'weed_spray' => 'Yes',
+            'recurrence_id' => $this->recurrence->id,
+            'equipment_type_id' => $this->equipmentTypeId,
+            'van_number' => 'VAN-3',
+            'payment_mode' => 'Cash',
+            'charges' => 120.50,
+            'customer_type' => 'Easy',
+            'special_remarks' => 'Gate code 1234.',
+            'status' => 'Pending',
+            'schedule_date' => now()->toDateString(),
+        ], $overrides);
     }
 
     public function test_non_mower_cannot_create_job(): void
@@ -117,14 +260,16 @@ class MowerClientControllerTest extends TestCase
 
         $response = $this->actingAs($admin)->post(route('mower.jobs.store'), [
             'address' => '123 Test Street',
-            'phone' => '0211234567',
             'service_types' => ['Mulching'],
             'weed_spray' => 'Yes',
             'recurrence_id' => $this->recurrence->id,
             'equipment_type_id' => $this->equipmentTypeId,
-            'job_type' => 'Regular',
+            'van_number' => 'VAN-3',
             'payment_mode' => 'Cash',
+            'charges' => 90,
             'customer_type' => 'Easy',
+            'special_remarks' => 'Front lawn only.',
+            'status' => 'Pending',
         ]);
 
         $response->assertForbidden();

@@ -5,14 +5,13 @@ namespace App\Http\Controllers\Mower;
 use App\Enums\JobCustomerType;
 use App\Enums\JobOperationalPaymentMode;
 use App\Enums\JobOperationalPaymentStatus;
-use App\Enums\LeadJobType;
+use App\Enums\JobWorkflowStatus;
 use App\Enums\LeadWeedSpray;
 use App\Helpers\OptimizationHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Mower\StoreMowerQuickJobRequest;
 use App\Models\Recurrence;
 use App\Models\User;
-use App\Models\Zone;
 use App\Notifications\MowerClientJobCreatedNotification;
 use App\Services\JobManagementService;
 use App\Support\CrmRoles;
@@ -33,11 +32,12 @@ class MowerClientController extends Controller
             'serviceTypes' => ServiceTypes::all(),
             'weedSprayOptions' => LeadWeedSpray::values(),
             'recurrenceOptions' => Recurrence::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
-            'jobTypes' => LeadJobType::values(),
             'paymentModes' => JobOperationalPaymentMode::values(),
+            'chargesRequiredPaymentModes' => StoreMowerQuickJobRequest::PAYMENT_MODES_REQUIRING_CHARGES,
             'customerTypes' => JobCustomerType::values(),
-            'equipmentTypes' => EquipmentTypes::selectOptions(),
-            'zones' => Zone::query()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(['id', 'name']),
+            'equipmentTypes' => EquipmentTypes::mowerSelectOptions(),
+            'workflowStatuses' => JobWorkflowStatus::values(),
+            'defaultStatus' => JobWorkflowStatus::PENDING->value,
         ]);
     }
 
@@ -50,18 +50,17 @@ class MowerClientController extends Controller
         $scheduledDate = $data['scheduled_date'] ?? $data['schedule_date'] ?? now()->toDateString();
 
         $job = $this->jobManagementService->createJob($actor, [
-            'customer_name' => $data['customer_name'] ?? ($address !== '' ? $address : 'Customer'),
-            'phone' => $data['phone'],
+            'customer_name' => $address !== '' ? $address : 'Customer',
             'email' => $data['email'] ?? null,
             'client_address' => $address,
             'latitude' => $data['latitude'] ?? null,
             'longitude' => $data['longitude'] ?? null,
             'required_services' => $data['service_types'],
             'weed_spray' => $data['weed_spray'],
-            'job_type' => $data['job_type'],
             'recurrence_id' => $data['recurrence_id'],
             'is_recurring' => true,
             'equipment_type_id' => $data['equipment_type_id'],
+            'van_number' => $data['van_number'],
             'customer_type' => $data['customer_type'],
             'payment_mode' => $data['payment_mode'],
             'payment_status' => JobOperationalPaymentStatus::PENDING->value,
@@ -69,9 +68,8 @@ class MowerClientController extends Controller
             'scheduled_date' => $scheduledDate,
             'scheduled_time' => '08:00',
             'estimated_duration_minutes' => 60,
-            'zone_id' => $data['zone_id'] ?? null,
-            'site_instructions' => $data['site_instructions'] ?? $data['additional_site_instructions'] ?? null,
-            'special_remarks' => $data['special_remarks'] ?? null,
+            'special_remarks' => $data['special_remarks'],
+            'status' => $data['status'],
             'done_by_user_id' => $actor->id,
         ], $request->file('images', []) ?: []);
 

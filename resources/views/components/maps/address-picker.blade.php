@@ -16,6 +16,7 @@
     'variant' => 'default',
     'showCurrentLocation' => false,
     'markerColor' => '#64748b',
+    'required' => false,
 ])
 
 @php
@@ -48,6 +49,7 @@
         :value="$addressValue"
         :placeholder="$placeholder"
         autocomplete="off"
+        :required="$required"
     />
 
     @if ($showCoordinates)
@@ -121,6 +123,7 @@
             mapsEnabled: @json($mapsEnabled),
             showCurrentLocation: @json($showCurrentLocation),
             markerColor: @json($markerColor),
+            regionCodes: @json(GoogleMapsSettings::regionCodes()),
             loader: @json(GoogleMapsSettings::loaderConfig()),
         });
 
