@@ -23,11 +23,11 @@
             @csrf
 
             <section class="rounded-2xl bg-white p-4 shadow-sm space-y-2">
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Property Address</p>
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Contact</p>
                 <x-maps.address-picker
                     prefix="job"
                     address-name="address"
-                    address-label="Property address"
+                    address-label="Service address"
                     placeholder="Start typing an address..."
                     map-height="280px"
                     :required="true"
@@ -38,12 +38,39 @@
             </section>
 
             <section class="rounded-2xl bg-white p-4 shadow-sm space-y-3">
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Services</p>
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Schedule &amp; recurrence</p>
+
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Schedule date</label>
+                    <input type="date" name="schedule_date" value="{{ old('schedule_date', now()->toDateString()) }}"
+                        class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base">
+                </div>
+
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Recurrence</label>
+                    <select name="recurrence_id" class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base">
+                        @foreach ($recurrenceOptions as $recurrenceOption)
+                            <option value="{{ $recurrenceOption->id }}" @selected(old('recurrence_id') == $recurrenceOption->id)>{{ $recurrenceOption->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </section>
+
+            <section class="rounded-2xl bg-white p-4 shadow-sm space-y-3">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Services &amp; equipment</p>
 
                 <x-forms.service-types
                     name="service_types[]"
                     label="Service types"
                     :selected="old('service_types', [])"
+                />
+
+                <x-forms.equipment-type
+                    id="job-equipment-type-id"
+                    :equipment-types="$equipmentTypes ?? null"
+                    :selected="old('equipment_type_id')"
+                    :required="true"
+                    select-class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base"
                 />
 
                 <div>
@@ -57,23 +84,6 @@
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Recurrence</label>
-                    <select name="recurrence_id" class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base">
-                        @foreach ($recurrenceOptions as $recurrenceOption)
-                            <option value="{{ $recurrenceOption->id }}" @selected(old('recurrence_id') == $recurrenceOption->id)>{{ $recurrenceOption->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <x-forms.equipment-type
-                    id="job-equipment-type-id"
-                    :equipment-types="$equipmentTypes ?? null"
-                    :selected="old('equipment_type_id')"
-                    :required="true"
-                    select-class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base"
-                />
-
-                <div>
                     <label for="job-van-number" class="mb-1 block text-sm font-medium text-slate-700">Van number <span class="text-red-500">*</span></label>
                     <input type="text" name="van_number" id="job-van-number" value="{{ old('van_number') }}" required
                         maxlength="50"
@@ -83,17 +93,7 @@
             </section>
 
             <section class="rounded-2xl bg-white p-4 shadow-sm space-y-3">
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Contact Details</p>
-
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Customer type</label>
-                    <select name="customer_type" class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base">
-                        <option value="">Select customer type</option>
-                        @foreach ($customerTypes as $customerType)
-                            <option value="{{ $customerType }}" @selected(old('customer_type', "Don't Know") === $customerType)>{{ $customerType }}</option>
-                        @endforeach
-                    </select>
-                </div>
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Payment</p>
 
                 <div>
                     <label for="job-payment-mode" class="mb-1 block text-sm font-medium text-slate-700">Payment mode <span class="text-red-500">*</span></label>
@@ -115,12 +115,24 @@
                         class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base">
                     <p class="mt-1 text-xs text-slate-500">Required for {{ implode(' and ', $chargesRequiredPaymentModes) }} payments.</p>
                 </div>
+            </section>
+
+            <section class="rounded-2xl bg-white p-4 shadow-sm space-y-3">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Account &amp; customer</p>
 
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Schedule date</label>
-                    <input type="date" name="schedule_date" value="{{ old('schedule_date', now()->toDateString()) }}"
-                        class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base">
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Customer type</label>
+                    <select name="customer_type" class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base">
+                        <option value="">Select customer type</option>
+                        @foreach ($customerTypes as $customerType)
+                            <option value="{{ $customerType }}" @selected(old('customer_type', "Don't Know") === $customerType)>{{ $customerType }}</option>
+                        @endforeach
+                    </select>
                 </div>
+            </section>
+
+            <section class="rounded-2xl bg-white p-4 shadow-sm space-y-3">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Site notes</p>
 
                 <div>
                     <label for="job-status" class="mb-1 block text-sm font-medium text-slate-700">Job status <span class="text-red-500">*</span></label>
