@@ -102,6 +102,15 @@
     }
 
     function validateAllJobSteps() {
+        // Create form is a single page without the step wizard: validate the whole form.
+        if (!getWizard().length) {
+            const $form = $('#job-form');
+            if (!$form.data('validator') && window.CrmFormValidation) {
+                window.CrmFormValidation.initForm($form);
+            }
+            return $form.valid();
+        }
+
         let firstInvalidStep = null;
         let allValid = true;
 

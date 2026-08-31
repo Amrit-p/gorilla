@@ -96,7 +96,6 @@
                 client_name: { required: true, maxlength: 120 },
                 address: { required: true, maxlength: 255 },
                 weed_spray: { required: true },
-                equipment_type_id: { required: true },
                 recurrence_id: { required: true },
                 job_type: { required: true },
                 charges: { number: true, min: 0 },
@@ -120,7 +119,6 @@
                 client_name: { required: true, maxlength: 120 },
                 address: { required: true, maxlength: 255 },
                 weed_spray: { required: true },
-                equipment_type_id: { required: true },
                 recurrence_id: { required: true },
                 job_type: { required: true },
                 charges: { number: true, min: 0 },
@@ -174,16 +172,13 @@
         },
         job: {
             rules: {
-                customer_name: { required: true, maxlength: 120 },
-                phone: { required: true, maxlength: 30 },
+                phone: { maxlength: 30 },
                 email: { email: true, maxlength: 120 },
-                equipment_type_id: { required: true },
                 recurrence_id: { required: true },
                 client_address: { required: true, maxlength: 255 },
                 scheduled_date: { required: true, dateISO: true },
                 estimated_duration_minutes: { required: true, number: true, min: 15, max: 1440 },
                 'required_services[]': { required: true },
-                customer_type: { required: true },
                 payment_mode: { required: true },
                 payment_pending_reason: {
                     required: function () {
@@ -195,16 +190,13 @@
         },
         'job-edit': {
             rules: {
-                customer_name: { required: true, maxlength: 120 },
-                phone: { required: true, maxlength: 30 },
+                phone: { maxlength: 30 },
                 email: { email: true, maxlength: 120 },
-                equipment_type_id: { required: true },
                 recurrence_id: { required: true },
                 client_address: { required: true, maxlength: 255 },
                 scheduled_date: { required: true, dateISO: true },
                 estimated_duration_minutes: { required: true, number: true, min: 15, max: 1440 },
                 'required_services[]': { required: true },
-                customer_type: { required: true },
                 payment_mode: { required: true },
                 payment_pending_reason: {
                     required: function () {

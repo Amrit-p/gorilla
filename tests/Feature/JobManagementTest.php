@@ -81,6 +81,23 @@ class JobManagementTest extends TestCase
         ]);
     }
 
+    public function test_job_can_be_created_without_customer_name_or_phone(): void
+    {
+        $payload = $this->jobPayload();
+        unset($payload['customer_name'], $payload['phone'], $payload['email']);
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.jobs.store'), $payload)
+            ->assertCreated();
+
+        $this->assertDatabaseHas('service_jobs', [
+            'customer_name' => null,
+            'phone' => null,
+            'email' => null,
+            'client_address' => '50 Job Lane',
+        ]);
+    }
+
     public function test_job_can_be_created_without_optional_operational_fields(): void
     {
         $payload = $this->jobPayload();

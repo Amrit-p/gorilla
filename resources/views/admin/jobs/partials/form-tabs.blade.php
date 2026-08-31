@@ -4,6 +4,19 @@
     $submitLabel = $submitLabel ?? ($jobModel ? 'Update Job' : 'Create Job');
 @endphp
 
+@unless ($jobModel)
+    {{-- Create: single-step form. Mowers are assigned later from the job list/detail. --}}
+    <div class="sm:col-span-2">
+        <div id="job-tab-details">
+            @include('admin.jobs.partials.tabs.details', ['job' => null])
+        </div>
+
+        <div class="mt-8 flex flex-wrap items-center justify-end gap-3 border-t border-slate-200 pt-5">
+            <a href="{{ route('admin.jobs.index') }}" class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</a>
+            <x-ui.button type="submit" id="job-form-submit">{{ $submitLabel }}</x-ui.button>
+        </div>
+    </div>
+@else
 <div class="sm:col-span-2" id="job-wizard" data-submit-label="{{ $submitLabel }}">
     <nav aria-label="Job form progress">
         <ol class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -57,3 +70,4 @@
         </div>
     </div>
 </div>
+@endunless

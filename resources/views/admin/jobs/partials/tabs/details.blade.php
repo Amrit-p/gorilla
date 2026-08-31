@@ -3,34 +3,43 @@
     $defaultEquipmentId = old('equipment_type_id', $jobModel?->equipment_type_id);
     $defaultMarkerColor = collect($equipmentTypes ?? [])
         ->firstWhere('id', (int) $defaultEquipmentId)['color_code'] ?? '#64748b';
-    $jobTypes = $jobTypes ?? \App\Enums\LeadJobType::values();
     $weedSprayOptions = $weedSprayOptions ?? \App\Enums\LeadWeedSpray::values();
+    $defaultRecurrenceId = old('recurrence_id', $jobModel?->recurrence_id
+        ?? optional(collect($recurrences ?? [])->firstWhere('name', 'One-Time'))->id);
 @endphp
 
-<div class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(300px,420px)]">
-    <div class="space-y-5 lg:order-1">
+<div class="space-y-5">
         <section class="space-y-3">
             <div>
                 <h3 class="text-sm font-semibold text-slate-900">Contact</h3>
-                <p class="text-xs text-slate-500">Name and phone are required. Search jobs later by these details.</p>
+                <p class="text-xs text-slate-500">Phone and email are optional. Add them to search jobs later by contact.</p>
             </div>
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div class="sm:col-span-2">
-                    <x-ui.input
-                        label="Customer name"
-                        name="customer_name"
-                        id="job-customer-name"
-                        :value="old('customer_name', $jobModel?->customer_name)"
-                        required
-                    />
-                </div>
+            <div>
+                <x-maps.address-picker
+                    prefix="job"
+                    address-name="client_address"
+                    address-label="Service address"
+                    address-input-id="job-client-address"
+                    latitude-input-id="job-latitude"
+                    longitude-input-id="job-longitude"
+                    map-preview-id="job-map-preview"
+                    map-height="320px"
+                    :show-coordinates="false"
+                    :show-current-location="true"
+                    :address-value="old('client_address', $jobModel?->client_address)"
+                    :latitude-value="old('latitude', $jobModel?->latitude)"
+                    :longitude-value="old('longitude', $jobModel?->longitude)"
+                    :marker-color="$defaultMarkerColor"
+                />
+            </div>
+
+            <div class="grid grid-cols-1 gap-3 border-t border-slate-100 pt-3 sm:grid-cols-2">
                 <x-ui.input
                     label="Phone"
                     name="phone"
                     id="job-phone"
                     type="tel"
                     :value="old('phone', $jobModel?->phone)"
-                    required
                 />
                 <x-ui.input
                     label="Email"
@@ -43,14 +52,26 @@
         </section>
 
         <section class="space-y-3 border-t border-slate-100 pt-4">
-            <h3 class="text-sm font-semibold text-slate-900">Schedule &amp; services</h3>
+            <h3 class="text-sm font-semibold text-slate-900">Schedule &amp; recurrence</h3>
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <x-ui.input label="Job date" name="scheduled_date" id="job-scheduled-date" type="date" :value="old('scheduled_date', optional($jobModel?->scheduled_date)->format('Y-m-d') ?? now()->toDateString())" />
-                <x-ui.input label="Start time" name="scheduled_time" type="time" :value="old('scheduled_time', $jobModel?->scheduled_time ? \Illuminate\Support\Carbon::parse($jobModel->scheduled_time)->format('H:i') : '')" />
-                <div class="sm:col-span-2">
-                    <x-ui.input label="Estimated duration (minutes)" name="estimated_duration_minutes" id="job-estimated-duration" type="number" min="15" max="1440" :value="old('estimated_duration_minutes', $jobModel?->estimated_duration_minutes ?? 60)" />
-                </div>
+                @isset($recurrences)
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-700">Recurrence</label>
+                        <select name="recurrence_id" id="job-recurrence-id" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                            <option value="">Select recurrence</option>
+                            @foreach ($recurrences as $recurrence)
+                                <option value="{{ $recurrence->id }}" @selected((string) $defaultRecurrenceId === (string) $recurrence->id)>{{ $recurrence->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endisset
             </div>
+            <input type="hidden" name="estimated_duration_minutes" id="job-estimated-duration" value="{{ old('estimated_duration_minutes', $jobModel?->estimated_duration_minutes ?? 60) }}">
+        </section>
+
+        <section class="space-y-3 border-t border-slate-100 pt-4">
+            <h3 class="text-sm font-semibold text-slate-900">Services &amp; equipment</h3>
 
             <x-forms.service-types
                 name="required_services[]"
@@ -58,10 +79,6 @@
                 :service-types="$serviceTypes ?? null"
                 :selected="old('required_services', $jobModel?->required_services ?? [])"
             />
-        </section>
-
-        <section class="space-y-3 border-t border-slate-100 pt-4">
-            <h3 class="text-sm font-semibold text-slate-900">Job setup</h3>
 
             <x-forms.equipment-type
                 id="job-equipment-type-id"
@@ -70,19 +87,20 @@
                 hint="Map marker color follows the selected equipment type."
             />
 
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                @isset($jobLevels)
-                    <div>
-                        <label class="mb-1 block text-sm font-medium text-slate-700">Job level</label>
-                        <select name="job_level_id" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                            <option value="">— None —</option>
-                            @foreach ($jobLevels as $level)
-                                <option value="{{ $level->id }}" @selected((string) old('job_level_id', $jobModel?->job_level_id) === (string) $level->id)>{{ $level->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                @endisset
+            <div>
+                <label class="mb-1 block text-sm font-medium text-slate-700">Weed spray</label>
+                <select name="weed_spray" id="job-weed-spray" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    <option value="">Select option</option>
+                    @foreach ($weedSprayOptions as $weedSpray)
+                        <option value="{{ $weedSpray }}" @selected(old('weed_spray', $jobModel?->weed_spray) === $weedSpray)>{{ $weedSpray }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </section>
 
+        <section class="space-y-3 border-t border-slate-100 pt-4">
+            <h3 class="text-sm font-semibold text-slate-900">Account &amp; customer</h3>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 @isset($accountingLevels)
                     <div>
                         <label class="mb-1 block text-sm font-medium text-slate-700">Accounting level</label>
@@ -109,6 +127,16 @@
                     </div>
                 @endisset
 
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Customer Type</label>
+                    <select name="customer_type" id="job-customer-type" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                        <option value="">Select type</option>
+                        @foreach ($customerTypes as $customerType)
+                            <option value="{{ $customerType }}" @selected(old('customer_type', $jobModel?->customer_type) === $customerType)>{{ $customerType }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
                 @isset($zones)
                     <div>
                         <label class="mb-1 block text-sm font-medium text-slate-700">Zone</label>
@@ -120,48 +148,6 @@
                         </select>
                     </div>
                 @endisset
-
-                @isset($recurrences)
-                    <div>
-                        <label class="mb-1 block text-sm font-medium text-slate-700">Recurrence</label>
-                        <select name="recurrence_id" id="job-recurrence-id" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                            <option value="">Select recurrence</option>
-                            @foreach ($recurrences as $recurrence)
-                                <option value="{{ $recurrence->id }}" @selected((string) old('recurrence_id', $jobModel?->recurrence_id) === (string) $recurrence->id)>{{ $recurrence->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                @endisset
-
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Job type</label>
-                    <select name="job_type" id="job-job-type" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                        <option value="">Select job type</option>
-                        @foreach ($jobTypes as $jobType)
-                            <option value="{{ $jobType }}" @selected(old('job_type', $jobModel?->job_type) === $jobType)>{{ $jobType }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Weed spray</label>
-                    <select name="weed_spray" id="job-weed-spray" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                        <option value="">Select option</option>
-                        @foreach ($weedSprayOptions as $weedSpray)
-                            <option value="{{ $weedSpray }}" @selected(old('weed_spray', $jobModel?->weed_spray) === $weedSpray)>{{ $weedSpray }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Customer Type</label>
-                    <select name="customer_type" id="job-customer-type" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                        <option value="">Select type</option>
-                        @foreach ($customerTypes as $customerType)
-                            <option value="{{ $customerType }}" @selected(old('customer_type', $jobModel?->customer_type) === $customerType)>{{ $customerType }}</option>
-                        @endforeach
-                    </select>
-                </div>
             </div>
         </section>
 
@@ -182,7 +168,7 @@
                     <select name="payment_status" id="job-payment-status" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
                         <option value="">Select payment status</option>
                         @foreach ($paymentStatuses as $paymentStatus)
-                            <option value="{{ $paymentStatus }}" @selected(old('payment_status', $jobModel?->payment_status) === $paymentStatus)>{{ $paymentStatus }}</option>
+                            <option value="{{ $paymentStatus }}" @selected(old('payment_status', $jobModel?->payment_status ?? \App\Enums\JobOperationalPaymentStatus::PENDING->value) === $paymentStatus)>{{ $paymentStatus }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -210,25 +196,4 @@
                 <input type="file" name="images[]" multiple accept="image/*" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
             </div>
         </section>
-    </div>
-
-    <div class="lg:order-2 lg:sticky lg:top-4 lg:self-start">
-        <x-maps.address-picker
-            prefix="job"
-            address-name="client_address"
-            address-label="Service address"
-            address-input-id="job-client-address"
-            latitude-input-id="job-latitude"
-            longitude-input-id="job-longitude"
-            map-preview-id="job-map-preview"
-            variant="sidebar"
-            map-height="min(480px, 70vh)"
-            :show-coordinates="true"
-            :show-current-location="true"
-            :address-value="old('client_address', $jobModel?->client_address)"
-            :latitude-value="old('latitude', $jobModel?->latitude)"
-            :longitude-value="old('longitude', $jobModel?->longitude)"
-            :marker-color="$defaultMarkerColor"
-        />
-    </div>
 </div>

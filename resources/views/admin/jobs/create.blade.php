@@ -1,4 +1,4 @@
-<x-layouts.dashboard :title="'Create Job'" subtitle="Add contact details, schedule the visit, then assign a mower">
+<x-layouts.dashboard :title="'Create Job'" subtitle="Enter job details and save. Assign a mower later.">
     <x-ui.breadcrumbs :items="[
         ['label' => 'Dashboard', 'url' => route('dashboard.index')],
         ['label' => 'Jobs', 'url' => route('admin.jobs.index')],

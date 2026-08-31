@@ -121,7 +121,8 @@ class CrmModuleTest extends TestCase
             ->get(route('admin.jobs.create'))
             ->assertOk()
             ->assertSee('Create Job')
-            ->assertSee('Job details')
+            ->assertSee('Schedule &amp; recurrence', false)
+            ->assertDontSee('Continue to mower assignment')
             ->assertDontSee('Select customer');
 
         $payload = $this->validJobPayload();

@@ -10,7 +10,6 @@ use App\Enums\LeadJobType;
 use App\Enums\LeadWeedSpray;
 use App\Models\User;
 use App\Support\CrmRoles;
-use App\Support\EquipmentTypes;
 use App\Support\ServiceTypes;
 use Illuminate\Validation\Rule;
 
@@ -22,16 +21,16 @@ trait ValidatesJobOperational
     protected function jobOperationalRules(): array
     {
         return [
-            'customer_name' => ['required', 'string', 'max:120'],
+            'customer_name' => ['nullable', 'string', 'max:120'],
             'email' => ['nullable', 'email', 'max:120'],
-            'phone' => ['required', 'string', 'max:30'],
+            'phone' => ['nullable', 'string', 'max:30'],
             'weed_spray' => ['nullable', Rule::in(LeadWeedSpray::values())],
             'job_type' => ['nullable', Rule::in(LeadJobType::values())],
             'accounting_level_id' => ['nullable', 'exists:accounting_levels,id'],
             'client_rating_id' => ['nullable', 'exists:client_ratings,id'],
             'recurrence_id' => ['required', 'exists:recurrences,id'],
             'zone_id' => ['nullable', 'exists:zones,id'],
-            'equipment_type_id' => EquipmentTypes::idRules(),
+            'equipment_type_id' => ['nullable', 'integer', Rule::exists('equipment_types', 'id')->where('is_active', true)],
             'job_level_id' => ['nullable', 'exists:job_levels,id'],
             'client_address' => ['required', 'string', 'max:255'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],
@@ -41,7 +40,7 @@ trait ValidatesJobOperational
             'estimated_duration_minutes' => ['required', 'integer', 'min:15', 'max:1440'],
             'required_services' => ['required', 'array', 'min:1'],
             'required_services.*' => ServiceTypes::itemRules(),
-            'customer_type' => ['required', Rule::in(JobCustomerType::values())],
+            'customer_type' => ['nullable', Rule::in(JobCustomerType::values())],
             'images' => ['nullable', 'array'],
             'images.*' => ['image', 'max:5120'],
             'done_by_user_id' => [
