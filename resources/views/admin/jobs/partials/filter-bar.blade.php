@@ -4,6 +4,7 @@
         !empty($filters['list_scope']) ||
         !empty($filters['status']) ||
         !empty($filters['zone_id']) ||
+        !empty($filters['worker_id']) ||
         !empty($filters['recurrence_id']) ||
         !empty($filters['assignment']) ||
         !empty($filters['payment_mode']) ||
@@ -23,10 +24,17 @@
     $resetUrl = $resetUrl ?? route('admin.jobs.index');
     $hideListScope = $hideListScope ?? false;
     $showHeaderActions = $showHeaderActions ?? true;
+    // Unique DOM id + JS hook names so more than one filter bar can live on a
+    // single page (e.g. the calendar's own bar alongside the day panel's).
+    $formId = $formId ?? 'job-filter-form';
+    $filtersFn = $filtersFn ?? 'getFilters';
+    $reloadFn = $reloadFn ?? 'crmReloadJobsTable';
     $visibleFilters = $visibleFilters ?? null;
     $showFilter = fn (string $key): bool => is_null($visibleFilters) || in_array($key, $visibleFilters, true);
+    // The worker filter is opt-in: only rendered when a `$workers` list is supplied.
+    $showWorkerFilter = isset($workers) && $showFilter('worker_id');
     $filterFieldKeys = ['search', 'zone_id', 'status', 'recurrence_id', 'assignment', 'payment_mode', 'payment_status', 'equipment_type_id', 'job_level_id', 'customer_type', 'service_type', 'date_range'];
-    $visibleFilterCount = count(array_filter($filterFieldKeys, $showFilter));
+    $visibleFilterCount = count(array_filter($filterFieldKeys, $showFilter)) + ($showWorkerFilter ? 1 : 0);
     $filterGridClass = match (true) {
         $visibleFilterCount <= 1 => 'grid-cols-1',
         $visibleFilterCount === 2 => 'grid-cols-1 sm:grid-cols-2',
@@ -38,7 +46,7 @@
 <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
     {{-- Toggle header --}}
     <div class="flex items-center">
-        <button type="button" id="job-filter-toggle" class="flex flex-1 items-center justify-between px-4 py-3 text-left">
+        <button type="button" id="{{ $formId }}-toggle" class="flex flex-1 items-center justify-between px-4 py-3 text-left">
             <div class="flex items-center gap-1.5">
                 <svg class="h-3.5 w-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2"
                     viewBox="0 0 24 24">
@@ -56,7 +64,7 @@
                     <a href="{{ $resetUrl }}" class="text-[11px] text-slate-400 hover:text-slate-600"
                         onclick="event.stopPropagation()">Reset all</a>
                 @endif
-                <svg id="job-filter-chevron"
+                <svg id="{{ $formId }}-chevron"
                     class="h-3.5 w-3.5 text-slate-400 transition-transform duration-200 {{ $hasActiveFilters ? 'rotate-180' : '' }}"
                     fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
@@ -77,7 +85,7 @@
     </div>
 
     {{-- Collapsible body --}}
-    <form id="job-filter-form" class="{{ $hasActiveFilters ? '' : 'hidden' }} border-t border-slate-100 px-4 py-3">
+    <form id="{{ $formId }}" class="{{ $hasActiveFilters ? '' : 'hidden' }} border-t border-slate-100 px-4 py-3">
 
         @if (isset($listScopes) && !$hideListScope)
             <div class="mb-3 flex flex-wrap gap-1.5">
@@ -90,7 +98,7 @@
             </div>
         @endif
 
-        <input type="hidden" name="list_scope" id="job-list-scope" value="{{ $filters['list_scope'] ?? '' }}">
+        <input type="hidden" name="list_scope" id="{{ $formId }}-list-scope" value="{{ $filters['list_scope'] ?? '' }}">
 
         <div class="grid {{ $filterGridClass }} gap-x-2.5 gap-y-3">
 
@@ -121,6 +129,19 @@
                     <option value="">All zones</option>
                     @foreach ($zones as $zone)
                         <option value="{{ $zone->id }}" @selected(($filters['zone_id'] ?? '') == $zone->id)>{{ $zone->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            @endif
+
+            @if ($showWorkerFilter)
+            <div class="flex flex-col gap-1">
+                <label class="text-[10px] font-medium uppercase tracking-wide text-slate-400">Worker</label>
+                <select name="worker_id"
+                    class="filter cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
+                    <option value="">All workers</option>
+                    @foreach ($workers as $worker)
+                        <option value="{{ $worker->id }}" @selected(($filters['worker_id'] ?? '') == $worker->id)>{{ $worker->name }}</option>
                     @endforeach
                 </select>
             </div>
@@ -307,92 +328,104 @@
 </style>
 
 <script>
-    var jobsSearchTimer;
+    {{-- IIFE-wrapped so multiple filter bars can coexist on one page. Only the
+         callback, filter reader and reload hook are exposed globally (under the
+         names passed in), so instances never clobber each other's helpers. --}}
+    (function () {
+        var jobsSearchTimer;
+        var formId = @json($formId);
+        var $form = $('#' + formId);
 
-    function showJobsLoading() {
-        if ($('#jobs-loading-overlay').length) return;
-        $('#{{ $tableContainer }}').append(
-            '<div id="jobs-loading-overlay">' +
-            '<div style="display:flex;flex-direction:column;align-items:center;gap:10px;">' +
-            '<div class="jobs-spinner"></div>' +
-            '<span style="font-size:0.7rem;font-weight:500;color:#64748b;letter-spacing:0.05em;">Loading…</span>' +
-            '</div>' +
-            '</div>'
-        );
-    }
-
-    function getFilters() {
-        const params = new URLSearchParams(new FormData(document.getElementById('job-filter-form')));
-        return {
-            ...Object.fromEntries(params.entries()),
-            list_scope: $('#job-list-scope').val(),
-            // Rendered by the pagination component, so absent on lists without it.
-            per_page: $('#crm-per-page').val() || '',
+        function showJobsLoading() {
+            if ($('#jobs-loading-overlay').length) return;
+            $('#{{ $tableContainer }}').append(
+                '<div id="jobs-loading-overlay">' +
+                '<div style="display:flex;flex-direction:column;align-items:center;gap:10px;">' +
+                '<div class="jobs-spinner"></div>' +
+                '<span style="font-size:0.7rem;font-weight:500;color:#64748b;letter-spacing:0.05em;">Loading…</span>' +
+                '</div>' +
+                '</div>'
+            );
         }
-    }
 
-    function updateExportLinks() {
-        const params = new URLSearchParams(new FormData(document.getElementById('job-filter-form')));
-        const qs = params.toString();
-        const excelBase = @json($excelHref);
-        const pdfBase = @json($pdfHref);
-        $('#export-excel-link').attr('href', qs ? excelBase + '?' + qs : excelBase);
-        $('#export-pdf-link').attr('href', qs ? pdfBase + '?' + qs : pdfBase);
-    }
-
-    function {{ $filterCallback }}(filters) {
-        updateExportLinks();
-        showJobsLoading();
-        $.ajax({
-            url: @json($filterUrl),
-            method: 'GET',
-            data: filters,
-            dataType: 'json',
-            success: function(res) {
-                $('#{{ $tableContainer }}').html(res.html);
-            },
-            error: function() {
-                $('#jobs-loading-overlay').remove();
-                alert('Failed to load jobs. Please try again.');
+        function getFilters() {
+            const params = new URLSearchParams(new FormData(document.getElementById(formId)));
+            return {
+                ...Object.fromEntries(params.entries()),
+                list_scope: $('#' + formId + '-list-scope').val(),
+                // Rendered by the pagination component, so absent on lists without it.
+                per_page: $('#crm-per-page').val() || '',
             }
+        }
+
+        function updateExportLinks() {
+            const params = new URLSearchParams(new FormData(document.getElementById(formId)));
+            const qs = params.toString();
+            const excelBase = @json($excelHref);
+            const pdfBase = @json($pdfHref);
+            $('#export-excel-link').attr('href', qs ? excelBase + '?' + qs : excelBase);
+            $('#export-pdf-link').attr('href', qs ? pdfBase + '?' + qs : pdfBase);
+        }
+
+        function defaultCallback(filters) {
+            updateExportLinks();
+            showJobsLoading();
+            $.ajax({
+                url: @json($filterUrl),
+                method: 'GET',
+                data: filters,
+                dataType: 'json',
+                success: function(res) {
+                    $('#{{ $tableContainer }}').html(res.html);
+                },
+                error: function() {
+                    $('#jobs-loading-overlay').remove();
+                    alert('Failed to load jobs. Please try again.');
+                }
+            });
+        }
+
+        {{-- Register defaults, but let an external override (defined later) win. --}}
+        var callbackName = @json($filterCallback);
+        window[callbackName] = window[callbackName] || defaultCallback;
+        window[@json($filtersFn)] = getFilters;
+
+        {{-- The shared pagination component calls this with { per_page, page }. --}}
+        window[@json($reloadFn)] = function(params) {
+            window[callbackName]({ ...getFilters(), ...(params || {}) });
+        };
+
+        $('#' + formId + '-toggle').on('click', function() {
+            $form.toggleClass('hidden');
+            $('#' + formId + '-chevron').toggleClass('rotate-180');
         });
-    }
 
-    $('#job-filter-toggle').on('click', function() {
-        $('#job-filter-form').toggleClass('hidden');
-        $('#job-filter-chevron').toggleClass('rotate-180');
-    });
+        $form.on('click', '.job-list-scope', function() {
+            const scope = $(this).data('list-scope');
+            $('#' + formId + '-list-scope').val(scope);
+            $form.find('.job-list-scope').removeClass(
+                'border-emerald-600 bg-emerald-50 text-emerald-800 border-slate-800 bg-slate-800 text-white');
+            $(this).addClass(scope === '' ? 'border-slate-800 bg-slate-800 text-white' :
+                'border-emerald-600 bg-emerald-50 text-emerald-800');
+            window[callbackName](getFilters());
+        });
 
-    $('.job-list-scope').on('click', function() {
-        const scope = $(this).data('list-scope');
-        $('#job-list-scope').val(scope);
-        $('.job-list-scope').removeClass(
-            'border-emerald-600 bg-emerald-50 text-emerald-800 border-slate-800 bg-slate-800 text-white');
-        $(this).addClass(scope === '' ? 'border-slate-800 bg-slate-800 text-white' :
-            'border-emerald-600 bg-emerald-50 text-emerald-800');
-        {{ $filterCallback }}(getFilters());
-    });
+        {{-- Selects and datepicker: fire immediately on change --}}
+        $form.on('change', 'select.filter, input[readonly].filter', function() {
+            window[callbackName](getFilters());
+        });
 
-    {{-- Selects and datepicker: fire immediately on change --}}
-    $('#job-filter-form').on('change', 'select.filter, input[readonly].filter', function() {
-        {{ $filterCallback }}(getFilters());
-    });
+        {{-- Search text input: debounced 400 ms --}}
+        $form.on('input', 'input[type="text"]:not([readonly]).filter', function() {
+            clearTimeout(jobsSearchTimer);
+            jobsSearchTimer = setTimeout(function() {
+                window[callbackName](getFilters());
+            }, 400);
+        });
 
-    {{-- Search text input: debounced 400 ms --}}
-    $('#job-filter-form').on('input', 'input[type="text"]:not([readonly]).filter', function() {
-        clearTimeout(jobsSearchTimer);
-        jobsSearchTimer = setTimeout(function() {
-            {{ $filterCallback }}(getFilters());
-        }, 400);
-    });
-
-    $('#job-filter-form').on('submit', function(e) {
-        e.preventDefault();
-        {{ $filterCallback }}(getFilters());
-    });
-
-    {{-- The shared pagination component calls this with { per_page, page }. --}}
-    window.crmReloadJobsTable = function(params) {
-        {{ $filterCallback }}({ ...getFilters(), ...(params || {}) });
-    };
+        $form.on('submit', function(e) {
+            e.preventDefault();
+            window[callbackName](getFilters());
+        });
+    })();
 </script>

@@ -16,49 +16,50 @@
     'leadSalesUsers'      => collect(),
 ])
 
-{{-- ── Quick Filters ───────────────────────────────────────────────── --}}
-<div class="mb-4 flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-
-    {{-- Zone --}}
-    <div class="min-w-[140px] flex-1">
-        <label for="cal-filter-zone" class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-slate-500">Zone</label>
-        <select id="cal-filter-zone"
-                class="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
-            <option value="">All zones</option>
-            @foreach ($zones as $zone)
-                <option value="{{ $zone->id }}">{{ $zone->name }}</option>
-            @endforeach
-        </select>
-    </div>
-
-    {{-- Worker --}}
-    <div class="min-w-[140px] flex-1">
-        <label for="cal-filter-worker" class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-slate-500">Worker</label>
-        <select id="cal-filter-worker"
-                class="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
-            <option value="">All workers</option>
-            @foreach ($workers as $worker)
-                <option value="{{ $worker->id }}">{{ $worker->name }}</option>
-            @endforeach
-        </select>
-    </div>
-
-    {{-- Search (address / client name) --}}
-    <div class="min-w-[180px] flex-[2]">
-        <label for="cal-filter-search" class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-slate-500">Address / Client</label>
-        <input id="cal-filter-search"
-               type="text"
-               placeholder="Search address or client name…"
-               class="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
-    </div>
-
-    {{-- Clear --}}
-    <button type="button"
-            id="cal-filter-clear"
-            class="hidden rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100">
-        Clear filters
-    </button>
-
+{{-- ── Filters ─────────────────────────────────────────────────────────
+     Reuses the shared jobs filter bar. It is given its own `formId` + JS hook
+     names so it can coexist with the day panel's filter bar lower down this
+     same page. `loadCalendarGrid` is overridden in the script block below to
+     reload the grid instead of a jobs table. ─── --}}
+<div class="mb-4">
+    @include('admin.jobs.partials.filter-bar', [
+        'filters' => [
+            'search' => '',
+            'list_scope' => '',
+            'status' => '',
+            'zone_id' => '',
+            'worker_id' => '',
+            'recurrence_id' => '',
+            'assignment' => '',
+            'payment_mode' => '',
+            'payment_status' => '',
+            'equipment_type_id' => '',
+            'job_level_id' => '',
+            'customer_type' => '',
+            'service_type' => '',
+            'date_range_start' => '',
+            'date_range_end' => '',
+        ],
+        'zones' => $zones,
+        'workers' => $workers,
+        'workflowStatuses' => $workflowStatuses,
+        'recurrences' => $recurrences,
+        'paymentModes' => $paymentModes,
+        'paymentStatuses' => $paymentStatuses,
+        'equipmentTypes' => $equipmentTypes,
+        'jobLevels' => $jobLevels,
+        'customerTypes' => $customerTypes,
+        'serviceTypes' => $serviceTypes,
+        'hideListScope' => true,
+        'showHeaderActions' => false,
+        'formId' => 'cal-job-filter-form',
+        'filterCallback' => 'loadCalendarGrid',
+        'filtersFn' => 'getCalendarFilters',
+        'reloadFn' => 'crmReloadCalendarGrid',
+        'tableContainer' => 'three-week-grid',
+        'filterUrl' => route('dashboard.three-week-grid'),
+        'resetUrl' => '#',
+    ])
 </div>
 
 <div id="three-week-grid-wrap" class="relative">
@@ -249,40 +250,30 @@
     var _currentLeadDate = null;
     var _weekOffset   = 0;
 
-    /* ── filter state ────────────────────────────────── */
-    function getFilters() {
-        return {
-            zone_id:   $('#cal-filter-zone').val()    || '',
-            worker_id: $('#cal-filter-worker').val()  || '',
-            search:    $.trim($('#cal-filter-search').val()),
-        };
-    }
-
-    function hasActiveFilters(f) {
-        return f.zone_id !== '' || f.worker_id !== '' || f.search !== '';
-    }
-
-    function syncFilterUI() {
-        var f     = getFilters();
-        var active = hasActiveFilters(f);
-
-        if (active) {
-            $('#cal-filter-clear').removeClass('hidden');
-        } else {
-            $('#cal-filter-clear').addClass('hidden');
+    /* ── filter state ────────────────────────────────────────────────
+       Reads the shared jobs filter bar rendered above the grid (form id
+       `cal-job-filter-form`). Empty fields are dropped so they don't trip the
+       grid endpoint's `nullable|integer` validation. ─── */
+    function getCalFilters() {
+        var out  = {};
+        var form = document.getElementById('cal-job-filter-form');
+        if (form) {
+            new URLSearchParams(new FormData(form)).forEach(function (value, key) {
+                if (value !== '') { out[key] = value; }
+            });
         }
+        return out;
     }
 
     function buildTableUrl(base, filters) {
         return base + '?' + $.param(filters);
     }
 
-    /* ── merges the quick filters (zone/worker/search) with the day panel's
-       own filter bar (which also has its own zone/search since those aren't
-       restricted to a subset anymore) and the currently open date. The panel's
-       own fields win when set; quick filters only fill in what's left blank.
-       Empty fields are dropped so they don't trip the backend's
-       `nullable|integer` validation on filters like zone_id. ─── */
+    /* ── merges the calendar's filter bar with the day panel's own filter bar
+       and the currently open date. The panel's own fields win when set; the
+       calendar's filters only fill in what the panel leaves blank. Empty fields
+       are dropped so they don't trip the backend's `nullable|integer`
+       validation on filters like zone_id. ─── */
     function getDayPanelFilters() {
         var filters = {};
         var panelForm = document.getElementById('job-filter-form');
@@ -292,10 +283,10 @@
             });
         }
 
-        var quick = getFilters();
-        if (!filters.zone_id && quick.zone_id) { filters.zone_id = quick.zone_id; }
-        if (!filters.search && quick.search)   { filters.search  = quick.search; }
-        if (quick.worker_id) { filters.worker_id = quick.worker_id; }
+        var cal = getCalFilters();
+        Object.keys(cal).forEach(function (key) {
+            if (! filters[key]) { filters[key] = cal[key]; }
+        });
 
         if (_currentDate) { filters.date = _currentDate; }
 
@@ -315,9 +306,9 @@
             });
         }
 
-        var quick = getFilters();
-        if (!filters.zone_id && quick.zone_id) { filters.zone_id = quick.zone_id; }
-        if (!filters.search && quick.search)   { filters.search  = quick.search; }
+        var cal = getCalFilters();
+        if (!filters.zone_id && cal.zone_id) { filters.zone_id = cal.zone_id; }
+        if (!filters.search && cal.search)   { filters.search  = cal.search; }
 
         if (_currentLeadDate) { filters.date = _currentLeadDate; }
 
@@ -371,8 +362,9 @@
 
                 /* Count visible job rows to update subtitle */
                 var count = $content.find('.job-row').length;
-                var filters = getFilters();
-                var suffix  = hasActiveFilters(filters) ? ' (filtered)' : '';
+                var dayFilters = getDayPanelFilters();
+                var hasActive  = Object.keys(dayFilters).some(function (key) { return key !== 'date'; });
+                var suffix     = hasActive ? ' (filtered)' : '';
                 document.getElementById('crm-day-panel-subtitle').textContent =
                     count + ' ' + (count === 1 ? 'job' : 'jobs') + ' scheduled' + suffix;
 
@@ -419,12 +411,7 @@
 
     /* ── refresh the calendar grid without a page reload ─────────── */
     function reloadCalendarGrid(callback) {
-        var filters = getFilters();
-        var params  = {};
-        if (filters.zone_id)   { params.zone_id   = filters.zone_id; }
-        if (filters.worker_id) { params.worker_id = filters.worker_id; }
-        if (filters.search)    { params.search    = filters.search; }
-
+        var params = getCalFilters();
         params.week_offset = _weekOffset;
         var url = _gridUrl + '?' + $.param(params);
 
@@ -561,9 +548,11 @@
         if (toolbar) { toolbar.classList.add('hidden'); }
     };
 
-    /* ── filter controls ─────────────────────────────── */
-    function applyFilters() {
-        syncFilterUI();
+    /* ── filter controls ─────────────────────────────────────────────
+       The shared filter bar (form id `cal-job-filter-form`) fires this on every
+       change/submit. We override its default table-reload behaviour to instead
+       refresh the calendar grid and any open slide-over panel. ─── */
+    window.loadCalendarGrid = function () {
         reloadCalendarGrid();
         if (_currentDate) {
             loadTable(buildTableUrl(_tableUrl, getDayPanelFilters()));
@@ -571,24 +560,7 @@
         if (_currentLeadDate) {
             loadLeadTable(buildTableUrl(_leadTableUrl, getLeadPanelFilters()));
         }
-    }
-
-    $('#cal-filter-zone, #cal-filter-worker').on('change', function () {
-        applyFilters();
-    });
-
-    var _searchTimer;
-    $('#cal-filter-search').on('input', function () {
-        clearTimeout(_searchTimer);
-        _searchTimer = setTimeout(applyFilters, 350);
-    });
-
-    $('#cal-filter-clear').on('click', function () {
-        $('#cal-filter-zone').val('');
-        $('#cal-filter-worker').val('');
-        $('#cal-filter-search').val('');
-        applyFilters();
-    });
+    };
 
     /* ── intercept pagination clicks inside the panel ── */
     $(document).on('click', '#crm-day-content .pagination a', function (e) {

@@ -171,10 +171,22 @@ class DashboardController extends Controller
      */
     public function threeWeekGrid(Request $request): Response
     {
-        $request->validate([
+        $validated = $request->validate([
             'zone_id' => 'nullable|integer|exists:zones,id',
             'worker_id' => 'nullable|integer|exists:users,id',
             'search' => 'nullable|string|max:100',
+            'status' => 'nullable|string',
+            'recurrence_id' => 'nullable|integer|exists:recurrences,id',
+            'assignment' => 'nullable|in:assigned,unassigned',
+            'payment_mode' => 'nullable|string',
+            'payment_status' => 'nullable|string',
+            'equipment_type_id' => 'nullable|integer',
+            'job_level_id' => 'nullable|integer|exists:job_levels,id',
+            'customer_type' => 'nullable|string',
+            'service_type' => 'nullable|string',
+            'date_range' => 'nullable|array',
+            'date_range.start' => 'nullable|date',
+            'date_range.end' => 'nullable|date',
             'week_offset' => 'nullable|integer|min:-52|max:52',
         ]);
 
@@ -182,6 +194,17 @@ class DashboardController extends Controller
             'zone_id' => $request->integer('zone_id') ?: null,
             'worker_id' => $request->integer('worker_id') ?: null,
             'search' => $request->string('search')->toString() ?: null,
+            'status' => $validated['status'] ?? null,
+            'recurrence_id' => $request->integer('recurrence_id') ?: null,
+            'assignment' => $validated['assignment'] ?? null,
+            'payment_mode' => $validated['payment_mode'] ?? null,
+            'payment_status' => $validated['payment_status'] ?? null,
+            'equipment_type_id' => $request->integer('equipment_type_id') ?: null,
+            'job_level_id' => $request->integer('job_level_id') ?: null,
+            'customer_type' => $validated['customer_type'] ?? null,
+            'service_type' => $validated['service_type'] ?? null,
+            'date_range_start' => $validated['date_range']['start'] ?? null,
+            'date_range_end' => $validated['date_range']['end'] ?? null,
             'week_offset' => $request->integer('week_offset'),
         ]);
 

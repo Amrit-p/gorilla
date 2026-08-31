@@ -12,6 +12,7 @@ use App\Models\Followup;
 use App\Models\Job;
 use App\Models\Lead;
 use App\Models\User;
+use App\Support\QueryFilters\JobListFilter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -20,6 +21,10 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardService
 {
+    public function __construct(
+        private readonly JobListFilter $jobListFilter
+    ) {}
+
     /**
      * Aggregate KPIs for dashboard cards — cached briefly to absorb refresh storms.
      * Cache clears when Lead or Job models change (see AppServiceProvider).
@@ -208,7 +213,7 @@ class DashboardService
         $startDate = now()->startOfWeek(Carbon::MONDAY)->addWeeks($filters['week_offset'] ?? 0);
         $endDate = $startDate->copy()->addWeeks(3)->subDay();
 
-        $jobs = Job::query()
+        $jobQuery = Job::query()
             ->select(['id', 'zone_id', 'scheduled_date', 'status', 'payment_status'])
             ->with('zone:id,name')
             ->whereBetween('scheduled_date', [$startDate->toDateString(), $endDate->toDateString()])
@@ -216,22 +221,29 @@ class DashboardService
                 JobWorkflowStatus::PENDING->value,
                 JobWorkflowStatus::HOLD->value,
                 JobWorkflowStatus::COMPLETED->value,
-            ])
-            ->when($filters['zone_id'] ?? null, fn ($q, $id) => $q->where('zone_id', $id))
-            ->when($filters['worker_id'] ?? null, fn ($q, $id) => $q->whereHas(
-                'assignedEmployees', fn ($q) => $q->where('users.id', $id)
-            ))
-            ->when($filters['search'] ?? null, function ($q, $term) {
-                $q->where(function ($q) use ($term) {
-                    $q->where('client_address', 'like', "%{$term}%")
-                        ->orWhere('customer_name', 'like', "%{$term}%")
-                        ->orWhere('phone', 'like', "%{$term}%")
-                        ->orWhere('email', 'like', "%{$term}%")
-                        ->orWhereHas('assignedEmployees', fn ($q) => $q->where('name', 'like', "%{$term}%"))
-                        ->orWhereHas('doneByUser', fn ($q) => $q->where('name', 'like', "%{$term}%"));
-                });
-            })
-            ->get();
+            ]);
+
+        // Reuse the shared jobs list filter so the calendar honours the same
+        // filter set as the jobs page and the day panel. Note `worker_id`
+        // maps to the list filter's `done_by_user_id` key.
+        $this->jobListFilter->apply($jobQuery, [
+            'search' => $filters['search'] ?? null,
+            'zone_id' => $filters['zone_id'] ?? null,
+            'done_by_user_id' => $filters['worker_id'] ?? null,
+            'status' => $filters['status'] ?? null,
+            'recurrence_id' => $filters['recurrence_id'] ?? null,
+            'assignment' => $filters['assignment'] ?? null,
+            'payment_mode' => $filters['payment_mode'] ?? null,
+            'payment_status' => $filters['payment_status'] ?? null,
+            'equipment_type_id' => $filters['equipment_type_id'] ?? null,
+            'job_level_id' => $filters['job_level_id'] ?? null,
+            'customer_type' => $filters['customer_type'] ?? null,
+            'service_type' => $filters['service_type'] ?? null,
+            'date_range_start' => $filters['date_range_start'] ?? null,
+            'date_range_end' => $filters['date_range_end'] ?? null,
+        ]);
+
+        $jobs = $jobQuery->get();
 
         $jobsByDate = $jobs->groupBy(fn ($job) => $job->scheduled_date->format('Y-m-d'));
 

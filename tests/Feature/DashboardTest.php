@@ -175,6 +175,81 @@ class DashboardTest extends TestCase
             ->assertDontSee('Jobs 1');
     }
 
+    public function test_calendar_renders_the_shared_job_filter_bar_with_a_worker_filter(): void
+    {
+        $this->actingAs($this->admin)
+            ->get(route('dashboard.index'))
+            ->assertOk()
+            // The calendar's own filter-bar instance uses a namespaced form id so
+            // it can coexist with the day panel's filter bar on the same page.
+            ->assertSee('cal-job-filter-form')
+            // The opt-in worker filter is rendered because a workers list is passed.
+            ->assertSee('All workers');
+    }
+
+    public function test_three_week_grid_honours_the_full_job_filter_set(): void
+    {
+        $mower = User::query()->create([
+            'name' => 'Grid Filter Mower',
+            'email' => 'grid-filter-mower@mowingcrm.test',
+            'password' => bcrypt('password'),
+            'is_active' => true,
+        ]);
+
+        $cashJob = Job::query()->create([
+            'customer_name' => 'Cash Client',
+            'phone' => '555-1111',
+            'client_address' => '1 Cash St',
+            'scheduled_date' => now()->toDateString(),
+            'scheduled_time' => '09:00',
+            'estimated_duration_minutes' => 60,
+            'required_services' => [ServiceTypes::all()[0]],
+            'parking_status' => 'Easy',
+            'customer_type' => 'Easy',
+            'payment_mode' => 'Cash',
+            'payment_status' => 'Received',
+            'status' => JobWorkflowStatus::PENDING->value,
+            'created_by' => $this->admin->id,
+        ]);
+        $cashJob->assignedEmployees()->attach($mower->id, ['assignment_date' => now()->toDateString()]);
+
+        Job::query()->create([
+            'customer_name' => 'Online Client',
+            'phone' => '555-2222',
+            'client_address' => '2 Online Ave',
+            'scheduled_date' => now()->toDateString(),
+            'scheduled_time' => '10:00',
+            'estimated_duration_minutes' => 60,
+            'required_services' => [ServiceTypes::all()[0]],
+            'parking_status' => 'Easy',
+            'customer_type' => 'Easy',
+            'payment_mode' => 'Online',
+            'payment_status' => 'Received',
+            'status' => JobWorkflowStatus::PENDING->value,
+            'created_by' => $this->admin->id,
+        ]);
+
+        // Unfiltered: both jobs are counted.
+        $this->actingAs($this->admin)
+            ->get(route('dashboard.three-week-grid'))
+            ->assertOk()
+            ->assertSee('Jobs 2');
+
+        // payment_mode narrows to the single Cash job.
+        $this->actingAs($this->admin)
+            ->get(route('dashboard.three-week-grid', ['payment_mode' => 'Cash']))
+            ->assertOk()
+            ->assertSee('Jobs 1')
+            ->assertDontSee('Jobs 2');
+
+        // worker_id narrows to the job the mower is assigned to.
+        $this->actingAs($this->admin)
+            ->get(route('dashboard.three-week-grid', ['worker_id' => $mower->id]))
+            ->assertOk()
+            ->assertSee('Jobs 1')
+            ->assertDontSee('Jobs 2');
+    }
+
     public function test_daily_jobs_table_supports_the_day_panels_extra_filters(): void
     {
         $assignedJob = Job::query()->create([
