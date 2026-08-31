@@ -214,6 +214,9 @@ class CustomerDetailsModalTest extends TestCase
             'status' => JobWorkflowStatus::COMPLETED->value,
             'verified_at' => now(),
             'verified_by' => $this->admin->id,
+            'verified_amount' => 150.50,
+            'verified_date' => '2026-08-30',
+            'verification_comment' => 'Signed off by client.',
         ]);
 
         $html = $this->actingAs($this->admin)
@@ -226,6 +229,11 @@ class CustomerDetailsModalTest extends TestCase
             '/customer-details-unverify[^>]*data-id="'.$verified->id.'"/s',
             $html
         );
+
+        // The verification detail (amount, date, comment) is surfaced on the row.
+        $this->assertStringContainsString('$150.50', $html);
+        $this->assertStringContainsString('30 Aug 2026', $html);
+        $this->assertStringContainsString('Signed off by client.', $html);
         $this->assertDoesNotMatchRegularExpression(
             '/customer-details-verify[^>]*data-id="'.$verified->id.'"/s',
             $html
@@ -251,6 +259,8 @@ class CustomerDetailsModalTest extends TestCase
             ->postJson(route('admin.jobs.bulk.verify'), [
                 'job_ids' => [$pending->id],
                 'verified' => 1,
+                'verified_date' => '2026-08-30',
+                'verified_amount' => 150,
             ])
             ->assertStatus(422)
             ->assertJsonPath('message', 'None of the selected jobs can be verified. Jobs must be Completed.');

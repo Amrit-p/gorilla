@@ -28,6 +28,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -578,13 +579,16 @@ class JobManagementController extends Controller
 
     public function bulkVerify(Request $request): JsonResponse
     {
+        $verified = $request->boolean('verified', true);
+
         $validated = $request->validate([
             'job_ids' => ['required', 'array', 'min:1'],
             'job_ids.*' => ['integer', 'distinct'],
             'verified' => ['sometimes', 'boolean'],
+            'verified_date' => [Rule::requiredIf($verified), 'nullable', 'date'],
+            'verified_amount' => [Rule::requiredIf($verified), 'nullable', 'numeric', 'min:0'],
+            'comment' => ['nullable', 'string', 'max:1000'],
         ]);
-
-        $verified = $request->boolean('verified', true);
 
         $jobs = $this->jobsForBulkAction($validated['job_ids'], 'verify');
 
@@ -597,7 +601,11 @@ class JobManagementController extends Controller
                 ], 422);
             }
 
-            $this->jobManagementService->verifyJobs($request->user(), $eligible, true);
+            $this->jobManagementService->verifyJobs($request->user(), $eligible, true, [
+                'verified_date' => $validated['verified_date'],
+                'verified_amount' => $validated['verified_amount'],
+                'comment' => $validated['comment'] ?? null,
+            ]);
         } else {
             // Un-verify selected jobs (no precondition checks)
             $eligible = $jobs;

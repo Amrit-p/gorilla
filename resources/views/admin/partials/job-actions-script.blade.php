@@ -246,12 +246,7 @@
         e.stopPropagation();
         const id = Number($(this).data('id'));
         if (!id) return;
-        verifyJobs([id], 1, {
-            onSuccess: reloadCustomerDetailsModal,
-            onError: function (message) {
-                showCustomerDetailsAlert(message, true);
-            }
-        });
+        openVerifyModal([id], { onSuccess: reloadCustomerDetailsModal });
     });
 
     $(document).on('click', '.customer-details-unverify', function (e) {
@@ -276,13 +271,7 @@
             .map(Number)
             .filter(Boolean);
         if (!ids.length) return;
-        if (!confirm('Verify ' + ids.length + ' job' + (ids.length > 1 ? 's' : '') + ' at this address?')) return;
-        verifyJobs(ids, 1, {
-            onSuccess: reloadCustomerDetailsModal,
-            onError: function (message) {
-                showCustomerDetailsAlert(message, true);
-            }
-        });
+        openVerifyModal(ids, { onSuccess: reloadCustomerDetailsModal });
     });
 
     $(document).on('click', '.customer-details-delete', function (e) {
@@ -768,13 +757,72 @@
         });
     }
 
+    /**
+     * Opens the verify modal to collect the required date + amount (and optional
+     * comment) applied to every job in `ids`. `hooks.onSuccess(res)` runs after a
+     * successful verify — the customer-details modal uses it to reload itself.
+     */
+    function openVerifyModal(ids, hooks = {}) {
+        ids = (ids || []).map(Number).filter(Boolean);
+        if (!ids.length) return;
+
+        const $form = $('#verify-job-form');
+        $form[0].reset();
+        $form.data('verifyHooks', hooks);
+        markModalBulkContext($form, ids, 'Verification');
+        $form.find('[name="verified_date"]').val("{{ now()->toDateString() }}");
+        $('#verify-job-form-error').addClass('hidden').text('');
+        openModal('verify-job-modal');
+    }
+
+    $(document).on('submit', '#verify-job-form', function(e) {
+        e.preventDefault();
+        const $form = $(this);
+        const ids = ($form.data('jobIds') || []).map(Number).filter(Boolean);
+        if (!ids.length) return;
+
+        const hooks = $form.data('verifyHooks') || {};
+        const $error = $('#verify-job-form-error').addClass('hidden').text('');
+        const $submit = $form.find('button[type="submit"]').prop('disabled', true);
+
+        $.ajax({
+            url: "{{ route('admin.jobs.bulk.verify') }}",
+            method: 'POST',
+            data: {
+                _token: "{{ csrf_token() }}",
+                job_ids: ids,
+                verified: 1,
+                verified_date: $form.find('[name="verified_date"]').val(),
+                verified_amount: $form.find('[name="verified_amount"]').val(),
+                comment: $form.find('[name="comment"]').val(),
+            },
+            headers: { Accept: 'application/json' },
+            success: function(res) {
+                closeModal('verify-job-modal');
+                showJobAlert(res.message || (ids.length > 1 ? 'Selected jobs verified.' : 'Job verified.'));
+                refreshJobsTable();
+                if (hooks.onSuccess) { hooks.onSuccess(res); }
+            },
+            error: function(xhr) {
+                $error.removeClass('hidden').text(extractErrorMessage(xhr, 'Failed to verify selected jobs.'));
+            },
+            complete: function() {
+                $submit.prop('disabled', false);
+            }
+        });
+    });
+
     $(document).on('click', '.verify-job', function() {
         const $btn     = $(this);
         const id       = Number($btn.data('id'));
         const verified = String($btn.data('verified')) === '1';
-        if (verified && !confirm('Remove verification from this job?')) return;
+        if (verified) {
+            if (!confirm('Remove verification from this job?')) return;
+            verifyJobs([id], 0);
+            return;
+        }
 
-        verifyJobs([id], verified ? 0 : 1);
+        openVerifyModal([id]);
     });
     $(document).on('click', '.schedule-job', function() {
         const $btn     = $(this);
@@ -875,11 +923,7 @@
     });
 
     $(document).on('click', '#job-bulk-verify', function() {
-        const ids = selectedJobIds();
-        if (!ids.length) return;
-        if (!confirm('Verify ' + ids.length + ' selected job' + (ids.length > 1 ? 's' : '') + '?')) return;
-
-        verifyJobs(ids, 1);
+        openVerifyModal(selectedJobIds());
     });
 
     $(document).on('click', '.restore-job', function() {

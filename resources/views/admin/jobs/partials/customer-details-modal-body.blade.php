@@ -167,6 +167,24 @@
                                     <span class="mx-1 text-slate-300">·</span>
                                     {{ $row['mower'] }}
                                 </p>
+                                @if ($row['is_verified'] && ($row['verified_amount'] !== null || $row['verified_date'] || $row['verification_comment']))
+                                    <p class="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-emerald-700">
+                                        <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+                                        </svg>
+                                        @if ($row['verified_amount'] !== null)
+                                            <span class="font-semibold">${{ number_format($row['verified_amount'], 2) }}</span>
+                                        @endif
+                                        @if ($row['verified_date'])
+                                            <span class="text-slate-300">·</span>
+                                            <span class="text-slate-500">{{ $row['verified_date'] }}</span>
+                                        @endif
+                                        @if ($row['verification_comment'])
+                                            <span class="text-slate-300">·</span>
+                                            <span class="italic text-slate-500">“{{ $row['verification_comment'] }}”</span>
+                                        @endif
+                                    </p>
+                                @endif
                             </div>
                             <div class="shrink-0 text-right">
                                 <p class="text-lg font-bold {{ $row['is_paid'] ? 'text-emerald-700' : 'text-amber-800' }}">

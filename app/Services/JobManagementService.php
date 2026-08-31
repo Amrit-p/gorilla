@@ -260,17 +260,21 @@ class JobManagementService
      * Verify or unverify a collection of jobs.
      *
      * @param  Collection<int, Job>  $jobs
+     * @param  array{verified_date?: string|null, verified_amount?: float|string|null, comment?: string|null}  $details
      */
-    public function verifyJobs(User $actor, Collection $jobs, bool $verified = true): Collection
+    public function verifyJobs(User $actor, Collection $jobs, bool $verified = true, array $details = []): Collection
     {
         if ($jobs->isEmpty()) {
             return $jobs;
         }
 
-        DB::transaction(function () use ($actor, $jobs, $verified): void {
-            $jobs->each(function (Job $job) use ($actor, $verified): void {
+        DB::transaction(function () use ($actor, $jobs, $verified, $details): void {
+            $jobs->each(function (Job $job) use ($actor, $verified, $details): void {
                 $job->verified_at = $verified ? now() : null;
                 $job->verified_by = $verified ? $actor->id : null;
+                $job->verified_date = $verified ? ($details['verified_date'] ?? null) : null;
+                $job->verified_amount = $verified ? ($details['verified_amount'] ?? null) : null;
+                $job->verification_comment = $verified ? ($details['comment'] ?? null) : null;
                 $job->save();
 
                 $this->activityLogService->log(

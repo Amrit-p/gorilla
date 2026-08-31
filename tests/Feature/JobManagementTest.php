@@ -377,7 +377,13 @@ class JobManagementTest extends TestCase
         $job = $this->createVerifiableJob();
 
         $this->actingAs($this->admin)
-            ->postJson(route('admin.jobs.bulk.verify'), ['job_ids' => [$job->id], 'verified' => 1])
+            ->postJson(route('admin.jobs.bulk.verify'), [
+                'job_ids' => [$job->id],
+                'verified' => 1,
+                'verified_date' => '2026-08-30',
+                'verified_amount' => 150.50,
+                'comment' => 'Looks good.',
+            ])
             ->assertOk()
             ->assertJsonPath('verified_count', 1)
             ->assertJsonPath('message', 'Job verified successfully.');
@@ -385,6 +391,21 @@ class JobManagementTest extends TestCase
         $job->refresh();
         $this->assertNotNull($job->verified_at);
         $this->assertSame($this->admin->id, $job->verified_by);
+        $this->assertSame('2026-08-30', $job->verified_date->toDateString());
+        $this->assertSame('150.50', $job->verified_amount);
+        $this->assertSame('Looks good.', $job->verification_comment);
+    }
+
+    public function test_verifying_a_job_requires_date_and_amount(): void
+    {
+        $job = $this->createVerifiableJob();
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.jobs.bulk.verify'), ['job_ids' => [$job->id], 'verified' => 1])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['verified_date', 'verified_amount']);
+
+        $this->assertNull($job->refresh()->verified_at);
     }
 
     public function test_job_cannot_be_verified_unless_completed(): void
@@ -393,7 +414,12 @@ class JobManagementTest extends TestCase
         $job->update(['status' => JobWorkflowStatus::STARTED->value]);
 
         $this->actingAs($this->admin)
-            ->postJson(route('admin.jobs.bulk.verify'), ['job_ids' => [$job->id], 'verified' => 1])
+            ->postJson(route('admin.jobs.bulk.verify'), [
+                'job_ids' => [$job->id],
+                'verified' => 1,
+                'verified_date' => '2026-08-30',
+                'verified_amount' => 150,
+            ])
             ->assertStatus(422)
             ->assertJsonPath('message', 'None of the selected jobs can be verified. Jobs must be Completed.');
 
@@ -410,7 +436,12 @@ class JobManagementTest extends TestCase
         $job = $this->createVerifiableJob();
 
         $this->actingAs($this->admin)
-            ->postJson(route('admin.jobs.bulk.verify'), ['job_ids' => [$job->id], 'verified' => 1])
+            ->postJson(route('admin.jobs.bulk.verify'), [
+                'job_ids' => [$job->id],
+                'verified' => 1,
+                'verified_date' => '2026-08-30',
+                'verified_amount' => 150,
+            ])
             ->assertOk();
 
         Notification::assertSentTo($otherManager, JobVerifiedNotification::class);
@@ -423,6 +454,9 @@ class JobManagementTest extends TestCase
         $job->forceFill([
             'verified_at' => now(),
             'verified_by' => $this->admin->id,
+            'verified_date' => '2026-08-30',
+            'verified_amount' => 150,
+            'verification_comment' => 'Looks good.',
         ])->save();
 
         $this->actingAs($this->admin)
@@ -434,6 +468,9 @@ class JobManagementTest extends TestCase
         $job->refresh();
         $this->assertNull($job->verified_at);
         $this->assertNull($job->verified_by);
+        $this->assertNull($job->verified_date);
+        $this->assertNull($job->verified_amount);
+        $this->assertNull($job->verification_comment);
     }
 
     public function test_bulk_verify_verifies_eligible_jobs_and_skips_others(): void
@@ -444,6 +481,8 @@ class JobManagementTest extends TestCase
         $this->actingAs($this->admin)
             ->postJson(route('admin.jobs.bulk.verify'), [
                 'job_ids' => [$eligible->id, $ineligible->id],
+                'verified_date' => '2026-08-30',
+                'verified_amount' => 150,
             ])
             ->assertOk()
             ->assertJsonPath('verified_count', 1)
@@ -462,6 +501,8 @@ class JobManagementTest extends TestCase
         $this->actingAs($this->admin)
             ->postJson(route('admin.jobs.bulk.verify'), [
                 'job_ids' => [$job->id],
+                'verified_date' => '2026-08-30',
+                'verified_amount' => 150,
             ])
             ->assertStatus(422);
 
@@ -475,6 +516,8 @@ class JobManagementTest extends TestCase
         $this->actingAs($this->mower)
             ->postJson(route('admin.jobs.bulk.verify'), [
                 'job_ids' => [$job->id],
+                'verified_date' => '2026-08-30',
+                'verified_amount' => 150,
             ])
             ->assertForbidden();
 
@@ -486,7 +529,12 @@ class JobManagementTest extends TestCase
         $job = $this->createJob();
 
         $this->actingAs($this->mower)
-            ->postJson(route('admin.jobs.bulk.verify'), ['job_ids' => [$job->id], 'verified' => 1])
+            ->postJson(route('admin.jobs.bulk.verify'), [
+                'job_ids' => [$job->id],
+                'verified' => 1,
+                'verified_date' => '2026-08-30',
+                'verified_amount' => 150,
+            ])
             ->assertForbidden();
 
         $this->assertNull($job->refresh()->verified_at);

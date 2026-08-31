@@ -181,6 +181,44 @@
     </form>
 </x-ui.modal>
 
+{{-- ── Verify ─────────────────────────────────────────────────────────────────
+    Bespoke modal (rather than <x-ui.modal>) so it can sit at z-[1100], above the
+    customer-details modal (z-[1000]) it can be opened from. The date/amount/comment
+    entered here apply to every selected job. --}}
+@can('verify-jobs')
+    <div id="verify-job-modal" class="fixed inset-0 z-[1100] hidden items-center justify-center bg-slate-900/40 p-4">
+        <div class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 shadow-xl">
+            <div class="mb-4 flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-slate-900">Verify Job</h3>
+                <button type="button" data-close-modal="verify-job-modal" class="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-700">
+                    Close
+                </button>
+            </div>
+            <form id="verify-job-form" class="space-y-3">
+                @csrf
+                <p class="bulk-job-context hidden rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700"></p>
+                <div id="verify-job-form-error" class="hidden rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-600"></div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Date <span class="text-red-500">*</span></label>
+                    <input type="date" name="verified_date" required class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Amount <span class="text-red-500">*</span></label>
+                    <div class="relative">
+                        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-sm text-slate-400">$</span>
+                        <input type="number" name="verified_amount" step="0.01" min="0" required class="w-full rounded-md border border-slate-300 py-2 pl-7 pr-3 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Comment <span class="text-xs font-normal text-slate-400">(optional)</span></label>
+                    <textarea name="comment" rows="2" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"></textarea>
+                </div>
+                <x-ui.button type="submit">Verify</x-ui.button>
+            </form>
+        </div>
+    </div>
+@endcan
+
 {{-- ── Follow Up ───────────────────────────────────────────────────────────── --}}
 @can('manage_followups')
 <x-ui.modal id="followup-job-modal" title="Follow-Up" maxWidth="max-w-3xl">

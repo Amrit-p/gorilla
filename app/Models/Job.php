@@ -58,6 +58,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'numeric_priority',
     'verified_at',
     'verified_by',
+    'verified_date',
+    'verified_amount',
+    'verification_comment',
     'first_payment',
     'second_payment',
     'rescheduled_at',
@@ -84,6 +87,8 @@ class Job extends Model
             'charges' => 'decimal:2',
             'incentive_percentage' => 'decimal:2',
             'verified_at' => 'datetime',
+            'verified_date' => 'date:Y-m-d',
+            'verified_amount' => 'decimal:2',
             'first_payment' => 'decimal:2',
             'rescheduled_at' => 'datetime',
         ];
