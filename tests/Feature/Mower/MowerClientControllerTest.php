@@ -9,6 +9,7 @@ use App\Models\MowerChecklistSubmission;
 use App\Models\Recurrence;
 use App\Models\User;
 use App\Notifications\MowerClientJobCreatedNotification;
+use App\Services\JobManagementService;
 use App\Support\CrmRoles;
 use Database\Seeders\ChecklistSeeder;
 use Database\Seeders\MasterCatalogSeeder;
@@ -204,6 +205,42 @@ class MowerClientControllerTest extends TestCase
         );
         $response->assertSee('id="job-address-input"', false);
         $response->assertSee('regionCodes: ["nz"]', false);
+    }
+
+    public function test_mower_created_job_is_visible_to_the_office_manager_in_the_admin_list(): void
+    {
+        Notification::fake();
+
+        $officeManager = User::factory()->create(['is_active' => true]);
+        $officeManager->assignRole(CrmRoles::OFFICE_MANAGER);
+
+        $this->actingAs($this->mower)
+            ->post(route('mower.jobs.store'), $this->validPayload())
+            ->assertSessionHasNoErrors();
+
+        $job = Job::query()->where('client_address', '123 Test Street, Auckland')->firstOrFail();
+        $this->assertSame('VAN-3', $job->van_number);
+
+        $this->actingAs($officeManager)
+            ->get(route('admin.jobs.index'))
+            ->assertOk()
+            ->assertSee('123 Test Street, Auckland', false);
+    }
+
+    public function test_failed_job_creation_reports_an_error_instead_of_success(): void
+    {
+        Notification::fake();
+
+        $this->mock(JobManagementService::class, function ($mock): void {
+            $mock->shouldReceive('createJob')->once()->andReturnNull();
+        });
+
+        $response = $this->actingAs($this->mower)->post(route('mower.jobs.store'), $this->validPayload());
+
+        $response->assertRedirect(route('mower.jobs.create'));
+        $response->assertSessionHas('error');
+        $response->assertSessionMissing('success');
+        Notification::assertNothingSent();
     }
 
     public function test_job_status_must_be_a_valid_workflow_status(): void

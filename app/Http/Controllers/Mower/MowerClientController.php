@@ -73,15 +73,22 @@ class MowerClientController extends Controller
             'done_by_user_id' => $actor->id,
         ], $request->file('images', []) ?: []);
 
-        if ($job) {
-            User::query()
-                ->role([CrmRoles::OFFICE_MANAGER, CrmRoles::SALES_MANAGER])
-                ->get()
-                ->each(function (User $manager) use ($job, $actor): void {
-                    $manager->notify(new MowerClientJobCreatedNotification($job, $actor));
-                    OptimizationHelper::forgetNotificationUnreadCount($manager->id);
-                });
+        // createJob() swallows failures and returns null, so a false "success"
+        // here would leave the mower believing a job exists that never saved.
+        if (! $job) {
+            return redirect()
+                ->route('mower.jobs.create')
+                ->withInput()
+                ->with('error', 'Could not create the job. Please try again, or contact the office if it keeps failing.');
         }
+
+        User::query()
+            ->role([CrmRoles::OFFICE_MANAGER, CrmRoles::SALES_MANAGER])
+            ->get()
+            ->each(function (User $manager) use ($job, $actor): void {
+                $manager->notify(new MowerClientJobCreatedNotification($job, $actor));
+                OptimizationHelper::forgetNotificationUnreadCount($manager->id);
+            });
 
         return redirect()
             ->route('mower.index')
