@@ -99,6 +99,36 @@
         </section>
 
         <section class="space-y-3 border-t border-slate-100 pt-4">
+            <h3 class="text-sm font-semibold text-slate-900">Payment</h3>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Payment mode</label>
+                    <select name="payment_mode" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                        <option value="">Select payment mode</option>
+                        @foreach ($paymentModes as $paymentMode)
+                            <option value="{{ $paymentMode }}" @selected(old('payment_mode', $jobModel?->payment_mode) === $paymentMode)>{{ $paymentMode }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Payment status</label>
+                    <select name="payment_status" id="job-payment-status" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                        <option value="">Select payment status</option>
+                        @foreach ($paymentStatuses as $paymentStatus)
+                            <option value="{{ $paymentStatus }}" @selected(old('payment_status', $jobModel?->payment_status ?? \App\Enums\JobOperationalPaymentStatus::PENDING->value) === $paymentStatus)>{{ $paymentStatus }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="sm:col-span-2">
+                    <x-ui.input label="Charges ($)" name="charges" type="number" min="0" step="0.01" :value="old('charges', $jobModel?->charges)" />
+                </div>
+            </div>
+            <div id="job-payment-reason-wrap" class="hidden">
+                <x-ui.input label="Reason if pending" name="payment_pending_reason" :value="old('payment_pending_reason', $jobModel?->payment_pending_reason)" />
+            </div>
+        </section>
+
+        <section class="space-y-3 border-t border-slate-100 pt-4">
             <h3 class="text-sm font-semibold text-slate-900">Account &amp; customer</h3>
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 @isset($accountingLevels)
@@ -148,36 +178,6 @@
                         </select>
                     </div>
                 @endisset
-            </div>
-        </section>
-
-        <section class="space-y-3 border-t border-slate-100 pt-4">
-            <h3 class="text-sm font-semibold text-slate-900">Payment</h3>
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Payment mode</label>
-                    <select name="payment_mode" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                        <option value="">Select payment mode</option>
-                        @foreach ($paymentModes as $paymentMode)
-                            <option value="{{ $paymentMode }}" @selected(old('payment_mode', $jobModel?->payment_mode) === $paymentMode)>{{ $paymentMode }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Payment status</label>
-                    <select name="payment_status" id="job-payment-status" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                        <option value="">Select payment status</option>
-                        @foreach ($paymentStatuses as $paymentStatus)
-                            <option value="{{ $paymentStatus }}" @selected(old('payment_status', $jobModel?->payment_status ?? \App\Enums\JobOperationalPaymentStatus::PENDING->value) === $paymentStatus)>{{ $paymentStatus }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="sm:col-span-2">
-                    <x-ui.input label="Charges ($)" name="charges" type="number" min="0" step="0.01" :value="old('charges', $jobModel?->charges)" />
-                </div>
-            </div>
-            <div id="job-payment-reason-wrap" class="hidden">
-                <x-ui.input label="Reason if pending" name="payment_pending_reason" :value="old('payment_pending_reason', $jobModel?->payment_pending_reason)" />
             </div>
         </section>
 
