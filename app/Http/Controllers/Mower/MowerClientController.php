@@ -12,6 +12,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Mower\StoreMowerQuickJobRequest;
 use App\Models\Recurrence;
 use App\Models\User;
+use App\Models\VanAssignment;
 use App\Notifications\MowerClientJobCreatedNotification;
 use App\Services\JobManagementService;
 use App\Support\CrmRoles;
@@ -49,6 +50,13 @@ class MowerClientController extends Controller
         $address = trim((string) ($data['address'] ?? ''));
         $scheduledDate = $data['scheduled_date'] ?? $data['schedule_date'] ?? now()->toDateString();
 
+        // Van is chosen once per day in the van-selection step, not per job.
+        $vanNumber = VanAssignment::query()
+            ->where('user_id', $actor->id)
+            ->where('date', now()->toDateString())
+            ->with('van:id,name')
+            ->first()?->van?->name;
+
         $job = $this->jobManagementService->createJob($actor, [
             'customer_name' => $address !== '' ? $address : 'Customer',
             'email' => $data['email'] ?? null,
@@ -60,7 +68,7 @@ class MowerClientController extends Controller
             'recurrence_id' => $data['recurrence_id'],
             'is_recurring' => true,
             'equipment_type_id' => $data['equipment_type_id'],
-            'van_number' => $data['van_number'],
+            'van_number' => $vanNumber,
             'customer_type' => $data['customer_type'],
             'payment_mode' => $data['payment_mode'],
             'payment_status' => JobOperationalPaymentStatus::PENDING->value,

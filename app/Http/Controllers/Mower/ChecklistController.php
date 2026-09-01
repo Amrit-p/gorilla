@@ -13,8 +13,8 @@ class ChecklistController extends Controller
 {
     public function index(Request $request): View|RedirectResponse
     {
-        $today   = now()->toDateString();
-        $user    = $request->user();
+        $today = now()->toDateString();
+        $user = $request->user();
         $checklist = Checklist::safetyChecklist();
 
         $activePointIds = $checklist ? $checklist->points->pluck('id') : collect();
@@ -32,41 +32,42 @@ class ChecklistController extends Controller
 
         return view('mower.checklist', [
             'checklists' => $checklist ? collect([$checklist]) : collect(),
-            'today'      => $today,
+            'today' => $today,
         ]);
     }
 
     public function submit(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'point_ids'    => ['required', 'array'],
-            'point_ids.*'  => ['integer', 'exists:checklist_points,id'],
+            'point_ids' => ['required', 'array'],
+            'point_ids.*' => ['integer', 'exists:checklist_points,id'],
             'acknowledged' => ['required', 'accepted'],
         ], [
             'acknowledged.required' => 'You must confirm the declaration before proceeding.',
-            'acknowledged.accepted'  => 'You must confirm the declaration before proceeding.',
+            'acknowledged.accepted' => 'You must confirm the declaration before proceeding.',
         ]);
 
-        $checklist      = Checklist::safetyChecklist();
+        $checklist = Checklist::safetyChecklist();
         $activePointIds = $checklist ? $checklist->points->pluck('id') : collect();
-        $submittedIds   = collect($validated['point_ids']);
-        $missing        = $activePointIds->diff($submittedIds);
+        $submittedIds = collect($validated['point_ids']);
+        $missing = $activePointIds->diff($submittedIds);
 
         if ($missing->isNotEmpty()) {
             return back()->withErrors(['point_ids' => 'Please check all points before proceeding.']);
         }
 
-        $today  = now()->toDateString();
+        $today = now()->toDateString();
         $userId = $request->user()->id;
 
         foreach ($submittedIds as $pointId) {
             MowerChecklistSubmission::firstOrCreate([
-                'user_id'            => $userId,
+                'user_id' => $userId,
                 'checklist_point_id' => $pointId,
-                'date'               => $today,
+                'date' => $today,
             ]);
         }
 
-        return redirect()->route('mower.index');
+        // Next step in the daily flow: pick a van before the dashboard.
+        return redirect()->route('mower.van.select');
     }
 }

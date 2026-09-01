@@ -3,6 +3,7 @@
 use App\Http\Middleware\EnsureAnyCrmPermission;
 use App\Http\Middleware\EnsureCrmPermission;
 use App\Http\Middleware\EnsureMowerChecklistComplete;
+use App\Http\Middleware\EnsureMowerVanSelected;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
@@ -28,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'crm.permission' => EnsureCrmPermission::class,
             'crm.any_permission' => EnsureAnyCrmPermission::class,
             'mower.checklist' => EnsureMowerChecklistComplete::class,
+            'mower.van' => EnsureMowerVanSelected::class,
         ]);
 
         // Module 15: Baseline security headers on every web response.

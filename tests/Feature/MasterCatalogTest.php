@@ -9,6 +9,7 @@ use App\Models\JobLevel;
 use App\Models\Recurrence;
 use App\Models\ServiceType;
 use App\Models\User;
+use App\Models\Van;
 use App\Models\Zone;
 use App\Support\CrmConstants;
 use App\Support\MasterCatalog;
@@ -187,6 +188,45 @@ class MasterCatalogTest extends TestCase
         $record->refresh();
         $this->assertFalse($record->is_active);
         $this->assertNotContains('West Zone', MasterCatalog::activeNames(MasterCatalog::ZONES));
+    }
+
+    public function test_van_crud_and_cache(): void
+    {
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.masters.vans.store'), [
+                'name' => 'VAN-1',
+                'sort_order' => 1,
+                'is_active' => true,
+            ])
+            ->assertOk();
+
+        $this->assertContains('VAN-1', MasterCatalog::activeNames(MasterCatalog::VANS));
+
+        $record = Van::query()->where('name', 'VAN-1')->firstOrFail();
+
+        $this->actingAs($this->admin)
+            ->patchJson(route('admin.masters.vans.update', $record), [
+                'name' => 'VAN-1A',
+                'sort_order' => 2,
+                'is_active' => true,
+            ])
+            ->assertOk();
+
+        $this->assertDatabaseHas('vans', ['name' => 'VAN-1A']);
+    }
+
+    public function test_duplicate_van_name_is_rejected(): void
+    {
+        Van::create(['name' => 'VAN-2', 'is_active' => true, 'sort_order' => 1]);
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.masters.vans.store'), [
+                'name' => 'VAN-2',
+                'sort_order' => 1,
+                'is_active' => true,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['name']);
     }
 
     public function test_recurrence_crud_and_cache(): void

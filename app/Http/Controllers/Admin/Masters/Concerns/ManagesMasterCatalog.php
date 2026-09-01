@@ -72,6 +72,7 @@ trait ManagesMasterCatalog
             MasterCatalog::ACCOUNTING_LEVELS => ['accountingLevel' => 0],
             MasterCatalog::JOB_LEVELS => ['jobLevel' => 0],
             MasterCatalog::CLIENT_RATINGS => ['clientRating' => 0],
+            MasterCatalog::VANS => ['van' => 0],
             default => ['record' => 0],
         };
 

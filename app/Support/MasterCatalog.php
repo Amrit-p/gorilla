@@ -10,6 +10,7 @@ use App\Models\JobLevel;
 use App\Models\Recurrence;
 use App\Models\SafetyType;
 use App\Models\ServiceType;
+use App\Models\Van;
 use App\Models\Zone;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
@@ -36,6 +37,8 @@ final class MasterCatalog
 
     public const CLIENT_RATINGS = 'client_ratings';
 
+    public const VANS = 'vans';
+
     /**
      * @return class-string<Model>
      */
@@ -46,6 +49,7 @@ final class MasterCatalog
             self::EQUIPMENT_TYPES => EquipmentType::class,
             self::SAFETY_TYPES => SafetyType::class,
             self::ZONES => Zone::class,
+            self::VANS => Van::class,
             self::RECURRENCES => Recurrence::class,
             self::ACCOUNTING_LEVELS => AccountingLevel::class,
             self::JOB_LEVELS => JobLevel::class,

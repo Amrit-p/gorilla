@@ -82,14 +82,6 @@
                         @endforeach
                     </select>
                 </div>
-
-                <div>
-                    <label for="job-van-number" class="mb-1 block text-sm font-medium text-slate-700">Van number <span class="text-red-500">*</span></label>
-                    <input type="text" name="van_number" id="job-van-number" value="{{ old('van_number') }}" required
-                        maxlength="50"
-                        class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base"
-                        placeholder="e.g. VAN-3">
-                </div>
             </section>
 
             <section class="rounded-2xl bg-white p-4 shadow-sm space-y-3">

@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\Masters\JobLevelController;
 use App\Http\Controllers\Admin\Masters\RecurrenceController;
 use App\Http\Controllers\Admin\Masters\SafetyTypeController;
 use App\Http\Controllers\Admin\Masters\ServiceTypeController;
+use App\Http\Controllers\Admin\Masters\VanController;
 use App\Http\Controllers\Admin\Masters\ZoneController;
 use App\Http\Controllers\Admin\RolePermissionController;
 use App\Http\Controllers\Admin\SalaryCalculatorController;
@@ -35,6 +36,7 @@ use App\Http\Controllers\Mower\ChecklistController as MowerChecklistController;
 use App\Http\Controllers\Mower\MowerClientController;
 use App\Http\Controllers\Mower\MowerDashboardController;
 use App\Http\Controllers\Mower\MowerDiscussionController;
+use App\Http\Controllers\Mower\MowerVanController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Report\ChecklistReportController;
@@ -170,6 +172,13 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
         Route::patch('zones/{zone}/status', [ZoneController::class, 'updateStatus'])->name('zones.status.update');
         Route::delete('zones/{zone}', [ZoneController::class, 'destroy'])->name('zones.destroy');
 
+        Route::get('vans', [VanController::class, 'index'])->name('vans.index');
+        Route::post('vans', [VanController::class, 'store'])->name('vans.store');
+        Route::get('vans/{van}', [VanController::class, 'show'])->name('vans.show');
+        Route::patch('vans/{van}', [VanController::class, 'update'])->name('vans.update');
+        Route::patch('vans/{van}/status', [VanController::class, 'updateStatus'])->name('vans.status.update');
+        Route::delete('vans/{van}', [VanController::class, 'destroy'])->name('vans.destroy');
+
         Route::get('accounting-levels', [AccountingLevelController::class, 'index'])->name('accounting-levels.index');
         Route::post('accounting-levels', [AccountingLevelController::class, 'store'])->name('accounting-levels.store');
         Route::get('accounting-levels/{accountingLevel}', [AccountingLevelController::class, 'show'])->name('accounting-levels.show');
@@ -292,27 +301,33 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
             Route::post('/checklist', [MowerChecklistController::class, 'submit'])->name('checklist.submit');
 
             Route::middleware(['mower.checklist', 'crm.permission:'.CrmPermissions::UPLOAD_JOB_IMAGES])->group(function (): void {
-                Route::get('/', [MowerDashboardController::class, 'index'])->name('index');
-                Route::get('/map', [MowerDashboardController::class, 'map'])->name('map');
-                Route::get('/notifications', [NotificationController::class, 'mowerIndex'])->name('notifications.index');
-                Route::get('/discussions', [MowerDiscussionController::class, 'index'])->name('discussions.index');
-                Route::get('/discussions/{discussion}', [MowerDiscussionController::class, 'show'])->name('discussions.show');
-                Route::get('/jobs/create', [MowerClientController::class, 'create'])->name('jobs.create');
-                Route::post('/jobs', [MowerClientController::class, 'store'])->name('jobs.store');
-                // Legacy aliases — same handlers as jobs.create/store
-                Route::get('/clients/create', [MowerClientController::class, 'create'])->name('clients.create');
-                Route::post('/clients', [MowerClientController::class, 'store'])->name('clients.store');
-                Route::get('/jobs/{job}', [MowerDashboardController::class, 'show'])->name('jobs.show');
-                Route::patch('/jobs/{job}', [MowerDashboardController::class, 'update'])->name('jobs.update');
-                Route::patch('/jobs/{job}/status', [MowerDashboardController::class, 'updateStatus'])->name('jobs.status.update');
-                Route::patch('/jobs/{job}/payment', [MowerDashboardController::class, 'updatePayment'])->name('jobs.payment.update');
-                Route::patch('/jobs/{job}/consumed-time', [MowerDashboardController::class, 'updateConsumedTime'])->name('jobs.consumed-time.update');
-                Route::post('/jobs/{job}/images/before', [MowerDashboardController::class, 'uploadBefore'])->name('jobs.images.before');
-                Route::post('/jobs/{job}/images/after', [MowerDashboardController::class, 'uploadAfter'])->name('jobs.images.after');
-                Route::delete('/jobs/{job}/images/before/{imageId}', [MowerDashboardController::class, 'deleteBefore'])->name('jobs.images.before.destroy');
-                Route::delete('/jobs/{job}/images/after/{imageId}', [MowerDashboardController::class, 'deleteAfter'])->name('jobs.images.after.destroy');
-                Route::post('/jobs/{job}/remark', [MowerDashboardController::class, 'storeRemark'])->name('jobs.remark.store');
-                Route::get('/export-pdf', [MowerDashboardController::class, 'exportPdf'])->name('export-pdf');
+                // Van selection sits behind the checklist gate but before the van gate.
+                Route::get('/van', [MowerVanController::class, 'select'])->name('van.select');
+                Route::post('/van', [MowerVanController::class, 'store'])->name('van.store');
+
+                Route::middleware('mower.van')->group(function (): void {
+                    Route::get('/', [MowerDashboardController::class, 'index'])->name('index');
+                    Route::get('/map', [MowerDashboardController::class, 'map'])->name('map');
+                    Route::get('/notifications', [NotificationController::class, 'mowerIndex'])->name('notifications.index');
+                    Route::get('/discussions', [MowerDiscussionController::class, 'index'])->name('discussions.index');
+                    Route::get('/discussions/{discussion}', [MowerDiscussionController::class, 'show'])->name('discussions.show');
+                    Route::get('/jobs/create', [MowerClientController::class, 'create'])->name('jobs.create');
+                    Route::post('/jobs', [MowerClientController::class, 'store'])->name('jobs.store');
+                    // Legacy aliases — same handlers as jobs.create/store
+                    Route::get('/clients/create', [MowerClientController::class, 'create'])->name('clients.create');
+                    Route::post('/clients', [MowerClientController::class, 'store'])->name('clients.store');
+                    Route::get('/jobs/{job}', [MowerDashboardController::class, 'show'])->name('jobs.show');
+                    Route::patch('/jobs/{job}', [MowerDashboardController::class, 'update'])->name('jobs.update');
+                    Route::patch('/jobs/{job}/status', [MowerDashboardController::class, 'updateStatus'])->name('jobs.status.update');
+                    Route::patch('/jobs/{job}/payment', [MowerDashboardController::class, 'updatePayment'])->name('jobs.payment.update');
+                    Route::patch('/jobs/{job}/consumed-time', [MowerDashboardController::class, 'updateConsumedTime'])->name('jobs.consumed-time.update');
+                    Route::post('/jobs/{job}/images/before', [MowerDashboardController::class, 'uploadBefore'])->name('jobs.images.before');
+                    Route::post('/jobs/{job}/images/after', [MowerDashboardController::class, 'uploadAfter'])->name('jobs.images.after');
+                    Route::delete('/jobs/{job}/images/before/{imageId}', [MowerDashboardController::class, 'deleteBefore'])->name('jobs.images.before.destroy');
+                    Route::delete('/jobs/{job}/images/after/{imageId}', [MowerDashboardController::class, 'deleteAfter'])->name('jobs.images.after.destroy');
+                    Route::post('/jobs/{job}/remark', [MowerDashboardController::class, 'storeRemark'])->name('jobs.remark.store');
+                    Route::get('/export-pdf', [MowerDashboardController::class, 'exportPdf'])->name('export-pdf');
+                });
             });
         });
     });

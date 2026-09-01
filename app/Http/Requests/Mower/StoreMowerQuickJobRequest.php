@@ -45,7 +45,6 @@ class StoreMowerQuickJobRequest extends FormRequest
             'weed_spray' => ['required', Rule::in(LeadWeedSpray::values())],
             'recurrence_id' => ['required', 'integer', Rule::exists(Recurrence::class, 'id')->where('is_active', true)],
             'equipment_type_id' => EquipmentTypes::mowerIdRules(),
-            'van_number' => ['required', 'string', 'max:50'],
             'customer_type' => ['required', Rule::in(JobCustomerType::values())],
             'payment_mode' => ['required', Rule::in(JobOperationalPaymentMode::values())],
             'charges' => [
@@ -71,7 +70,6 @@ class StoreMowerQuickJobRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'van_number' => 'van number',
             'equipment_type_id' => 'equipment type',
             'special_remarks' => 'comments',
             'status' => 'job status',

@@ -8,6 +8,8 @@ use App\Models\Job;
 use App\Models\MowerChecklistSubmission;
 use App\Models\Recurrence;
 use App\Models\User;
+use App\Models\Van;
+use App\Models\VanAssignment;
 use App\Notifications\MowerClientJobCreatedNotification;
 use App\Services\JobManagementService;
 use App\Support\CrmRoles;
@@ -38,6 +40,15 @@ class MowerClientControllerTest extends TestCase
         $this->mower = User::factory()->create(['is_active' => true]);
         $this->mower->assignRole(CrmRoles::MOWER);
         $this->completeChecklistForMower($this->mower);
+
+        // Van is picked once per day; assign one so job routes clear the van gate
+        // and new jobs auto-fill their van from the assignment.
+        $van = Van::create(['name' => 'VAN-3', 'is_active' => true, 'sort_order' => 1]);
+        VanAssignment::create([
+            'van_id' => $van->id,
+            'user_id' => $this->mower->id,
+            'date' => now()->toDateString(),
+        ]);
 
         $this->recurrence = Recurrence::create(['name' => 'Weekly', 'is_active' => true, 'sort_order' => 1]);
         $this->equipmentTypeId = (int) EquipmentType::query()->where('name', 'Red Mower')->value('id');
@@ -74,7 +85,6 @@ class MowerClientControllerTest extends TestCase
             'weed_spray' => 'Yes',
             'recurrence_id' => $this->recurrence->id,
             'equipment_type_id' => $this->equipmentTypeId,
-            'van_number' => 'VAN-3',
             'payment_mode' => 'Cash',
             'charges' => 120.50,
             'customer_type' => 'Easy',
@@ -116,7 +126,7 @@ class MowerClientControllerTest extends TestCase
     {
         $response = $this->actingAs($this->mower)->post(route('mower.jobs.store'), []);
 
-        $response->assertSessionHasErrors(['address', 'service_types', 'weed_spray', 'recurrence_id', 'equipment_type_id', 'van_number', 'payment_mode', 'customer_type', 'special_remarks', 'status']);
+        $response->assertSessionHasErrors(['address', 'service_types', 'weed_spray', 'recurrence_id', 'equipment_type_id', 'payment_mode', 'customer_type', 'special_remarks', 'status']);
         $response->assertSessionDoesntHaveErrors(['job_type', 'phone', 'additional_site_instructions']);
     }
 
@@ -186,7 +196,7 @@ class MowerClientControllerTest extends TestCase
         $response->assertDontSee('name="customer_name"', false);
         $response->assertDontSee('name="phone"', false);
         $response->assertDontSee('name="additional_site_instructions"', false);
-        $response->assertSee('name="van_number"', false);
+        $response->assertDontSee('name="van_number"', false);
         $response->assertSee('name="status"', false);
         $response->assertSee('Comments');
     }
@@ -200,8 +210,8 @@ class MowerClientControllerTest extends TestCase
 
         $this->assertLessThan(
             strpos($content, 'Services'),
-            strpos($content, 'Property Address'),
-            'Property Address should be rendered before the Services section.'
+            strpos($content, 'Contact'),
+            'The address/Contact section should be rendered before the Services section.'
         );
         $response->assertSee('id="job-address-input"', false);
         $response->assertSee('regionCodes: ["nz"]', false);
@@ -281,7 +291,6 @@ class MowerClientControllerTest extends TestCase
             'weed_spray' => 'Yes',
             'recurrence_id' => $this->recurrence->id,
             'equipment_type_id' => $this->equipmentTypeId,
-            'van_number' => 'VAN-3',
             'payment_mode' => 'Cash',
             'charges' => 120.50,
             'customer_type' => 'Easy',
@@ -301,7 +310,6 @@ class MowerClientControllerTest extends TestCase
             'weed_spray' => 'Yes',
             'recurrence_id' => $this->recurrence->id,
             'equipment_type_id' => $this->equipmentTypeId,
-            'van_number' => 'VAN-3',
             'payment_mode' => 'Cash',
             'charges' => 90,
             'customer_type' => 'Easy',
