@@ -144,6 +144,27 @@ class AutoRescheduleJobsTest extends TestCase
         $this->assertEquals('2026-06-24', $newJob->scheduled_date->toDateString());
     }
 
+    public function test_hyphenated_weekly_multiplier_recurrence_reschedules_correctly(): void
+    {
+        Notification::fake();
+
+        // Regression: "3-Weekly" previously failed to parse (the normaliser only
+        // handled a whitespace separator), so resolve() silently returned null
+        // and the job was never rescheduled.
+        $recurrence = Recurrence::create(['name' => '3-Weekly', 'is_active' => true, 'sort_order' => 1]);
+        $this->assertSame(21, $recurrence->interval_days);
+
+        $job = Job::query()->create($this->jobPayload($recurrence->id, [
+            'scheduled_date' => '2026-06-10',
+        ]));
+
+        $job->update(['status' => JobWorkflowStatus::COMPLETED->value]);
+
+        $newJob = Job::query()->where('rescheduled_from_job_id', $job->id)->firstOrFail();
+
+        $this->assertEquals('2026-07-01', $newJob->scheduled_date->toDateString());
+    }
+
     public function test_holding_a_completed_job_removes_its_pending_next_job(): void
     {
         Notification::fake();

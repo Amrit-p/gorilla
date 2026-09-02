@@ -254,6 +254,33 @@ class MasterCatalogTest extends TestCase
         $this->assertDatabaseHas('recurrences', ['name' => 'Bi-Weekly']);
     }
 
+    public function test_recurrence_with_unparseable_name_is_rejected(): void
+    {
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.masters.recurrences.store'), [
+                'name' => 'Every Other Tuesday',
+                'sort_order' => 1,
+                'is_active' => true,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['name']);
+
+        $this->assertDatabaseMissing('recurrences', ['name' => 'Every Other Tuesday']);
+    }
+
+    public function test_recurrence_with_numeric_weekly_pattern_stores_interval_days(): void
+    {
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.masters.recurrences.store'), [
+                'name' => '3-Weekly',
+                'sort_order' => 1,
+                'is_active' => true,
+            ])
+            ->assertOk();
+
+        $this->assertDatabaseHas('recurrences', ['name' => '3-Weekly', 'interval_days' => 21]);
+    }
+
     public function test_duplicate_recurrence_name_is_rejected(): void
     {
         Recurrence::create(['name' => 'Monthly', 'is_active' => true, 'sort_order' => 1]);
