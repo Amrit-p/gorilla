@@ -144,15 +144,14 @@ class AutoRescheduleJobsTest extends TestCase
         $this->assertEquals('2026-06-24', $newJob->scheduled_date->toDateString());
     }
 
-    public function test_hyphenated_weekly_multiplier_recurrence_reschedules_correctly(): void
+    public function test_custom_named_recurrence_reschedules_by_its_stored_interval_days(): void
     {
         Notification::fake();
 
-        // Regression: "3-Weekly" previously failed to parse (the normaliser only
-        // handled a whitespace separator), so resolve() silently returned null
-        // and the job was never rescheduled.
-        $recurrence = Recurrence::create(['name' => '3-Weekly', 'is_active' => true, 'sort_order' => 1]);
-        $this->assertSame(21, $recurrence->interval_days);
+        // interval_days is what drives scheduling now, regardless of what the
+        // name looks like — a free-form name like "3-Weekly" works as long as
+        // interval_days is set (auto-suggested client-side, editable by hand).
+        $recurrence = Recurrence::create(['name' => '3-Weekly', 'interval_days' => 21, 'is_active' => true, 'sort_order' => 1]);
 
         $job = Job::query()->create($this->jobPayload($recurrence->id, [
             'scheduled_date' => '2026-06-10',
@@ -163,6 +162,21 @@ class AutoRescheduleJobsTest extends TestCase
         $newJob = Job::query()->where('rescheduled_from_job_id', $job->id)->firstOrFail();
 
         $this->assertEquals('2026-07-01', $newJob->scheduled_date->toDateString());
+    }
+
+    public function test_recurrence_without_interval_days_does_not_reschedule(): void
+    {
+        Notification::fake();
+
+        $recurrence = Recurrence::create(['name' => 'Custom Pattern', 'is_active' => true, 'sort_order' => 1]);
+        $this->assertNull($recurrence->interval_days);
+
+        $job = Job::query()->create($this->jobPayload($recurrence->id));
+
+        $job->update(['status' => JobWorkflowStatus::COMPLETED->value]);
+
+        $this->assertDatabaseCount('service_jobs', 1);
+        $this->assertNull($job->fresh()->rescheduled_at);
     }
 
     public function test_holding_a_completed_job_removes_its_pending_next_job(): void

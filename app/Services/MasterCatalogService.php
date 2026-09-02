@@ -88,6 +88,12 @@ class MasterCatalogService
             $payload['description'] = trim((string) ($data['description'] ?? ''));
         }
 
+        if ($catalog === MasterCatalog::RECURRENCES) {
+            $payload['interval_days'] = isset($data['interval_days']) && $data['interval_days'] !== ''
+                ? (int) $data['interval_days']
+                : null;
+        }
+
         return $payload;
     }
 

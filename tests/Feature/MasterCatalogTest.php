@@ -254,31 +254,46 @@ class MasterCatalogTest extends TestCase
         $this->assertDatabaseHas('recurrences', ['name' => 'Bi-Weekly']);
     }
 
-    public function test_recurrence_with_unparseable_name_is_rejected(): void
+    public function test_recurrence_with_freeform_name_is_accepted_without_interval_days(): void
     {
+        // Any name is allowed — interval_days (auto-suggested client-side,
+        // editable by the admin) is what actually drives scheduling, not name.
         $this->actingAs($this->admin)
             ->postJson(route('admin.masters.recurrences.store'), [
                 'name' => 'Every Other Tuesday',
                 'sort_order' => 1,
                 'is_active' => true,
             ])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors(['name']);
+            ->assertOk();
 
-        $this->assertDatabaseMissing('recurrences', ['name' => 'Every Other Tuesday']);
+        $this->assertDatabaseHas('recurrences', ['name' => 'Every Other Tuesday', 'interval_days' => null]);
     }
 
-    public function test_recurrence_with_numeric_weekly_pattern_stores_interval_days(): void
+    public function test_recurrence_stores_the_submitted_interval_days(): void
     {
         $this->actingAs($this->admin)
             ->postJson(route('admin.masters.recurrences.store'), [
                 'name' => '3-Weekly',
+                'interval_days' => 21,
                 'sort_order' => 1,
                 'is_active' => true,
             ])
             ->assertOk();
 
         $this->assertDatabaseHas('recurrences', ['name' => '3-Weekly', 'interval_days' => 21]);
+    }
+
+    public function test_recurrence_rejects_a_non_positive_interval_days(): void
+    {
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.masters.recurrences.store'), [
+                'name' => 'Broken',
+                'interval_days' => 0,
+                'sort_order' => 1,
+                'is_active' => true,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['interval_days']);
     }
 
     public function test_duplicate_recurrence_name_is_rejected(): void

@@ -17,14 +17,10 @@ return new class extends Migration
             $table->unsignedSmallInteger('interval_days')->nullable()->after('name');
         });
 
-        // Backfill existing rows so patterns like "3-weekly" (previously
-        // unparseable at read time) get a usable day count immediately.
+        // Seed a best-effort day count for existing rows (e.g. "3-Weekly" → 21).
+        // Anything it can't infer is left null — editable by hand afterwards.
         DB::table('recurrences')->select(['id', 'name'])->orderBy('id')->each(function (object $row): void {
-            try {
-                $days = Recurrence::parseIntervalDays((string) $row->name);
-            } catch (InvalidArgumentException) {
-                $days = null;
-            }
+            $days = Recurrence::parseIntervalDays((string) $row->name);
 
             if ($days !== null) {
                 DB::table('recurrences')->where('id', $row->id)->update(['interval_days' => $days]);

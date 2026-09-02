@@ -135,6 +135,7 @@ trait ManagesMasterCatalog
             'id',
             'name',
             'color_code',
+            'interval_days',
             'sort_order',
             'is_active',
         ]));

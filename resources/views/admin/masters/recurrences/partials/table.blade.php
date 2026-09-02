@@ -1,7 +1,8 @@
-<x-ui.table :headers="['Name', 'Sort', 'Status', 'Actions']">
+<x-ui.table :headers="['Name', 'Days', 'Sort', 'Status', 'Actions']">
     @forelse ($records as $record)
         <tr>
             <td class="px-4 py-3 font-medium text-slate-800">{{ $record->name }}</td>
+            <td class="px-4 py-3 text-slate-600">{{ $record->interval_days ?? '—' }}</td>
             <td class="px-4 py-3 text-slate-600">{{ $record->sort_order }}</td>
             <td class="px-4 py-3">
                 <x-ui.user-status-badge :status="$record->is_active ? 'Active' : 'Inactive'" />
@@ -18,7 +19,7 @@
         </tr>
     @empty
         <tr>
-            <td colspan="4" class="px-4 py-6 text-center text-sm text-slate-500">No records found.</td>
+            <td colspan="5" class="px-4 py-6 text-center text-sm text-slate-500">No records found.</td>
         </tr>
     @endforelse
 </x-ui.table>

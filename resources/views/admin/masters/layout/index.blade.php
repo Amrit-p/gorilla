@@ -148,6 +148,9 @@
                     if ($form.find('[name="description"]').length) {
                         $form.find('[name="description"]').val(record.description ?? '');
                     }
+                    if ($form.find('[name="interval_days"]').length) {
+                        $form.find('[name="interval_days"]').val(record.interval_days ?? '');
+                    }
                     $form.find('[name="sort_order"]').val(record.sort_order ?? 0);
                     $form.find('[name="is_active"]').val(record.is_active ? '1' : '0');
                     openModal('master-form-modal');

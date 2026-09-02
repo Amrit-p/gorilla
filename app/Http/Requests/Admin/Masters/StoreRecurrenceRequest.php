@@ -2,11 +2,9 @@
 
 namespace App\Http\Requests\Admin\Masters;
 
-use App\Models\Recurrence;
 use App\Support\CrmPermissions;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use InvalidArgumentException;
 
 class StoreRecurrenceRequest extends FormRequest
 {
@@ -21,16 +19,8 @@ class StoreRecurrenceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => [
-                'required', 'string', 'max:120', Rule::unique('recurrences', 'name'),
-                function (string $attribute, mixed $value, \Closure $fail): void {
-                    try {
-                        Recurrence::parseIntervalDays((string) $value);
-                    } catch (InvalidArgumentException) {
-                        $fail('Could not parse this recurrence pattern. Try formats like "Weekly", "Bi-Weekly", "Monthly", "Quarterly", "One-Time", or "3 weeks".');
-                    }
-                },
-            ],
+            'name' => ['required', 'string', 'max:120', Rule::unique('recurrences', 'name')],
+            'interval_days' => ['nullable', 'integer', 'min:1', 'max:3650'],
             'sort_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
             'is_active' => ['required', 'boolean'],
         ];

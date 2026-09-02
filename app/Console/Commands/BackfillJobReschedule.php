@@ -8,9 +8,12 @@ use App\Services\JobReschedulingService;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
+use Illuminate\Support\Carbon;
 
-#[Signature('app:backfill-job-reschedule {--dry-run : Preview affected jobs without creating anything}')]
-#[Description('One-off catch-up: create the missing next occurrence for completed recurring jobs that were never auto-rescheduled (e.g. jobs completed while a recurrence pattern failed to parse). Safe to re-run — only touches jobs still missing rescheduled_at.')]
+#[Signature('app:backfill-job-reschedule
+    {--dry-run : Preview affected jobs without creating anything}
+    {--after=2026-09-01 : Only backfill completed jobs scheduled after this date (Y-m-d)}')]
+#[Description('One-off catch-up: create the missing next occurrence for completed recurring jobs that were never auto-rescheduled (e.g. jobs completed while a recurrence pattern failed to parse). Limited to jobs scheduled after --after to avoid recreating old, no-longer-relevant backlog. Safe to re-run — only touches jobs still missing rescheduled_at.')]
 class BackfillJobReschedule extends Command
 {
     public function __construct(private readonly JobReschedulingService $jobReschedulingService)
@@ -22,21 +25,30 @@ class BackfillJobReschedule extends Command
     {
         $dryRun = (bool) $this->option('dry-run');
 
+        try {
+            $after = Carbon::parse((string) $this->option('after'))->toDateString();
+        } catch (\Throwable) {
+            $this->error('Invalid --after date: "'.$this->option('after').'". Use Y-m-d format, e.g. 2026-09-01.');
+
+            return self::FAILURE;
+        }
+
         $jobs = Job::query()
             ->where('status', JobWorkflowStatus::COMPLETED->value)
             ->where('is_recurring', true)
             ->whereNotNull('recurrence_id')
             ->whereNull('rescheduled_at')
-            ->with('recurrence:id,name')
+            ->whereDate('scheduled_date', '>', $after)
+            ->with('recurrence')
             ->get();
 
         if ($jobs->isEmpty()) {
-            $this->info('No completed recurring jobs are missing their next occurrence.');
+            $this->info("No completed recurring jobs scheduled after {$after} are missing their next occurrence.");
 
             return self::SUCCESS;
         }
 
-        $this->info(($dryRun ? '[Dry run] ' : '')."Found {$jobs->count()} completed job(s) missing their next occurrence.");
+        $this->info(($dryRun ? '[Dry run] ' : '')."Found {$jobs->count()} completed job(s) scheduled after {$after} missing their next occurrence.");
 
         $created = 0;
         $skipped = [];
@@ -44,7 +56,7 @@ class BackfillJobReschedule extends Command
         $this->withProgressBar($jobs, function (Job $job) use ($dryRun, &$created, &$skipped): void {
             if ($dryRun) {
                 $next = $job->recurrence?->resolve($job->scheduled_date->copy());
-                $next !== null ? $created++ : $skipped[] = "Job #{$job->id}: recurrence \"{$job->recurrence?->name}\" could not be resolved.";
+                $next !== null ? $created++ : $skipped[] = "Job #{$job->id}: recurrence \"{$job->recurrence?->name}\" has no days set.";
 
                 return;
             }
@@ -55,7 +67,7 @@ class BackfillJobReschedule extends Command
                 return;
             }
 
-            $skipped[] = "Job #{$job->id}: recurrence \"{$job->recurrence?->name}\" could not be resolved.";
+            $skipped[] = "Job #{$job->id}: recurrence \"{$job->recurrence?->name}\" has no days set.";
         });
 
         $this->newLine(2);

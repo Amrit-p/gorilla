@@ -9,12 +9,21 @@ class RecurrenceSeeder extends Seeder
 {
     public function run(): void
     {
-        $names = ['One-Time', 'Daily', 'Weekly', 'Bi-Weekly', 'Monthly', 'Quarterly'];
+        $recurrences = [
+            'One-Time' => null,
+            'Daily' => 1,
+            'Weekly' => 7,
+            'Bi-Weekly' => 14,
+            'Monthly' => 30,
+            'Quarterly' => 90,
+        ];
 
-        foreach ($names as $i => $name) {
+        $sortOrder = 0;
+
+        foreach ($recurrences as $name => $intervalDays) {
             Recurrence::firstOrCreate(
                 ['name' => $name],
-                ['is_active' => true, 'sort_order' => $i + 1],
+                ['interval_days' => $intervalDays, 'is_active' => true, 'sort_order' => ++$sortOrder],
             );
         }
     }

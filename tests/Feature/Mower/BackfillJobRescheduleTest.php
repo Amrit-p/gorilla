@@ -31,25 +31,35 @@ class BackfillJobRescheduleTest extends TestCase
     public function test_creates_missing_next_occurrence_for_completed_recurring_job(): void
     {
         $recurrence = Recurrence::query()->where('name', 'Weekly')->firstOrFail();
-        $job = $this->completedJob($recurrence->id, ['scheduled_date' => '2026-06-10']);
+        $job = $this->completedJob($recurrence->id, ['scheduled_date' => '2026-09-05']);
 
         $this->artisan('app:backfill-job-reschedule')->assertSuccessful();
 
         $newJob = Job::query()->where('rescheduled_from_job_id', $job->id)->firstOrFail();
-        $this->assertEquals('2026-06-17', $newJob->scheduled_date->toDateString());
+        $this->assertEquals('2026-09-12', $newJob->scheduled_date->toDateString());
         $this->assertSame(JobWorkflowStatus::PENDING->value, $newJob->status);
         $this->assertNotNull($job->fresh()->rescheduled_at);
     }
 
-    public function test_fixes_previously_unparseable_hyphenated_recurrence(): void
+    public function test_backfills_a_custom_named_recurrence_with_stored_interval_days(): void
     {
-        $recurrence = Recurrence::create(['name' => '3-Weekly', 'is_active' => true, 'sort_order' => 1]);
-        $job = $this->completedJob($recurrence->id, ['scheduled_date' => '2026-06-10']);
+        $recurrence = Recurrence::create(['name' => '3-Weekly', 'interval_days' => 21, 'is_active' => true, 'sort_order' => 1]);
+        $job = $this->completedJob($recurrence->id, ['scheduled_date' => '2026-09-05']);
 
         $this->artisan('app:backfill-job-reschedule')->assertSuccessful();
 
         $newJob = Job::query()->where('rescheduled_from_job_id', $job->id)->firstOrFail();
-        $this->assertEquals('2026-07-01', $newJob->scheduled_date->toDateString());
+        $this->assertEquals('2026-09-26', $newJob->scheduled_date->toDateString());
+    }
+
+    public function test_skips_recurrence_with_no_interval_days_set(): void
+    {
+        $recurrence = Recurrence::create(['name' => 'Custom Pattern', 'is_active' => true, 'sort_order' => 1]);
+        $this->completedJob($recurrence->id);
+
+        $this->artisan('app:backfill-job-reschedule')->assertSuccessful();
+
+        $this->assertDatabaseCount('service_jobs', 1);
     }
 
     public function test_dry_run_reports_without_creating_anything(): void
@@ -83,6 +93,34 @@ class BackfillJobRescheduleTest extends TestCase
         $this->assertDatabaseCount('service_jobs', 1);
     }
 
+    public function test_ignores_jobs_scheduled_on_or_before_the_default_cutoff(): void
+    {
+        $recurrence = Recurrence::query()->where('name', 'Weekly')->firstOrFail();
+        $job = $this->completedJob($recurrence->id, ['scheduled_date' => '2026-08-15']);
+
+        $this->artisan('app:backfill-job-reschedule')->assertSuccessful();
+
+        $this->assertDatabaseCount('service_jobs', 1);
+        $this->assertNull($job->fresh()->rescheduled_at);
+    }
+
+    public function test_after_option_overrides_the_default_cutoff(): void
+    {
+        $recurrence = Recurrence::query()->where('name', 'Weekly')->firstOrFail();
+        $job = $this->completedJob($recurrence->id, ['scheduled_date' => '2026-08-15']);
+
+        $this->artisan('app:backfill-job-reschedule', ['--after' => '2026-08-01'])->assertSuccessful();
+
+        $newJob = Job::query()->where('rescheduled_from_job_id', $job->id)->firstOrFail();
+        $this->assertEquals('2026-08-22', $newJob->scheduled_date->toDateString());
+    }
+
+    public function test_invalid_after_option_fails_cleanly(): void
+    {
+        $this->artisan('app:backfill-job-reschedule', ['--after' => 'not-a-date'])
+            ->assertFailed();
+    }
+
     /** @param array<string, mixed> $overrides */
     private function completedJob(int $recurrenceId, array $overrides = []): Job
     {
@@ -91,7 +129,7 @@ class BackfillJobRescheduleTest extends TestCase
             'phone' => '555-0000',
             'email' => 'backfill.client@example.com',
             'client_address' => '1 Backfill Rd',
-            'scheduled_date' => now()->toDateString(),
+            'scheduled_date' => '2026-09-10',
             'is_recurring' => true,
             'recurrence_id' => $recurrenceId,
             'status' => JobWorkflowStatus::COMPLETED->value,

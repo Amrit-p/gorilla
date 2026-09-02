@@ -5,15 +5,14 @@ namespace App\Models;
 use App\Models\Concerns\IsMasterCatalogRecord;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
-use InvalidArgumentException;
 
 class Recurrence extends Model
 {
     use IsMasterCatalogRecord;
 
     /**
-     * Recurrence names whose interval is a fixed number of days — safe to
-     * pre-compute and store, unlike calendar-based months/quarters.
+     * Recurrence names whose interval is a fixed number of days — used only to
+     * suggest a starting value for interval_days, never at scheduling time.
      *
      * @var array<string, int>
      */
@@ -25,11 +24,12 @@ class Recurrence extends Model
         'fortnightly' => 14,
     ];
 
-    /** Recurrence names resolved via calendar arithmetic (variable month length). */
-    private const CALENDAR_KEYWORDS = ['monthly', 'quarterly'];
+    /** Names with no fixed day count to suggest (one-time / calendar-based). */
+    private const NO_SUGGESTION_KEYWORDS = ['one-time', 'one time', 'monthly', 'quarterly'];
 
     protected $fillable = [
         'name',
+        'interval_days',
         'is_active',
         'sort_order',
     ];
@@ -43,57 +43,31 @@ class Recurrence extends Model
         ];
     }
 
-    protected static function booted(): void
-    {
-        // interval_days is never user-supplied — it's always derived from name,
-        // so a bad/unparseable pattern is caught here instead of failing later
-        // when a job completes.
-        static::saving(function (Recurrence $recurrence): void {
-            $recurrence->interval_days = self::parseIntervalDays((string) $recurrence->name);
-        });
-    }
-
     /**
-     * Resolve the next scheduled date from a given date based on this recurrence.
-     * Returns null for one-time recurrences or unrecognised patterns.
+     * Resolve the next scheduled date from a given date.
+     * Driven entirely by the stored interval_days — never re-derived from the
+     * name at scheduling time, so a job's next date never silently depends on
+     * whether a name string happens to parse. Returns null when interval_days
+     * isn't set (e.g. a one-time recurrence).
      */
     public function resolve(Carbon $from): ?Carbon
     {
-        $name = strtolower(trim($this->name));
-
-        if ($name === 'monthly') {
-            return $from->copy()->addMonth();
-        }
-
-        if ($name === 'quarterly') {
-            return $from->copy()->addMonths(3);
-        }
-
         return $this->interval_days !== null
             ? $from->copy()->addDays($this->interval_days)
             : null;
     }
 
     /**
-     * Derive the fixed day interval for a recurrence name.
-     * Returns null for one-time and calendar-based (monthly/quarterly) names,
-     * which don't need a stored day count.
-     *
-     * @throws InvalidArgumentException when the name can't be parsed at all.
+     * Best-effort day-count suggestion for a recurrence name. Used to seed
+     * interval_days for historical rows with no stored value yet; the admin
+     * form suggests the same thing client-side and lets the user override it.
+     * Returns null when nothing can be inferred — never throws.
      */
     public static function parseIntervalDays(string $name): ?int
     {
         $normalised = strtolower(trim($name));
 
-        if ($normalised === '') {
-            throw new InvalidArgumentException('Recurrence name is required.');
-        }
-
-        if (str_contains($normalised, 'one-time') || str_contains($normalised, 'one time')) {
-            return null;
-        }
-
-        if (in_array($normalised, self::CALENDAR_KEYWORDS, true)) {
+        if ($normalised === '' || in_array($normalised, self::NO_SUGGESTION_KEYWORDS, true)) {
             return null;
         }
 
@@ -109,6 +83,6 @@ class Recurrence extends Model
             return str_starts_with($matches[2], 'week') ? $count * 7 : $count;
         }
 
-        throw new InvalidArgumentException("Could not parse the recurrence pattern \"{$name}\".");
+        return null;
     }
 }
