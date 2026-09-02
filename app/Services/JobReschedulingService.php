@@ -43,11 +43,10 @@ class JobReschedulingService
             return null;
         }
 
-        if ($source->rescheduled_at !== null) {
+        if ($source->nextOccurrence()->exists()) {
             Log::info('job.reschedule.skipped', [
                 'job_id' => $source->id,
                 'reason' => 'already rescheduled',
-                'rescheduled_at' => $source->rescheduled_at,
             ]);
 
             return null;
@@ -79,7 +78,7 @@ class JobReschedulingService
             return null;
         }
 
-        return DB::transaction(function () use ($job, $source, $nextDate): Job {
+        return DB::transaction(function () use ($source, $nextDate): Job {
             $newJob = Job::create([
                 'lead_id' => $source->lead_id,
                 'zone_id' => $source->zone_id,
@@ -122,9 +121,6 @@ class JobReschedulingService
                 'rescheduled_from_job_id' => $source->id,
             ]);
 
-            // saveQuietly keeps this bookkeeping write from re-triggering the observer.
-            $job->forceFill(['rescheduled_at' => now()])->saveQuietly();
-
             $this->notify($source, $newJob);
 
             Log::info('job.reschedule.created', [
@@ -143,33 +139,16 @@ class JobReschedulingService
      *
      * A next occurrence still Pending gets deleted — nobody's touched it yet.
      * One that's progressed further (started/completed) is left alone, since
-     * that's real work, not bookkeeping — but rescheduled_at stays set so
-     * re-completing this job won't create a duplicate. Only when no next
-     * occurrence exists at all (e.g. it was removed some other way) is
-     * rescheduled_at cleared, so this job isn't permanently stuck unable to
-     * reschedule again.
+     * that's real work, not bookkeeping — and its rescheduled_from_job_id link
+     * keeps this job's nextOccurrence() from being re-created on re-completion.
      */
     public function removeNextScheduledJob(Job $job): void
     {
-        DB::transaction(function () use ($job): void {
-            $nextJobs = Job::query()
-                ->where('rescheduled_from_job_id', $job->id)
-                ->get();
-
-            $nextJobs->where('status', JobWorkflowStatus::PENDING->value)
-                ->each(fn (Job $next): ?bool => $next->delete());
-
-            $hasProgressedNextJob = $nextJobs->contains(
-                fn (Job $next): bool => $next->status !== JobWorkflowStatus::PENDING->value
-            );
-
-            if ($hasProgressedNextJob) {
-                return;
-            }
-
-            // Clear the marker so completing this job again re-creates the next one.
-            $job->forceFill(['rescheduled_at' => null])->saveQuietly();
-        });
+        Job::query()
+            ->where('rescheduled_from_job_id', $job->id)
+            ->where('status', JobWorkflowStatus::PENDING->value)
+            ->get()
+            ->each(fn (Job $next): ?bool => $next->delete());
     }
 
     private function notify(Job $job, Job $newJob): void

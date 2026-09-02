@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable([
@@ -65,7 +66,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'verification_comment',
     'first_payment',
     'second_payment',
-    'rescheduled_at',
     'rescheduled_from_job_id',
 ])]
 #[ObservedBy([JobObserver::class])]
@@ -94,7 +94,6 @@ class Job extends Model
             'verified_date' => 'date:Y-m-d',
             'verified_amount' => 'decimal:2',
             'first_payment' => 'decimal:2',
-            'rescheduled_at' => 'datetime',
         ];
     }
 
@@ -181,6 +180,12 @@ class Job extends Model
     public function contract(): BelongsTo
     {
         return $this->belongsTo(Contract::class);
+    }
+
+    /** The next recurring occurrence created when this job was completed, if any. */
+    public function nextOccurrence(): HasOne
+    {
+        return $this->hasOne(self::class, 'rescheduled_from_job_id');
     }
 
     /** Payouts that settle this job. The unique pivot key allows at most one. */

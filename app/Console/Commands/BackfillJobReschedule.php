@@ -13,7 +13,7 @@ use Illuminate\Support\Carbon;
 #[Signature('app:backfill-job-reschedule
     {--dry-run : Preview affected jobs without creating anything}
     {--after=2026-09-01 : Only backfill completed jobs scheduled after this date (Y-m-d)}')]
-#[Description('One-off catch-up: create the missing next occurrence for completed recurring jobs that were never auto-rescheduled (e.g. jobs completed while a recurrence pattern failed to parse, or stuck with a stale rescheduled_at from a next job removed outside the normal Hold/Pending flow). Limited to jobs scheduled after --after to avoid recreating old, no-longer-relevant backlog. Safe to re-run.')]
+#[Description('One-off catch-up: create the missing next occurrence for completed recurring jobs that were never auto-rescheduled (e.g. jobs completed while a recurrence pattern failed to parse). Limited to jobs scheduled after --after to avoid recreating old, no-longer-relevant backlog. Safe to re-run.')]
 class BackfillJobReschedule extends Command
 {
     public function __construct(private readonly JobReschedulingService $jobReschedulingService)
@@ -33,26 +33,11 @@ class BackfillJobReschedule extends Command
             return self::FAILURE;
         }
 
-        $reconciled = $this->reconcileStuckRescheduledAt($dryRun, $after);
-
-        if ($reconciled > 0) {
-            $this->info(
-                ($dryRun ? '[Dry run] Would clear' : 'Cleared')
-                ." rescheduled_at on {$reconciled} job(s) scheduled after {$after} whose next occurrence no longer exists."
-            );
-
-            if ($dryRun) {
-                $this->line('Run again without --dry-run to clear those, then run once more to create their next occurrence.');
-            }
-
-            $this->newLine();
-        }
-
         $jobs = Job::query()
             ->where('status', JobWorkflowStatus::COMPLETED->value)
             ->where('is_recurring', true)
             ->whereNotNull('recurrence_id')
-            ->whereNull('rescheduled_at')
+            ->whereDoesntHave('nextOccurrence')
             ->whereDate('scheduled_date', '>', $after)
             ->with('recurrence')
             ->get();
@@ -99,37 +84,5 @@ class BackfillJobReschedule extends Command
         }
 
         return self::SUCCESS;
-    }
-
-    /**
-     * Completed jobs stuck with a stale rescheduled_at whose linked next
-     * occurrence no longer exists (e.g. deleted outside the normal
-     * Hold/Pending flow) are invisible to the query above — nothing would
-     * ever pick them up again. Clear the marker so they're eligible.
-     */
-    private function reconcileStuckRescheduledAt(bool $dryRun, string $after): int
-    {
-        $liveNextOccurrenceSourceIds = Job::query()
-            ->whereNotNull('rescheduled_from_job_id')
-            ->pluck('rescheduled_from_job_id');
-
-        $stuckJobs = Job::query()
-            ->where('status', JobWorkflowStatus::COMPLETED->value)
-            ->where('is_recurring', true)
-            ->whereNotNull('recurrence_id')
-            ->whereNotNull('rescheduled_at')
-            ->whereDate('scheduled_date', '>', $after)
-            ->whereNotIn('id', $liveNextOccurrenceSourceIds)
-            ->get(['id']);
-
-        if ($stuckJobs->isEmpty()) {
-            return 0;
-        }
-
-        if (! $dryRun) {
-            Job::query()->whereIn('id', $stuckJobs->pluck('id'))->update(['rescheduled_at' => null]);
-        }
-
-        return $stuckJobs->count();
     }
 }

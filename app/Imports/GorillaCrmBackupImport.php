@@ -451,7 +451,6 @@ class GorillaCrmBackupImport
                 ? $this->stringValue($record, ['tempRemarks'])
                 : null,
             'done_by_user_id' => $mower?->id,
-            'rescheduled_at' => $this->lastRescheduledAt($record),
             'deleted_at' => $this->softDeletedAt($record),
         ]);
 
@@ -934,26 +933,6 @@ class GorillaCrmBackupImport
             $verified > $amount ? 'over by ' : 'short by ',
             number_format(abs($verified - $amount), 2),
         );
-    }
-
-    /**
-     * @param  array<string, mixed>  $record
-     */
-    private function lastRescheduledAt(array $record): ?Carbon
-    {
-        $history = $record['rescheduleHistory'] ?? null;
-
-        if (! is_array($history) || $history === []) {
-            return null;
-        }
-
-        $last = end($history);
-
-        if (! is_array($last) || ! is_string($last['at'] ?? null)) {
-            return null;
-        }
-
-        return $this->parseDate($last['at']);
     }
 
     /**

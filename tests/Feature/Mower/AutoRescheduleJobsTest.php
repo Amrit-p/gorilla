@@ -7,6 +7,7 @@ use App\Models\Job;
 use App\Models\Recurrence;
 use App\Models\User;
 use App\Notifications\JobAutoRescheduledNotification;
+use App\Services\JobReschedulingService;
 use App\Support\CrmConstants;
 use App\Support\CrmRoles;
 use Database\Seeders\MasterCatalogSeeder;
@@ -55,8 +56,6 @@ class AutoRescheduleJobsTest extends TestCase
         $this->assertEquals('2026-06-17', $newJob->scheduled_date->toDateString());
         $this->assertEquals($recurrence->id, $newJob->recurrence_id);
         $this->assertSame(JobWorkflowStatus::PENDING->value, $newJob->status);
-
-        $this->assertNotNull($job->fresh()->rescheduled_at);
     }
 
     public function test_completion_notifies_office_managers_and_done_by_user(): void
@@ -92,7 +91,6 @@ class AutoRescheduleJobsTest extends TestCase
         $job->update(['status' => JobWorkflowStatus::COMPLETED->value]);
 
         $this->assertDatabaseCount('service_jobs', 1);
-        $this->assertNull($job->fresh()->rescheduled_at);
     }
 
     public function test_completing_a_non_recurring_job_does_not_reschedule(): void
@@ -118,12 +116,19 @@ class AutoRescheduleJobsTest extends TestCase
         $recurrence = Recurrence::query()->where('name', 'Weekly')->firstOrFail();
 
         $job = Job::query()->create($this->jobPayload($recurrence->id, [
-            'rescheduled_at' => now(),
+            'scheduled_date' => '2026-06-10',
         ]));
 
         $job->update(['status' => JobWorkflowStatus::COMPLETED->value]);
+        $this->assertDatabaseCount('service_jobs', 2);
 
-        $this->assertDatabaseCount('service_jobs', 1);
+        Notification::fake();
+
+        // Calling the service directly a second time on an already-completed
+        // source (which already has a live next occurrence) must not duplicate it.
+        app(JobReschedulingService::class)->rescheduleCompletedJob($job->fresh());
+
+        $this->assertDatabaseCount('service_jobs', 2);
         Notification::assertNothingSent();
     }
 
@@ -176,7 +181,6 @@ class AutoRescheduleJobsTest extends TestCase
         $job->update(['status' => JobWorkflowStatus::COMPLETED->value]);
 
         $this->assertDatabaseCount('service_jobs', 1);
-        $this->assertNull($job->fresh()->rescheduled_at);
     }
 
     public function test_holding_a_completed_job_removes_its_pending_next_job(): void
@@ -195,7 +199,7 @@ class AutoRescheduleJobsTest extends TestCase
         $job->update(['status' => JobWorkflowStatus::HOLD->value]);
 
         $this->assertSoftDeleted('service_jobs', ['id' => $next->id]);
-        $this->assertNull($job->fresh()->rescheduled_at);
+        $this->assertFalse($job->fresh()->nextOccurrence()->exists());
     }
 
     public function test_reverting_a_completed_job_to_pending_removes_its_pending_next_job(): void
@@ -214,7 +218,7 @@ class AutoRescheduleJobsTest extends TestCase
         $job->update(['status' => JobWorkflowStatus::PENDING->value]);
 
         $this->assertSoftDeleted('service_jobs', ['id' => $next->id]);
-        $this->assertNull($job->fresh()->rescheduled_at);
+        $this->assertFalse($job->fresh()->nextOccurrence()->exists());
     }
 
     public function test_next_job_is_kept_when_it_is_no_longer_pending(): void
@@ -236,10 +240,10 @@ class AutoRescheduleJobsTest extends TestCase
         $job->update(['status' => JobWorkflowStatus::HOLD->value]);
 
         $this->assertDatabaseHas('service_jobs', ['id' => $next->id, 'deleted_at' => null]);
-        $this->assertNotNull($job->fresh()->rescheduled_at);
+        $this->assertTrue($job->fresh()->nextOccurrence()->exists());
     }
 
-    public function test_reverting_clears_rescheduled_at_when_the_next_job_is_gone_entirely(): void
+    public function test_recompleting_recreates_the_next_job_after_it_was_force_deleted(): void
     {
         Notification::fake();
 
@@ -255,13 +259,13 @@ class AutoRescheduleJobsTest extends TestCase
         // Simulate the next job being removed some other way (e.g. deleted
         // directly from the admin jobs screen) — not via the Hold/Pending flow.
         $next->forceDelete();
-        $this->assertNotNull($job->fresh()->rescheduled_at);
 
-        // Reverting the source job should notice there's nothing left to
-        // protect and clear the stale marker, instead of leaving it stuck.
+        // Walking the source job to Hold and back to Completed should notice
+        // there's nothing left to protect and create a fresh next occurrence.
         $job->update(['status' => JobWorkflowStatus::HOLD->value]);
+        $job->update(['status' => JobWorkflowStatus::COMPLETED->value]);
 
-        $this->assertNull($job->fresh()->rescheduled_at);
+        $this->assertTrue($job->fresh()->nextOccurrence()->exists());
     }
 
     public function test_recompleting_after_a_hold_recreates_the_next_job(): void
@@ -284,7 +288,7 @@ class AutoRescheduleJobsTest extends TestCase
             ->get();
 
         $this->assertCount(1, $liveNext);
-        $this->assertNotNull($job->fresh()->rescheduled_at);
+        $this->assertTrue($job->fresh()->nextOccurrence()->exists());
     }
 
     /** @param array<string, mixed> $overrides */
