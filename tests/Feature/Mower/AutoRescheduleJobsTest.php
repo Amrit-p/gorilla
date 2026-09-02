@@ -16,6 +16,10 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
+/**
+ * The next recurring job is now scheduled inline when a job transitions to
+ * Completed (via App\Observers\JobObserver), replacing the old scheduled command.
+ */
 class AutoRescheduleJobsTest extends TestCase
 {
     use RefreshDatabase;
@@ -32,7 +36,7 @@ class AutoRescheduleJobsTest extends TestCase
         $this->admin = User::query()->where('email', CrmConstants::ADMIN_EMAIL)->firstOrFail();
     }
 
-    public function test_completed_recurring_job_creates_new_job_with_correct_date(): void
+    public function test_completing_recurring_job_creates_next_occurrence_with_correct_date(): void
     {
         Notification::fake();
 
@@ -40,26 +44,22 @@ class AutoRescheduleJobsTest extends TestCase
 
         $job = Job::query()->create($this->jobPayload($recurrence->id, [
             'scheduled_date' => '2026-06-10',
-            'status' => JobWorkflowStatus::COMPLETED->value,
         ]));
 
-        $this->artisan('app:auto-reschedule-jobs')->assertSuccessful();
+        $job->update(['status' => JobWorkflowStatus::COMPLETED->value]);
 
         $newJob = Job::query()
-            ->where('customer_name', 'Test Client')
-            ->where('phone', '555-0000')
-            ->where('status', JobWorkflowStatus::PENDING->value)
-            ->whereNull('rescheduled_at')
+            ->where('rescheduled_from_job_id', $job->id)
             ->firstOrFail();
 
         $this->assertEquals('2026-06-17', $newJob->scheduled_date->toDateString());
         $this->assertEquals($recurrence->id, $newJob->recurrence_id);
+        $this->assertSame(JobWorkflowStatus::PENDING->value, $newJob->status);
 
-        $job->refresh();
-        $this->assertNotNull($job->rescheduled_at);
+        $this->assertNotNull($job->fresh()->rescheduled_at);
     }
 
-    public function test_command_notifies_office_managers_and_done_by_user(): void
+    public function test_completion_notifies_office_managers_and_done_by_user(): void
     {
         Notification::fake();
 
@@ -71,64 +71,59 @@ class AutoRescheduleJobsTest extends TestCase
 
         $recurrence = Recurrence::query()->where('name', 'Monthly')->firstOrFail();
 
-        Job::query()->create($this->jobPayload($recurrence->id, [
-            'status' => JobWorkflowStatus::COMPLETED->value,
+        $job = Job::query()->create($this->jobPayload($recurrence->id, [
             'done_by_user_id' => $mower->id,
         ]));
 
-        $this->artisan('app:auto-reschedule-jobs')->assertSuccessful();
+        $job->update(['status' => JobWorkflowStatus::COMPLETED->value]);
 
         Notification::assertSentTo($manager, JobAutoRescheduledNotification::class);
         Notification::assertSentTo($mower, JobAutoRescheduledNotification::class);
     }
 
-    public function test_one_time_recurrence_is_skipped(): void
+    public function test_one_time_recurrence_is_not_rescheduled(): void
     {
         Notification::fake();
 
         $recurrence = Recurrence::query()->where('name', 'One-Time')->firstOrFail();
 
-        Job::query()->create($this->jobPayload($recurrence->id, [
-            'status' => JobWorkflowStatus::COMPLETED->value,
-        ]));
+        $job = Job::query()->create($this->jobPayload($recurrence->id));
 
-        $this->artisan('app:auto-reschedule-jobs')->assertSuccessful();
+        $job->update(['status' => JobWorkflowStatus::COMPLETED->value]);
 
         $this->assertDatabaseCount('service_jobs', 1);
+        $this->assertNull($job->fresh()->rescheduled_at);
     }
 
-    public function test_already_rescheduled_job_is_not_processed_again(): void
+    public function test_completing_a_non_recurring_job_does_not_reschedule(): void
     {
         Notification::fake();
 
         $recurrence = Recurrence::query()->where('name', 'Weekly')->firstOrFail();
 
-        Job::query()->create($this->jobPayload($recurrence->id, [
-            'status' => JobWorkflowStatus::COMPLETED->value,
-            'rescheduled_at' => now(),
+        $job = Job::query()->create($this->jobPayload($recurrence->id, [
+            'is_recurring' => false,
         ]));
 
-        $this->artisan('app:auto-reschedule-jobs')->assertSuccessful();
+        $job->update(['status' => JobWorkflowStatus::COMPLETED->value]);
 
         $this->assertDatabaseCount('service_jobs', 1);
         Notification::assertNothingSent();
     }
 
-    public function test_non_completed_job_is_not_rescheduled(): void
+    public function test_already_rescheduled_job_is_not_rescheduled_again(): void
     {
         Notification::fake();
 
         $recurrence = Recurrence::query()->where('name', 'Weekly')->firstOrFail();
 
-        foreach ([JobWorkflowStatus::PENDING, JobWorkflowStatus::STARTED, JobWorkflowStatus::HOLD] as $status) {
-            Job::query()->create($this->jobPayload($recurrence->id, [
-                'status' => $status->value,
-            ]));
-        }
+        $job = Job::query()->create($this->jobPayload($recurrence->id, [
+            'rescheduled_at' => now(),
+        ]));
 
-        $this->artisan('app:auto-reschedule-jobs')->assertSuccessful();
+        $job->update(['status' => JobWorkflowStatus::COMPLETED->value]);
 
-        $this->assertDatabaseCount('service_jobs', 3);
+        $this->assertDatabaseCount('service_jobs', 1);
         Notification::assertNothingSent();
     }
 
@@ -138,19 +133,98 @@ class AutoRescheduleJobsTest extends TestCase
 
         $recurrence = Recurrence::query()->where('name', 'Bi-Weekly')->firstOrFail();
 
-        Job::query()->create($this->jobPayload($recurrence->id, [
+        $job = Job::query()->create($this->jobPayload($recurrence->id, [
             'scheduled_date' => '2026-06-10',
-            'status' => JobWorkflowStatus::COMPLETED->value,
         ]));
 
-        $this->artisan('app:auto-reschedule-jobs')->assertSuccessful();
+        $job->update(['status' => JobWorkflowStatus::COMPLETED->value]);
 
-        $newJob = Job::query()
-            ->where('status', JobWorkflowStatus::PENDING->value)
-            ->whereNull('rescheduled_at')
-            ->firstOrFail();
+        $newJob = Job::query()->where('rescheduled_from_job_id', $job->id)->firstOrFail();
 
         $this->assertEquals('2026-06-24', $newJob->scheduled_date->toDateString());
+    }
+
+    public function test_holding_a_completed_job_removes_its_pending_next_job(): void
+    {
+        Notification::fake();
+
+        $recurrence = Recurrence::query()->where('name', 'Weekly')->firstOrFail();
+
+        $job = Job::query()->create($this->jobPayload($recurrence->id, [
+            'scheduled_date' => '2026-06-10',
+        ]));
+
+        $job->update(['status' => JobWorkflowStatus::COMPLETED->value]);
+        $next = Job::query()->where('rescheduled_from_job_id', $job->id)->firstOrFail();
+
+        $job->update(['status' => JobWorkflowStatus::HOLD->value]);
+
+        $this->assertSoftDeleted('service_jobs', ['id' => $next->id]);
+        $this->assertNull($job->fresh()->rescheduled_at);
+    }
+
+    public function test_reverting_a_completed_job_to_pending_removes_its_pending_next_job(): void
+    {
+        Notification::fake();
+
+        $recurrence = Recurrence::query()->where('name', 'Weekly')->firstOrFail();
+
+        $job = Job::query()->create($this->jobPayload($recurrence->id, [
+            'scheduled_date' => '2026-06-10',
+        ]));
+
+        $job->update(['status' => JobWorkflowStatus::COMPLETED->value]);
+        $next = Job::query()->where('rescheduled_from_job_id', $job->id)->firstOrFail();
+
+        $job->update(['status' => JobWorkflowStatus::PENDING->value]);
+
+        $this->assertSoftDeleted('service_jobs', ['id' => $next->id]);
+        $this->assertNull($job->fresh()->rescheduled_at);
+    }
+
+    public function test_next_job_is_kept_when_it_is_no_longer_pending(): void
+    {
+        Notification::fake();
+
+        $recurrence = Recurrence::query()->where('name', 'Weekly')->firstOrFail();
+
+        $job = Job::query()->create($this->jobPayload($recurrence->id, [
+            'scheduled_date' => '2026-06-10',
+        ]));
+
+        $job->update(['status' => JobWorkflowStatus::COMPLETED->value]);
+        $next = Job::query()->where('rescheduled_from_job_id', $job->id)->firstOrFail();
+
+        // The mower has already started the next job, so it must not be removed.
+        $next->update(['status' => JobWorkflowStatus::STARTED->value]);
+
+        $job->update(['status' => JobWorkflowStatus::HOLD->value]);
+
+        $this->assertDatabaseHas('service_jobs', ['id' => $next->id, 'deleted_at' => null]);
+        $this->assertNotNull($job->fresh()->rescheduled_at);
+    }
+
+    public function test_recompleting_after_a_hold_recreates_the_next_job(): void
+    {
+        Notification::fake();
+
+        $recurrence = Recurrence::query()->where('name', 'Weekly')->firstOrFail();
+
+        $job = Job::query()->create($this->jobPayload($recurrence->id, [
+            'scheduled_date' => '2026-06-10',
+        ]));
+
+        $job->update(['status' => JobWorkflowStatus::COMPLETED->value]);
+        $job->update(['status' => JobWorkflowStatus::HOLD->value]);
+        $job->update(['status' => JobWorkflowStatus::COMPLETED->value]);
+
+        $liveNext = Job::query()
+            ->where('rescheduled_from_job_id', $job->id)
+            ->where('status', JobWorkflowStatus::PENDING->value)
+            ->get();
+
+        $this->assertCount(1, $liveNext);
+        $this->assertNotNull($job->fresh()->rescheduled_at);
     }
 
     /** @param array<string, mixed> $overrides */

@@ -145,11 +145,14 @@ class DashboardAnalyticsTest extends TestCase
 
         $this->completeChecklistForMower($mower);
 
+        // The mower dashboard no longer surfaces summary metric cards — only the
+        // scope tabs and job list remain.
         $this->actingAs($mower)
             ->get(route('mower.index'))
             ->assertOk()
-            ->assertSee('Hours', false)
-            ->assertSee('Total Upcoming', false);
+            ->assertSee('Upcoming', false)
+            ->assertDontSee('Total Upcoming', false)
+            ->assertDontSee('id="mower-analytics-hours"', false);
     }
 
     public function test_mower_performance_table_ajax_filters_by_date_range(): void

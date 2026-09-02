@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Observers\JobObserver;
 use App\Traits\HasFollowups;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -64,7 +66,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'first_payment',
     'second_payment',
     'rescheduled_at',
+    'rescheduled_from_job_id',
 ])]
+#[ObservedBy([JobObserver::class])]
 class Job extends Model
 {
     use HasFollowups;
