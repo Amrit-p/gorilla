@@ -139,21 +139,33 @@ class JobReschedulingService
 
     /**
      * Remove the auto-scheduled next occurrence when a completed job is walked
-     * back to Hold or Pending — but only while that next job is still Pending.
+     * back to Hold or Pending.
+     *
+     * A next occurrence still Pending gets deleted — nobody's touched it yet.
+     * One that's progressed further (started/completed) is left alone, since
+     * that's real work, not bookkeeping — but rescheduled_at stays set so
+     * re-completing this job won't create a duplicate. Only when no next
+     * occurrence exists at all (e.g. it was removed some other way) is
+     * rescheduled_at cleared, so this job isn't permanently stuck unable to
+     * reschedule again.
      */
     public function removeNextScheduledJob(Job $job): void
     {
         DB::transaction(function () use ($job): void {
             $nextJobs = Job::query()
                 ->where('rescheduled_from_job_id', $job->id)
-                ->where('status', JobWorkflowStatus::PENDING->value)
                 ->get();
 
-            if ($nextJobs->isEmpty()) {
+            $nextJobs->where('status', JobWorkflowStatus::PENDING->value)
+                ->each(fn (Job $next): ?bool => $next->delete());
+
+            $hasProgressedNextJob = $nextJobs->contains(
+                fn (Job $next): bool => $next->status !== JobWorkflowStatus::PENDING->value
+            );
+
+            if ($hasProgressedNextJob) {
                 return;
             }
-
-            $nextJobs->each(fn (Job $next): ?bool => $next->delete());
 
             // Clear the marker so completing this job again re-creates the next one.
             $job->forceFill(['rescheduled_at' => null])->saveQuietly();

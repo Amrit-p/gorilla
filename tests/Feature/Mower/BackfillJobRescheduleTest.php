@@ -83,14 +83,70 @@ class BackfillJobRescheduleTest extends TestCase
         $this->assertDatabaseCount('service_jobs', 1);
     }
 
-    public function test_ignores_jobs_already_rescheduled(): void
+    public function test_ignores_jobs_already_rescheduled_with_a_live_next_job(): void
     {
         $recurrence = Recurrence::query()->where('name', 'Weekly')->firstOrFail();
-        $this->completedJob($recurrence->id, ['rescheduled_at' => now()]);
+        $job = $this->completedJob($recurrence->id, ['rescheduled_at' => now()]);
+        $this->completedJob($recurrence->id, [
+            'status' => JobWorkflowStatus::PENDING->value,
+            'rescheduled_from_job_id' => $job->id,
+        ]);
 
         $this->artisan('app:backfill-job-reschedule')->assertSuccessful();
 
+        $this->assertDatabaseCount('service_jobs', 2);
+    }
+
+    public function test_reconciles_stuck_rescheduled_at_and_creates_the_missing_next_occurrence(): void
+    {
+        $recurrence = Recurrence::query()->where('name', 'Weekly')->firstOrFail();
+
+        // rescheduled_at set from a past completion, but the next job it once
+        // created is gone (deleted outside the normal Hold/Pending flow) —
+        // nothing points back to this job, so it's stuck with no recovery path.
+        $job = $this->completedJob($recurrence->id, [
+            'scheduled_date' => '2026-09-05',
+            'rescheduled_at' => '2026-07-30 12:31:49',
+        ]);
+
+        $this->artisan('app:backfill-job-reschedule')->assertSuccessful();
+
+        $newJob = Job::query()->where('rescheduled_from_job_id', $job->id)->firstOrFail();
+        $this->assertEquals('2026-09-12', $newJob->scheduled_date->toDateString());
+        $this->assertNotNull($job->fresh()->rescheduled_at);
+    }
+
+    public function test_dry_run_reports_stuck_jobs_without_clearing_them(): void
+    {
+        $recurrence = Recurrence::query()->where('name', 'Weekly')->firstOrFail();
+        $job = $this->completedJob($recurrence->id, [
+            'scheduled_date' => '2026-09-05',
+            'rescheduled_at' => '2026-07-30 12:31:49',
+        ]);
+
+        $this->artisan('app:backfill-job-reschedule', ['--dry-run' => true])->assertSuccessful();
+
         $this->assertDatabaseCount('service_jobs', 1);
+        $this->assertSame('2026-07-30 12:31:49', $job->fresh()->rescheduled_at->format('Y-m-d H:i:s'));
+    }
+
+    public function test_leaves_rescheduled_at_alone_when_its_next_job_still_exists(): void
+    {
+        $recurrence = Recurrence::query()->where('name', 'Weekly')->firstOrFail();
+        $job = $this->completedJob($recurrence->id, [
+            'scheduled_date' => '2026-09-05',
+            'rescheduled_at' => '2026-07-30 12:31:49',
+        ]);
+        $next = $this->completedJob($recurrence->id, [
+            'status' => JobWorkflowStatus::PENDING->value,
+            'scheduled_date' => '2026-09-26',
+        ]);
+        $next->update(['rescheduled_from_job_id' => $job->id]);
+
+        $this->artisan('app:backfill-job-reschedule')->assertSuccessful();
+
+        $this->assertSame('2026-07-30 12:31:49', $job->fresh()->rescheduled_at->format('Y-m-d H:i:s'));
+        $this->assertDatabaseCount('service_jobs', 2);
     }
 
     public function test_ignores_jobs_scheduled_on_or_before_the_default_cutoff(): void

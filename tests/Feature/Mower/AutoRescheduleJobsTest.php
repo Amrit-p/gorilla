@@ -239,6 +239,31 @@ class AutoRescheduleJobsTest extends TestCase
         $this->assertNotNull($job->fresh()->rescheduled_at);
     }
 
+    public function test_reverting_clears_rescheduled_at_when_the_next_job_is_gone_entirely(): void
+    {
+        Notification::fake();
+
+        $recurrence = Recurrence::query()->where('name', 'Weekly')->firstOrFail();
+
+        $job = Job::query()->create($this->jobPayload($recurrence->id, [
+            'scheduled_date' => '2026-06-10',
+        ]));
+
+        $job->update(['status' => JobWorkflowStatus::COMPLETED->value]);
+        $next = Job::query()->where('rescheduled_from_job_id', $job->id)->firstOrFail();
+
+        // Simulate the next job being removed some other way (e.g. deleted
+        // directly from the admin jobs screen) — not via the Hold/Pending flow.
+        $next->forceDelete();
+        $this->assertNotNull($job->fresh()->rescheduled_at);
+
+        // Reverting the source job should notice there's nothing left to
+        // protect and clear the stale marker, instead of leaving it stuck.
+        $job->update(['status' => JobWorkflowStatus::HOLD->value]);
+
+        $this->assertNull($job->fresh()->rescheduled_at);
+    }
+
     public function test_recompleting_after_a_hold_recreates_the_next_job(): void
     {
         Notification::fake();
