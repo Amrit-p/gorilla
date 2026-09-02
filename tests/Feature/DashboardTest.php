@@ -48,13 +48,11 @@ class DashboardTest extends TestCase
             ->assertSee('New Follow-Up');
     }
 
-    public function test_dashboard_hides_the_quick_followup_button_without_permission(): void
+    public function test_mower_visiting_dashboard_is_redirected_to_mower_dashboard(): void
     {
         $this->actingAs($this->mower)
             ->get(route('dashboard.index'))
-            ->assertOk()
-            ->assertDontSee('open-followup-modal')
-            ->assertDontSee('dashboard-followup-form');
+            ->assertRedirect(route('mower.index'));
     }
 
     public function test_general_followup_can_be_created_from_the_dashboard(): void

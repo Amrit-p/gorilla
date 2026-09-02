@@ -4,10 +4,12 @@
     let INDEX_URL = '';
     const filters = {
         scope: 'today',
+        search: '',
     };
 
     let currentRequest = null;
     let alertTimeout = null;
+    let searchTimeout = null;
 
     function showAlert(message, isError) {
         clearTimeout(alertTimeout);
@@ -83,13 +85,19 @@
         });
     }
 
+    function todayDateString() {
+        const now = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
+        return now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate());
+    }
+
     function updateExportLink(filters) {
         filters = filters || {};
         const base = (window.mowerRoutes || {}).exportPdf;
         if (!base) return;
         const params = new URLSearchParams();
         params.set('scope', filters.scope || 'today');
-        const today = moment ? moment().format('YYYY-MM-DD') : new Date().toISOString().slice(0, 10);
+        const today = todayDateString();
         params.set('date_range[start]', today);
         params.set('date_range[end]', today);
         $('#mower-export-pdf').attr('href', base + '?' + params.toString());
@@ -102,7 +110,7 @@
         hideAlert();
         setLoading(true);
 
-        const data = { scope: filters.scope };
+        const data = { scope: filters.scope, search: filters.search || '' };
 
         if (currentRequest && typeof currentRequest.abort === 'function') {
             try { currentRequest.abort(); } catch (e) { /* ignore */ }
@@ -139,6 +147,26 @@
         if (!scope) return;
 
         filters.scope = scope;
+        loadScope({ ...filters });
+    });
+
+    $(document).on('input', '#mower-search', function () {
+        const value = String($(this).val() || '');
+        $('#mower-search-clear').toggleClass('hidden', !value);
+
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function () {
+            filters.search = value.trim();
+            loadScope({ ...filters });
+        }, 400);
+    });
+
+    $(document).on('click', '#mower-search-clear', function () {
+        $('#mower-search').val('');
+        $(this).addClass('hidden');
+
+        clearTimeout(searchTimeout);
+        filters.search = '';
         loadScope({ ...filters });
     });
     // ─── Job detail: gallery ────────────────────────────────────────────────
@@ -524,6 +552,7 @@
         filters.scope = window.mowerInitialScope
             || ($('.mower-scope.bg-emerald-700').first().data('scope'))
             || 'today';
+        filters.search = window.mowerInitialSearch || '';
 
         updateScopeButtons(filters);
         updateExportLink(filters);

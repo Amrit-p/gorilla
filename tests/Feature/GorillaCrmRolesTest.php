@@ -214,7 +214,7 @@ class GorillaCrmRolesTest extends TestCase
         $user = $this->userWithRole(CrmRoles::MOWER);
         $this->completeChecklistForMower($user);
 
-        $this->actingAs($user)->get(route('dashboard.index'))->assertOk();
+        $this->actingAs($user)->get(route('dashboard.index'))->assertRedirect(route('mower.index'));
         $this->actingAs($user)->get(route('admin.jobs.index'))->assertOk();
         $this->actingAs($user)->get(route('employee.mobile.index'))->assertRedirect(route('mower.index'));
         $this->actingAs($user)->get(route('mower.index'))->assertOk();

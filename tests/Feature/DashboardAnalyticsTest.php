@@ -111,7 +111,16 @@ class DashboardAnalyticsTest extends TestCase
             ->assertSee('Jobs today', false);
     }
 
-    public function test_mower_dashboard_shows_field_metrics(): void
+    public function test_mower_visiting_dashboard_is_redirected_to_mower_index(): void
+    {
+        $mower = $this->userWithRole(CrmRoles::MOWER);
+
+        $this->actingAs($mower)
+            ->get(route('dashboard.index'))
+            ->assertRedirect(route('mower.index'));
+    }
+
+    public function test_mower_index_shows_job_list_without_summary_cards(): void
     {
         $mower = $this->userWithRole(CrmRoles::MOWER);
         $job = Job::query()->create($this->jobPayload([
@@ -124,24 +133,6 @@ class DashboardAnalyticsTest extends TestCase
             'assignment_date' => $job->scheduled_date,
             'assignment_status' => $job->status,
         ]);
-
-        $done = Job::query()->create($this->jobPayload([
-            'charges' => 80.00,
-            'scheduled_date' => now()->toDateString(),
-            'status' => JobWorkflowStatus::COMPLETED->value,
-            'consumed_time_minutes' => 120,
-        ]));
-        $done->assignedEmployees()->attach($mower->id, [
-            'assignment_date' => $done->scheduled_date,
-            'assignment_status' => $done->status,
-        ]);
-
-        $this->actingAs($mower)
-            ->get(route('dashboard.index'))
-            ->assertOk()
-            ->assertSee('Today', false)
-            ->assertSee('Completed hours', false)
-            ->assertSee('Total upcoming', false);
 
         $this->completeChecklistForMower($mower);
 

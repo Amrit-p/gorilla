@@ -10,6 +10,7 @@ use App\Models\Job;
 use App\Models\User;
 // use App\Notifications\JobStatusChangedNotification;
 use App\Support\CrmRoles;
+use App\Support\QueryFilters\JobListFilter;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 
@@ -17,7 +18,8 @@ class MowerDashboardService
 {
     public function __construct(
         private readonly JobImageManagementService $jobImageManagementService,
-        private readonly ActivityLogService $activityLogService
+        private readonly ActivityLogService $activityLogService,
+        private readonly JobListFilter $jobListFilter
     ) {}
 
     public function assertAssigned(User $mower, Job $job): void
@@ -37,7 +39,7 @@ class MowerDashboardService
     /**
      * @return Collection<int, Job>
      */
-    public function assignedJobs(User $mower, ?string $scope = 'today', ?string $scheduleDate = null, ?string $scheduleEndDate = null): Collection
+    public function assignedJobs(User $mower, ?string $scope = 'today', ?string $scheduleDate = null, ?string $scheduleEndDate = null, ?string $search = null): Collection
     {
         $query = Job::query()
             ->select([
@@ -76,6 +78,10 @@ class MowerDashboardService
             'today' => $query->whereBetween('scheduled_date', [$startDate, $endDate]),
             default => $query->whereDate('scheduled_date', '<=', $today),
         };
+
+        if (filled($search)) {
+            $this->jobListFilter->apply($query, ['search' => $search]);
+        }
 
         $query = $query
             ->orderBy('scheduled_date', 'desc')

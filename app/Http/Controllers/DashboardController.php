@@ -17,6 +17,7 @@ use App\Support\MowerPayoutLookup;
 use App\Support\QueryFilters\JobListFilter;
 use App\Support\QueryFilters\LeadListFilter;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\View\View;
@@ -33,9 +34,14 @@ class DashboardController extends Controller
     /**
      * Main dashboard page with metrics and timeline.
      */
-    public function index(): View
+    public function index(): View|RedirectResponse
     {
         $user = request()->user();
+
+        // Mowers get their own field dashboard; never show them the admin/sales dashboard.
+        if ($user->hasRole(CrmRoles::MOWER)) {
+            return redirect()->route('mower.index');
+        }
 
         // Keep a simple audit entry whenever dashboard is opened.
         $this->activityLogService->log($user, 'dashboard.view', 'User opened dashboard.');

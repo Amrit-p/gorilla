@@ -6,6 +6,31 @@
 
         <div id="mower-alert" class="hidden rounded-xl px-4 py-3 text-sm" style="position:fixed;top:1rem;left:50%;transform:translateX(-50%);z-index:9999;min-width:280px;max-width:90vw;"></div>
 
+        <div class="relative">
+            <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+                </svg>
+            </span>
+            <input
+                type="text"
+                id="mower-search"
+                value="{{ $search ?? '' }}"
+                placeholder="Search name, phone, email, address…"
+                class="mower-touch w-full rounded-full border border-slate-200 bg-white py-2 pl-9 pr-9 text-sm text-slate-700 placeholder-slate-400 shadow-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+            >
+            <button
+                type="button"
+                id="mower-search-clear"
+                aria-label="Clear search"
+                class="{{ empty($search) ? 'hidden' : '' }} absolute inset-y-0 right-3 flex items-center text-slate-400"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
         <div class="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4">
             @foreach ($listScopes as $key => $label)
                 <button
@@ -64,6 +89,7 @@
                 exportPdf: @json(route('mower.export-pdf')),
             };
             window.mowerInitialScope = @json($scope);
+            window.mowerInitialSearch = @json($search ?? '');
         </script>
     @endpush
 </x-layouts.mower>

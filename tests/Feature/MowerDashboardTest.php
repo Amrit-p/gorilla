@@ -120,6 +120,47 @@ class MowerDashboardTest extends TestCase
             ->assertJsonStructure(['html']);
     }
 
+    public function test_index_search_filters_jobs_by_any_match(): void
+    {
+        $match = $this->createAssignedJob($this->mower, [
+            'customer_name' => 'Jane Wildwood',
+            'phone' => '0400111222',
+            'client_address' => '10 Field Rd',
+        ]);
+        $noMatch = $this->createAssignedJob($this->mower, [
+            'customer_name' => 'Other Client',
+            'phone' => '0400333444',
+            'client_address' => '20 Other St',
+        ]);
+
+        $response = $this->actingAs($this->mower)
+            ->get(route('mower.index', ['search' => 'Wildwood']))
+            ->assertOk()
+            ->assertSee($match->customerDisplayName())
+            ->assertDontSee($noMatch->customerDisplayName());
+
+        $html = $response->getContent();
+        $this->assertSame(1, substr_count($html, 'rounded-2xl border border-slate-200 bg-white p-4'));
+    }
+
+    public function test_index_search_matches_on_address(): void
+    {
+        $match = $this->createAssignedJob($this->mower, [
+            'customer_name' => 'Jane Wildwood',
+            'client_address' => '10 Field Rd',
+        ]);
+        $noMatch = $this->createAssignedJob($this->mower, [
+            'customer_name' => 'Other Client',
+            'client_address' => '20 Other St',
+        ]);
+
+        $this->actingAs($this->mower)
+            ->get(route('mower.index', ['search' => 'Field Rd']))
+            ->assertOk()
+            ->assertSee($match->customerDisplayName())
+            ->assertDontSee($noMatch->customerDisplayName());
+    }
+
     public function test_map_page_renders_within_mower_layout(): void
     {
         $this->actingAs($this->mower)

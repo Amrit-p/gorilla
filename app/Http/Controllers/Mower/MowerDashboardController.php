@@ -73,7 +73,9 @@ class MowerDashboardController extends Controller
 
         $scheduleEndDate = $rangeEnd ? (string) trim((string) $rangeEnd) : $scheduleDate;
 
-        $jobs = $this->mowerDashboardService->assignedJobs($request->user(), $scope, $scheduleDate, $scheduleEndDate);
+        $search = $request->string('search')->toString();
+
+        $jobs = $this->mowerDashboardService->assignedJobs($request->user(), $scope, $scheduleDate, $scheduleEndDate, $search);
 
         if (crm_wants_partial($request)) {
             return response()->json([
@@ -84,6 +86,7 @@ class MowerDashboardController extends Controller
         return view('mower.index', [
             'jobs' => $jobs,
             'scope' => $scope,
+            'search' => $search,
             'scheduleStart' => $scheduleDate,
             'scheduleEnd' => $scheduleEndDate,
             'listScopes' => [
