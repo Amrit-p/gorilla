@@ -44,35 +44,28 @@ class MowerReportControllerTest extends TestCase
             ->assertDontSee('mower-safe-bottom', false);
     }
 
-    public function test_mower_sees_mower_layout(): void
+    public function test_mower_is_forbidden_from_the_mower_report(): void
     {
+        $this->assertFalse($this->mower->can('view-mower-report'));
+
+        $this->actingAs($this->mower)->get(route('reports.mower.index'))->assertForbidden();
+        $this->actingAs($this->mower)->getJson(route('reports.mower.report'))->assertForbidden();
         $this->actingAs($this->mower)
-            ->get(route('reports.mower.index'))
-            ->assertOk()
-            ->assertSee('Mower Report')
-            ->assertSee('mower-safe-bottom', false)
-            ->assertDontSee('id="sidebar"', false);
+            ->getJson(route('reports.mower.jobs', ['done_by_user_id' => $this->mower->id]))
+            ->assertForbidden();
+        $this->actingAs($this->mower)
+            ->getJson(route('reports.mower.payouts', ['done_by_user_id' => $this->mower->id]))
+            ->assertForbidden();
+        $this->actingAs($this->mower)->get(route('reports.mower.export'))->assertForbidden();
+        $this->actingAs($this->mower)->get(route('reports.mower.export-pdf'))->assertForbidden();
     }
 
-    public function test_mower_dashboard_shows_report_link_for_permitted_user(): void
+    public function test_mower_dashboard_does_not_show_the_report_link(): void
     {
         $this->actingAs($this->mower)
             ->get(route('mower.index'))
             ->assertOk()
-            ->assertSee(route('reports.mower.index'), false);
-    }
-
-    public function test_mower_report_hides_advanced_filters_and_list_scope_for_mower(): void
-    {
-        $response = $this->actingAs($this->mower)
-            ->get(route('reports.mower.index'))
-            ->assertOk();
-
-        $response->assertSee('name="search"', false);
-        $response->assertSee('Scheduled Date');
-        $response->assertDontSee('All zones');
-        $response->assertDontSee('Any status');
-        $response->assertDontSee('Completed but not verified');
+            ->assertDontSee(route('reports.mower.index'), false);
     }
 
     public function test_mower_report_keeps_full_filters_but_hides_list_scope_for_office_manager(): void
@@ -132,41 +125,6 @@ class MowerReportControllerTest extends TestCase
         $this->assertStringNotContainsString('$15.00', $html);
     }
 
-    public function test_mower_sees_the_payout_column_but_not_total_sale(): void
-    {
-        $job = $this->createCompletedJobForMower();
-        $this->createPayoutForJob($job, amount: 90, bonus: 15);
-
-        $html = $this->actingAs($this->mower)
-            ->getJson(route('reports.mower.report'))
-            ->assertOk()
-            ->json('html');
-
-        $this->assertStringContainsString('Payout', $html);
-        $this->assertStringContainsString('$90.00', $html);
-        // Total Sale is the customer-facing revenue, which mowers do not see.
-        $this->assertStringNotContainsString('Total Sale', $html);
-        $this->assertStringNotContainsString('$100.00', $html);
-    }
-
-    public function test_mower_does_not_see_the_bonus_column(): void
-    {
-        if (CrmRoles::MOWER_SHOW_BONUS) {
-            $this->markTestSkipped('The bonus column is visible to mowers by configuration.');
-        }
-
-        $job = $this->createCompletedJobForMower();
-        $this->createPayoutForJob($job, amount: 90, bonus: 15);
-
-        $html = $this->actingAs($this->mower)
-            ->getJson(route('reports.mower.report'))
-            ->assertOk()
-            ->json('html');
-
-        $this->assertStringNotContainsString('Bonus', $html);
-        $this->assertStringNotContainsString('$15.00', $html);
-    }
-
     public function test_office_manager_still_sees_the_total_sale_column(): void
     {
         $this->createCompletedJobForMower();
@@ -178,20 +136,6 @@ class MowerReportControllerTest extends TestCase
 
         $this->assertStringContainsString('Total Sale', $html);
         $this->assertStringContainsString('$100.00', $html);
-    }
-
-    public function test_mower_exports_render_without_the_total_sale_column(): void
-    {
-        $job = $this->createCompletedJobForMower();
-        $this->createPayoutForJob($job, amount: 90, bonus: 15);
-
-        $this->actingAs($this->mower)
-            ->get(route('reports.mower.export'))
-            ->assertOk();
-
-        $this->actingAs($this->mower)
-            ->get(route('reports.mower.export-pdf'))
-            ->assertOk();
     }
 
     public function test_excel_and_pdf_exports_render_with_the_payout_column(): void
@@ -280,44 +224,6 @@ class MowerReportControllerTest extends TestCase
         $this->assertStringContainsString('$90.00', $html);
         $this->assertStringNotContainsString('salary-payouts-edit', $html);
         $this->assertStringNotContainsString('salary-payouts-delete', $html);
-    }
-
-    public function test_mower_can_open_their_own_payouts_read_only(): void
-    {
-        $job = $this->createCompletedJobForMower();
-        $this->createPayoutForJob($job, amount: 90, bonus: 15, comment: 'April settlement');
-
-        $html = $this->actingAs($this->mower)
-            ->getJson(route('reports.mower.payouts', ['done_by_user_id' => $this->mower->id]))
-            ->assertOk()
-            ->assertJson(['count' => 1])
-            ->json('html');
-
-        $this->assertStringContainsString('$90.00', $html);
-        $this->assertStringContainsString('April settlement', $html);
-        // The bonus stays hidden here too, matching the report's hidden bonus column.
-        if (! CrmRoles::MOWER_SHOW_BONUS) {
-            $this->assertStringNotContainsString('Bonus', $html);
-            $this->assertStringNotContainsString('$15.00', $html);
-        }
-        // Mowers cannot correct payouts, nor drill into the jobs behind one.
-        $this->assertStringNotContainsString('salary-payouts-edit', $html);
-        $this->assertStringNotContainsString('salary-payouts-delete', $html);
-        $this->assertStringNotContainsString('salary-payout-jobs-cell', $html);
-    }
-
-    public function test_mower_cannot_open_another_mowers_payouts_or_jobs(): void
-    {
-        $otherMower = User::factory()->create(['is_active' => true]);
-        $otherMower->assignRole(CrmRoles::MOWER);
-
-        $this->actingAs($this->mower)
-            ->getJson(route('reports.mower.payouts', ['done_by_user_id' => $otherMower->id]))
-            ->assertForbidden();
-
-        $this->actingAs($this->mower)
-            ->getJson(route('reports.mower.jobs', ['done_by_user_id' => $otherMower->id]))
-            ->assertForbidden();
     }
 
     private function createPayoutForJob(Job $job, float $amount, float $bonus, ?string $comment = null): MowerPayout

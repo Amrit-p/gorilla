@@ -4,7 +4,6 @@
     let INDEX_URL = '';
     const filters = {
         scope: 'today',
-        date_range: null,
     };
 
     let currentRequest = null;
@@ -84,27 +83,15 @@
         });
     }
 
-    function updateAnalyticsCards(cards, opts) {
-        opts = opts || {};
-        if (!cards) return;
-        if (cards.range_jobs) $('#mower-analytics-completed').text(cards.range_jobs.value || '0');
-        if (cards.completed_hours) $('#mower-analytics-hours').text(cards.completed_hours.value || '0h');
-        // Only update upcoming card when not suppressed (e.g., when date-range change shouldn't affect it)
-        if (!opts.suppressUpcoming && cards.upcoming_jobs) {
-            $('#mower-analytics-upcoming').text(cards.upcoming_jobs.value || '0');
-        }
-    }
-
     function updateExportLink(filters) {
         filters = filters || {};
         const base = (window.mowerRoutes || {}).exportPdf;
         if (!base) return;
         const params = new URLSearchParams();
         params.set('scope', filters.scope || 'today');
-        const dr = filters.date_range;
         const today = moment ? moment().format('YYYY-MM-DD') : new Date().toISOString().slice(0, 10);
-        params.set('date_range[start]', (dr && dr.start) ? dr.start : today);
-        params.set('date_range[end]', (dr && dr.end) ? dr.end : today);
+        params.set('date_range[start]', today);
+        params.set('date_range[end]', today);
         $('#mower-export-pdf').attr('href', base + '?' + params.toString());
     }
 
@@ -116,10 +103,6 @@
         setLoading(true);
 
         const data = { scope: filters.scope };
-        const dr = filters.date_range;
-        if (dr && dr.start) {
-            data.date_range = { start: dr.start, end: dr.end || dr.start };
-        }
 
         if (currentRequest && typeof currentRequest.abort === 'function') {
             try { currentRequest.abort(); } catch (e) { /* ignore */ }
@@ -136,7 +119,6 @@
                 try {
                     const html = response && response.html ? response.html : '<div class="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">No jobs in this list.</div>';
                     $('#mower-job-list').html(html);
-                    updateAnalyticsCards(response && response.analytics ? response.analytics : null, {});
                 } catch (err) {
                     console.error('Failed to render mower jobs response', err, response);
                     $('#mower-job-list').html('<div class="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">Error loading jobs.</div>');
@@ -156,31 +138,7 @@
         const scope = String($(this).data('scope') || '');
         if (!scope) return;
 
-        if (scope === 'today' || scope === 'upcoming') {
-            const today = moment ? moment().format('YYYY-MM-DD') : new Date().toISOString().slice(0, 10);
-            filters.date_range = { start: today, end: today };
-            const $pickerInput = $('#mower-schedule-date');
-            const picker = $pickerInput.data('daterangepicker');
-            if (picker) {
-                picker.setStartDate(today);
-                picker.setEndDate(today);
-            }
-            $pickerInput.val(today + ' – ' + today);
-            $pickerInput.siblings('button').removeClass('hidden');
-        }
-
         filters.scope = scope;
-        loadScope({ ...filters });
-    });
-
-    $(document).on('change', '#mower-schedule-date', function () {
-        const start = $('#mower-schedule-date-start').val();
-        const end = $('#mower-schedule-date-end').val();
-        if (start && end) {
-            filters.date_range = { start: start, end: end };
-        } else {
-            filters.date_range = null;
-        }
         loadScope({ ...filters });
     });
     // ─── Job detail: gallery ────────────────────────────────────────────────
@@ -566,13 +524,6 @@
         filters.scope = window.mowerInitialScope
             || ($('.mower-scope.bg-emerald-700').first().data('scope'))
             || 'today';
-
-        if (window.mowerInitialDate) {
-            filters.date_range = {
-                start: window.mowerInitialDate,
-                end: window.mowerInitialEndDate || window.mowerInitialDate,
-            };
-        }
 
         updateScopeButtons(filters);
         updateExportLink(filters);

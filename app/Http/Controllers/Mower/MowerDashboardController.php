@@ -21,7 +21,6 @@ use App\Models\Recurrence;
 use App\Models\User;
 use App\Models\Zone;
 use App\Notifications\MowerRemarkAddedNotification;
-use App\Services\DashboardAnalyticsService;
 use App\Services\JobImageManagementService;
 use App\Services\MowerDashboardService;
 use App\Support\CrmConstants;
@@ -40,8 +39,7 @@ class MowerDashboardController extends Controller
 {
     public function __construct(
         private readonly MowerDashboardService $mowerDashboardService,
-        private readonly JobImageManagementService $jobImageManagementService,
-        private readonly DashboardAnalyticsService $dashboardAnalyticsService
+        private readonly JobImageManagementService $jobImageManagementService
     ) {
         $jobActions = [
             'show',
@@ -78,11 +76,8 @@ class MowerDashboardController extends Controller
         $jobs = $this->mowerDashboardService->assignedJobs($request->user(), $scope, $scheduleDate, $scheduleEndDate);
 
         if (crm_wants_partial($request)) {
-            $analytics = $this->dashboardAnalyticsService->mower($request->user(), $scheduleDate, $scheduleEndDate);
-
             return response()->json([
                 'html' => view('mower.partials.job-list', ['jobs' => $jobs, 'scope' => $scope])->render(),
-                'analytics' => $analytics['cards'] ?? [],
             ]);
         }
 
@@ -95,10 +90,7 @@ class MowerDashboardController extends Controller
                 CrmConstants::MOWER_SCOPE_TODAY_SPECIAL => 'Special Jobs',
                 CrmConstants::MOWER_SCOPE_TODAY => 'Today',
                 CrmConstants::MOWER_SCOPE_UPCOMING => 'Upcoming',
-                CrmConstants::MOWER_SCOPE_PENDING => 'Pending',
-                CrmConstants::MOWER_SCOPE_COMPLETED => 'Done',
             ],
-            'analytics' => $this->dashboardAnalyticsService->mower($request->user(), $scheduleDate, $scheduleEndDate),
             'workflowStatuses' => JobWorkflowStatus::values(),
             'paymentStatuses' => JobOperationalPaymentStatus::values(),
         ]);
@@ -117,12 +109,14 @@ class MowerDashboardController extends Controller
             'customerTypes' => JobCustomerType::values(),
             'paymentModes' => JobOperationalPaymentMode::values(),
             'paymentStatuses' => JobOperationalPaymentStatus::values(),
-            'workflowStatuses' => JobWorkflowStatus::values(),
+            // Mowers never see completed jobs on the map, so hide the Completed status option.
+            'workflowStatuses' => array_values(array_filter(
+                JobWorkflowStatus::values(),
+                static fn (string $status): bool => $status !== JobWorkflowStatus::COMPLETED->value
+            )),
             'listScopes' => [
                 CrmConstants::JOB_LIST_SCOPE_TODAY => 'Today',
                 CrmConstants::JOB_LIST_SCOPE_UPCOMING => 'Upcoming',
-                CrmConstants::JOB_LIST_SCOPE_DONE => 'Done',
-                CrmConstants::JOB_LIST_SCOPE_COMPLETED_UNVERIFIED => 'Completed, unverified',
                 CrmConstants::JOB_LIST_SCOPE_HOLD => 'Hold',
             ],
         ]);
@@ -297,7 +291,6 @@ class MowerDashboardController extends Controller
             CrmConstants::MOWER_SCOPE_TODAY => 'Today',
             CrmConstants::MOWER_SCOPE_UPCOMING => 'Upcoming',
             CrmConstants::MOWER_SCOPE_PENDING => 'Pending',
-            CrmConstants::MOWER_SCOPE_COMPLETED => 'Done',
         ];
 
         return Pdf::loadView('mower.export-pdf', [

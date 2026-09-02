@@ -2,25 +2,19 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Enums\JobOperationalPaymentMode;
-use App\Enums\JobOperationalPaymentStatus;
-use App\Enums\JobWorkflowStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AssignNearestEmployeeRequest;
 use App\Http\Requests\Admin\MapBoundsRequest;
 use App\Http\Requests\Admin\OptimizeRouteRequest;
 use App\Models\Job;
-use App\Models\Recurrence;
-use App\Models\User;
-use App\Models\Zone;
 use App\Services\ActivityLogService;
+use App\Services\JobManagementService;
 use App\Services\MapRoutingService;
 use App\Support\CrmRoles;
 use App\Support\GoogleMapsSettings;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
-use App\Services\JobManagementService;
 
 class MapRoutingController extends Controller
 {
@@ -35,26 +29,26 @@ class MapRoutingController extends Controller
         $this->authorize('viewAny', Job::class);
 
         $filters = [
-            'search'           => $request->input('search', ''),
-            'list_scope'       => $request->input('list_scope', 'today'),
-            'status'           => $request->input('status', ''),
-            'zone_id'          => $request->input('zone_id', ''),
-            'recurrence_id'    => $request->input('recurrence_id', ''),
-            'assignment'       => $request->input('assignment', ''),
-            'payment_mode'     => $request->input('payment_mode', ''),
-            'payment_status'   => $request->input('payment_status', ''),
+            'search' => $request->input('search', ''),
+            'list_scope' => $request->input('list_scope', 'today'),
+            'status' => $request->input('status', ''),
+            'zone_id' => $request->input('zone_id', ''),
+            'recurrence_id' => $request->input('recurrence_id', ''),
+            'assignment' => $request->input('assignment', ''),
+            'payment_mode' => $request->input('payment_mode', ''),
+            'payment_status' => $request->input('payment_status', ''),
             'date_range_start' => $request->input('date_range.start', ''),
-            'date_range_end'   => $request->input('date_range.end', ''),
-            'equipment_type_id'     => $request->input('equipment_type_id', ''),
-            'customer_type'     => $request->input('customer_type', ''),
-            'service_type'      => $request->input('service_type', ''),
+            'date_range_end' => $request->input('date_range.end', ''),
+            'equipment_type_id' => $request->input('equipment_type_id', ''),
+            'customer_type' => $request->input('customer_type', ''),
+            'service_type' => $request->input('service_type', ''),
         ];
 
         return view('admin.maps.index', [
-            'mapConfig'       => GoogleMapsSettings::mapPageConfig(),
-            'initialDate'     => now()->toDateString(),
-            'filters'         => $filters,
-...$this->jobManagementService->formOptions(),
+            'mapConfig' => GoogleMapsSettings::mapPageConfig(),
+            'initialDate' => now()->toDateString(),
+            'filters' => $filters,
+            ...$this->jobManagementService->formOptions(),
         ]);
     }
 
@@ -63,11 +57,12 @@ class MapRoutingController extends Controller
         $this->authorize('viewAny', Job::class);
         $validated = $request->validated();
         $validated['date_range_start'] = $validated['date_range']['start'] ?? null;
-        $validated['date_range_end']   = $validated['date_range']['end'] ?? null;
+        $validated['date_range_end'] = $validated['date_range']['end'] ?? null;
         unset($validated['date_range']);
 
         if ($request->user()->hasRole(CrmRoles::MOWER)) {
             $validated['done_by_user_id'] = $request->user()->id;
+            $validated['exclude_completed'] = true;
         }
 
         $jobs = $this->mapRoutingService->mapJobs($validated);

@@ -60,23 +60,21 @@ class MowerDashboardService
             ->where(function ($q) use ($mower) {
                 $q->whereHas('assignedEmployees', fn ($q) => $q->where('users.id', $mower->id))
                     ->orWhere('done_by_user_id', $mower->id);
-            });
+            })
+            // The mower dashboard only surfaces pending/upcoming work — never completed jobs.
+            ->where('status', '!=', JobWorkflowStatus::COMPLETED->value);
 
         $today = now()->toDateString();
         $startDate = $scheduleDate ?? $today;
         $endDate = $scheduleEndDate ?? $startDate;
 
         match ($scope) {
-            'upcoming' => $query->whereDate('scheduled_date', '>', $today)
-                ->where('status', '!=', JobWorkflowStatus::COMPLETED->value),
-            'completed' => $query->whereBetween('scheduled_date', [$startDate, $endDate])
-                ->where('status', JobWorkflowStatus::COMPLETED->value),
+            'upcoming' => $query->whereDate('scheduled_date', '>', $today),
             'started' => $query->where('status', JobWorkflowStatus::STARTED->value),
             'today-special' => $query->whereDate('scheduled_date', $startDate)
                 ->whereHas('jobLevel', fn ($q) => $q->where('name', 'Special')),
             'today' => $query->whereBetween('scheduled_date', [$startDate, $endDate]),
-            default => $query->whereDate('scheduled_date', '<=', $today)
-                ->whereNotIn('status', [JobWorkflowStatus::COMPLETED->value]),
+            default => $query->whereDate('scheduled_date', '<=', $today),
         };
 
         $query = $query

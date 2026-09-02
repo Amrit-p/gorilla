@@ -81,7 +81,6 @@ return [
                 'view_dashboard',
                 'manage_jobs',
                 'upload_job_images',
-                'view_mower_report',
                 'view_checklist_report',
             ],
         ],

@@ -66,6 +66,47 @@ class MowerDashboardTest extends TestCase
         $this->assertSame(1, substr_count($html, 'rounded-2xl border border-slate-200 bg-white p-4'));
     }
 
+    public function test_index_hides_completed_jobs(): void
+    {
+        $active = $this->createAssignedJob($this->mower, [
+            'customer_name' => 'Active Job Client',
+            'status' => JobWorkflowStatus::STARTED->value,
+        ]);
+        $completed = $this->createAssignedJob($this->mower, [
+            'customer_name' => 'Completed Job Client',
+            'status' => JobWorkflowStatus::COMPLETED->value,
+        ]);
+
+        $response = $this->actingAs($this->mower)
+            ->get(route('mower.index'))
+            ->assertOk()
+            ->assertSee($active->customerDisplayName())
+            ->assertDontSee($completed->customerDisplayName());
+
+        $html = $response->getContent();
+        $this->assertSame(1, substr_count($html, 'rounded-2xl border border-slate-200 bg-white p-4'));
+    }
+
+    public function test_index_does_not_render_report_link(): void
+    {
+        $this->createAssignedJob($this->mower);
+
+        $this->actingAs($this->mower)
+            ->get(route('mower.index'))
+            ->assertOk()
+            ->assertDontSee('Report')
+            ->assertDontSee(route('reports.mower.index'), false);
+    }
+
+    public function test_mower_cannot_access_mower_report(): void
+    {
+        $this->assertFalse($this->mower->can('view-mower-report'));
+
+        $this->actingAs($this->mower)
+            ->get(route('reports.mower.index'))
+            ->assertForbidden();
+    }
+
     public function test_index_scope_ajax_returns_partial(): void
     {
         $this->createAssignedJob($this->mower, [
@@ -86,6 +127,28 @@ class MowerDashboardTest extends TestCase
             ->assertOk()
             ->assertSee('Job Map')
             ->assertSee('id="jobs-map"', false);
+    }
+
+    public function test_map_jobs_endpoint_excludes_completed_for_mower(): void
+    {
+        $active = $this->createAssignedJob($this->mower, [
+            'status' => JobWorkflowStatus::STARTED->value,
+            'latitude' => -37.80,
+            'longitude' => 144.90,
+        ]);
+        $completed = $this->createAssignedJob($this->mower, [
+            'status' => JobWorkflowStatus::COMPLETED->value,
+            'latitude' => -37.81,
+            'longitude' => 144.91,
+        ]);
+
+        $response = $this->actingAs($this->mower)
+            ->getJson(route('admin.maps.jobs'))
+            ->assertOk();
+
+        $ids = collect($response->json('jobs'))->pluck('id')->all();
+        $this->assertContains($active->id, $ids);
+        $this->assertNotContains($completed->id, $ids);
     }
 
     public function test_unassigned_job_show_is_forbidden(): void

@@ -53,6 +53,10 @@ final class JobListFilter
             $query->where('status', $filters['status']);
         }
 
+        if (! empty($filters['exclude_completed'])) {
+            $query->where('status', '!=', JobWorkflowStatus::COMPLETED->value);
+        }
+
         if (! empty($filters['priority'])) {
             $query->where('priority', $filters['priority']);
         }
