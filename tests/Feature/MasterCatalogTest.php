@@ -232,6 +232,11 @@ class MasterCatalogTest extends TestCase
     public function test_recurrence_crud_and_cache(): void
     {
         $this->actingAs($this->admin)
+            ->get(route('admin.masters.recurrences.index'))
+            ->assertOk()
+            ->assertSee('Days between occurrences');
+
+        $this->actingAs($this->admin)
             ->postJson(route('admin.masters.recurrences.store'), [
                 'name' => 'Weekly',
                 'sort_order' => 1,

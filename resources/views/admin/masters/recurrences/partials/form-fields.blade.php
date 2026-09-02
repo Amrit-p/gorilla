@@ -1,7 +1,7 @@
 @include('components.masters.form-fields', ['showColorCode' => false])
 
 <div>
-    <x-ui.input label="Days between occurrences" name="interval_days" type="number" min="1" :value="$record?->interval_days" />
+    <x-ui.input label="Days between occurrences" name="interval_days" type="number" min="1" />
     <p class="mt-1 text-xs text-slate-500">Auto-filled from the name (e.g. "Weekly", "Bi-Weekly", "3 Weekly"). Edit it if that doesn't look right, or leave it blank for a one-time recurrence — this is what schedules the next job when a recurring job is completed.</p>
 </div>
 
