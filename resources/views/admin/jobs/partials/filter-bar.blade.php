@@ -9,10 +9,6 @@
         !empty($filters['assignment']) ||
         !empty($filters['payment_mode']) ||
         !empty($filters['payment_status']) ||
-        !empty($filters['equipment_type_id']) ||
-        !empty($filters['job_level_id']) ||
-        !empty($filters['customer_type']) ||
-        !empty($filters['service_type']) ||
         !empty($filters['date_range_start']) ||
         !empty($filters['date_range_end']);
     $activeCount = collect($filters)->filter(fn($v) => $v !== '' && $v !== null)->count();
@@ -33,7 +29,7 @@
     $showFilter = fn (string $key): bool => is_null($visibleFilters) || in_array($key, $visibleFilters, true);
     // The worker filter is opt-in: only rendered when a `$workers` list is supplied.
     $showWorkerFilter = isset($workers) && $showFilter('worker_id');
-    $filterFieldKeys = ['search', 'zone_id', 'status', 'recurrence_id', 'assignment', 'payment_mode', 'payment_status', 'equipment_type_id', 'job_level_id', 'customer_type', 'service_type', 'date_range'];
+    $filterFieldKeys = ['search', 'zone_id', 'status', 'recurrence_id', 'assignment', 'payment_mode', 'payment_status', 'date_range'];
     $visibleFilterCount = count(array_filter($filterFieldKeys, $showFilter)) + ($showWorkerFilter ? 1 : 0);
     $filterGridClass = match (true) {
         $visibleFilterCount <= 1 => 'grid-cols-1',
@@ -209,59 +205,6 @@
                     <option value="">Any payment status</option>
                     @foreach ($paymentStatuses as $payStatus)
                         <option value="{{ $payStatus }}" @selected(($filters['payment_status'] ?? '') === $payStatus)>{{ $payStatus }}</option>
-                    @endforeach
-                </select>
-            </div>
-            @endif
-
-            @if ($showFilter('equipment_type_id'))
-            <div class="flex flex-col gap-1">
-                <label class="text-[10px] font-medium uppercase tracking-wide text-slate-400">Equipment Type</label>
-                <select name="equipment_type_id"
-                    class="filter cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
-                    <option value="">Any equipment</option>
-                    @foreach ($equipmentTypes as $equipmentType)
-                        <option value="{{ $equipmentType['id'] }}" @selected(($filters['equipment_type_id'] ?? '') == $equipmentType['id'])>
-                            {{ $equipmentType['name'] }}</option>
-                    @endforeach
-                </select>
-            </div>
-            @endif
-
-            @if ($showFilter('job_level_id'))
-            <div class="flex flex-col gap-1">
-                <label class="text-[10px] font-medium uppercase tracking-wide text-slate-400">Job Level</label>
-                <select name="job_level_id"
-                    class="filter cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
-                    <option value="">Any level</option>
-                    @foreach ($jobLevels as $jobLevel)
-                        <option value="{{ $jobLevel->id }}" @selected(($filters['job_level_id'] ?? '') == $jobLevel->id)>{{ $jobLevel->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-            @endif
-
-            @if ($showFilter('customer_type'))
-            <div class="flex flex-col gap-1">
-                <label class="text-[10px] font-medium uppercase tracking-wide text-slate-400">Customer Type</label>
-                <select name="customer_type"
-                    class="filter cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
-                    <option value="">Any type</option>
-                    @foreach ($customerTypes as $type)
-                        <option value="{{ $type }}" @selected(($filters['customer_type'] ?? '') === $type)>{{ $type }}</option>
-                    @endforeach
-                </select>
-            </div>
-            @endif
-
-            @if ($showFilter('service_type'))
-            <div class="flex flex-col gap-1">
-                <label class="text-[10px] font-medium uppercase tracking-wide text-slate-400">Service Type</label>
-                <select name="service_type"
-                    class="filter cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
-                    <option value="">Any service</option>
-                    @foreach ($serviceTypes as $serviceType)
-                        <option value="{{ $serviceType }}" @selected(($filters['service_type'] ?? '') === $serviceType)>{{ $serviceType }}</option>
                     @endforeach
                 </select>
             </div>
