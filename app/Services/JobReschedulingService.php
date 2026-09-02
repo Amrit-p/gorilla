@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Notifications\JobAutoRescheduledNotification;
 use App\Support\CrmRoles;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class JobReschedulingService
 {
@@ -24,22 +25,57 @@ class JobReschedulingService
         // regardless of how fully hydrated the instance that changed status was.
         $source = $job->fresh();
 
-        if ($source === null
-            || ! $source->is_recurring
-            || $source->recurrence_id === null
-            || $source->rescheduled_at !== null) {
+        if ($source === null) {
+            Log::info('job.reschedule.skipped', ['job_id' => $job->id, 'reason' => 'job not found']);
+
+            return null;
+        }
+
+        if (! $source->is_recurring) {
+            Log::info('job.reschedule.skipped', ['job_id' => $source->id, 'reason' => 'is_recurring is false']);
+
+            return null;
+        }
+
+        if ($source->recurrence_id === null) {
+            Log::info('job.reschedule.skipped', ['job_id' => $source->id, 'reason' => 'no recurrence_id']);
+
+            return null;
+        }
+
+        if ($source->rescheduled_at !== null) {
+            Log::info('job.reschedule.skipped', [
+                'job_id' => $source->id,
+                'reason' => 'already rescheduled',
+                'rescheduled_at' => $source->rescheduled_at,
+            ]);
+
             return null;
         }
 
         $source->loadMissing('recurrence');
 
         if ($source->recurrence === null) {
+            Log::warning('job.reschedule.skipped', [
+                'job_id' => $source->id,
+                'recurrence_id' => $source->recurrence_id,
+                'reason' => 'recurrence record not found',
+            ]);
+
             return null;
         }
 
         $nextDate = $source->recurrence->resolve($source->scheduled_date->copy());
 
         if ($nextDate === null) {
+            Log::warning('job.reschedule.skipped', [
+                'job_id' => $source->id,
+                'recurrence_id' => $source->recurrence_id,
+                'recurrence_name' => $source->recurrence->name,
+                'interval_days' => $source->recurrence->interval_days,
+                'reason' => 'recurrence resolve() returned null',
+            ]);
+
             return null;
         }
 
@@ -90,6 +126,12 @@ class JobReschedulingService
             $job->forceFill(['rescheduled_at' => now()])->saveQuietly();
 
             $this->notify($source, $newJob);
+
+            Log::info('job.reschedule.created', [
+                'source_job_id' => $source->id,
+                'new_job_id' => $newJob->id,
+                'scheduled_date' => $newJob->scheduled_date->toDateString(),
+            ]);
 
             return $newJob;
         });

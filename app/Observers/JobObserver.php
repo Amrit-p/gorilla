@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Enums\JobWorkflowStatus;
 use App\Models\Job;
 use App\Services\JobReschedulingService;
+use Illuminate\Support\Facades\Log;
 
 class JobObserver
 {
@@ -20,6 +21,12 @@ class JobObserver
         if (! $job->wasChanged('status')) {
             return;
         }
+
+        Log::info('job.observer.status_changed', [
+            'job_id' => $job->id,
+            'status' => $job->status,
+            'previous_status' => $job->getOriginal('status'),
+        ]);
 
         match ($job->status) {
             JobWorkflowStatus::COMPLETED->value => $this->jobReschedulingService->rescheduleCompletedJob($job),
