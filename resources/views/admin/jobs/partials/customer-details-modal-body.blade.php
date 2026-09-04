@@ -98,16 +98,8 @@
                             <p class="mt-1 text-sm font-semibold text-sky-600">{{ $services }}</p>
                         </div>
                         <div>
-                            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Job type</p>
-                            <p class="mt-1 text-sm font-medium text-slate-800">{{ $job->job_type ?: '—' }}</p>
-                        </div>
-                        <div>
                             <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Freq</p>
                             <p class="mt-1 text-sm font-medium text-slate-800">{{ $freq }}</p>
-                        </div>
-                        <div>
-                            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Next date</p>
-                            <p class="mt-1 text-sm font-semibold text-emerald-600">{{ $next_date ?: '—' }}</p>
                         </div>
                     </div>
                 </div>
