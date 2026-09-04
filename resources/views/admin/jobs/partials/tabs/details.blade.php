@@ -9,7 +9,20 @@
 @endphp
 
 <div class="space-y-5">
+        @if ($jobModel)
         <section class="space-y-3">
+            <div>
+                <label class="mb-1 block text-sm font-medium text-slate-700">Workflow status</label>
+                <select name="status" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
+                    @foreach ($workflowStatuses as $workflowStatus)
+                        <option value="{{ $workflowStatus }}" @selected(old('status', $jobModel->status) === $workflowStatus)>{{ $workflowStatus }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </section>
+        @endif
+
+        <section class="space-y-3 {{ $jobModel ? 'border-t border-slate-100 pt-4' : '' }}">
             <div>
                 <h3 class="text-sm font-semibold text-slate-900">Contact</h3>
                 <p class="text-xs text-slate-500">Phone and email are optional. Add them to search jobs later by contact.</p>

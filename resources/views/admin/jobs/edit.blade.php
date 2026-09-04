@@ -1,4 +1,4 @@
-<x-layouts.dashboard :title="'Edit Job #'.$job->id" subtitle="Update scheduling and assignments">
+<x-layouts.dashboard :title="'Edit Job #'.$job->id" subtitle="Update job details and status">
     <x-ui.breadcrumbs :items="[
         ['label' => 'Dashboard', 'url' => route('dashboard.index')],
         ['label' => 'Jobs', 'url' => route('admin.jobs.index')],
@@ -39,8 +39,6 @@
     @push('scripts')
         <script>
             window.jobFormRoutes = {
-                workloads: @json(route('admin.jobs.mower-workloads')),
-                suggestions: @json(route('admin.jobs.mower-suggestions')),
                 clientRemarks: @json(route('admin.jobs.client-remarks')),
                 clientHistory: @json(route('admin.jobs.client-history')),
                 jobId: {{ (int) $job->id }},
