@@ -468,7 +468,6 @@
         })
             .done(function (response) {
                 showAlert(response.message || 'Instructions saved.', false);
-                $('#mower-remark-text').val('');
             })
             .fail(function (xhr) {
                 const msg = xhr.responseJSON?.message || 'Failed to save. Please try again.';
@@ -532,9 +531,6 @@
         })
             .done(function (response) {
                 showAlert(response.message || 'Changes saved.', false);
-                if (description) {
-                    $('#mower-remark-text').val('');
-                }
             })
             .fail(function (xhr) {
                 const errs = xhr.responseJSON?.errors;

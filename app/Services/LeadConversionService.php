@@ -90,7 +90,7 @@ class LeadConversionService
             'created_by' => $actor->id,
             'estimated_duration_minutes' => EstimatedDurationMinutes::resolve(null),
             'charges' => $lead->charges,
-            'special_remarks' => $lead->remarks,
+            'office_remarks' => $lead->remarks,
             'customer_type' => JobCustomerType::DONT_KNOW->value,
         ]);
 

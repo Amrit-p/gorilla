@@ -33,7 +33,7 @@ class JobsExport extends SpreadsheetExport
         'V' => ['header' => 'Recurring',           'width' => 10],
         'W' => ['header' => 'Recurrence',          'width' => 14],
         'X' => ['header' => 'Site Instructions',   'width' => 28],
-        'Y' => ['header' => 'Special Remarks',     'width' => 28],
+        'Y' => ['header' => 'Office Remarks',      'width' => 28],
         'Z' => ['header' => 'Created By',          'width' => 16],
         'AA' => ['header' => 'Created At',          'width' => 16],
     ];
@@ -89,7 +89,7 @@ class JobsExport extends SpreadsheetExport
             $sheet->setCellValue('V'.$row, $job->recurrence_id !== null ? 'Yes' : 'No');
             $sheet->setCellValue('W'.$row, $job->recurrence?->name ?? '');
             $sheet->setCellValue('X'.$row, $job->site_instructions ?? '');
-            $sheet->setCellValue('Y'.$row, $job->special_remarks ?? '');
+            $sheet->setCellValue('Y'.$row, $job->office_remarks ?? '');
             $sheet->setCellValue('Z'.$row, $job->creator?->name ?? '');
             $sheet->setCellValue('AA'.$row, $job->created_at?->format('d/m/Y H:i') ?? '');
 

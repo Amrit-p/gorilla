@@ -95,6 +95,6 @@
 </div>
 
 <div class="sm:col-span-2">
-    <label class="mb-1 block text-sm font-medium text-slate-700">Special remarks</label>
-    <textarea name="special_remarks" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" rows="3">{{ old('special_remarks', $jobModel?->special_remarks) }}</textarea>
+    <label class="mb-1 block text-sm font-medium text-slate-700">Office remarks</label>
+    <textarea name="office_remarks" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" rows="3">{{ old('office_remarks', $jobModel?->office_remarks) }}</textarea>
 </div>

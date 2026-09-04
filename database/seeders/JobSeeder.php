@@ -170,7 +170,7 @@ class JobSeeder extends Seeder
                 'payment_mode' => $paymentMode,
                 'payment_status' => $paymentStatus,
                 'payment_pending_reason' => null,
-                'special_remarks' => null,
+                'office_remarks' => null,
                 'internal_notes' => null,
                 'created_by' => $adminId,
                 'charges' => rand(50, 150),

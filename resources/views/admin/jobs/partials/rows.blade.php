@@ -184,9 +184,10 @@
             <td class="w-36 max-w-0 px-4 py-4">
                 <button type="button" class="view-remarks-btn group/rem w-full overflow-hidden text-left"
                         data-id="{{ $job->id }}"
-                        data-special-remarks="{{ $job->special_remarks ?? '' }}">
-                    @if ($job->special_remarks)
-                        <p class="truncate text-sm text-slate-700 group-hover/rem:text-emerald-600">{{ $job->special_remarks }}</p>
+                        data-office-remarks="{{ $job->office_remarks ?? '' }}"
+                        data-mower-remarks="{{ $job->mower_remarks ?? '' }}">
+                    @if ($job->office_remarks)
+                        <p class="truncate text-sm text-slate-700 group-hover/rem:text-emerald-600">{{ $job->office_remarks }}</p>
                     @else
                         <span class="text-sm text-slate-300 group-hover/rem:text-emerald-400">+ Add</span>
                     @endif

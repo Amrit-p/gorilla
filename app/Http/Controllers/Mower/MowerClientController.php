@@ -75,7 +75,7 @@ class MowerClientController extends Controller
             'scheduled_date' => $scheduledDate,
             'scheduled_time' => '08:00',
             'estimated_duration_minutes' => 60,
-            'special_remarks' => $data['special_remarks'],
+            'office_remarks' => $data['office_remarks'],
             'status' => $data['status'],
             'done_by_user_id' => $actor->id,
         ], $request->file('images', []) ?: []);

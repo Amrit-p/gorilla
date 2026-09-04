@@ -518,16 +518,16 @@
                 if (data.service_history && data.service_history.length) {
                     const jobBaseUrl = "{{ url('admin/jobs') }}";
                     data.service_history.forEach(function(j) {
-                        const hasNotes = !!(j.special_remarks || j.internal_notes);
+                        const hasNotes = !!(j.office_remarks || j.internal_notes);
                         const notesId  = 'chn-' + (++_chSeq);
 
                         let notesBodyHtml = '';
                         if (hasNotes) {
                             notesBodyHtml += '<div id="' + notesId + '" class="hidden space-y-2 border-t border-slate-100 px-3 pb-2.5 pt-2">';
-                            if (j.special_remarks) {
+                            if (j.office_remarks) {
                                 notesBodyHtml += '<div>' +
                                     '<span class="mb-0.5 inline-block rounded bg-violet-100 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-violet-600">Remarks</span>' +
-                                    clampable(j.special_remarks, 'text-slate-700') +
+                                    clampable(j.office_remarks, 'text-slate-700') +
                                 '</div>';
                             }
                             if (j.internal_notes) {
@@ -885,7 +885,8 @@
     $(document).on('click', '.view-remarks-btn', function() {
         const $btn = $(this);
         $('#remarks-job-form').data('jobId', $btn.data('id'));
-        $('#remarks-job-form').find('[name="special_remarks"]').val($btn.data('special-remarks') || '');
+        $('#remarks-job-form').find('[name="office_remarks"]').val($btn.data('office-remarks') || '');
+        $('#remarks-job-mower-remarks').text($btn.data('mower-remarks') || 'No mower remarks yet.');
         openModal('remarks-job-modal');
     });
 

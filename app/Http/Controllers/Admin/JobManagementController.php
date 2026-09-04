@@ -15,7 +15,6 @@ use App\Http\Requests\Admin\UpdateJobStatusRequest;
 use App\Http\Requests\Admin\UploadJobImagesRequest;
 use App\Models\Contract;
 use App\Models\Job;
-use App\Models\MowerRemark;
 use App\Notifications\JobRemarksUpdatedNotification;
 use App\Services\ClientStatisticsService;
 use App\Services\JobImageManagementService;
@@ -229,24 +228,21 @@ class JobManagementController extends Controller
         $this->authorize('viewAny', Job::class);
 
         $jobId = (int) $request->query('job_id');
+        $job = $jobId ? Job::query()->find($jobId, ['id', 'mower_remarks', 'updated_at']) : null;
 
-        if (! $jobId) {
+        if (! $job || ! $job->mower_remarks) {
             return response()->json(['lastRemark' => null, 'allRemarks' => []]);
         }
 
-        $remarks = MowerRemark::with('user:id,name')
-            ->where('job_id', $jobId)
-            ->latest('id')
-            ->get()
-            ->map(fn ($r) => [
-                'description' => $r->description,
-                'user_name' => $r->user?->name ?? 'Unknown',
-                'created_at' => $r->created_at->format('M j, Y g:i A'),
-            ]);
+        $remark = [
+            'description' => $job->mower_remarks,
+            'user_name' => null,
+            'created_at' => $job->updated_at->format('M j, Y g:i A'),
+        ];
 
         return response()->json([
-            'lastRemark' => $remarks->first(),
-            'allRemarks' => $remarks->all(),
+            'lastRemark' => $remark,
+            'allRemarks' => [$remark],
         ]);
     }
 
@@ -287,24 +283,20 @@ class JobManagementController extends Controller
             'date' => $j->scheduled_date->format('d M Y'),
             'status' => $j->status ?? '—',
             'done_by' => $j->doneByUser?->name ?? '—',
-            'special_remarks' => $j->special_remarks,
+            'office_remarks' => $j->office_remarks,
             'internal_notes' => $j->internal_notes,
         ])->values()->all();
 
-        $jobIds = $pastJobs->pluck('id')->all();
-        if ($sourceJob) {
-            $jobIds[] = $sourceJob->id;
-        }
+        $mowerRemarkJobs = $sourceJob ? $pastJobs->push($sourceJob) : $pastJobs;
 
-        $mowerRemarks = MowerRemark::with('user:id,name')
-            ->whereIn('job_id', array_values(array_unique($jobIds)))
-            ->orderByDesc('created_at')
-            ->get()
-            ->map(fn ($r) => [
-                'id' => $r->id,
-                'description' => $r->description,
-                'created_by' => $r->user?->name ?? '—',
-                'created_at' => $r->created_at?->format('d M Y'),
+        $mowerRemarks = $mowerRemarkJobs
+            ->filter(fn ($j) => filled($j->mower_remarks))
+            ->sortByDesc(fn ($j) => $j->scheduled_date)
+            ->map(fn ($j) => [
+                'id' => $j->id,
+                'description' => $j->mower_remarks,
+                'created_by' => $j->doneByUser?->name ?? '—',
+                'created_at' => $j->scheduled_date?->format('d M Y'),
             ])->values()->all();
 
         return response()->json([
@@ -552,7 +544,7 @@ class JobManagementController extends Controller
         $this->authorize('update', $job);
 
         $validated = $request->validate([
-            'special_remarks' => ['nullable', 'string'],
+            'office_remarks' => ['nullable', 'string'],
         ]);
 
         $job->update($validated);

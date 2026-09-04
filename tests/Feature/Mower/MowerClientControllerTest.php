@@ -88,7 +88,7 @@ class MowerClientControllerTest extends TestCase
             'payment_mode' => 'Cash',
             'charges' => 120.50,
             'customer_type' => 'Easy',
-            'special_remarks' => 'Gate code 1234, mow the back lawn first.',
+            'office_remarks' => 'Gate code 1234, mow the back lawn first.',
             'status' => 'Hold',
             'schedule_date' => now()->toDateString(),
         ]);
@@ -104,7 +104,7 @@ class MowerClientControllerTest extends TestCase
             'zone_id' => null,
             'van_number' => 'VAN-3',
             'equipment_type_id' => $this->equipmentTypeId,
-            'special_remarks' => 'Gate code 1234, mow the back lawn first.',
+            'office_remarks' => 'Gate code 1234, mow the back lawn first.',
             'status' => 'Hold',
             'site_instructions' => null,
             'done_by_user_id' => $this->mower->id,
@@ -126,7 +126,7 @@ class MowerClientControllerTest extends TestCase
     {
         $response = $this->actingAs($this->mower)->post(route('mower.jobs.store'), []);
 
-        $response->assertSessionHasErrors(['address', 'service_types', 'weed_spray', 'recurrence_id', 'equipment_type_id', 'payment_mode', 'customer_type', 'special_remarks', 'status']);
+        $response->assertSessionHasErrors(['address', 'service_types', 'weed_spray', 'recurrence_id', 'equipment_type_id', 'payment_mode', 'customer_type', 'office_remarks', 'status']);
         $response->assertSessionDoesntHaveErrors(['job_type', 'phone', 'additional_site_instructions']);
     }
 
@@ -294,7 +294,7 @@ class MowerClientControllerTest extends TestCase
             'payment_mode' => 'Cash',
             'charges' => 120.50,
             'customer_type' => 'Easy',
-            'special_remarks' => 'Gate code 1234.',
+            'office_remarks' => 'Gate code 1234.',
             'status' => 'Pending',
             'schedule_date' => now()->toDateString(),
         ], $overrides);
@@ -313,7 +313,7 @@ class MowerClientControllerTest extends TestCase
             'payment_mode' => 'Cash',
             'charges' => 90,
             'customer_type' => 'Easy',
-            'special_remarks' => 'Front lawn only.',
+            'office_remarks' => 'Front lawn only.',
             'status' => 'Pending',
         ]);
 

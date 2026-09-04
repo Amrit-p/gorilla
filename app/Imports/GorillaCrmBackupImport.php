@@ -536,7 +536,7 @@ class GorillaCrmBackupImport
             'required_services' => $this->serviceNames($record),
             'customer_type' => $this->customerType($record),
             'site_instructions' => $this->stringValue($record, ['instructions']),
-            'special_remarks' => $this->remarks($record),
+            'office_remarks' => $this->remarks($record),
             'payment_mode' => $this->paymentMode($record),
             'charges' => $this->chargesValue($record),
             'created_by' => $this->actor->id,

@@ -81,28 +81,16 @@
                 @endif
             </dl>
         </section>
-        @if ($job->special_remarks)
-            <section class="rounded-2xl bg-white p-4 shadow-sm">
-                <h2 class="text-sm font-semibold text-slate-900">Job remarks</h2>
-                <div class="mt-3">
-                    <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Special remarks</p>
-                    <p class="mt-1 rounded-lg bg-amber-50 px-3 py-2 text-sm text-slate-800 whitespace-pre-wrap">{{ $job->special_remarks }}</p>
-                </div>
-            </section>
-        @endif
-
         <section class="rounded-2xl bg-white p-4 shadow-sm">
-            <h2 class="text-sm font-semibold text-slate-900">Last visit instructions</h2>
-            @if ($lastRemark)
-                <p class="mt-2 text-sm text-slate-800 whitespace-pre-wrap">{{ $lastRemark->description }}</p>
-                <p class="mt-2 text-xs text-slate-400">
-                    Left by {{ $lastRemark->user?->name ?: 'Unknown' }}
-                    &mdash; {{ $lastRemark->created_at->format('M j, Y g:i A') }}
-                </p>
+            <h2 class="text-sm font-semibold text-slate-900">Office remarks</h2>
+            <p class="mt-1 text-xs text-slate-500">Read-only — set by the office.</p>
+            @if ($job->office_remarks)
+                <p class="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-slate-800 whitespace-pre-wrap">{{ $job->office_remarks }}</p>
             @else
-                <p class="mt-2 text-sm text-slate-400">No instructions from previous visit.</p>
+                <p class="mt-2 text-sm text-slate-400">No remarks from the office.</p>
             @endif
         </section>
+
         <section class="rounded-2xl bg-white p-4 shadow-sm">
             <h2 class="text-sm font-semibold text-slate-900">Location</h2>
             <p class="mt-2 text-sm text-slate-800">{{ $job->client_address ?: '—' }}</p>
@@ -207,8 +195,8 @@
             </label>
         </section>
         <section class="rounded-2xl bg-white p-4 shadow-sm">
-            <h2 class="text-sm font-semibold text-slate-900">Next visit instructions</h2>
-            <p class="mt-1 text-xs text-slate-500">Next visit instructions given by the customer.</p>
+            <h2 class="text-sm font-semibold text-slate-900">Mower remarks</h2>
+            <p class="mt-1 text-xs text-slate-500">Notes for the next visit.</p>
             <div class="mt-3 space-y-3">
                 <textarea
                     id="mower-remark-text"
@@ -216,7 +204,7 @@
                     maxlength="1000"
                     class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base resize-none"
                     placeholder="e.g. Gate code is 1234, dog is friendly, avoid the rose bed..."
-                ></textarea>
+                >{{ $job->mower_remarks }}</textarea>
                 <button type="button" id="mower-save-remark" class="mower-touch w-full rounded-xl bg-emerald-700 px-4 py-3 text-sm font-semibold text-white hidden">
                     Save instructions
                 </button>

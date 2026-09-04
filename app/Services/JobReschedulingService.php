@@ -106,7 +106,7 @@ class JobReschedulingService
                 'pet_warning' => $source->pet_warning,
                 'charges' => $source->charges,
                 'incentive_percentage' => $source->incentive_percentage,
-                'special_remarks' => $source->special_remarks,
+                'office_remarks' => $source->office_remarks,
                 'internal_notes' => $source->internal_notes,
                 'payment_mode' => $source->payment_mode,
                 'payment_status' => $source->payment_status,

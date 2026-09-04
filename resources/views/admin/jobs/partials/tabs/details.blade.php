@@ -188,8 +188,8 @@
                 <textarea name="site_instructions" id="job-site-instructions" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" rows="2">{{ old('site_instructions', $jobModel?->site_instructions) }}</textarea>
             </div>
             <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700">Remarks</label>
-                <textarea name="special_remarks" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" rows="2">{{ old('special_remarks', $jobModel?->special_remarks) }}</textarea>
+                <label class="mb-1 block text-sm font-medium text-slate-700">Office remarks</label>
+                <textarea name="office_remarks" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" rows="2">{{ old('office_remarks', $jobModel?->office_remarks) }}</textarea>
             </div>
             <div>
                 <label class="mb-1 block text-sm font-medium text-slate-700">Attach images</label>

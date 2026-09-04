@@ -347,8 +347,8 @@
     <form id="remarks-job-form" class="space-y-4">
         @csrf
         <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">Special Remarks</label>
-            <textarea name="special_remarks" rows="5" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500" placeholder="No special remarks."></textarea>
+            <label class="mb-1 block text-sm font-medium text-slate-700">Office Remarks</label>
+            <textarea name="office_remarks" rows="5" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500" placeholder="No office remarks."></textarea>
         </div>
         @can('assign-jobs')
             @unless(auth()->user()?->hasRole(\App\Support\CrmRoles::MOWER))
@@ -356,6 +356,10 @@
             @endunless
         @endcan
     </form>
+    <div class="mt-4 border-t border-slate-100 pt-4">
+        <label class="mb-1 block text-sm font-medium text-slate-700">Mower Remarks</label>
+        <p id="remarks-job-mower-remarks" class="whitespace-pre-wrap rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600"></p>
+    </div>
 </x-ui.modal>
 
 {{-- ── Customer Details (job click popup — no duplicate contact blocks) ───── --}}

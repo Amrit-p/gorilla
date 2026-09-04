@@ -13,6 +13,7 @@ use App\Models\Job;
 use App\Models\JobLevel;
 use App\Models\Recurrence;
 use App\Models\User;
+use App\Notifications\JobRemarksUpdatedNotification;
 use App\Notifications\JobVerifiedNotification;
 use App\Support\CrmConstants;
 use App\Support\CrmRoles;
@@ -277,6 +278,53 @@ class JobManagementTest extends TestCase
             ->assertOk()
             ->assertSee('Activity timeline')
             ->assertSee('Job tracking');
+    }
+
+    public function test_client_remarks_endpoint_returns_the_jobs_mower_remarks(): void
+    {
+        $job = $this->createJob();
+        $job->update(['mower_remarks' => 'Target job remark.']);
+
+        $other = $this->createJob();
+        $other->update(['mower_remarks' => 'Other job remark.']);
+
+        $this->actingAs($this->admin)
+            ->getJson(route('admin.jobs.client-remarks', ['job_id' => $job->id]))
+            ->assertOk()
+            ->assertJsonPath('lastRemark.description', 'Target job remark.')
+            ->assertJsonCount(1, 'allRemarks');
+    }
+
+    public function test_client_remarks_endpoint_returns_null_when_job_has_no_mower_remarks(): void
+    {
+        $job = $this->createJob();
+
+        $this->actingAs($this->admin)
+            ->getJson(route('admin.jobs.client-remarks', ['job_id' => $job->id]))
+            ->assertOk()
+            ->assertJsonPath('lastRemark', null)
+            ->assertJsonCount(0, 'allRemarks');
+    }
+
+    public function test_admin_can_update_job_office_remarks(): void
+    {
+        Notification::fake();
+        $job = $this->createJob();
+        $job->update(['status' => JobWorkflowStatus::PENDING->value]);
+        $job->assignedEmployees()->attach($this->mower->id, [
+            'assignment_date' => $job->scheduled_date,
+            'assignment_status' => $job->status,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->patchJson(route('admin.jobs.remarks.update', $job), [
+                'office_remarks' => 'Gate code changed to 4321.',
+            ])
+            ->assertOk()
+            ->assertJsonPath('message', 'Remarks updated successfully.');
+
+        $this->assertSame('Gate code changed to 4321.', $job->refresh()->office_remarks);
+        Notification::assertSentTo($this->mower, JobRemarksUpdatedNotification::class);
     }
 
     public function test_bulk_schedule_updates_scheduled_date(): void

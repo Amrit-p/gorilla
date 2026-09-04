@@ -6,7 +6,6 @@ use App\Enums\JobCustomerType;
 use App\Enums\JobOperationalPaymentMode;
 use App\Enums\JobOperationalPaymentStatus;
 use App\Enums\JobWorkflowStatus;
-use App\Helpers\OptimizationHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Middleware\EnsureJobIsNotVerified;
 use App\Http\Middleware\PreventFutureJobActions;
@@ -16,15 +15,11 @@ use App\Http\Requests\Mower\UpdateMowerJobRequest;
 use App\Http\Requests\Mower\UpdateMowerJobStatusRequest;
 use App\Http\Requests\Mower\UploadMowerJobImagesRequest;
 use App\Models\Job;
-use App\Models\MowerRemark;
 use App\Models\Recurrence;
-use App\Models\User;
 use App\Models\Zone;
-use App\Notifications\MowerRemarkAddedNotification;
 use App\Services\JobImageManagementService;
 use App\Services\MowerDashboardService;
 use App\Support\CrmConstants;
-use App\Support\CrmRoles;
 use App\Support\EquipmentTypes;
 use App\Support\GoogleMapsSettings;
 use App\Support\ServiceTypes;
@@ -132,17 +127,12 @@ class MowerDashboardController extends Controller
 
         $images = $this->jobImageManagementService->presentAllForJob($job);
 
-        $lastRemark = MowerRemark::where('job_id', $job->id)
-            ->latest('id')
-            ->first();
-
         return view('mower.jobs.show', [
             'job' => $job,
             'beforeImages' => $images['before'],
             'afterImages' => $images['after'],
             'workflowStatuses' => JobWorkflowStatus::values(),
             'paymentStatuses' => JobOperationalPaymentStatus::values(),
-            'lastRemark' => $lastRemark,
         ]);
     }
 
@@ -161,18 +151,7 @@ class MowerDashboardController extends Controller
             }
 
             if (! empty($validated['description'])) {
-                $remark = MowerRemark::create([
-                    'user_id' => $request->user()->id,
-                    'job_id' => $job->id,
-                    'description' => $validated['description'],
-                ]);
-
-                $remark->load('user:id,name');
-
-                User::query()->role(CrmRoles::OFFICE_MANAGER)->get()->each(function (User $manager) use ($job, $remark): void {
-                    $manager->notify(new MowerRemarkAddedNotification($job, $remark));
-                    OptimizationHelper::forgetNotificationUnreadCount($manager->id);
-                });
+                $job->update(['mower_remarks' => $validated['description']]);
             }
         });
 
@@ -314,18 +293,7 @@ class MowerDashboardController extends Controller
             'description' => ['required', 'string', 'max:1000'],
         ]);
 
-        $remark = MowerRemark::create([
-            'user_id' => $request->user()->id,
-            'job_id' => $job->id,
-            'description' => $validated['description'],
-        ]);
-
-        $remark->load('user:id,name');
-
-        User::query()->role(CrmRoles::OFFICE_MANAGER)->get()->each(function (User $manager) use ($job, $remark): void {
-            $manager->notify(new MowerRemarkAddedNotification($job, $remark));
-            OptimizationHelper::forgetNotificationUnreadCount($manager->id);
-        });
+        $job->update(['mower_remarks' => $validated['description']]);
 
         return response()->json(['message' => 'Remark saved.']);
     }

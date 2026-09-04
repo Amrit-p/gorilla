@@ -139,8 +139,8 @@
 
                 <div>
                     <label for="job-comments" class="mb-1 block text-sm font-medium text-slate-700">Comments <span class="text-red-500">*</span></label>
-                    <textarea name="special_remarks" id="job-comments" rows="3" required
-                        class="w-full rounded-xl border border-slate-300 px-3 py-3 text-base">{{ old('special_remarks') }}</textarea>
+                    <textarea name="office_remarks" id="job-comments" rows="3" required
+                        class="w-full rounded-xl border border-slate-300 px-3 py-3 text-base">{{ old('office_remarks') }}</textarea>
                 </div>
             </section>
 

@@ -63,7 +63,7 @@ trait ValidatesJobOperational
             ],
             'charges' => ['nullable', 'numeric', 'min:0'],
             'incentive_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'special_remarks' => ['nullable', 'string'],
+            'office_remarks' => ['nullable', 'string'],
             'site_instructions' => ['nullable', 'string'],
             'employee_ids' => [
                 'nullable',

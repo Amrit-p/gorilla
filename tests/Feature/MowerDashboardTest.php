@@ -489,7 +489,7 @@ class MowerDashboardTest extends TestCase
         $this->assertSame(45, $job->consumed_time_minutes);
     }
 
-    public function test_save_all_creates_remark_when_description_provided(): void
+    public function test_save_all_updates_mower_remarks_when_description_provided(): void
     {
         $job = $this->createAssignedJob($this->mower);
 
@@ -501,10 +501,7 @@ class MowerDashboardTest extends TestCase
             ])
             ->assertOk();
 
-        $this->assertDatabaseHas('mower_remarks', [
-            'job_id' => $job->id,
-            'description' => 'Gate was unlocked.',
-        ]);
+        $this->assertSame('Gate was unlocked.', $job->refresh()->mower_remarks);
     }
 
     public function test_save_all_skips_remark_when_no_description(): void
@@ -518,7 +515,54 @@ class MowerDashboardTest extends TestCase
             ])
             ->assertOk();
 
-        $this->assertDatabaseMissing('mower_remarks', ['job_id' => $job->id]);
+        $this->assertNull($job->refresh()->mower_remarks);
+    }
+
+    public function test_store_remark_updates_job_mower_remarks(): void
+    {
+        $job = $this->createAssignedJob($this->mower);
+
+        $this->actingAs($this->mower)
+            ->postJson(route('mower.jobs.remark.store', $job), [
+                'description' => 'Customer left gate open.',
+            ])
+            ->assertOk()
+            ->assertJsonPath('message', 'Remark saved.');
+
+        $this->assertSame('Customer left gate open.', $job->refresh()->mower_remarks);
+    }
+
+    public function test_job_show_prefills_current_mower_remarks(): void
+    {
+        $job = $this->createAssignedJob($this->mower);
+        $job->update(['mower_remarks' => 'Latest note for this job.']);
+
+        $this->actingAs($this->mower)
+            ->get(route('mower.jobs.show', $job))
+            ->assertOk()
+            ->assertSee('Latest note for this job.');
+    }
+
+    public function test_job_show_displays_office_remarks(): void
+    {
+        $job = $this->createAssignedJob($this->mower);
+        $job->update(['office_remarks' => 'Gate code is 1234.']);
+
+        $this->actingAs($this->mower)
+            ->get(route('mower.jobs.show', $job))
+            ->assertOk()
+            ->assertSee('Office remarks')
+            ->assertSee('Gate code is 1234.');
+    }
+
+    public function test_job_show_shows_placeholder_when_no_office_remarks(): void
+    {
+        $job = $this->createAssignedJob($this->mower);
+
+        $this->actingAs($this->mower)
+            ->get(route('mower.jobs.show', $job))
+            ->assertOk()
+            ->assertSee('No remarks from the office.');
     }
 
     public function test_save_all_requires_reason_for_pending_payment(): void

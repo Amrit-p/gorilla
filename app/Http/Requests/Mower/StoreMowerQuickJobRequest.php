@@ -55,7 +55,7 @@ class StoreMowerQuickJobRequest extends FormRequest
             ],
             'scheduled_date' => ['nullable', 'date', 'after_or_equal:today'],
             'schedule_date' => ['nullable', 'date', 'after_or_equal:today'],
-            'special_remarks' => ['required', 'string', 'max:5000'],
+            'office_remarks' => ['required', 'string', 'max:5000'],
             'status' => ['required', Rule::in(JobWorkflowStatus::values())],
             'images' => ['nullable', 'array', 'max:20'],
             'images.*' => ['image', 'max:5120'],
@@ -71,7 +71,7 @@ class StoreMowerQuickJobRequest extends FormRequest
     {
         return [
             'equipment_type_id' => 'equipment type',
-            'special_remarks' => 'comments',
+            'office_remarks' => 'comments',
             'status' => 'job status',
             'charges' => 'amount',
         ];
