@@ -93,14 +93,14 @@ class AutoRescheduleJobsTest extends TestCase
         $this->assertDatabaseCount('service_jobs', 1);
     }
 
-    public function test_completing_a_non_recurring_job_does_not_reschedule(): void
+    public function test_completing_a_job_without_a_recurrence_does_not_reschedule(): void
     {
         Notification::fake();
 
         $recurrence = Recurrence::query()->where('name', 'Weekly')->firstOrFail();
 
         $job = Job::query()->create($this->jobPayload($recurrence->id, [
-            'is_recurring' => false,
+            'recurrence_id' => null,
         ]));
 
         $job->update(['status' => JobWorkflowStatus::COMPLETED->value]);
@@ -300,7 +300,6 @@ class AutoRescheduleJobsTest extends TestCase
             'email' => 'test.client@example.com',
             'client_address' => '1 Test Rd',
             'scheduled_date' => now()->toDateString(),
-            'is_recurring' => true,
             'recurrence_id' => $recurrenceId,
             'status' => JobWorkflowStatus::PENDING->value,
             'created_by' => $this->admin->id,

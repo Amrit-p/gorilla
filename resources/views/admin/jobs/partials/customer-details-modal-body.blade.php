@@ -8,7 +8,7 @@
     $canDelete = auth()->user()?->can('delete', $job) ?? false;
     $assigned = $job->assignedEmployees->pluck('name')->filter()->implode(', ')
         ?: ($job->doneByUser?->name ?? '—');
-    $freq = $job->recurrence?->name ?: ($job->is_recurring ? 'Recurring' : 'One-time');
+    $freq = $job->recurrence?->name ?: 'One-time';
     $paidJobs = collect($address_jobs)->where('is_paid', true)->count();
     $verifiableJobIds = collect($address_jobs)->where('can_verify', true)->pluck('id');
 @endphp

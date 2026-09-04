@@ -471,7 +471,6 @@ class JobManagementService
         $data['status'] ??= JobWorkflowStatus::PENDING->value;
         $data['priority'] ??= 'Medium';
         $data['route_sequence'] ??= 0;
-        $data['is_recurring'] ??= false;
 
         if (! in_array($data['payment_status'] ?? null, [
             JobOperationalPaymentStatus::PENDING->value,

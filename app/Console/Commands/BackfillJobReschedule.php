@@ -35,7 +35,6 @@ class BackfillJobReschedule extends Command
 
         $jobs = Job::query()
             ->where('status', JobWorkflowStatus::COMPLETED->value)
-            ->where('is_recurring', true)
             ->whereNotNull('recurrence_id')
             ->whereDoesntHave('nextOccurrence')
             ->whereDate('scheduled_date', '>', $after)

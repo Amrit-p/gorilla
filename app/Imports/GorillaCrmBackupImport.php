@@ -534,7 +534,6 @@ class GorillaCrmBackupImport
             'latitude' => $this->coordinate($record, 'lat'),
             'longitude' => $this->coordinate($record, 'lng'),
             'required_services' => $this->serviceNames($record),
-            'is_recurring' => $this->stringValue($record, ['jobType', 'Job Type']) === 'Regular',
             'customer_type' => $this->customerType($record),
             'site_instructions' => $this->stringValue($record, ['instructions']),
             'special_remarks' => $this->remarks($record),

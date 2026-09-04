@@ -28,7 +28,6 @@
         >
             @csrf
             @method('PATCH')
-            <input type="hidden" name="is_recurring" value="{{ $job->is_recurring ? '1' : '0' }}">
             <input type="hidden" name="recurrence_id" value="{{ $job->recurrence_id }}">
             <input type="hidden" name="route_sequence" value="{{ $job->route_sequence }}">
             <input type="hidden" name="priority" value="{{ $job->priority }}">

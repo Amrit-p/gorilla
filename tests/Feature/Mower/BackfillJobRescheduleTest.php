@@ -133,7 +133,6 @@ class BackfillJobRescheduleTest extends TestCase
             'email' => 'backfill.client@example.com',
             'client_address' => '1 Backfill Rd',
             'scheduled_date' => '2026-09-10',
-            'is_recurring' => true,
             'recurrence_id' => $recurrenceId,
             'status' => JobWorkflowStatus::COMPLETED->value,
             'created_by' => $this->admin->id,

@@ -24,7 +24,6 @@ class UpdateJobRequest extends FormRequest
     {
         return array_merge($this->jobOperationalRules(), [
             'lead_id' => ['nullable', 'exists:leads,id'],
-            'is_recurring' => ['required', 'boolean'],
             'route_sequence' => ['required', 'integer', 'min:0'],
             'priority' => ['required', 'in:Low,Medium,High,Urgent'],
             'status' => ['required', Rule::in(JobWorkflowStatus::values())],

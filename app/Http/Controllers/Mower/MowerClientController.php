@@ -66,7 +66,6 @@ class MowerClientController extends Controller
             'required_services' => $data['service_types'],
             'weed_spray' => $data['weed_spray'],
             'recurrence_id' => $data['recurrence_id'],
-            'is_recurring' => true,
             'equipment_type_id' => $data['equipment_type_id'],
             'van_number' => $vanNumber,
             'customer_type' => $data['customer_type'],

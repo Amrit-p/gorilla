@@ -156,7 +156,6 @@ class JobSeeder extends Seeder
                 'estimated_duration_minutes' => $durations[$i],
                 'consumed_time_minutes' => $isCompleted ? $durations[$i] + rand(-5, 10) : null,
                 'required_services' => [$serviceTypes[$i % count($serviceTypes)]],
-                'is_recurring' => true,
                 'route_sequence' => $i + 1,
                 'priority' => $priorities[$i % count($priorities)],
                 'status' => $status,

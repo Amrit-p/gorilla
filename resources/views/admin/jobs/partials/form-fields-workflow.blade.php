@@ -24,14 +24,7 @@
         </div>
     </div>
 
-    <div class="mt-3 grid grid-cols-2 gap-3">
-        <div>
-            <label class="mb-1 block text-sm font-medium text-slate-700">Recurring</label>
-            <select name="is_recurring" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                <option value="0" @selected(! old('is_recurring', $jobModel?->is_recurring))>No</option>
-                <option value="1" @selected((bool) old('is_recurring', $jobModel?->is_recurring))>Yes</option>
-            </select>
-        </div>
+    <div class="mt-3">
         <x-ui.input label="Route sequence" name="route_sequence" type="number" :value="old('route_sequence', $jobModel?->route_sequence ?? 0)" />
     </div>
 

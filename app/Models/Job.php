@@ -38,7 +38,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'estimated_duration_minutes',
     'consumed_time_minutes',
     'required_services',
-    'is_recurring',
     'route_sequence',
     'priority',
     'status',
@@ -80,7 +79,6 @@ class Job extends Model
     {
         return [
             'scheduled_date' => 'date:Y-m-d',
-            'is_recurring' => 'boolean',
             'required_services' => 'array',
             'attached_images' => 'array',
             'before_images' => 'array',

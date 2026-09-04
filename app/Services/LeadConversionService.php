@@ -69,7 +69,6 @@ class LeadConversionService
         $job = Job::query()->create([
             'lead_id' => $lead->id,
             'recurrence_id' => $lead->recurrence_id,
-            'is_recurring' => $lead->recurrence_id !== null,
             'zone_id' => $lead->zone_id,
             'equipment_type_id' => $lead->equipment_type_id,
             'customer_name' => $lead->client_name ?: $lead->address,

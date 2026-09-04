@@ -31,12 +31,6 @@ class JobReschedulingService
             return null;
         }
 
-        if (! $source->is_recurring) {
-            Log::info('job.reschedule.skipped', ['job_id' => $source->id, 'reason' => 'is_recurring is false']);
-
-            return null;
-        }
-
         if ($source->recurrence_id === null) {
             Log::info('job.reschedule.skipped', ['job_id' => $source->id, 'reason' => 'no recurrence_id']);
 
@@ -102,7 +96,6 @@ class JobReschedulingService
                 'scheduled_time' => $source->scheduled_time,
                 'estimated_duration_minutes' => $source->estimated_duration_minutes,
                 'required_services' => $source->required_services,
-                'is_recurring' => true,
                 'route_sequence' => $source->route_sequence,
                 'priority' => $source->priority,
                 'numeric_priority' => $source->numeric_priority,

@@ -140,7 +140,6 @@ class JobManagementTest extends TestCase
 
         $payload = array_merge($this->jobPayload(), [
             'payment_status' => JobOperationalPaymentStatus::PARTIAL->value,
-            'is_recurring' => false,
             'route_sequence' => 0,
             'priority' => 'Medium',
             'status' => JobWorkflowStatus::STARTED->value,
