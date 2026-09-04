@@ -177,15 +177,12 @@
             <h2 class="text-sm font-semibold text-slate-900">Time on site</h2>
             <p class="mt-1 text-xs text-slate-500">Estimated: {{ $job->estimated_duration_minutes ?: '—' }} min</p>
             <div class="mt-3 flex gap-2">
-                <input
-                    type="number"
-                    id="mower-consumed-time"
-                    min="1"
-                    max="1440"
-                    value="{{ $job->consumed_time_minutes }}"
-                    class="mower-touch min-w-0 flex-1 rounded-xl border border-slate-300 px-3 py-3 text-base"
-                    placeholder="Minutes"
-                >
+                <select id="mower-consumed-time" class="mower-touch min-w-0 flex-1 rounded-xl border border-slate-300 px-3 py-3 text-base">
+                    <option value="">Select minutes</option>
+                    @for ($minutes = 10; $minutes <= 120; $minutes += 5)
+                        <option value="{{ $minutes }}" @selected((int) $job->consumed_time_minutes === $minutes)>{{ $minutes }} min</option>
+                    @endfor
+                </select>
                 <button type="button" id="mower-save-time" class="mower-touch shrink-0 rounded-xl bg-emerald-700 px-4 py-3 text-sm font-semibold text-white hidden">
                     Log time
                 </button>

@@ -115,7 +115,7 @@ class JobManagementTest extends TestCase
         ]);
     }
 
-    public function test_job_creation_requires_pending_reason_when_payment_status_pending_or_partial(): void
+    public function test_job_creation_does_not_require_pending_reason_when_payment_status_pending_or_partial(): void
     {
         foreach ([JobOperationalPaymentStatus::PENDING, JobOperationalPaymentStatus::PARTIAL] as $status) {
             $payload = array_merge($this->jobPayload(), [
@@ -125,12 +125,6 @@ class JobManagementTest extends TestCase
 
             $this->actingAs($this->admin)
                 ->postJson(route('admin.jobs.store'), $payload)
-                ->assertJsonValidationErrors(['payment_pending_reason']);
-
-            $this->actingAs($this->admin)
-                ->postJson(route('admin.jobs.store'), array_merge($payload, [
-                    'payment_pending_reason' => 'Waiting on client cheque.',
-                ]))
                 ->assertCreated();
         }
     }

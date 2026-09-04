@@ -18,7 +18,7 @@ trait ValidatesJobOperational
     /**
      * @return array<string, array<int, mixed>|string>
      */
-    protected function jobOperationalRules(): array
+    protected function jobOperationalRules(bool $requirePendingReason = false): array
     {
         return [
             'customer_name' => ['nullable', 'string', 'max:120'],
@@ -55,12 +55,14 @@ trait ValidatesJobOperational
             ],
             'payment_mode' => ['required', Rule::in(JobOperationalPaymentMode::values())],
             'payment_status' => ['nullable', Rule::in(JobOperationalPaymentStatus::values())],
-            'payment_pending_reason' => [
+            'payment_pending_reason' => array_values(array_filter([
                 'nullable',
-                'required_if:payment_status,'.JobOperationalPaymentStatus::PENDING->value.','.JobOperationalPaymentStatus::PARTIAL->value,
+                $requirePendingReason
+                    ? 'required_if:payment_status,'.JobOperationalPaymentStatus::PENDING->value.','.JobOperationalPaymentStatus::PARTIAL->value
+                    : null,
                 'string',
                 'max:255',
-            ],
+            ])),
             'charges' => ['nullable', 'numeric', 'min:0'],
             'incentive_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'office_remarks' => ['nullable', 'string'],

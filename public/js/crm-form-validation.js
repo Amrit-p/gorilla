@@ -181,9 +181,6 @@
                 'required_services[]': { required: true },
                 payment_mode: { required: true },
                 payment_pending_reason: {
-                    required: function () {
-                        return ['Pending', 'Partial'].includes($('#job-payment-status').val());
-                    },
                     maxlength: 255,
                 },
             },
