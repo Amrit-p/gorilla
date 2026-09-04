@@ -13,6 +13,9 @@
         JobOperationalPaymentMode::CASH->value,
         JobOperationalPaymentMode::BOTH->value,
     ], true);
+
+    $isOnlinePayment = $job->payment_mode === JobOperationalPaymentMode::ONLINE->value;
+    $showPendingDetails = $job->payment_status === 'Pending' && ! $isOnlinePayment;
 @endphp
 
 <x-layouts.mower
@@ -115,16 +118,30 @@
                         <option value="{{ $status }}" @selected($job->payment_status === $status)>{{ $status }}</option>
                     @endforeach
                 </select>
-                <div id="mower-payment-reason-wrap" class="{{ $job->payment_status === 'Pending' ? '' : 'hidden' }}">
-                    <label for="mower-payment-reason" class="mb-1 block text-sm text-slate-600">Reason</label>
-                    <input
-                        type="text"
-                        id="mower-payment-reason"
-                        maxlength="255"
-                        value="{{ $job->payment_pending_reason }}"
-                        class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base"
-                        placeholder="Why is payment pending?"
-                    >
+                <div id="mower-payment-reason-wrap" class="{{ $showPendingDetails ? '' : 'hidden' }} space-y-3">
+                    <div>
+                        <label for="mower-payment-reason" class="mb-1 block text-sm text-slate-600">Reason</label>
+                        <input
+                            type="text"
+                            id="mower-payment-reason"
+                            maxlength="255"
+                            value="{{ $job->payment_pending_reason }}"
+                            class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base"
+                            placeholder="Why is payment pending?"
+                        >
+                    </div>
+                    <div>
+                        <label for="mower-payment-pending-amount" class="mb-1 block text-sm text-slate-600">Amount pending ($)</label>
+                        <input
+                            type="number"
+                            id="mower-payment-pending-amount"
+                            min="0"
+                            step="0.01"
+                            value="{{ $job->payment_pending_amount }}"
+                            class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base"
+                            placeholder="0.00"
+                        >
+                    </div>
                 </div>
                 <div id="mower-paid-amount-wrap" class="{{ $job->payment_status === 'Partial' ? '' : 'hidden' }} space-y-3">
                     <div>
@@ -228,6 +245,7 @@
         <script>
             window.mowerRoutes = { index: @json(route('mower.index')) };
             window.mowerJobIsVerified = @json($job->isVerified());
+            window.mowerJobPaymentMode = @json($job->payment_mode);
             window.mowerJobRoutes = {
                 update: @json(route('mower.jobs.update', $job)),
                 status: @json(route('mower.jobs.status.update', $job)),

@@ -91,6 +91,7 @@ class MowerClientControllerTest extends TestCase
             'office_remarks' => 'Gate code 1234, mow the back lawn first.',
             'status' => 'Hold',
             'schedule_date' => now()->toDateString(),
+            'estimated_duration_minutes' => 45,
         ]);
 
         $response->assertRedirect(route('mower.index'));
@@ -112,7 +113,7 @@ class MowerClientControllerTest extends TestCase
 
         $job = Job::query()->where('client_address', '123 Test Street, Auckland')->first();
         $this->assertNotNull($job);
-        $this->assertSame(60, (int) $job->estimated_duration_minutes);
+        $this->assertSame(45, (int) $job->estimated_duration_minutes);
         Notification::assertSentTo($officeManager, MowerClientJobCreatedNotification::class,
             fn ($n) => $n->job->id === $job->id && $n->createdBy->id === $this->mower->id
         );
@@ -126,8 +127,8 @@ class MowerClientControllerTest extends TestCase
     {
         $response = $this->actingAs($this->mower)->post(route('mower.jobs.store'), []);
 
-        $response->assertSessionHasErrors(['address', 'service_types', 'weed_spray', 'recurrence_id', 'equipment_type_id', 'payment_mode', 'customer_type', 'office_remarks', 'status']);
-        $response->assertSessionDoesntHaveErrors(['job_type', 'phone', 'additional_site_instructions']);
+        $response->assertSessionHasErrors(['address', 'service_types', 'weed_spray', 'recurrence_id', 'payment_mode', 'customer_type', 'office_remarks', 'status', 'estimated_duration_minutes']);
+        $response->assertSessionDoesntHaveErrors(['job_type', 'phone', 'additional_site_instructions', 'equipment_type_id']);
     }
 
     public function test_amount_is_required_for_cash_and_both_payment_modes(): void
@@ -182,15 +183,26 @@ class MowerClientControllerTest extends TestCase
         ]);
     }
 
-    public function test_create_job_page_only_offers_red_and_yellow_mower_equipment(): void
+    public function test_equipment_type_is_optional_since_it_is_hidden_on_the_create_page(): void
+    {
+        $payload = $this->validPayload();
+        unset($payload['equipment_type_id']);
+
+        $response = $this->actingAs($this->mower)->post(route('mower.jobs.store'), $payload);
+
+        $response->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('service_jobs', [
+            'client_address' => $payload['address'],
+            'equipment_type_id' => null,
+        ]);
+    }
+
+    public function test_create_job_page_hides_equipment_type_and_offers_estimated_time_options(): void
     {
         $response = $this->actingAs($this->mower)->get(route('mower.jobs.create'));
 
         $response->assertOk();
-        $this->assertSame(
-            ['Red Mower', 'Yellow Mower'],
-            array_column($response->viewData('equipmentTypes'), 'name')
-        );
+        $response->assertDontSee('name="equipment_type_id"', false);
         $response->assertDontSee('name="job_type"', false);
         $response->assertDontSee('name="zone_id"', false);
         $response->assertDontSee('name="customer_name"', false);
@@ -199,6 +211,10 @@ class MowerClientControllerTest extends TestCase
         $response->assertDontSee('name="van_number"', false);
         $response->assertSee('name="status"', false);
         $response->assertSee('Comments');
+        $response->assertSee('name="estimated_duration_minutes"', false);
+        foreach ([15, 20, 25, 30, 45, 60] as $minutes) {
+            $response->assertSee('>'.$minutes.' min<', false);
+        }
     }
 
     public function test_property_address_is_the_first_section_on_the_create_page(): void
@@ -297,6 +313,7 @@ class MowerClientControllerTest extends TestCase
             'office_remarks' => 'Gate code 1234.',
             'status' => 'Pending',
             'schedule_date' => now()->toDateString(),
+            'estimated_duration_minutes' => 30,
         ], $overrides);
     }
 

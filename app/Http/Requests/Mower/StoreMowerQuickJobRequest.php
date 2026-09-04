@@ -25,6 +25,13 @@ class StoreMowerQuickJobRequest extends FormRequest
         JobOperationalPaymentMode::BOTH->value,
     ];
 
+    /**
+     * Estimated time on site a mower may pick when raising a job from the field.
+     *
+     * @var array<int, int>
+     */
+    public const ESTIMATED_DURATION_OPTIONS = [15, 20, 25, 30, 45, 60];
+
     public function authorize(): bool
     {
         return (bool) $this->user()?->can(CrmPermissions::UPLOAD_JOB_IMAGES);
@@ -44,8 +51,9 @@ class StoreMowerQuickJobRequest extends FormRequest
             'service_types.*' => ServiceTypes::itemRules(),
             'weed_spray' => ['required', Rule::in(LeadWeedSpray::values())],
             'recurrence_id' => ['required', 'integer', Rule::exists(Recurrence::class, 'id')->where('is_active', true)],
-            'equipment_type_id' => EquipmentTypes::mowerIdRules(),
+            'equipment_type_id' => ['nullable', 'integer', Rule::in(array_column(EquipmentTypes::mowerSelectOptions(), 'id'))],
             'customer_type' => ['required', Rule::in(JobCustomerType::values())],
+            'estimated_duration_minutes' => ['required', 'integer', Rule::in(self::ESTIMATED_DURATION_OPTIONS)],
             'payment_mode' => ['required', Rule::in(JobOperationalPaymentMode::values())],
             'charges' => [
                 Rule::requiredIf(fn (): bool => in_array($this->input('payment_mode'), self::PAYMENT_MODES_REQUIRING_CHARGES, true)),
@@ -71,6 +79,7 @@ class StoreMowerQuickJobRequest extends FormRequest
     {
         return [
             'equipment_type_id' => 'equipment type',
+            'estimated_duration_minutes' => 'estimated time',
             'office_remarks' => 'comments',
             'status' => 'job status',
             'charges' => 'amount',

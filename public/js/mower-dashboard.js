@@ -229,11 +229,15 @@
 
     // ─── Job detail: payment reason visibility ──────────────────────────────
 
+    function pendingDetailsRequired() {
+        const val = $('#mower-payment-status').val();
+        return val === 'Pending' && window.mowerJobPaymentMode !== 'Online';
+    }
+
     function togglePaymentReason() {
         const val = $('#mower-payment-status').val();
-        const isPending = val === 'Pending';
         const isPartial = val === 'Partial';
-        $('#mower-payment-reason-wrap').toggleClass('hidden', !isPending);
+        $('#mower-payment-reason-wrap').toggleClass('hidden', !pendingDetailsRequired());
         $('#mower-paid-amount-wrap').toggleClass('hidden', !isPartial);
     }
 
@@ -246,7 +250,7 @@
         if (!document.getElementById('mower-status')) return;
         const isHold = $('#mower-status').val() === 'Hold';
 
-        $('#mower-payment-status, #mower-payment-reason, #mower-first-payment, #mower-second-payment, #mower-consumed-time, #mower-remark-text, #mower-before-input, #mower-after-input')
+        $('#mower-payment-status, #mower-payment-reason, #mower-payment-pending-amount, #mower-first-payment, #mower-second-payment, #mower-consumed-time, #mower-remark-text, #mower-before-input, #mower-after-input')
             .prop('disabled', isHold);
 
         $('#mower-before-label, #mower-after-label').toggleClass('opacity-50 pointer-events-none', isHold);
@@ -262,13 +266,18 @@
         if (!routes.payment) return $.Deferred().resolve();
         const status = $('#mower-payment-status').val();
         const reason = String($('#mower-payment-reason').val()).trim();
+        const pendingAmount = String($('#mower-payment-pending-amount').val()).trim();
         const firstPayment = String($('#mower-first-payment').val()).trim();
         const secondPayment = String($('#mower-second-payment').val()).trim();
-        const isPending = status === 'Pending';
+        const needsPendingDetails = pendingDetailsRequired();
         const isPartial = status === 'Partial';
 
-        if (isPending && !reason) {
+        if (needsPendingDetails && !reason) {
             showAlert('Please enter a reason for pending payment.', true);
+            return $.Deferred().reject();
+        }
+        if (needsPendingDetails && !pendingAmount) {
+            showAlert('Please enter the pending amount.', true);
             return $.Deferred().reject();
         }
         if (isPartial && !firstPayment) {
@@ -287,7 +296,8 @@
             method: 'PATCH',
             data: {
                 payment_status: status,
-                payment_pending_reason: isPending ? reason : '',
+                payment_pending_reason: needsPendingDetails ? reason : '',
+                payment_pending_amount: needsPendingDetails ? pendingAmount : '',
                 first_payment: isPartial ? firstPayment : '',
                 second_payment: isPartial ? secondPayment : '',
                 _token: $('meta[name="csrf-token"]').attr('content'),
@@ -488,14 +498,19 @@
         if (!routes.update) return;
 
         const paymentStatus = $('#mower-payment-status').val();
-        const isPendingPayment = paymentStatus === 'Pending';
         const isPartial = paymentStatus === 'Partial';
+        const needsPendingDetails = pendingDetailsRequired();
         const reason = String($('#mower-payment-reason').val()).trim();
+        const pendingAmount = String($('#mower-payment-pending-amount').val()).trim();
         const firstPayment = String($('#mower-first-payment').val()).trim();
         const secondPayment = String($('#mower-second-payment').val()).trim();
 
-        if (isPendingPayment && !reason) {
+        if (needsPendingDetails && !reason) {
             showAlert('Please enter a reason for pending payment.', true);
+            return;
+        }
+        if (needsPendingDetails && !pendingAmount) {
+            showAlert('Please enter the pending amount.', true);
             return;
         }
         if (isPartial && !firstPayment) {
@@ -515,7 +530,8 @@
         const data = {
             status: $('#mower-status').val(),
             payment_status: paymentStatus,
-            payment_pending_reason: isPendingPayment ? reason : '',
+            payment_pending_reason: needsPendingDetails ? reason : '',
+            payment_pending_amount: needsPendingDetails ? pendingAmount : '',
             first_payment: isPartial ? firstPayment : '',
             second_payment: isPartial ? secondPayment : '',
             consumed_time_minutes: minutes || '',

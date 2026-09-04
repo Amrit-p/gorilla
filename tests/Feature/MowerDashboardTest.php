@@ -216,6 +216,7 @@ class MowerDashboardTest extends TestCase
             ->patchJson(route('mower.jobs.payment.update', $job), [
                 'payment_status' => JobOperationalPaymentStatus::PENDING->value,
                 'payment_pending_reason' => 'Customer not home',
+                'payment_pending_amount' => 45.00,
             ])
             ->assertOk()
             ->assertJsonPath('payment_status', JobOperationalPaymentStatus::PENDING->value);
@@ -230,7 +231,51 @@ class MowerDashboardTest extends TestCase
         $job->refresh();
         $this->assertSame(JobWorkflowStatus::HOLD->value, $job->status);
         $this->assertSame(JobOperationalPaymentStatus::PENDING->value, $job->payment_status);
+        $this->assertSame('45.00', $job->payment_pending_amount);
         $this->assertSame(75, $job->consumed_time_minutes);
+    }
+
+    public function test_pending_payment_skips_reason_and_amount_for_online_payment_mode(): void
+    {
+        $job = $this->createAssignedJob($this->mower, ['payment_mode' => JobOperationalPaymentMode::ONLINE->value]);
+
+        $this->actingAs($this->mower)
+            ->patchJson(route('mower.jobs.payment.update', $job), [
+                'payment_status' => JobOperationalPaymentStatus::PENDING->value,
+            ])
+            ->assertOk()
+            ->assertJsonPath('payment_status', JobOperationalPaymentStatus::PENDING->value);
+
+        $job->refresh();
+        $this->assertSame(JobOperationalPaymentStatus::PENDING->value, $job->payment_status);
+        $this->assertNull($job->payment_pending_reason);
+        $this->assertNull($job->payment_pending_amount);
+    }
+
+    public function test_pending_payment_requires_reason_and_amount_for_cash_and_both_payment_modes(): void
+    {
+        foreach ([JobOperationalPaymentMode::CASH->value, JobOperationalPaymentMode::BOTH->value] as $paymentMode) {
+            $job = $this->createAssignedJob($this->mower, ['payment_mode' => $paymentMode]);
+
+            $this->actingAs($this->mower)
+                ->patchJson(route('mower.jobs.payment.update', $job), [
+                    'payment_status' => JobOperationalPaymentStatus::PENDING->value,
+                ])
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors(['payment_pending_reason', 'payment_pending_amount']);
+
+            $this->actingAs($this->mower)
+                ->patchJson(route('mower.jobs.payment.update', $job), [
+                    'payment_status' => JobOperationalPaymentStatus::PENDING->value,
+                    'payment_pending_reason' => 'Customer not home',
+                    'payment_pending_amount' => 45.00,
+                ])
+                ->assertOk();
+
+            $job->refresh();
+            $this->assertSame('Customer not home', $job->payment_pending_reason);
+            $this->assertSame('45.00', $job->payment_pending_amount);
+        }
     }
 
     public function test_partial_payment_saves_first_and_second_payment(): void

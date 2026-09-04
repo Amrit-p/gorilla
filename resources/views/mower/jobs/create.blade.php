@@ -57,20 +57,12 @@
             </section>
 
             <section class="rounded-2xl bg-white p-4 shadow-sm space-y-3">
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Services &amp; equipment</p>
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Services</p>
 
                 <x-forms.service-types
                     name="service_types[]"
                     label="Service types"
                     :selected="old('service_types', [])"
-                />
-
-                <x-forms.equipment-type
-                    id="job-equipment-type-id"
-                    :equipment-types="$equipmentTypes ?? null"
-                    :selected="old('equipment_type_id')"
-                    :required="true"
-                    select-class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base"
                 />
 
                 <div>
@@ -79,6 +71,16 @@
                         <option value="">Select option</option>
                         @foreach ($weedSprayOptions as $option)
                             <option value="{{ $option }}" @selected(old('weed_spray') === $option)>{{ $option }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
+                    <label for="job-estimated-duration" class="mb-1 block text-sm font-medium text-slate-700">Estimated time <span class="text-red-500">*</span></label>
+                    <select name="estimated_duration_minutes" id="job-estimated-duration" required class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base">
+                        <option value="">Select estimated time</option>
+                        @foreach ($estimatedDurationOptions as $minutes)
+                            <option value="{{ $minutes }}" @selected((int) old('estimated_duration_minutes') === $minutes)>{{ $minutes }} min</option>
                         @endforeach
                     </select>
                 </div>
