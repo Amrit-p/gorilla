@@ -12,7 +12,6 @@ use App\Http\Middleware\EnsureMowerChecklistComplete;
 use App\Models\EquipmentType;
 use App\Models\Job;
 use App\Models\User;
-use App\Notifications\JobStatusChangedNotification;
 use App\Support\CrmRoles;
 use App\Support\ServiceTypes;
 use Database\Seeders\MasterCatalogSeeder;
@@ -588,6 +587,21 @@ class MowerDashboardTest extends TestCase
             ->assertSee('Latest note for this job.');
     }
 
+    public function test_job_show_renders_consumed_time_as_a_select_with_5_minute_steps(): void
+    {
+        $job = $this->createAssignedJob($this->mower, ['consumed_time_minutes' => 75]);
+
+        $response = $this->actingAs($this->mower)
+            ->get(route('mower.jobs.show', $job))
+            ->assertOk();
+
+        $response->assertSee('<select id="mower-consumed-time"', false);
+        $response->assertSee('<option value="75" selected>75 min</option>', false);
+        foreach ([10, 60, 120] as $minutes) {
+            $response->assertSee('>'.$minutes.' min<', false);
+        }
+    }
+
     public function test_job_show_displays_office_remarks(): void
     {
         $job = $this->createAssignedJob($this->mower);
@@ -677,8 +691,8 @@ class MowerDashboardTest extends TestCase
             ])
             ->assertOk();
 
-        Notification::assertNotSentTo($salesManager, JobStatusChangedNotification::class);
-        Notification::assertNotSentTo($officeManager, JobStatusChangedNotification::class);
+        Notification::assertNothingSentTo($salesManager);
+        Notification::assertNothingSentTo($officeManager);
     }
 
     public function test_non_completed_status_does_not_notify_managers(): void
@@ -699,8 +713,8 @@ class MowerDashboardTest extends TestCase
             ])
             ->assertOk();
 
-        Notification::assertNotSentTo($salesManager, JobStatusChangedNotification::class);
-        Notification::assertNotSentTo($officeManager, JobStatusChangedNotification::class);
+        Notification::assertNothingSentTo($salesManager);
+        Notification::assertNothingSentTo($officeManager);
     }
 
     /**

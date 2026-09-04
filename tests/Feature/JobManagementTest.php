@@ -13,8 +13,8 @@ use App\Models\Job;
 use App\Models\JobLevel;
 use App\Models\Recurrence;
 use App\Models\User;
-use App\Notifications\JobRemarksUpdatedNotification;
-use App\Notifications\JobVerifiedNotification;
+use App\Notifications\JobDeletedNotification;
+use App\Notifications\JobMowerAssignmentChangedNotification;
 use App\Support\CrmConstants;
 use App\Support\CrmRoles;
 use App\Support\ServiceTypes;
@@ -174,6 +174,22 @@ class JobManagementTest extends TestCase
         $this->assertSame($this->mower->id, $job->done_by_user_id);
     }
 
+    public function test_bulk_assign_notifies_the_assigned_mower(): void
+    {
+        Notification::fake();
+        $job = $this->createJob();
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.jobs.bulk.assign'), [
+                'job_ids' => [$job->id],
+                'done_by_user_id' => $this->mower->id,
+                'employee_ids' => [$this->mower->id],
+            ])
+            ->assertOk();
+
+        Notification::assertSentTo($this->mower, JobMowerAssignmentChangedNotification::class);
+    }
+
     public function test_status_update_uses_workflow_statuses(): void
     {
         $job = $this->createJob();
@@ -308,7 +324,6 @@ class JobManagementTest extends TestCase
 
     public function test_admin_can_update_job_office_remarks(): void
     {
-        Notification::fake();
         $job = $this->createJob();
         $job->update(['status' => JobWorkflowStatus::PENDING->value]);
         $job->assignedEmployees()->attach($this->mower->id, [
@@ -324,7 +339,6 @@ class JobManagementTest extends TestCase
             ->assertJsonPath('message', 'Remarks updated successfully.');
 
         $this->assertSame('Gate code changed to 4321.', $job->refresh()->office_remarks);
-        Notification::assertSentTo($this->mower, JobRemarksUpdatedNotification::class);
     }
 
     public function test_bulk_schedule_updates_scheduled_date(): void
@@ -490,28 +504,6 @@ class JobManagementTest extends TestCase
         $this->assertNull($job->refresh()->verified_at);
     }
 
-    public function test_verifying_a_job_notifies_other_office_managers(): void
-    {
-        Notification::fake();
-
-        $otherManager = User::factory()->create(['is_active' => true]);
-        $otherManager->assignRole(CrmRoles::OFFICE_MANAGER);
-
-        $job = $this->createVerifiableJob();
-
-        $this->actingAs($this->admin)
-            ->postJson(route('admin.jobs.bulk.verify'), [
-                'job_ids' => [$job->id],
-                'verified' => 1,
-                'verified_date' => '2026-08-30',
-                'verified_amount' => 150,
-            ])
-            ->assertOk();
-
-        Notification::assertSentTo($otherManager, JobVerifiedNotification::class);
-        Notification::assertNotSentTo($this->admin, JobVerifiedNotification::class);
-    }
-
     public function test_admin_can_remove_job_verification(): void
     {
         $job = $this->createJob();
@@ -615,6 +607,23 @@ class JobManagementTest extends TestCase
 
         $this->assertNotNull(Job::withTrashed()->find($job->id)->deleted_at);
         $this->assertNull(Job::query()->find($job->id));
+    }
+
+    public function test_bulk_delete_notifies_other_managers(): void
+    {
+        Notification::fake();
+
+        $otherManager = User::factory()->create(['is_active' => true]);
+        $otherManager->assignRole(CrmRoles::OFFICE_MANAGER);
+
+        $job = $this->createJob();
+
+        $this->actingAs($this->admin)
+            ->deleteJson(route('admin.jobs.bulk.destroy'), ['job_ids' => [$job->id]])
+            ->assertOk();
+
+        Notification::assertSentTo($otherManager, JobDeletedNotification::class);
+        Notification::assertNotSentTo($this->admin, JobDeletedNotification::class);
     }
 
     public function test_completed_unverified_scope_returns_only_completed_jobs_without_verification(): void

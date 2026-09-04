@@ -8,6 +8,5 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Schedule::command('app:send-pending-job-reminders')->dailyAt('08:00');
 Schedule::command('followups:notify')->dailyAt('08:00');
 Schedule::command('backup:run')->dailyAt('02:00');

@@ -18,10 +18,8 @@ use App\Models\JobLevel;
 use App\Models\Recurrence;
 use App\Models\User;
 use App\Models\Zone;
-use App\Notifications\JobAssignedNotification;
-use App\Notifications\JobRescheduledNotification;
-use App\Notifications\JobStatusChangedNotification;
-use App\Notifications\JobVerifiedNotification;
+use App\Notifications\JobDeletedNotification;
+use App\Notifications\JobMowerAssignmentChangedNotification;
 use App\Repositories\JobRepository;
 use App\Support\CrmPermissions;
 use App\Support\CrmRoles;
@@ -247,7 +245,7 @@ class JobManagementService
         if ($notify && $helper_mowers !== []) {
             User::query()->whereIn('id', $helper_mowers)->get()->each(function (User $employee) use ($freshJobs): void {
                 $freshJobs->each(function (Job $job) use ($employee): void {
-                    $employee->notify(new JobAssignedNotification($job));
+                    $employee->notify(new JobMowerAssignmentChangedNotification($job));
                 });
                 OptimizationHelper::forgetNotificationUnreadCount($employee->id);
             });
@@ -286,19 +284,6 @@ class JobManagementService
             });
         });
 
-        if ($verified) {
-            User::query()
-                ->role([CrmRoles::OFFICE_MANAGER])
-                ->where('id', '!=', $actor->id)
-                ->get()
-                ->each(function (User $manager) use ($jobs, $actor): void {
-                    $jobs->each(function (Job $job) use ($manager, $actor): void {
-                        $manager->notify(new JobVerifiedNotification($job, $actor));
-                    });
-                    OptimizationHelper::forgetNotificationUnreadCount($manager->id);
-                });
-        }
-
         // Reload jobs as an Eloquent collection with `verifier` relation,
         // preserving the original ordering of the provided collection.
         $ids = $jobs->pluck('id')->all();
@@ -323,13 +308,6 @@ class JobManagementService
                     'status' => $status,
                 ]);
             });
-        });
-
-        User::query()->role([CrmRoles::OFFICE_MANAGER])->get()->each(function (User $manager) use ($jobs): void {
-            $jobs->each(function (Job $job) use ($manager): void {
-                $manager->notify(new JobStatusChangedNotification($job));
-            });
-            OptimizationHelper::forgetNotificationUnreadCount($manager->id);
         });
 
         return $jobs;
@@ -362,21 +340,6 @@ class JobManagementService
             });
         });
 
-        User::query()->role([CrmRoles::OFFICE_MANAGER])->get()->each(function (User $manager) use ($jobs): void {
-            $jobs->each(function (Job $job) use ($manager): void {
-                $manager->notify(new JobRescheduledNotification($job));
-            });
-            OptimizationHelper::forgetNotificationUnreadCount($manager->id);
-        });
-
-        $jobs->each(function (Job $job): void {
-            $primaryMower = $job->doneByUser;
-            if ($primaryMower) {
-                $primaryMower->notify(new JobRescheduledNotification($job));
-                OptimizationHelper::forgetNotificationUnreadCount($primaryMower->id);
-            }
-        });
-
         return $jobs;
     }
 
@@ -384,6 +347,15 @@ class JobManagementService
     {
         $job->delete();
         $this->activityLogService->log($actor, 'job.deleted', 'Job deleted.', ['job_id' => $job->id]);
+
+        User::query()
+            ->role([CrmRoles::OFFICE_MANAGER, CrmRoles::SALES_MANAGER])
+            ->where('id', '!=', $actor->id)
+            ->get()
+            ->each(function (User $manager) use ($job, $actor): void {
+                $manager->notify(new JobDeletedNotification($job, $actor));
+                OptimizationHelper::forgetNotificationUnreadCount($manager->id);
+            });
     }
 
     /**

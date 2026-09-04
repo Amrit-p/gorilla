@@ -5,7 +5,6 @@ namespace App\Notifications;
 use App\Models\Job;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 class MowerClientJobCreatedNotification extends Notification
@@ -22,17 +21,7 @@ class MowerClientJobCreatedNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
-    }
-
-    public function toMail(object $notifiable): MailMessage
-    {
-        return (new MailMessage)
-            ->subject('New Job Created by Mower')
-            ->line("{$this->createdBy->name} created a new job #{$this->job->id}.")
-            ->line('Address: '.($this->job->client_address ?? 'N/A'))
-            ->line('Scheduled: '.($this->job->scheduled_date ?? 'TBD'))
-            ->action('View Job', route('admin.jobs.show', $this->job));
+        return ['database'];
     }
 
     /**

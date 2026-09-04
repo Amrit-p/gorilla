@@ -3,11 +3,7 @@
 namespace App\Services;
 
 use App\Enums\JobWorkflowStatus;
-use App\Helpers\OptimizationHelper;
 use App\Models\Job;
-use App\Models\User;
-use App\Notifications\JobAutoRescheduledNotification;
-use App\Support\CrmRoles;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -114,8 +110,6 @@ class JobReschedulingService
                 'rescheduled_from_job_id' => $source->id,
             ]);
 
-            $this->notify($source, $newJob);
-
             Log::info('job.reschedule.created', [
                 'source_job_id' => $source->id,
                 'new_job_id' => $newJob->id,
@@ -142,18 +136,5 @@ class JobReschedulingService
             ->where('status', JobWorkflowStatus::PENDING->value)
             ->get()
             ->each(fn (Job $next): ?bool => $next->delete());
-    }
-
-    private function notify(Job $job, Job $newJob): void
-    {
-        User::query()->role([CrmRoles::OFFICE_MANAGER])->get()->each(function (User $manager) use ($newJob): void {
-            $manager->notify(new JobAutoRescheduledNotification($newJob));
-            OptimizationHelper::forgetNotificationUnreadCount($manager->id);
-        });
-
-        if ($job->doneByUser) {
-            $job->doneByUser->notify(new JobAutoRescheduledNotification($newJob));
-            OptimizationHelper::forgetNotificationUnreadCount($job->doneByUser->id);
-        }
     }
 }

@@ -6,10 +6,8 @@ use App\Enums\JobWorkflowStatus;
 use App\Models\Job;
 use App\Models\Recurrence;
 use App\Models\User;
-use App\Notifications\JobAutoRescheduledNotification;
 use App\Services\JobReschedulingService;
 use App\Support\CrmConstants;
-use App\Support\CrmRoles;
 use Database\Seeders\MasterCatalogSeeder;
 use Database\Seeders\RecurrenceSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
@@ -56,28 +54,6 @@ class AutoRescheduleJobsTest extends TestCase
         $this->assertEquals('2026-06-17', $newJob->scheduled_date->toDateString());
         $this->assertEquals($recurrence->id, $newJob->recurrence_id);
         $this->assertSame(JobWorkflowStatus::PENDING->value, $newJob->status);
-    }
-
-    public function test_completion_notifies_office_managers_and_done_by_user(): void
-    {
-        Notification::fake();
-
-        $manager = User::factory()->create(['is_active' => true]);
-        $manager->assignRole(CrmRoles::OFFICE_MANAGER);
-
-        $mower = User::factory()->create(['is_active' => true]);
-        $mower->assignRole(CrmRoles::MOWER);
-
-        $recurrence = Recurrence::query()->where('name', 'Monthly')->firstOrFail();
-
-        $job = Job::query()->create($this->jobPayload($recurrence->id, [
-            'done_by_user_id' => $mower->id,
-        ]));
-
-        $job->update(['status' => JobWorkflowStatus::COMPLETED->value]);
-
-        Notification::assertSentTo($manager, JobAutoRescheduledNotification::class);
-        Notification::assertSentTo($mower, JobAutoRescheduledNotification::class);
     }
 
     public function test_one_time_recurrence_is_not_rescheduled(): void
