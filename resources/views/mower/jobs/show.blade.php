@@ -55,62 +55,6 @@
         </section>
 
         <section class="rounded-2xl bg-white p-4 shadow-sm">
-            <h2 class="text-sm font-semibold text-slate-900">Job details</h2>
-            <p class="mt-1 text-xs text-slate-500">Read-only — contact office to change.</p>
-            <dl class="mt-3 space-y-2 text-sm">
-                <div class="flex justify-between gap-4">
-                    <dt class="text-slate-500">Customer type</dt>
-                    <dd class="text-right font-medium text-slate-900">{{ $job->customer_type ?: '—' }}</dd>
-                </div>
-                <div class="flex justify-between gap-4">
-                    <dt class="text-slate-500">Service type</dt>
-                    <dd class="text-right font-medium text-slate-900">{{ $serviceTypes }}</dd>
-                </div>
-                <div class="flex justify-between gap-4">
-                    <dt class="text-slate-500">Payment mode</dt>
-                    <dd class="text-right font-medium text-slate-900">{{ $job->payment_mode ?: '—' }}</dd>
-                </div>
-                @if ($showChargeAmount)
-                    <div class="flex justify-between gap-4">
-                        <dt class="text-slate-500">Amount to collect</dt>
-                        <dd class="text-right font-semibold text-emerald-700">${{ number_format((float) $job->charges, 2) }}</dd>
-                    </div>
-                @endif
-                @if ($job->site_instructions)
-                    <div>
-                        <dt class="text-slate-500">Site instructions</dt>
-                        <dd class="mt-1 rounded-lg bg-slate-50 px-3 py-2 text-slate-800">{{ $job->site_instructions }}</dd>
-                    </div>
-                @endif
-            </dl>
-        </section>
-        <section class="rounded-2xl bg-white p-4 shadow-sm">
-            <h2 class="text-sm font-semibold text-slate-900">Office remarks</h2>
-            <p class="mt-1 text-xs text-slate-500">Read-only — set by the office.</p>
-            @if ($job->office_remarks)
-                <p class="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-slate-800 whitespace-pre-wrap">{{ $job->office_remarks }}</p>
-            @else
-                <p class="mt-2 text-sm text-slate-400">No remarks from the office.</p>
-            @endif
-        </section>
-
-        <section class="rounded-2xl bg-white p-4 shadow-sm">
-            <h2 class="text-sm font-semibold text-slate-900">Location</h2>
-            <p class="mt-2 text-sm text-slate-800">{{ $job->client_address ?: '—' }}</p>
-            @if ($mapsUrl)
-                <a
-                    href="{{ $mapsUrl }}"
-                    class="mower-touch mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800"
-                >
-                    Open in Maps
-                </a>
-            @endif
-            @if ($job->latitude && $job->longitude)
-                <p class="mt-2 text-xs text-slate-500">{{ $job->latitude }}, {{ $job->longitude }}</p>
-            @endif
-        </section>
-
-        <section class="rounded-2xl bg-white p-4 shadow-sm">
             <h2 class="text-sm font-semibold text-slate-900">Payment</h2>
             <div class="mt-3 space-y-3">
                 <select id="mower-payment-status" class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base">
@@ -190,6 +134,79 @@
         </section>
 
         <section class="rounded-2xl bg-white p-4 shadow-sm">
+            <h2 class="text-sm font-semibold text-slate-900">Mower remarks</h2>
+            <p class="mt-1 text-xs text-slate-500">Notes for the next visit.</p>
+            <div class="mt-3 space-y-3">
+                <textarea
+                    id="mower-remark-text"
+                    rows="4"
+                    maxlength="1000"
+                    class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base resize-none"
+                    placeholder="e.g. Gate code is 1234, dog is friendly, avoid the rose bed..."
+                >{{ $job->mower_remarks }}</textarea>
+                <button type="button" id="mower-save-remark" class="mower-touch w-full rounded-xl bg-emerald-700 px-4 py-3 text-sm font-semibold text-white hidden">
+                    Save instructions
+                </button>
+            </div>
+        </section>
+
+        <section class="rounded-2xl bg-white p-4 shadow-sm">
+            <h2 class="text-sm font-semibold text-slate-900">Job details</h2>
+            <p class="mt-1 text-xs text-slate-500">Read-only — contact office to change.</p>
+            <dl class="mt-3 space-y-2 text-sm">
+                <div class="flex justify-between gap-4">
+                    <dt class="text-slate-500">Customer type</dt>
+                    <dd class="text-right font-medium text-slate-900">{{ $job->customer_type ?: '—' }}</dd>
+                </div>
+                <div class="flex justify-between gap-4">
+                    <dt class="text-slate-500">Service type</dt>
+                    <dd class="text-right font-medium text-slate-900">{{ $serviceTypes }}</dd>
+                </div>
+                <div class="flex justify-between gap-4">
+                    <dt class="text-slate-500">Payment mode</dt>
+                    <dd class="text-right font-medium text-slate-900">{{ $job->payment_mode ?: '—' }}</dd>
+                </div>
+                @if ($showChargeAmount)
+                    <div class="flex justify-between gap-4">
+                        <dt class="text-slate-500">Amount to collect</dt>
+                        <dd class="text-right font-semibold text-emerald-700">${{ number_format((float) $job->charges, 2) }}</dd>
+                    </div>
+                @endif
+                @if ($job->site_instructions)
+                    <div>
+                        <dt class="text-slate-500">Site instructions</dt>
+                        <dd class="mt-1 rounded-lg bg-slate-50 px-3 py-2 text-slate-800">{{ $job->site_instructions }}</dd>
+                    </div>
+                @endif
+            </dl>
+        </section>
+        <section class="rounded-2xl bg-white p-4 shadow-sm">
+            <h2 class="text-sm font-semibold text-slate-900">Office remarks</h2>
+            <p class="mt-1 text-xs text-slate-500">Read-only — set by the office.</p>
+            @if ($job->office_remarks)
+                <p class="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-slate-800 whitespace-pre-wrap">{{ $job->office_remarks }}</p>
+            @else
+                <p class="mt-2 text-sm text-slate-400">No remarks from the office.</p>
+            @endif
+        </section>
+
+        <section class="rounded-2xl bg-white p-4 shadow-sm">
+            <h2 class="text-sm font-semibold text-slate-900">Location</h2>
+            <p class="mt-2 text-sm text-slate-800">{{ $job->client_address ?: '—' }}</p>
+            @if ($mapsUrl)
+                <a
+                    href="{{ $mapsUrl }}"
+                    class="mower-touch mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800"
+                >
+                    Open in Maps
+                </a>
+            @endif
+            @if ($job->latitude && $job->longitude)
+                <p class="mt-2 text-xs text-slate-500">{{ $job->latitude }}, {{ $job->longitude }}</p>
+            @endif
+        </section>
+
+        <section class="rounded-2xl bg-white p-4 shadow-sm">
             <h2 class="text-sm font-semibold text-slate-900">Before photos</h2>
             <x-jobs.image-gallery :images="$beforeImages" gallery-id="mower-before-gallery" kind="before" />
             <label id="mower-before-label" class="mower-touch mt-3 flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-600">
@@ -207,22 +224,6 @@
                 <span id="mower-after-upload-text" class="font-medium text-emerald-700">Add after photos</span>
                 <span class="mt-1 text-xs">Compressed on upload</span>
             </label>
-        </section>
-        <section class="rounded-2xl bg-white p-4 shadow-sm">
-            <h2 class="text-sm font-semibold text-slate-900">Mower remarks</h2>
-            <p class="mt-1 text-xs text-slate-500">Notes for the next visit.</p>
-            <div class="mt-3 space-y-3">
-                <textarea
-                    id="mower-remark-text"
-                    rows="4"
-                    maxlength="1000"
-                    class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base resize-none"
-                    placeholder="e.g. Gate code is 1234, dog is friendly, avoid the rose bed..."
-                >{{ $job->mower_remarks }}</textarea>
-                <button type="button" id="mower-save-remark" class="mower-touch w-full rounded-xl bg-emerald-700 px-4 py-3 text-sm font-semibold text-white hidden">
-                    Save instructions
-                </button>
-            </div>
         </section>
     </div>
 
