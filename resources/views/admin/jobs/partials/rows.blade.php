@@ -126,11 +126,6 @@
                 <span class="text-sm text-slate-700">{{ $job->recurrence?->name ?? '—' }}</span>
             </td>
 
-            {{-- Last Job --}}
-            <td class="whitespace-nowrap px-4 py-4">
-                <span class="text-sm text-slate-400">—</span>
-            </td>
-
             {{-- Payment --}}
             <td class="whitespace-nowrap px-4 py-4">
                 <p class="text-sm text-slate-700">{{ $job->payment_mode ?: '—' }}</p>
@@ -317,7 +312,7 @@
     @empty
         @if ($showEmptyState)
         <tr>
-            <td colspan="{{ $canReorder ? 12 : 11 }}" class="px-4 py-10 text-center text-sm text-slate-400">No jobs found.</td>
+            <td colspan="{{ $canReorder ? 11 : 10 }}" class="px-4 py-10 text-center text-sm text-slate-400">No jobs found.</td>
         </tr>
         @endif
     @endforelse
