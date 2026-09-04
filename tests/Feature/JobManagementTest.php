@@ -826,9 +826,63 @@ class JobManagementTest extends TestCase
         $this->assertStringNotContainsString('Unrelated Client', $html);
     }
 
+    public function test_cards_only_request_returns_job_cards_without_table_markup(): void
+    {
+        $this->createJobs(3);
+
+        $html = (string) $this->actingAs($this->admin)
+            ->getJson(route('admin.jobs.index', ['cards_only' => 1]))
+            ->assertOk()
+            ->json('html');
+
+        $this->assertSame(3, $this->countJobCards($html));
+        $this->assertStringNotContainsString('<table', $html);
+    }
+
+    public function test_cards_only_request_respects_search_filter(): void
+    {
+        $this->createJobs(2);
+        Job::query()->create(array_merge($this->jobPayload(), [
+            'customer_name' => 'Unrelated Client',
+            'created_by' => $this->admin->id,
+        ]));
+
+        $html = (string) $this->actingAs($this->admin)
+            ->getJson(route('admin.jobs.index', [
+                'search' => 'Paged Client',
+                'cards_only' => 1,
+            ]))
+            ->assertOk()
+            ->json('html');
+
+        $this->assertSame(2, $this->countJobCards($html));
+        $this->assertStringNotContainsString('Unrelated Client', $html);
+    }
+
+    public function test_cards_only_request_with_no_matches_shows_empty_state(): void
+    {
+        $this->createJob();
+
+        $html = (string) $this->actingAs($this->admin)
+            ->getJson(route('admin.jobs.index', [
+                'search' => 'Nobody Matches This',
+                'cards_only' => 1,
+            ]))
+            ->assertOk()
+            ->json('html');
+
+        $this->assertSame(0, $this->countJobCards($html));
+        $this->assertStringContainsString('No jobs found', $html);
+    }
+
     private function countJobRows(string $html): int
     {
         return substr_count($html, '<tr class="job-row');
+    }
+
+    private function countJobCards(string $html): int
+    {
+        return substr_count($html, 'class="job-card ');
     }
 
     /**

@@ -29,6 +29,9 @@ $dashboardType = $analytics['type'] ?? 'admin';
         <div id="dashboard-alert" class="hidden"></div>
 
         @if (in_array($dashboardType, ['admin', 'sales']))
+        @can('view-jobs')
+        @include('admin.jobs.partials.mobile-search')
+        @endcan
         @can('view-business-analytics')
         @include('dashboard.partials.admin-analytics', ['analytics' => $analytics])
         @endcan

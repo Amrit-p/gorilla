@@ -70,9 +70,17 @@ class JobManagementController extends Controller
             // Infinite scroll appends the next chunk onto the table already on
             // screen, so it asks for the rows alone; everything else (filters,
             // page links, page-size change) re-renders the whole table.
-            return $request->boolean('rows_only')
-                ? crm_ajax_html('admin.jobs.partials.rows', $tableData + ['showEmptyState' => false])
-                : crm_ajax_html('admin.jobs.partials.table', $tableData);
+            if ($request->boolean('rows_only')) {
+                return crm_ajax_html('admin.jobs.partials.rows', $tableData + ['showEmptyState' => false]);
+            }
+
+            // The mobile search modal renders job results as cards instead of
+            // table rows.
+            if ($request->boolean('cards_only')) {
+                return crm_ajax_html('admin.jobs.partials.cards', $tableData);
+            }
+
+            return crm_ajax_html('admin.jobs.partials.table', $tableData);
         }
 
         return view('admin.jobs.index', array_merge(
