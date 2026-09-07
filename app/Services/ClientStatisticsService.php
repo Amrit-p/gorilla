@@ -92,9 +92,7 @@ class ClientStatisticsService
             ->get();
 
         $totalRevenue = (float) $addressJobs->sum(fn (Job $related) => (float) ($related->charges ?? 0));
-        $paymentReceived = (float) $addressJobs
-            ->where('payment_status', JobOperationalPaymentStatus::RECEIVED->value)
-            ->sum(fn (Job $related) => (float) ($related->charges ?? 0));
+        $paymentReceived = (float) $addressJobs->sum(fn (Job $related) => $this->amountReceived($related));
         $balanceDue = round($totalRevenue - $paymentReceived, 2);
 
         return [
@@ -110,6 +108,21 @@ class ClientStatisticsService
             'payment_received' => $paymentReceived,
             'balance_due' => max(0, $balanceDue),
         ];
+    }
+
+    /**
+     * How much of a job's charges have actually been received, for the address's
+     * payment summary totals. A partially-verified job only counts the amount the
+     * admin confirmed (or, for mower-recorded partial payments, the first payment),
+     * not its full charges.
+     */
+    private function amountReceived(Job $job): float
+    {
+        return match ($job->payment_status) {
+            JobOperationalPaymentStatus::RECEIVED->value => (float) ($job->charges ?? 0),
+            JobOperationalPaymentStatus::PARTIAL->value => (float) ($job->verified_amount ?? $job->first_payment ?? 0),
+            default => 0.0,
+        };
     }
 
     /**

@@ -119,7 +119,7 @@
                     <select name="payment_mode" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
                         <option value="">Select payment mode</option>
                         @foreach ($paymentModes as $paymentMode)
-                            <option value="{{ $paymentMode }}" @selected(old('payment_mode', $jobModel?->payment_mode) === $paymentMode)>{{ $paymentMode }}</option>
+                            <option value="{{ $paymentMode }}" @selected(old('payment_mode', $jobModel?->payment_mode ?? \App\Enums\JobOperationalPaymentMode::ONLINE->value) === $paymentMode)>{{ $paymentMode }}</option>
                         @endforeach
                     </select>
                 </div>

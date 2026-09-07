@@ -273,6 +273,15 @@ class JobManagementService
                 $job->verified_date = $verified ? ($details['verified_date'] ?? null) : null;
                 $job->verified_amount = $verified ? ($details['verified_amount'] ?? null) : null;
                 $job->verification_comment = $verified ? ($details['comment'] ?? null) : null;
+
+                if ($verified) {
+                    $jobAmount = (float) ($job->charges ?? 0);
+                    $verifiedAmount = (float) ($details['verified_amount'] ?? 0);
+                    $job->payment_status = $verifiedAmount < $jobAmount
+                        ? JobOperationalPaymentStatus::PARTIAL->value
+                        : JobOperationalPaymentStatus::RECEIVED->value;
+                }
+
                 $job->save();
 
                 $this->activityLogService->log(

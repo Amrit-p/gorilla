@@ -468,6 +468,40 @@ class JobManagementTest extends TestCase
         $this->assertSame('Looks good.', $job->verification_comment);
     }
 
+    public function test_verifying_with_amount_below_charges_marks_payment_partial(): void
+    {
+        $job = $this->createVerifiableJob();
+        $job->update(['charges' => 200]);
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.jobs.bulk.verify'), [
+                'job_ids' => [$job->id],
+                'verified' => 1,
+                'verified_date' => '2026-08-30',
+                'verified_amount' => 150,
+            ])
+            ->assertOk();
+
+        $this->assertSame(JobOperationalPaymentStatus::PARTIAL->value, $job->refresh()->payment_status);
+    }
+
+    public function test_verifying_with_amount_meeting_or_exceeding_charges_marks_payment_received(): void
+    {
+        $job = $this->createVerifiableJob();
+        $job->update(['charges' => 200, 'payment_status' => JobOperationalPaymentStatus::PARTIAL->value]);
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.jobs.bulk.verify'), [
+                'job_ids' => [$job->id],
+                'verified' => 1,
+                'verified_date' => '2026-08-30',
+                'verified_amount' => 200,
+            ])
+            ->assertOk();
+
+        $this->assertSame(JobOperationalPaymentStatus::RECEIVED->value, $job->refresh()->payment_status);
+    }
+
     public function test_verifying_a_job_requires_date_and_amount(): void
     {
         $job = $this->createVerifiableJob();
