@@ -23,7 +23,11 @@ class UpdateMowerJobRequest extends FormRequest
     {
         return [
             'status' => ['required', Rule::in(JobWorkflowStatus::values())],
-            'payment_status' => ['required', Rule::in(JobOperationalPaymentStatus::values())],
+            'payment_status' => [
+                'nullable',
+                Rule::requiredIf(fn (): bool => ! $this->isOnlinePayment()),
+                Rule::in(JobOperationalPaymentStatus::values()),
+            ],
             'payment_pending_reason' => [
                 'nullable',
                 Rule::requiredIf(fn (): bool => $this->pendingDetailsRequired()),
@@ -63,8 +67,17 @@ class UpdateMowerJobRequest extends FormRequest
             return false;
         }
 
+        return ! $this->isOnlinePayment();
+    }
+
+    /**
+     * Online payments are tracked automatically, so the mower isn't required to
+     * report a payment status — it's only needed for cash/both payment modes.
+     */
+    private function isOnlinePayment(): bool
+    {
         $job = $this->route('job');
 
-        return ! $job instanceof Job || $job->payment_mode !== JobOperationalPaymentMode::ONLINE->value;
+        return $job instanceof Job && $job->payment_mode === JobOperationalPaymentMode::ONLINE->value;
     }
 }

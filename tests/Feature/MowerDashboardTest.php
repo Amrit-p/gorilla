@@ -277,6 +277,32 @@ class MowerDashboardTest extends TestCase
         }
     }
 
+    public function test_payment_status_not_required_for_online_payment_mode(): void
+    {
+        $job = $this->createAssignedJob($this->mower, [
+            'payment_mode' => JobOperationalPaymentMode::ONLINE->value,
+            'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+        ]);
+
+        $this->actingAs($this->mower)
+            ->patchJson(route('mower.jobs.payment.update', $job), [])
+            ->assertOk();
+
+        $this->assertSame(JobOperationalPaymentStatus::RECEIVED->value, $job->refresh()->payment_status);
+    }
+
+    public function test_payment_status_required_for_cash_and_both_payment_modes(): void
+    {
+        foreach ([JobOperationalPaymentMode::CASH->value, JobOperationalPaymentMode::BOTH->value] as $paymentMode) {
+            $job = $this->createAssignedJob($this->mower, ['payment_mode' => $paymentMode]);
+
+            $this->actingAs($this->mower)
+                ->patchJson(route('mower.jobs.payment.update', $job), [])
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors(['payment_status']);
+        }
+    }
+
     public function test_partial_payment_saves_first_and_second_payment(): void
     {
         $job = $this->createAssignedJob($this->mower);
@@ -531,6 +557,38 @@ class MowerDashboardTest extends TestCase
         $this->assertSame(JobWorkflowStatus::COMPLETED->value, $job->status);
         $this->assertSame(JobOperationalPaymentStatus::RECEIVED->value, $job->payment_status);
         $this->assertSame(45, $job->consumed_time_minutes);
+    }
+
+    public function test_save_all_does_not_require_payment_status_for_online_payment_mode(): void
+    {
+        $job = $this->createAssignedJob($this->mower, [
+            'payment_mode' => JobOperationalPaymentMode::ONLINE->value,
+            'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+        ]);
+
+        $this->actingAs($this->mower)
+            ->patchJson(route('mower.jobs.update', $job), [
+                'status' => JobWorkflowStatus::COMPLETED->value,
+            ])
+            ->assertOk();
+
+        $job->refresh();
+        $this->assertSame(JobWorkflowStatus::COMPLETED->value, $job->status);
+        $this->assertSame(JobOperationalPaymentStatus::RECEIVED->value, $job->payment_status);
+    }
+
+    public function test_save_all_requires_payment_status_for_cash_and_both_payment_modes(): void
+    {
+        foreach ([JobOperationalPaymentMode::CASH->value, JobOperationalPaymentMode::BOTH->value] as $paymentMode) {
+            $job = $this->createAssignedJob($this->mower, ['payment_mode' => $paymentMode]);
+
+            $this->actingAs($this->mower)
+                ->patchJson(route('mower.jobs.update', $job), [
+                    'status' => JobWorkflowStatus::COMPLETED->value,
+                ])
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors(['payment_status']);
+        }
     }
 
     public function test_save_all_updates_mower_remarks_when_description_provided(): void

@@ -138,9 +138,11 @@ class MowerDashboardService
     {
         $this->assertAssigned($mower, $job);
 
-        $job->payment_status = $data['payment_status'];
-        $isPartial = $data['payment_status'] === JobOperationalPaymentStatus::PARTIAL->value;
-        $isPending = $data['payment_status'] === JobOperationalPaymentStatus::PENDING->value;
+        $paymentStatus = $data['payment_status'] ?? $job->payment_status;
+
+        $job->payment_status = $paymentStatus;
+        $isPartial = $paymentStatus === JobOperationalPaymentStatus::PARTIAL->value;
+        $isPending = $paymentStatus === JobOperationalPaymentStatus::PENDING->value;
         $job->payment_pending_reason = $isPending ? ($data['payment_pending_reason'] ?? null) : null;
         $job->payment_pending_amount = $isPending ? ($data['payment_pending_amount'] ?? null) : null;
         $job->first_payment = $isPartial ? ($data['first_payment'] ?? null) : null;
