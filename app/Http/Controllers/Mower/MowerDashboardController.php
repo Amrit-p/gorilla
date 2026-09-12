@@ -88,6 +88,7 @@ class MowerDashboardController extends Controller
                 CrmConstants::MOWER_SCOPE_TODAY_SPECIAL => 'Special Jobs',
                 CrmConstants::MOWER_SCOPE_TODAY => 'Today',
                 CrmConstants::MOWER_SCOPE_UPCOMING => 'Upcoming',
+                CrmConstants::MOWER_SCOPE_PENDING => 'Pending',
             ],
             'workflowStatuses' => JobWorkflowStatus::values(),
             'paymentStatuses' => JobOperationalPaymentStatus::values(),

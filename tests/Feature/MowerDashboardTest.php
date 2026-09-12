@@ -119,6 +119,47 @@ class MowerDashboardTest extends TestCase
             ->assertJsonStructure(['html']);
     }
 
+    public function test_index_displays_pending_tab(): void
+    {
+        $this->actingAs($this->mower)
+            ->get(route('mower.index'))
+            ->assertOk()
+            ->assertSee('data-scope="pending"', false)
+            ->assertSee('Pending');
+    }
+
+    public function test_pending_scope_shows_only_past_due_pending_status_jobs(): void
+    {
+        $overdue = $this->createAssignedJob($this->mower, [
+            'customer_name' => 'Overdue Client',
+            'scheduled_date' => now()->subWeek()->toDateString(),
+            'status' => JobWorkflowStatus::PENDING->value,
+        ]);
+        $future = $this->createAssignedJob($this->mower, [
+            'customer_name' => 'Future Client',
+            'scheduled_date' => now()->addWeek()->toDateString(),
+            'status' => JobWorkflowStatus::PENDING->value,
+        ]);
+        $hold = $this->createAssignedJob($this->mower, [
+            'customer_name' => 'Hold Client',
+            'scheduled_date' => now()->subWeek()->toDateString(),
+            'status' => JobWorkflowStatus::HOLD->value,
+        ]);
+        $completed = $this->createAssignedJob($this->mower, [
+            'customer_name' => 'Completed Client',
+            'scheduled_date' => now()->subWeek()->toDateString(),
+            'status' => JobWorkflowStatus::COMPLETED->value,
+        ]);
+
+        $this->actingAs($this->mower)
+            ->get(route('mower.index', ['scope' => 'pending']))
+            ->assertOk()
+            ->assertSee($overdue->customerDisplayName())
+            ->assertDontSee($future->customerDisplayName())
+            ->assertDontSee($hold->customerDisplayName())
+            ->assertDontSee($completed->customerDisplayName());
+    }
+
     public function test_index_search_filters_jobs_by_any_match(): void
     {
         $match = $this->createAssignedJob($this->mower, [

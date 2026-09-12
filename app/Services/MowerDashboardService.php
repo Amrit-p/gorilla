@@ -74,6 +74,8 @@ class MowerDashboardService
             'today-special' => $query->whereDate('scheduled_date', $startDate)
                 ->whereHas('jobLevel', fn ($q) => $q->where('name', 'Special')),
             'today' => $query->whereBetween('scheduled_date', [$startDate, $endDate]),
+            'pending' => $query->whereDate('scheduled_date', '<=', $today)
+                ->where('status', JobWorkflowStatus::PENDING->value),
             default => $query->whereDate('scheduled_date', '<=', $today),
         };
 
