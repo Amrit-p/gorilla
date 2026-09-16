@@ -83,9 +83,9 @@ final class JobListFilter
 
         if (! empty($filters['assignment'])) {
             if ($filters['assignment'] === 'assigned') {
-                $query->whereHas('assignedEmployees');
+                $query->whereNotNull('done_by_user_id');
             } elseif ($filters['assignment'] === 'unassigned') {
-                $query->whereDoesntHave('assignedEmployees');
+                $query->whereNull('done_by_user_id');
             }
         }
 

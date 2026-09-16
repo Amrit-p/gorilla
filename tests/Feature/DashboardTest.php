@@ -273,6 +273,7 @@ class DashboardTest extends TestCase
             'is_active' => true,
         ]);
         $assignedJob->assignedEmployees()->attach($mower->id, ['assignment_date' => now()->toDateString()]);
+        $assignedJob->update(['done_by_user_id' => $mower->id]);
 
         Job::query()->create([
             'customer_name' => 'Assigned Client',
