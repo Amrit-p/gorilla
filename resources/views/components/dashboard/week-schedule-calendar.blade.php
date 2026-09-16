@@ -54,15 +54,15 @@
         'filterCallback' => 'loadCalendarGrid',
         'filtersFn' => 'getCalendarFilters',
         'reloadFn' => 'crmReloadCalendarGrid',
-        'tableContainer' => 'three-week-grid',
-        'filterUrl' => route('dashboard.three-week-grid'),
+        'tableContainer' => 'week-schedule-grid',
+        'filterUrl' => route('dashboard.week-schedule-grid'),
         'resetUrl' => '#',
     ])
 </div>
 
-<div id="three-week-grid-wrap" class="relative">
+<div id="week-schedule-grid-wrap" class="relative">
     {{-- Grid loading overlay --}}
-    <div id="three-week-grid-loader"
+    <div id="week-schedule-grid-loader"
          class="absolute inset-0 z-10 hidden items-center justify-center rounded-xl bg-white/70 backdrop-blur-[1px]">
         <svg class="h-6 w-6 animate-spin text-emerald-600" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
@@ -70,7 +70,7 @@
         </svg>
     </div>
 
-    @include('dashboard.partials.three-week-grid', ['weeks' => $weeks])
+    @include('dashboard.partials.week-schedule-grid', ['weeks' => $weeks])
 </div>
 
 {{-- ── Day Jobs Slide-over Panel ─────────────────────────────── --}}
@@ -241,7 +241,7 @@
 (function () {
     var _tableUrl     = @json($dailyJobsTableUrl);
     var _leadTableUrl  = @json($dailyLeadsTableUrl);
-    var _gridUrl      = @json(route('dashboard.three-week-grid'));
+    var _gridUrl      = @json(route('dashboard.week-schedule-grid'));
     var _currentDate  = null;
     var _currentLeadDate = null;
     var _weekOffset   = 0;
@@ -411,19 +411,19 @@
         params.week_offset = _weekOffset;
         var url = _gridUrl + '?' + $.param(params);
 
-        show('three-week-grid-loader');
+        show('week-schedule-grid-loader');
 
         $.ajax({
             url: url,
             method: 'GET',
             headers: { Accept: 'text/html, */*' },
             success: function (html) {
-                $('#three-week-grid').replaceWith(html);
-                hide('three-week-grid-loader');
+                $('#week-schedule-grid').replaceWith(html);
+                hide('week-schedule-grid-loader');
                 if (typeof callback === 'function') { callback(); }
             },
             error: function () {
-                hide('three-week-grid-loader');
+                hide('week-schedule-grid-loader');
                 if (typeof callback === 'function') { callback(); }
             }
         });
@@ -433,8 +433,8 @@
     window.crmShiftWeek = function (delta) {
         _weekOffset += delta;
 
-        var prevBtn = document.getElementById('three-week-prev-btn');
-        var nextBtn = document.getElementById('three-week-next-btn');
+        var prevBtn = document.getElementById('week-schedule-prev-btn');
+        var nextBtn = document.getElementById('week-schedule-next-btn');
         if (prevBtn) { prevBtn.disabled = true; prevBtn.classList.add('opacity-50', 'cursor-not-allowed'); }
         if (nextBtn) { nextBtn.disabled = true; nextBtn.classList.add('opacity-50', 'cursor-not-allowed'); }
 

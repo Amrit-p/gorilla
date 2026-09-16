@@ -163,12 +163,12 @@ class DashboardTest extends TestCase
             ->assertSee('Filter Client');
 
         $this->actingAs($this->admin)
-            ->get(route('dashboard.three-week-grid', ['search' => 'Search Mower']))
+            ->get(route('dashboard.week-schedule-grid', ['search' => 'Search Mower']))
             ->assertOk()
             ->assertSee('Jobs 1');
 
         $this->actingAs($this->admin)
-            ->get(route('dashboard.three-week-grid', ['search' => 'Nonexistent Term']))
+            ->get(route('dashboard.week-schedule-grid', ['search' => 'Nonexistent Term']))
             ->assertOk()
             ->assertDontSee('Jobs 1');
     }
@@ -185,7 +185,7 @@ class DashboardTest extends TestCase
             ->assertSee('All workers');
     }
 
-    public function test_three_week_grid_honours_the_full_job_filter_set(): void
+    public function test_week_schedule_grid_honours_the_full_job_filter_set(): void
     {
         $mower = User::query()->create([
             'name' => 'Grid Filter Mower',
@@ -229,20 +229,20 @@ class DashboardTest extends TestCase
 
         // Unfiltered: both jobs are counted.
         $this->actingAs($this->admin)
-            ->get(route('dashboard.three-week-grid'))
+            ->get(route('dashboard.week-schedule-grid'))
             ->assertOk()
             ->assertSee('Jobs 2');
 
         // payment_mode narrows to the single Cash job.
         $this->actingAs($this->admin)
-            ->get(route('dashboard.three-week-grid', ['payment_mode' => 'Cash']))
+            ->get(route('dashboard.week-schedule-grid', ['payment_mode' => 'Cash']))
             ->assertOk()
             ->assertSee('Jobs 1')
             ->assertDontSee('Jobs 2');
 
         // worker_id narrows to the job the mower is assigned to.
         $this->actingAs($this->admin)
-            ->get(route('dashboard.three-week-grid', ['worker_id' => $mower->id]))
+            ->get(route('dashboard.week-schedule-grid', ['worker_id' => $mower->id]))
             ->assertOk()
             ->assertSee('Jobs 1')
             ->assertDontSee('Jobs 2');
@@ -389,7 +389,7 @@ class DashboardTest extends TestCase
         ]);
     }
 
-    public function test_three_week_grid_and_daily_leads_table_exclude_leads_converted_to_customer(): void
+    public function test_week_schedule_grid_and_daily_leads_table_exclude_leads_converted_to_customer(): void
     {
         Lead::query()->create([
             'client_name' => 'Open Lead',
@@ -407,7 +407,7 @@ class DashboardTest extends TestCase
         ]);
 
         $this->actingAs($this->admin)
-            ->get(route('dashboard.three-week-grid'))
+            ->get(route('dashboard.week-schedule-grid'))
             ->assertOk()
             ->assertSee('Leads 1')
             ->assertDontSee('Leads 2');
@@ -557,7 +557,7 @@ class DashboardTest extends TestCase
             ->assertDontSee('Alpha Client');
     }
 
-    public function test_three_week_grid_includes_hold_pending_and_completed_jobs(): void
+    public function test_week_schedule_grid_includes_hold_pending_and_completed_jobs(): void
     {
         Job::query()->create([
             'customer_name' => 'Hold Schedule Client',
@@ -576,12 +576,12 @@ class DashboardTest extends TestCase
         ]);
 
         $this->actingAs($this->admin)
-            ->get(route('dashboard.three-week-grid'))
+            ->get(route('dashboard.week-schedule-grid'))
             ->assertOk()
             ->assertSee('Jobs 1');
     }
 
-    public function test_three_week_grid_shows_pending_payment_leads_and_follow_ups(): void
+    public function test_week_schedule_grid_shows_pending_payment_leads_and_follow_ups(): void
     {
         Job::query()->create([
             'customer_name' => 'Pay Pending Client',
@@ -650,7 +650,7 @@ class DashboardTest extends TestCase
         ]);
 
         $this->actingAs($this->admin)
-            ->get(route('dashboard.three-week-grid'))
+            ->get(route('dashboard.week-schedule-grid'))
             ->assertOk()
             ->assertSee('Jobs')
             ->assertSee('Leads')

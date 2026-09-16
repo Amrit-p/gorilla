@@ -58,7 +58,7 @@ class DashboardController extends Controller
             'leadsByStatus' => $this->dashboardService->leadsByStatus(),
             'activityLogs' => $this->dashboardService->recentActivity(),
             'preferences' => $this->dashboardService->preferencesFor($user),
-            'threeWeekSchedule' => $showSchedule ? $this->dashboardService->threeWeekScheduleSummary() : [],
+            'weekSchedule' => $showSchedule ? $this->dashboardService->weekScheduleSummary() : [],
             'employees' => $isAdmin
                 ? User::query()->role(CrmRoles::MOWER)->where('is_active', true)->orderBy('name')->get(['id', 'name', 'efficiency'])
                 : collect(),
@@ -70,7 +70,7 @@ class DashboardController extends Controller
     }
 
     /**
-     * AJAX: server-rendered job table for a given date (used by the 3-week schedule panel).
+     * AJAX: server-rendered job table for a given date (used by the schedule panel).
      * Returns HTML so the full admin table partial—including all action buttons—is reused.
      */
     public function dailyJobsTable(Request $request, JobListFilter $jobListFilter): Response
@@ -171,9 +171,9 @@ class DashboardController extends Controller
     }
 
     /**
-     * AJAX: re-render the three-week calendar grid (optionally filtered).
+     * AJAX: re-render the dashboard schedule grid (optionally filtered).
      */
-    public function threeWeekGrid(Request $request): Response
+    public function weekScheduleGrid(Request $request): Response
     {
         $validated = $request->validate([
             'worker_id' => 'nullable|integer|exists:users,id',
@@ -193,7 +193,7 @@ class DashboardController extends Controller
             'week_offset' => 'nullable|integer|min:-52|max:52',
         ]);
 
-        $weeks = $this->dashboardService->threeWeekScheduleSummary([
+        $weeks = $this->dashboardService->weekScheduleSummary([
             'worker_id' => $request->integer('worker_id') ?: null,
             'search' => $request->string('search')->toString() ?: null,
             'status' => $validated['status'] ?? null,
@@ -210,7 +210,7 @@ class DashboardController extends Controller
             'week_offset' => $request->integer('week_offset'),
         ]);
 
-        return response(view('dashboard.partials.three-week-grid', compact('weeks')));
+        return response(view('dashboard.partials.week-schedule-grid', compact('weeks')));
     }
 
     /**

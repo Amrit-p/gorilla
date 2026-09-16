@@ -35,7 +35,7 @@ $dashboardType = $analytics['type'] ?? 'admin';
         @can('view-business-analytics')
         @include('dashboard.partials.admin-analytics', ['analytics' => $analytics])
         @endcan
-        @include('dashboard.partials.admin-three-week-schedule', ['threeWeekSchedule' => $threeWeekSchedule])
+        @include('dashboard.partials.admin-week-schedule', ['weekSchedule' => $weekSchedule])
         @else
         @include('dashboard.partials.mower-analytics', ['analytics' => $analytics])
         @endif

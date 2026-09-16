@@ -55,9 +55,9 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
     Route::get('/dashboard/daily-leads-table', [DashboardController::class, 'dailyLeadsTable'])
         ->middleware('crm.permission:'.CrmPermissions::VIEW_DASHBOARD)
         ->name('dashboard.daily-leads-table');
-    Route::get('/dashboard/three-week-grid', [DashboardController::class, 'threeWeekGrid'])
+    Route::get('/dashboard/week-schedule-grid', [DashboardController::class, 'weekScheduleGrid'])
         ->middleware('crm.permission:'.CrmPermissions::VIEW_DASHBOARD)
-        ->name('dashboard.three-week-grid');
+        ->name('dashboard.week-schedule-grid');
     Route::patch('/dashboard/preferences', [DashboardController::class, 'updatePreferences'])
         ->middleware('crm.permission:'.CrmPermissions::VIEW_DASHBOARD)
         ->name('dashboard.preferences.update');

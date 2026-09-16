@@ -1,6 +1,6 @@
 {{--
     Payout modal shared by every view that renders the job bulk toolbar: the jobs
-    list, the map, the three-week grid and the salary calculator drill-down.
+    list, the map, the dashboard schedule grid and the salary calculator drill-down.
 
     One modal handles both directions. Unpaid jobs in the selection become a
     "New payout" card per mower; jobs that are already paid become an "Edit

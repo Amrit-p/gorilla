@@ -1,4 +1,4 @@
-<div id="three-week-grid" class="space-y-4">
+<div id="week-schedule-grid" class="space-y-4">
     @forelse ($weeks as $week)
         @php
             $weekTotal = (int) ($week['total_jobs'] ?? array_sum(array_column($week['days'], 'total')));

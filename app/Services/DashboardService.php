@@ -21,6 +21,11 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardService
 {
+    /**
+     * Number of weeks shown in the dashboard schedule grid.
+     */
+    public const WEEKS_TO_SHOW = 4;
+
     public function __construct(
         private readonly JobListFilter $jobListFilter
     ) {}
@@ -202,16 +207,16 @@ class DashboardService
     }
 
     /**
-     * Three-week job schedule summary grouped by day and zone.
+     * Multi-week job schedule summary grouped by day and zone.
      * Starts from the Monday of the current week.
      *
      * @param  array{worker_id?: int|null, search?: string|null}  $filters
      * @return array<int, array{label: string, week_number: int, start_date: string, end_date: string, days: list<array<string, mixed>>}>
      */
-    public function threeWeekScheduleSummary(array $filters = []): array
+    public function weekScheduleSummary(array $filters = []): array
     {
         $startDate = now()->startOfWeek(Carbon::MONDAY)->addWeeks($filters['week_offset'] ?? 0);
-        $endDate = $startDate->copy()->addWeeks(3)->subDay();
+        $endDate = $startDate->copy()->addWeeks(self::WEEKS_TO_SHOW)->subDay();
 
         $jobQuery = Job::query()
             ->select(['id', 'zone_id', 'scheduled_date', 'status', 'payment_status'])
@@ -288,7 +293,7 @@ class DashboardService
         ];
 
         $weeks = [];
-        for ($w = 0; $w < 3; $w++) {
+        for ($w = 0; $w < self::WEEKS_TO_SHOW; $w++) {
             $weekStart = $startDate->copy()->addWeeks($w);
             $days = [];
             for ($d = 0; $d < 7; $d++) {
