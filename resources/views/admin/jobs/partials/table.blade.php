@@ -83,8 +83,9 @@
             $estFormatted = $estHours > 0
                 ? ($estMins > 0 ? "{$estHours}h {$estMins}m" : "{$estHours}h")
                 : "{$estMins}m";
+            $totalRevenue = $jobs->sum('charges');
         @endphp
-        @if ($totalEstMins > 0)
+        @if ($totalEstMins > 0 || $totalRevenue > 0)
         <tfoot>
             <tr class="border-t-2 border-slate-200 bg-slate-50">
                 <td colspan="{{ $canReorder ? 4 : 3 }}" class="px-4 py-2.5 text-xs font-medium text-slate-400 uppercase tracking-wide">{{ $infiniteScroll ? 'Loaded total' : 'Page total' }}</td>
@@ -96,7 +97,12 @@
                         <span id="jobs-est-total">{{ $estFormatted }}</span> estimated
                     </span>
                 </td>
-                <td colspan="6" class="px-4 py-2.5"></td>
+                <td class="whitespace-nowrap px-4 py-2.5">
+                    <span class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600">
+                        $<span id="jobs-revenue-total">{{ number_format($totalRevenue, 2) }}</span> revenue
+                    </span>
+                </td>
+                <td colspan="5" class="px-4 py-2.5"></td>
             </tr>
         </tfoot>
         @endif

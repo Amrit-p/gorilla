@@ -249,6 +249,25 @@ class JobManagementTest extends TestCase
         $this->assertStringContainsString('data-status="'.JobWorkflowStatus::HOLD->value.'"', $html);
     }
 
+    public function test_jobs_index_footer_shows_total_revenue_for_the_page(): void
+    {
+        Job::query()->create(array_merge($this->jobPayload(), [
+            'customer_name' => 'Revenue Client One',
+            'charges' => 100.50,
+        ]));
+        Job::query()->create(array_merge($this->jobPayload(), [
+            'customer_name' => 'Revenue Client Two',
+            'charges' => 49.50,
+        ]));
+
+        $response = $this->actingAs($this->admin)
+            ->getJson(route('admin.jobs.index'))
+            ->assertOk();
+
+        $html = (string) $response->json('html');
+        $this->assertStringContainsString('id="jobs-revenue-total">150.00<', $html);
+    }
+
     public function test_mower_suggestions_endpoint_returns_recommendation(): void
     {
         $this->actingAs($this->admin)
