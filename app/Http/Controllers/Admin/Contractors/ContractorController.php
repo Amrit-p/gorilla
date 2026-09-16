@@ -99,7 +99,6 @@ class ContractorController extends Controller
             'search' => $request->string('search')->toString(),
             'list_scope' => $request->string('list_scope')->toString(),
             'status' => $request->string('status')->toString(),
-            'zone_id' => $request->string('zone_id')->toString(),
             'recurrence_id' => $request->string('recurrence_id')->toString(),
             'assignment' => $request->string('assignment')->toString(),
             'payment_mode' => $request->string('payment_mode')->toString(),

@@ -80,7 +80,6 @@ class DashboardController extends Controller
             'date_range' => 'nullable|array',
             'date_range.start' => 'nullable|date',
             'date_range.end' => 'nullable|date',
-            'zone_id' => 'nullable|integer|exists:zones,id',
             'worker_id' => 'nullable|integer|exists:users,id',
             'search' => 'nullable|string|max:100',
             'status' => 'nullable|string',
@@ -111,7 +110,6 @@ class DashboardController extends Controller
 
         $jobListFilter->apply($query, [
             'search' => $validated['search'] ?? null,
-            'zone_id' => $validated['zone_id'] ?? null,
             'done_by_user_id' => $validated['worker_id'] ?? null,
             'status' => $validated['status'] ?? null,
             'recurrence_id' => $validated['recurrence_id'] ?? null,
@@ -178,7 +176,6 @@ class DashboardController extends Controller
     public function threeWeekGrid(Request $request): Response
     {
         $validated = $request->validate([
-            'zone_id' => 'nullable|integer|exists:zones,id',
             'worker_id' => 'nullable|integer|exists:users,id',
             'search' => 'nullable|string|max:100',
             'status' => 'nullable|string',
@@ -197,7 +194,6 @@ class DashboardController extends Controller
         ]);
 
         $weeks = $this->dashboardService->threeWeekScheduleSummary([
-            'zone_id' => $request->integer('zone_id') ?: null,
             'worker_id' => $request->integer('worker_id') ?: null,
             'search' => $request->string('search')->toString() ?: null,
             'status' => $validated['status'] ?? null,

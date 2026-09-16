@@ -3,7 +3,6 @@
         !empty($filters['search']) ||
         !empty($filters['list_scope']) ||
         !empty($filters['status']) ||
-        !empty($filters['zone_id']) ||
         !empty($filters['worker_id']) ||
         !empty($filters['recurrence_id']) ||
         !empty($filters['assignment']) ||
@@ -29,7 +28,7 @@
     $showFilter = fn (string $key): bool => is_null($visibleFilters) || in_array($key, $visibleFilters, true);
     // The worker filter is opt-in: only rendered when a `$workers` list is supplied.
     $showWorkerFilter = isset($workers) && $showFilter('worker_id');
-    $filterFieldKeys = ['search', 'zone_id', 'status', 'recurrence_id', 'assignment', 'payment_mode', 'payment_status', 'date_range'];
+    $filterFieldKeys = ['search', 'status', 'recurrence_id', 'assignment', 'payment_mode', 'payment_status', 'date_range'];
     $visibleFilterCount = count(array_filter($filterFieldKeys, $showFilter)) + ($showWorkerFilter ? 1 : 0);
     $filterGridClass = match (true) {
         $visibleFilterCount <= 1 => 'grid-cols-1',
@@ -114,19 +113,6 @@
                         placeholder="Name, phone, email, address…"
                         class="filter w-full rounded-lg border border-slate-200 bg-slate-50 pl-8 pr-3 py-2 text-xs text-slate-700 placeholder-slate-400 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
                 </div>
-            </div>
-            @endif
-
-            @if ($showFilter('zone_id'))
-            <div class="flex flex-col gap-1">
-                <label class="text-[10px] font-medium uppercase tracking-wide text-slate-400">Zone</label>
-                <select name="zone_id"
-                    class="filter cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
-                    <option value="">All zones</option>
-                    @foreach ($zones as $zone)
-                        <option value="{{ $zone->id }}" @selected(($filters['zone_id'] ?? '') == $zone->id)>{{ $zone->name }}</option>
-                    @endforeach
-                </select>
             </div>
             @endif
 

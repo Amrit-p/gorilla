@@ -633,7 +633,6 @@ class JobManagementController extends Controller
             'list_scope' => $request->string('list_scope')->toString(),
             'status' => $request->string('status')->toString(),
             'priority' => $request->string('priority')->toString(),
-            'zone_id' => $request->string('zone_id')->toString(),
             'contractor_id' => $request->string('contractor_id')->toString(),
             'recurrence_id' => $request->string('recurrence_id')->toString(),
             'assignment' => $request->string('assignment')->toString(),

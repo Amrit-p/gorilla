@@ -75,7 +75,6 @@ class MowerReportControllerTest extends TestCase
             ->assertOk();
 
         $response->assertSee('name="search"', false);
-        $response->assertSee('All zones');
         $response->assertSee('Any status');
         $response->assertDontSee('Completed but not verified');
     }

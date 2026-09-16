@@ -205,7 +205,7 @@ class DashboardService
      * Three-week job schedule summary grouped by day and zone.
      * Starts from the Monday of the current week.
      *
-     * @param  array{zone_id?: int|null, worker_id?: int|null, search?: string|null}  $filters
+     * @param  array{worker_id?: int|null, search?: string|null}  $filters
      * @return array<int, array{label: string, week_number: int, start_date: string, end_date: string, days: list<array<string, mixed>>}>
      */
     public function threeWeekScheduleSummary(array $filters = []): array
@@ -228,7 +228,6 @@ class DashboardService
         // maps to the list filter's `done_by_user_id` key.
         $this->jobListFilter->apply($jobQuery, [
             'search' => $filters['search'] ?? null,
-            'zone_id' => $filters['zone_id'] ?? null,
             'done_by_user_id' => $filters['worker_id'] ?? null,
             'status' => $filters['status'] ?? null,
             'recurrence_id' => $filters['recurrence_id'] ?? null,
@@ -253,7 +252,6 @@ class DashboardService
             ->whereNotNull('lead_date')
             ->whereNull('converted_at')
             ->whereBetween('lead_date', [$startDate->toDateString(), $endDate->toDateString()])
-            ->when($filters['zone_id'] ?? null, fn ($q, $id) => $q->where('zone_id', $id))
             ->when($filters['search'] ?? null, function ($q, $term) {
                 $q->where(function ($q) use ($term) {
                     $q->where('client_name', 'like', "%{$term}%")

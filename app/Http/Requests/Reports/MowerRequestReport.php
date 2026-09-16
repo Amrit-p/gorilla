@@ -70,9 +70,6 @@ class MowerRequestReport extends FormRequest
                 'nullable',
                 'string',
             ],
-            'zone_id' => [
-                'nullable',
-            ],
             'recurrence_id' => [
                 'nullable',
             ],

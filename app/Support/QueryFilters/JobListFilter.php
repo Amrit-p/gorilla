@@ -61,10 +61,6 @@ final class JobListFilter
             $query->where('priority', $filters['priority']);
         }
 
-        if (! empty($filters['zone_id'])) {
-            $query->where('zone_id', $filters['zone_id']);
-        }
-
         if (! empty($filters['done_by_user_id'])) {
             $uid = (int) $filters['done_by_user_id'];
             $query->where(function (Builder $q) use ($uid): void {
