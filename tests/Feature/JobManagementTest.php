@@ -129,7 +129,7 @@ class JobManagementTest extends TestCase
         }
     }
 
-    public function test_job_update_requires_pending_reason_when_payment_status_pending_or_partial(): void
+    public function test_job_update_does_not_require_pending_reason_when_payment_status_pending_or_partial(): void
     {
         $job = $this->createJob();
 
@@ -139,10 +139,11 @@ class JobManagementTest extends TestCase
             'priority' => 'Medium',
             'status' => JobWorkflowStatus::STARTED->value,
         ]);
+        unset($payload['payment_pending_reason']);
 
         $this->actingAs($this->admin)
             ->patchJson(route('admin.jobs.update', $job), $payload)
-            ->assertJsonValidationErrors(['payment_pending_reason']);
+            ->assertOk();
 
         $this->actingAs($this->admin)
             ->patchJson(route('admin.jobs.update', $job), array_merge($payload, [

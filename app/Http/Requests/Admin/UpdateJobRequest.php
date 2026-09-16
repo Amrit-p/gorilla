@@ -22,7 +22,7 @@ class UpdateJobRequest extends FormRequest
      */
     public function rules(): array
     {
-        return array_merge($this->jobOperationalRules(requirePendingReason: true), [
+        return array_merge($this->jobOperationalRules(), [
             'lead_id' => ['nullable', 'exists:leads,id'],
             'route_sequence' => ['required', 'integer', 'min:0'],
             'priority' => ['required', 'in:Low,Medium,High,Urgent'],
