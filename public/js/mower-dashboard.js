@@ -207,8 +207,8 @@
 
         const jq = $.ajax({
             url: routes.status,
-            method: 'PATCH',
-            data: { status: status, _token: $('meta[name="csrf-token"]').attr('content') },
+            method: 'POST',
+            data: { _method: 'PATCH', status: status, _token: $('meta[name="csrf-token"]').attr('content') },
             dataType: 'json',
         })
             .done(function (response) {
@@ -234,14 +234,41 @@
         return val === 'Pending' && window.mowerJobPaymentMode !== 'Online';
     }
 
+    function receivedAmountRequired() {
+        const val = $('#mower-payment-status').val();
+        return val === 'Received' && window.mowerJobPaymentMode !== 'Online';
+    }
+
     function togglePaymentReason() {
         const val = $('#mower-payment-status').val();
         const isPartial = val === 'Partial';
         $('#mower-payment-reason-wrap').toggleClass('hidden', !pendingDetailsRequired());
+        $('#mower-received-amount-wrap').toggleClass('hidden', !receivedAmountRequired());
         $('#mower-paid-amount-wrap').toggleClass('hidden', !isPartial);
     }
 
     $(document).on('change', '#mower-payment-status', togglePaymentReason);
+
+    // Collecting less than the job amount makes it a Partial payment: move the amount to
+    // First Payment, switch the status and ask for the Second Payment details.
+    function switchToPartialWhenReceivedIsShort() {
+        const jobAmount = window.mowerJobCharges;
+        const receivedAmount = parseFloat($('#mower-received-amount').val());
+
+        if (!receivedAmountRequired() || typeof jobAmount !== 'number' || isNaN(receivedAmount)) return false;
+        if (Math.round(receivedAmount * 100) >= Math.round(jobAmount * 100)) return false;
+
+        $('#mower-first-payment').val(receivedAmount.toFixed(2));
+        $('#mower-received-amount').val('');
+        $('#mower-payment-status').val('Partial');
+        togglePaymentReason();
+        showAlert('Amount received is less than the job amount, so payment is now Partial. Enter the Second Payment details.', true);
+        $('#mower-second-payment').trigger('focus');
+
+        return true;
+    }
+
+    $(document).on('change', '#mower-received-amount', switchToPartialWhenReceivedIsShort);
 
 
     // ─── Job detail: lock other fields while status is Hold ─────────────────
@@ -250,7 +277,7 @@
         if (!document.getElementById('mower-status')) return;
         const isHold = $('#mower-status').val() === 'Hold';
 
-        $('#mower-payment-status, #mower-payment-reason, #mower-payment-pending-amount, #mower-first-payment, #mower-second-payment, #mower-consumed-time, #mower-remark-text, #mower-before-input, #mower-after-input')
+        $('#mower-payment-status, #mower-payment-reason, #mower-payment-pending-amount, #mower-received-amount, #mower-first-payment, #mower-second-payment, #mower-consumed-time, #mower-remark-text, #mower-before-input, #mower-after-input')
             .prop('disabled', isHold);
 
         $('#mower-before-label, #mower-after-label').toggleClass('opacity-50 pointer-events-none', isHold);
@@ -267,9 +294,11 @@
         const status = $('#mower-payment-status').val();
         const reason = String($('#mower-payment-reason').val()).trim();
         const pendingAmount = String($('#mower-payment-pending-amount').val()).trim();
+        const receivedAmount = String($('#mower-received-amount').val()).trim();
         const firstPayment = String($('#mower-first-payment').val()).trim();
         const secondPayment = String($('#mower-second-payment').val()).trim();
         const needsPendingDetails = pendingDetailsRequired();
+        const needsReceivedAmount = receivedAmountRequired();
         const isPartial = status === 'Partial';
 
         if (needsPendingDetails && !reason) {
@@ -278,6 +307,10 @@
         }
         if (needsPendingDetails && !pendingAmount) {
             showAlert('Please enter the pending amount.', true);
+            return $.Deferred().reject();
+        }
+        if (needsReceivedAmount && !receivedAmount) {
+            showAlert('Please enter the amount received.', true);
             return $.Deferred().reject();
         }
         if (isPartial && !firstPayment) {
@@ -293,11 +326,13 @@
 
         const jq = $.ajax({
             url: routes.payment,
-            method: 'PATCH',
+            method: 'POST',
             data: {
+                _method: 'PATCH',
                 payment_status: status,
                 payment_pending_reason: needsPendingDetails ? reason : '',
                 payment_pending_amount: needsPendingDetails ? pendingAmount : '',
+                received_amount: needsReceivedAmount ? receivedAmount : '',
                 first_payment: isPartial ? firstPayment : '',
                 second_payment: isPartial ? secondPayment : '',
                 _token: $('meta[name="csrf-token"]').attr('content'),
@@ -335,8 +370,8 @@
 
         const jq = $.ajax({
             url: routes.consumedTime,
-            method: 'PATCH',
-            data: { consumed_time_minutes: minutes, _token: $('meta[name="csrf-token"]').attr('content') },
+            method: 'POST',
+            data: { _method: 'PATCH', consumed_time_minutes: minutes, _token: $('meta[name="csrf-token"]').attr('content') },
             dataType: 'json',
         })
             .done(function (response) {
@@ -497,11 +532,15 @@
         const routes = window.mowerJobRoutes || {};
         if (!routes.update) return;
 
+        switchToPartialWhenReceivedIsShort();
+
         const paymentStatus = $('#mower-payment-status').val();
         const isPartial = paymentStatus === 'Partial';
         const needsPendingDetails = pendingDetailsRequired();
+        const needsReceivedAmount = receivedAmountRequired();
         const reason = String($('#mower-payment-reason').val()).trim();
         const pendingAmount = String($('#mower-payment-pending-amount').val()).trim();
+        const receivedAmount = String($('#mower-received-amount').val()).trim();
         const firstPayment = String($('#mower-first-payment').val()).trim();
         const secondPayment = String($('#mower-second-payment').val()).trim();
 
@@ -511,6 +550,10 @@
         }
         if (needsPendingDetails && !pendingAmount) {
             showAlert('Please enter the pending amount.', true);
+            return;
+        }
+        if (needsReceivedAmount && !receivedAmount) {
+            showAlert('Please enter the amount received.', true);
             return;
         }
         if (isPartial && !firstPayment) {
@@ -528,10 +571,12 @@
         const $btn = $(this).prop('disabled', true).text('Saving…');
 
         const data = {
+            _method: 'PATCH',
             status: $('#mower-status').val(),
             payment_status: paymentStatus,
             payment_pending_reason: needsPendingDetails ? reason : '',
             payment_pending_amount: needsPendingDetails ? pendingAmount : '',
+            received_amount: needsReceivedAmount ? receivedAmount : '',
             first_payment: isPartial ? firstPayment : '',
             second_payment: isPartial ? secondPayment : '',
             consumed_time_minutes: minutes || '',
@@ -541,7 +586,7 @@
 
         $.ajax({
             url: routes.update,
-            method: 'PATCH',
+            method: 'POST',
             data: data,
             dataType: 'json',
         })

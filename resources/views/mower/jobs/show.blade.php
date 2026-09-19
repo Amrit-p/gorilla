@@ -16,6 +16,7 @@
 
     $isOnlinePayment = $job->payment_mode === JobOperationalPaymentMode::ONLINE->value;
     $showPendingDetails = $job->payment_status === 'Pending' && ! $isOnlinePayment;
+    $showReceivedAmount = $job->payment_status === 'Received' && ! $isOnlinePayment;
 @endphp
 
 <x-layouts.mower
@@ -86,6 +87,18 @@
                             placeholder="0.00"
                         >
                     </div>
+                </div>
+                <div id="mower-received-amount-wrap" class="{{ $showReceivedAmount ? '' : 'hidden' }}">
+                    <label for="mower-received-amount" class="mb-1 block text-sm text-slate-600">Amount received ($)</label>
+                    <input
+                        type="number"
+                        id="mower-received-amount"
+                        min="0"
+                        step="0.01"
+                        value="{{ $job->received_amount }}"
+                        class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base"
+                        placeholder="0.00"
+                    >
                 </div>
                 <div id="mower-paid-amount-wrap" class="{{ $job->payment_status === 'Partial' ? '' : 'hidden' }} space-y-3">
                     <div>
@@ -244,6 +257,7 @@
             window.mowerRoutes = { index: @json(route('mower.index')) };
             window.mowerJobIsVerified = @json($job->isVerified());
             window.mowerJobPaymentMode = @json($job->payment_mode);
+            window.mowerJobCharges = @json($job->charges !== null ? (float) $job->charges : null);
             window.mowerJobRoutes = {
                 update: @json(route('mower.jobs.update', $job)),
                 status: @json(route('mower.jobs.status.update', $job)),

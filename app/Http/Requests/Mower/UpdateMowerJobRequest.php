@@ -40,6 +40,12 @@ class UpdateMowerJobRequest extends FormRequest
                 'numeric',
                 'min:0',
             ],
+            'received_amount' => [
+                'nullable',
+                Rule::requiredIf(fn (): bool => $this->receivedAmountRequired()),
+                'numeric',
+                'min:0',
+            ],
             'first_payment' => [
                 'nullable',
                 'required_if:payment_status,'.JobOperationalPaymentStatus::PARTIAL->value,
@@ -64,6 +70,19 @@ class UpdateMowerJobRequest extends FormRequest
     private function pendingDetailsRequired(): bool
     {
         if ($this->input('payment_status') !== JobOperationalPaymentStatus::PENDING->value) {
+            return false;
+        }
+
+        return ! $this->isOnlinePayment();
+    }
+
+    /**
+     * The amount collected on site is only recorded when the payment is marked
+     * received and isn't an online payment.
+     */
+    private function receivedAmountRequired(): bool
+    {
+        if ($this->input('payment_status') !== JobOperationalPaymentStatus::RECEIVED->value) {
             return false;
         }
 

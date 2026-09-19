@@ -344,6 +344,169 @@ class MowerDashboardTest extends TestCase
         }
     }
 
+    public function test_received_payment_requires_amount_for_cash_and_both_payment_modes(): void
+    {
+        foreach ([JobOperationalPaymentMode::CASH->value, JobOperationalPaymentMode::BOTH->value] as $paymentMode) {
+            $job = $this->createAssignedJob($this->mower, [
+                'payment_mode' => $paymentMode,
+                'payment_status' => JobOperationalPaymentStatus::PENDING->value,
+            ]);
+
+            $this->actingAs($this->mower)
+                ->patchJson(route('mower.jobs.payment.update', $job), [
+                    'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+                ])
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors(['received_amount']);
+
+            $this->actingAs($this->mower)
+                ->patchJson(route('mower.jobs.payment.update', $job), [
+                    'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+                    'received_amount' => 80,
+                ])
+                ->assertOk();
+
+            $this->assertSame('80.00', $job->refresh()->received_amount);
+        }
+    }
+
+    public function test_payment_status_is_saved_as_submitted_regardless_of_received_amount(): void
+    {
+        $job = $this->createAssignedJob($this->mower, ['charges' => 80]);
+
+        $this->actingAs($this->mower)
+            ->patchJson(route('mower.jobs.payment.update', $job), [
+                'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+                'received_amount' => 50,
+            ])
+            ->assertOk()
+            ->assertJsonPath('payment_status', JobOperationalPaymentStatus::RECEIVED->value);
+
+        $job->refresh();
+        $this->assertSame(JobOperationalPaymentStatus::RECEIVED->value, $job->payment_status);
+        $this->assertSame('50.00', $job->received_amount);
+        $this->assertNull($job->first_payment);
+    }
+
+    public function test_partial_payment_requires_first_and_second_payment(): void
+    {
+        $job = $this->createAssignedJob($this->mower, ['charges' => 80]);
+
+        $this->actingAs($this->mower)
+            ->patchJson(route('mower.jobs.payment.update', $job), [
+                'payment_status' => JobOperationalPaymentStatus::PARTIAL->value,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['first_payment', 'second_payment']);
+
+        $this->actingAs($this->mower)
+            ->patchJson(route('mower.jobs.update', $job), [
+                'status' => JobWorkflowStatus::COMPLETED->value,
+                'payment_status' => JobOperationalPaymentStatus::PARTIAL->value,
+                'first_payment' => 50,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['second_payment']);
+    }
+
+    public function test_received_payment_does_not_require_amount_for_online_payment_mode(): void
+    {
+        $job = $this->createAssignedJob($this->mower, [
+            'payment_mode' => JobOperationalPaymentMode::ONLINE->value,
+            'payment_status' => JobOperationalPaymentStatus::PENDING->value,
+        ]);
+
+        $this->actingAs($this->mower)
+            ->patchJson(route('mower.jobs.payment.update', $job), [
+                'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+            ])
+            ->assertOk();
+
+        $job->refresh();
+        $this->assertSame(JobOperationalPaymentStatus::RECEIVED->value, $job->payment_status);
+        $this->assertNull($job->received_amount);
+    }
+
+    public function test_received_amount_cleared_when_status_changes(): void
+    {
+        $job = $this->createAssignedJob($this->mower);
+        $job->update(['received_amount' => 80]);
+
+        $this->actingAs($this->mower)
+            ->patchJson(route('mower.jobs.payment.update', $job), [
+                'payment_status' => JobOperationalPaymentStatus::PENDING->value,
+                'payment_pending_reason' => 'Customer not home',
+                'payment_pending_amount' => 80,
+            ])
+            ->assertOk();
+
+        $this->assertNull($job->refresh()->received_amount);
+    }
+
+    public function test_save_all_requires_received_amount_and_accepts_method_spoofed_form_post(): void
+    {
+        $job = $this->createAssignedJob($this->mower);
+        $payload = [
+            '_method' => 'PATCH',
+            'status' => JobWorkflowStatus::COMPLETED->value,
+            'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+            'received_amount' => '',
+        ];
+
+        $this->actingAs($this->mower)
+            ->postJson(route('mower.jobs.update', $job), $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['received_amount']);
+
+        $this->actingAs($this->mower)
+            ->postJson(route('mower.jobs.update', $job), array_merge($payload, ['received_amount' => '80.00']))
+            ->assertOk()
+            ->assertJsonPath('message', 'Changes saved.');
+
+        $job->refresh();
+        $this->assertSame(JobWorkflowStatus::COMPLETED->value, $job->status);
+        $this->assertSame('80.00', $job->received_amount);
+    }
+
+    public function test_job_show_displays_received_amount_field_for_received_cash_job(): void
+    {
+        $job = $this->createAssignedJob($this->mower);
+        $job->update(['received_amount' => 85]);
+
+        $this->actingAs($this->mower)
+            ->get(route('mower.jobs.show', $job))
+            ->assertOk()
+            ->assertSee('id="mower-received-amount-wrap" class=""', false)
+            ->assertSee('value="85.00"', false);
+    }
+
+    public function test_job_show_hides_received_amount_field_for_online_job(): void
+    {
+        $job = $this->createAssignedJob($this->mower, ['payment_mode' => JobOperationalPaymentMode::ONLINE->value]);
+
+        $this->actingAs($this->mower)
+            ->get(route('mower.jobs.show', $job))
+            ->assertOk()
+            ->assertSee('id="mower-received-amount-wrap" class="hidden"', false);
+    }
+
+    public function test_job_show_exposes_job_amount_to_script_for_partial_payment_check(): void
+    {
+        $job = $this->createAssignedJob($this->mower, ['charges' => 80]);
+
+        $this->actingAs($this->mower)
+            ->get(route('mower.jobs.show', $job))
+            ->assertOk()
+            ->assertSee('window.mowerJobCharges = 80;', false);
+
+        $noChargesJob = $this->createAssignedJob($this->mower, ['charges' => null]);
+
+        $this->actingAs($this->mower)
+            ->get(route('mower.jobs.show', $noChargesJob))
+            ->assertOk()
+            ->assertSee('window.mowerJobCharges = null;', false);
+    }
+
     public function test_partial_payment_saves_first_and_second_payment(): void
     {
         $job = $this->createAssignedJob($this->mower);
@@ -372,6 +535,7 @@ class MowerDashboardTest extends TestCase
         $this->actingAs($this->mower)
             ->patchJson(route('mower.jobs.payment.update', $job), [
                 'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+                'received_amount' => 80,
             ])
             ->assertOk();
 
@@ -589,6 +753,7 @@ class MowerDashboardTest extends TestCase
             ->patchJson(route('mower.jobs.update', $job), [
                 'status' => JobWorkflowStatus::COMPLETED->value,
                 'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+                'received_amount' => 80,
                 'consumed_time_minutes' => 45,
             ])
             ->assertOk()
@@ -640,6 +805,7 @@ class MowerDashboardTest extends TestCase
             ->patchJson(route('mower.jobs.update', $job), [
                 'status' => JobWorkflowStatus::STARTED->value,
                 'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+                'received_amount' => 80,
                 'description' => 'Gate was unlocked.',
             ])
             ->assertOk();
@@ -655,6 +821,7 @@ class MowerDashboardTest extends TestCase
             ->patchJson(route('mower.jobs.update', $job), [
                 'status' => JobWorkflowStatus::STARTED->value,
                 'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+                'received_amount' => 80,
             ])
             ->assertOk();
 
@@ -743,6 +910,7 @@ class MowerDashboardTest extends TestCase
             ->patchJson(route('mower.jobs.update', $job), [
                 'status' => JobWorkflowStatus::STARTED->value,
                 'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+                'received_amount' => 80,
             ])
             ->assertForbidden();
     }
