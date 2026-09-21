@@ -11,7 +11,7 @@
     let alertTimeout = null;
     let searchTimeout = null;
 
-    function showAlert(message, isError) {
+    function showAlert(message, isError, durationMs = 4000) {
         clearTimeout(alertTimeout);
         $('#mower-alert')
             .removeClass('hidden bg-red-50 border-red-200 text-red-700 bg-emerald-50 border-emerald-200 text-emerald-700')
@@ -19,7 +19,7 @@
                 ? 'bg-red-50 border border-red-200 text-red-700'
                 : 'bg-emerald-50 border border-emerald-200 text-emerald-700')
             .text(message);
-        alertTimeout = setTimeout(hideAlert, 4000);
+        alertTimeout = setTimeout(hideAlert, durationMs);
     }
 
     function hideAlert() {
@@ -229,14 +229,20 @@
 
     // ─── Job detail: payment reason visibility ──────────────────────────────
 
+    // The mower can change the payment mode on the job page, so read the live selection.
+    function currentPaymentMode() {
+        const $mode = $('#mower-payment-mode');
+        return $mode.length ? $mode.val() : window.mowerJobPaymentMode;
+    }
+
     function pendingDetailsRequired() {
         const val = $('#mower-payment-status').val();
-        return val === 'Pending' && window.mowerJobPaymentMode !== 'Online';
+        return val === 'Pending' && currentPaymentMode() !== 'Online';
     }
 
     function receivedAmountRequired() {
         const val = $('#mower-payment-status').val();
-        return val === 'Received' && window.mowerJobPaymentMode !== 'Online';
+        return val === 'Received';
     }
 
     function togglePaymentReason() {
@@ -247,22 +253,35 @@
         $('#mower-paid-amount-wrap').toggleClass('hidden', !isPartial);
     }
 
-    $(document).on('change', '#mower-payment-status', togglePaymentReason);
+    $(document).on('change', '#mower-payment-status, #mower-payment-mode', togglePaymentReason);
+
+    // Tells the mower the job amount versus what they entered and what is still owed.
+    // Returns null when the amount entered covers the job (or there is no job amount).
+    function shortPaymentMessage(paidAmount) {
+        const jobAmount = window.mowerJobCharges;
+        if (typeof jobAmount !== 'number' || isNaN(paidAmount)) return null;
+
+        const remainingCents = Math.round(jobAmount * 100) - Math.round(paidAmount * 100);
+        if (remainingCents <= 0) return null;
+
+        return 'This job amount is $' + jobAmount.toFixed(2) + ' but you entered $' + paidAmount.toFixed(2)
+            + ', so this is a Partial payment. Enter the Second Payment details for the remaining $'
+            + (remainingCents / 100).toFixed(2) + '.';
+    }
 
     // Collecting less than the job amount makes it a Partial payment: move the amount to
     // First Payment, switch the status and ask for the Second Payment details.
     function switchToPartialWhenReceivedIsShort() {
-        const jobAmount = window.mowerJobCharges;
         const receivedAmount = parseFloat($('#mower-received-amount').val());
+        const message = shortPaymentMessage(receivedAmount);
 
-        if (!receivedAmountRequired() || typeof jobAmount !== 'number' || isNaN(receivedAmount)) return false;
-        if (Math.round(receivedAmount * 100) >= Math.round(jobAmount * 100)) return false;
+        if (!receivedAmountRequired() || !message) return false;
 
         $('#mower-first-payment').val(receivedAmount.toFixed(2));
         $('#mower-received-amount').val('');
         $('#mower-payment-status').val('Partial');
         togglePaymentReason();
-        showAlert('Amount received is less than the job amount, so payment is now Partial. Enter the Second Payment details.', true);
+        showAlert(message, true, 8000);
         $('#mower-second-payment').trigger('focus');
 
         return true;
@@ -277,7 +296,7 @@
         if (!document.getElementById('mower-status')) return;
         const isHold = $('#mower-status').val() === 'Hold';
 
-        $('#mower-payment-status, #mower-payment-reason, #mower-payment-pending-amount, #mower-received-amount, #mower-first-payment, #mower-second-payment, #mower-consumed-time, #mower-remark-text, #mower-before-input, #mower-after-input')
+        $('#mower-payment-mode, #mower-payment-status, #mower-payment-reason, #mower-payment-pending-amount, #mower-received-amount, #mower-first-payment, #mower-second-payment, #mower-consumed-time, #mower-remark-text, #mower-before-input, #mower-after-input')
             .prop('disabled', isHold);
 
         $('#mower-before-label, #mower-after-label').toggleClass('opacity-50 pointer-events-none', isHold);
@@ -561,7 +580,7 @@
             return;
         }
         if (isPartial && !secondPayment) {
-            showAlert('Please enter the Second Payment details.', true);
+            showAlert(shortPaymentMessage(parseFloat(firstPayment)) || 'Please enter the Second Payment details.', true, 8000);
             return;
         }
 
@@ -573,6 +592,7 @@
         const data = {
             _method: 'PATCH',
             status: $('#mower-status').val(),
+            payment_mode: $('#mower-payment-mode').val() || '',
             payment_status: paymentStatus,
             payment_pending_reason: needsPendingDetails ? reason : '',
             payment_pending_amount: needsPendingDetails ? pendingAmount : '',

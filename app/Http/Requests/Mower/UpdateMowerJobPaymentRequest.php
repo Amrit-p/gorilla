@@ -73,16 +73,12 @@ class UpdateMowerJobPaymentRequest extends FormRequest
     }
 
     /**
-     * The amount collected on site is only recorded when the payment is marked
-     * received and isn't an online payment.
+     * The amount received is recorded whenever the payment is marked received,
+     * whatever the payment mode.
      */
     private function receivedAmountRequired(): bool
     {
-        if ($this->input('payment_status') !== JobOperationalPaymentStatus::RECEIVED->value) {
-            return false;
-        }
-
-        return ! $this->isOnlinePayment();
+        return $this->input('payment_status') === JobOperationalPaymentStatus::RECEIVED->value;
     }
 
     /**

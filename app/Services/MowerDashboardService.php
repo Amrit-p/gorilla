@@ -142,6 +142,7 @@ class MowerDashboardService
 
         $paymentStatus = $data['payment_status'] ?? $job->payment_status;
 
+        $job->payment_mode = $data['payment_mode'] ?? $job->payment_mode;
         $job->payment_status = $paymentStatus;
         $isPartial = $paymentStatus === JobOperationalPaymentStatus::PARTIAL->value;
         $isPending = $paymentStatus === JobOperationalPaymentStatus::PENDING->value;
@@ -155,6 +156,7 @@ class MowerDashboardService
 
         $this->activityLogService->log($mower, 'mower.payment_updated', 'Mower updated job payment status.', [
             'job_id' => $job->id,
+            'payment_mode' => $job->payment_mode,
             'payment_status' => $job->payment_status,
         ]);
 

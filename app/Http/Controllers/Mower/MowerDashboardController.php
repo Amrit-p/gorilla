@@ -133,6 +133,7 @@ class MowerDashboardController extends Controller
             'beforeImages' => $images['before'],
             'afterImages' => $images['after'],
             'workflowStatuses' => JobWorkflowStatus::values(),
+            'paymentModes' => JobOperationalPaymentMode::values(),
             'paymentStatuses' => JobOperationalPaymentStatus::values(),
         ]);
     }

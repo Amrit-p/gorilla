@@ -409,7 +409,7 @@ class MowerDashboardTest extends TestCase
             ->assertJsonValidationErrors(['second_payment']);
     }
 
-    public function test_received_payment_does_not_require_amount_for_online_payment_mode(): void
+    public function test_received_payment_requires_amount_for_online_payment_mode(): void
     {
         $job = $this->createAssignedJob($this->mower, [
             'payment_mode' => JobOperationalPaymentMode::ONLINE->value,
@@ -420,11 +420,19 @@ class MowerDashboardTest extends TestCase
             ->patchJson(route('mower.jobs.payment.update', $job), [
                 'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
             ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['received_amount']);
+
+        $this->actingAs($this->mower)
+            ->patchJson(route('mower.jobs.payment.update', $job), [
+                'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+                'received_amount' => 80,
+            ])
             ->assertOk();
 
         $job->refresh();
         $this->assertSame(JobOperationalPaymentStatus::RECEIVED->value, $job->payment_status);
-        $this->assertNull($job->received_amount);
+        $this->assertSame('80.00', $job->received_amount);
     }
 
     public function test_received_amount_cleared_when_status_changes(): void
@@ -480,9 +488,22 @@ class MowerDashboardTest extends TestCase
             ->assertSee('value="85.00"', false);
     }
 
-    public function test_job_show_hides_received_amount_field_for_online_job(): void
+    public function test_job_show_displays_received_amount_field_for_received_online_job(): void
     {
         $job = $this->createAssignedJob($this->mower, ['payment_mode' => JobOperationalPaymentMode::ONLINE->value]);
+
+        $this->actingAs($this->mower)
+            ->get(route('mower.jobs.show', $job))
+            ->assertOk()
+            ->assertSee('id="mower-received-amount-wrap" class=""', false);
+    }
+
+    public function test_job_show_hides_received_amount_field_when_payment_not_received(): void
+    {
+        $job = $this->createAssignedJob($this->mower, [
+            'payment_mode' => JobOperationalPaymentMode::ONLINE->value,
+            'payment_status' => JobOperationalPaymentStatus::PENDING->value,
+        ]);
 
         $this->actingAs($this->mower)
             ->get(route('mower.jobs.show', $job))
@@ -704,10 +725,30 @@ class MowerDashboardTest extends TestCase
             ->assertSee('Customer type')
             ->assertSee('Service type')
             ->assertSee('Payment mode')
+            ->assertSee('Select payment mode')
             ->getContent();
 
         $placeholderRow = '<dd class="text-right font-medium text-slate-900">—</dd>';
-        $this->assertSame(3, substr_count($html, $placeholderRow));
+        $this->assertSame(2, substr_count($html, $placeholderRow));
+    }
+
+    public function test_job_show_page_renders_editable_payment_mode_with_current_mode_selected(): void
+    {
+        $job = $this->createAssignedJob($this->mower, [
+            'payment_mode' => JobOperationalPaymentMode::BOTH->value,
+        ]);
+
+        $html = $this->actingAs($this->mower)
+            ->get(route('mower.jobs.show', $job))
+            ->assertOk()
+            ->assertSee('id="mower-payment-mode"', false)
+            ->assertDontSee('Select payment mode')
+            ->getContent();
+
+        foreach (JobOperationalPaymentMode::values() as $paymentMode) {
+            $this->assertStringContainsString('value="'.$paymentMode.'"', $html);
+        }
+        $this->assertMatchesRegularExpression('/<option value="Both"\s+selected/', $html);
     }
 
     public function test_job_show_page_shows_amount_for_cash_jobs(): void
@@ -795,6 +836,119 @@ class MowerDashboardTest extends TestCase
                 ->assertUnprocessable()
                 ->assertJsonValidationErrors(['payment_status']);
         }
+    }
+
+    public function test_save_all_updates_payment_mode(): void
+    {
+        $job = $this->createAssignedJob($this->mower, ['payment_mode' => JobOperationalPaymentMode::CASH->value]);
+
+        $this->actingAs($this->mower)
+            ->patchJson(route('mower.jobs.update', $job), [
+                'status' => JobWorkflowStatus::COMPLETED->value,
+                'payment_mode' => JobOperationalPaymentMode::BOTH->value,
+                'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+                'received_amount' => 80,
+            ])
+            ->assertOk();
+
+        $this->assertSame(JobOperationalPaymentMode::BOTH->value, $job->refresh()->payment_mode);
+    }
+
+    public function test_save_all_keeps_payment_mode_when_not_submitted(): void
+    {
+        $job = $this->createAssignedJob($this->mower, ['payment_mode' => JobOperationalPaymentMode::CASH->value]);
+
+        $this->actingAs($this->mower)
+            ->patchJson(route('mower.jobs.update', $job), [
+                'status' => JobWorkflowStatus::COMPLETED->value,
+                'payment_mode' => '',
+                'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+                'received_amount' => 80,
+            ])
+            ->assertOk();
+
+        $this->assertSame(JobOperationalPaymentMode::CASH->value, $job->refresh()->payment_mode);
+    }
+
+    public function test_save_all_switching_to_online_requires_received_amount(): void
+    {
+        $job = $this->createAssignedJob($this->mower, ['payment_mode' => JobOperationalPaymentMode::CASH->value]);
+
+        $this->actingAs($this->mower)
+            ->patchJson(route('mower.jobs.update', $job), [
+                'status' => JobWorkflowStatus::COMPLETED->value,
+                'payment_mode' => JobOperationalPaymentMode::ONLINE->value,
+                'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['received_amount']);
+
+        $this->actingAs($this->mower)
+            ->patchJson(route('mower.jobs.update', $job), [
+                'status' => JobWorkflowStatus::COMPLETED->value,
+                'payment_mode' => JobOperationalPaymentMode::ONLINE->value,
+                'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+                'received_amount' => 80,
+            ])
+            ->assertOk();
+
+        $job->refresh();
+        $this->assertSame(JobOperationalPaymentMode::ONLINE->value, $job->payment_mode);
+        $this->assertSame('80.00', $job->received_amount);
+    }
+
+    public function test_save_all_switching_to_online_skips_pending_details(): void
+    {
+        $job = $this->createAssignedJob($this->mower, ['payment_mode' => JobOperationalPaymentMode::CASH->value]);
+
+        $this->actingAs($this->mower)
+            ->patchJson(route('mower.jobs.update', $job), [
+                'status' => JobWorkflowStatus::COMPLETED->value,
+                'payment_mode' => JobOperationalPaymentMode::ONLINE->value,
+                'payment_status' => JobOperationalPaymentStatus::PENDING->value,
+            ])
+            ->assertOk();
+
+        $this->assertSame(JobOperationalPaymentMode::ONLINE->value, $job->refresh()->payment_mode);
+    }
+
+    public function test_save_all_switching_from_online_to_cash_requires_payment_details(): void
+    {
+        $job = $this->createAssignedJob($this->mower, ['payment_mode' => JobOperationalPaymentMode::ONLINE->value]);
+
+        $this->actingAs($this->mower)
+            ->patchJson(route('mower.jobs.update', $job), [
+                'status' => JobWorkflowStatus::COMPLETED->value,
+                'payment_mode' => JobOperationalPaymentMode::CASH->value,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['payment_status']);
+
+        $this->actingAs($this->mower)
+            ->patchJson(route('mower.jobs.update', $job), [
+                'status' => JobWorkflowStatus::COMPLETED->value,
+                'payment_mode' => JobOperationalPaymentMode::CASH->value,
+                'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['received_amount']);
+
+        $this->assertSame(JobOperationalPaymentMode::ONLINE->value, $job->refresh()->payment_mode);
+    }
+
+    public function test_save_all_rejects_invalid_payment_mode(): void
+    {
+        $job = $this->createAssignedJob($this->mower);
+
+        $this->actingAs($this->mower)
+            ->patchJson(route('mower.jobs.update', $job), [
+                'status' => JobWorkflowStatus::COMPLETED->value,
+                'payment_mode' => 'Cheque',
+                'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+                'received_amount' => 80,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['payment_mode']);
     }
 
     public function test_save_all_updates_mower_remarks_when_description_provided(): void

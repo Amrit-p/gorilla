@@ -16,7 +16,7 @@
 
     $isOnlinePayment = $job->payment_mode === JobOperationalPaymentMode::ONLINE->value;
     $showPendingDetails = $job->payment_status === 'Pending' && ! $isOnlinePayment;
-    $showReceivedAmount = $job->payment_status === 'Received' && ! $isOnlinePayment;
+    $showReceivedAmount = $job->payment_status === 'Received';
 @endphp
 
 <x-layouts.mower
@@ -58,11 +58,25 @@
         <section class="rounded-2xl bg-white p-4 shadow-sm">
             <h2 class="text-sm font-semibold text-slate-900">Payment</h2>
             <div class="mt-3 space-y-3">
-                <select id="mower-payment-status" class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base">
-                    @foreach ($paymentStatuses as $status)
-                        <option value="{{ $status }}" @selected($job->payment_status === $status)>{{ $status }}</option>
-                    @endforeach
-                </select>
+                <div>
+                    <label for="mower-payment-mode" class="mb-1 block text-sm text-slate-600">Payment mode</label>
+                    <select id="mower-payment-mode" class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base">
+                        @if (! $job->payment_mode)
+                            <option value="" selected>Select payment mode</option>
+                        @endif
+                        @foreach ($paymentModes as $paymentMode)
+                            <option value="{{ $paymentMode }}" @selected($job->payment_mode === $paymentMode)>{{ $paymentMode }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label for="mower-payment-status" class="mb-1 block text-sm text-slate-600">Payment status</label>
+                    <select id="mower-payment-status" class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base">
+                        @foreach ($paymentStatuses as $status)
+                            <option value="{{ $status }}" @selected($job->payment_status === $status)>{{ $status }}</option>
+                        @endforeach
+                    </select>
+                </div>
                 <div id="mower-payment-reason-wrap" class="{{ $showPendingDetails ? '' : 'hidden' }} space-y-3">
                     <div>
                         <label for="mower-payment-reason" class="mb-1 block text-sm text-slate-600">Reason</label>
@@ -174,10 +188,6 @@
                 <div class="flex justify-between gap-4">
                     <dt class="text-slate-500">Service type</dt>
                     <dd class="text-right font-medium text-slate-900">{{ $serviceTypes }}</dd>
-                </div>
-                <div class="flex justify-between gap-4">
-                    <dt class="text-slate-500">Payment mode</dt>
-                    <dd class="text-right font-medium text-slate-900">{{ $job->payment_mode ?: '—' }}</dd>
                 </div>
                 @if ($showChargeAmount)
                     <div class="flex justify-between gap-4">

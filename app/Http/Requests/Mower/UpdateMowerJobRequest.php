@@ -23,6 +23,7 @@ class UpdateMowerJobRequest extends FormRequest
     {
         return [
             'status' => ['required', Rule::in(JobWorkflowStatus::values())],
+            'payment_mode' => ['nullable', Rule::in(JobOperationalPaymentMode::values())],
             'payment_status' => [
                 'nullable',
                 Rule::requiredIf(fn (): bool => ! $this->isOnlinePayment()),
@@ -77,26 +78,25 @@ class UpdateMowerJobRequest extends FormRequest
     }
 
     /**
-     * The amount collected on site is only recorded when the payment is marked
-     * received and isn't an online payment.
+     * The amount received is recorded whenever the payment is marked received,
+     * whatever the payment mode.
      */
     private function receivedAmountRequired(): bool
     {
-        if ($this->input('payment_status') !== JobOperationalPaymentStatus::RECEIVED->value) {
-            return false;
-        }
-
-        return ! $this->isOnlinePayment();
+        return $this->input('payment_status') === JobOperationalPaymentStatus::RECEIVED->value;
     }
 
     /**
      * Online payments are tracked automatically, so the mower isn't required to
      * report a payment status — it's only needed for cash/both payment modes.
+     * A submitted payment mode wins over the job's stored one, since the mower
+     * may be changing it in the same request.
      */
     private function isOnlinePayment(): bool
     {
         $job = $this->route('job');
+        $paymentMode = $this->input('payment_mode') ?? ($job instanceof Job ? $job->payment_mode : null);
 
-        return $job instanceof Job && $job->payment_mode === JobOperationalPaymentMode::ONLINE->value;
+        return $paymentMode === JobOperationalPaymentMode::ONLINE->value;
     }
 }
