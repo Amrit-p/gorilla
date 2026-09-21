@@ -406,10 +406,11 @@ class SalaryCalculatorService
     /**
      * Jobs that were already verified keep their existing details. No customer
      * amount is recorded here, so each job's payment status is left as it is.
+     * The verified date defaults to today, the day the payout is recorded.
      *
      * @param  array<int, int>  $jobIds
      */
-    private function verifyPaidJobs(User $actor, array $jobIds): void
+    public function verifyPaidJobs(User $actor, array $jobIds, ?string $verifiedDate = null): void
     {
         $unverified = Job::query()
             ->whereIn('id', $jobIds)
@@ -417,7 +418,7 @@ class SalaryCalculatorService
             ->get();
 
         $this->jobManagementService->verifyJobs($actor, $unverified, true, [
-            'verified_date' => now()->toDateString(),
+            'verified_date' => $verifiedDate ?? now()->toDateString(),
             'comment' => 'Verified automatically when the mower was paid out.',
         ]);
     }

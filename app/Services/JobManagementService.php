@@ -325,7 +325,7 @@ class JobManagementService
      *
      * @return array<int, int> ids of the payouts the job was removed from
      */
-    private function releaseFromMowerPayouts(Job $job): array
+    public function releaseFromMowerPayouts(Job $job): array
     {
         $payouts = $job->payouts()->get();
 
