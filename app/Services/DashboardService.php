@@ -211,7 +211,7 @@ class DashboardService
      * Starts from the Monday of the current week.
      *
      * @param  array{worker_id?: int|null, search?: string|null}  $filters
-     * @return array<int, array{label: string, week_number: int, start_date: string, end_date: string, days: list<array<string, mixed>>}>
+     * @return array<int, array{label: string, week_number: int, start_date: string, end_date: string, revenue: float, days: list<array<string, mixed>>}>
      */
     public function weekScheduleSummary(array $filters = []): array
     {
@@ -219,7 +219,7 @@ class DashboardService
         $endDate = $startDate->copy()->addWeeks(self::WEEKS_TO_SHOW)->subDay();
 
         $jobQuery = Job::query()
-            ->select(['id', 'zone_id', 'scheduled_date', 'status', 'payment_status'])
+            ->select(['id', 'zone_id', 'scheduled_date', 'status', 'payment_status', 'charges'])
             ->with('zone:id,name')
             ->whereBetween('scheduled_date', [$startDate->toDateString(), $endDate->toDateString()])
             ->whereIn('status', [
@@ -326,6 +326,7 @@ class DashboardService
                     'total' => $dayJobs->count(),
                     'pending' => $pendingJobs,
                     'pending_payment' => $pendingPaymentJobs,
+                    'revenue' => round((float) $dayJobs->sum('charges'), 2),
                     'zone_count' => count($zones),
                     'zones' => $zones,
                     'lead_total' => $dayLeads->count(),
@@ -344,6 +345,7 @@ class DashboardService
                 'total_jobs' => array_sum(array_column($weekDays, 'total')),
                 'pending_jobs' => array_sum(array_column($weekDays, 'pending')),
                 'pending_payment_jobs' => array_sum(array_column($weekDays, 'pending_payment')),
+                'revenue' => round(array_sum(array_column($weekDays, 'revenue')), 2),
                 'lead_total' => array_sum(array_column($weekDays, 'lead_total')),
                 'follow_up_total' => array_sum(array_column($weekDays, 'follow_up_total')),
                 'days' => $days,

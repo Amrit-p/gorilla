@@ -19,6 +19,7 @@ use App\Support\ServiceTypes;
 use Database\Seeders\MasterCatalogSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class DashboardTest extends TestCase
@@ -662,5 +663,53 @@ class DashboardTest extends TestCase
             ->assertDontSee('title="Job"', false)
             ->assertDontSee('title="Lead"', false)
             ->assertDontSee('title="General"', false);
+    }
+
+    public function test_week_schedule_grid_shows_revenue_per_week(): void
+    {
+        $this->createScheduleJob(now()->startOfWeek(), 100, JobWorkflowStatus::PENDING);
+        $this->createScheduleJob(now()->startOfWeek()->addDays(6), 50.50, JobWorkflowStatus::COMPLETED);
+        $this->createScheduleJob(now()->startOfWeek()->addWeek(), 30, JobWorkflowStatus::HOLD);
+        // Started jobs are not part of the schedule grid, so they add no revenue.
+        $this->createScheduleJob(now()->startOfWeek(), 999, JobWorkflowStatus::STARTED);
+
+        $this->actingAs($this->admin)
+            ->get(route('dashboard.week-schedule-grid'))
+            ->assertOk()
+            ->assertSeeInOrder(['Jobs 2', 'Revenue $150.50', 'Jobs 1', 'Revenue $30.00'])
+            ->assertDontSee('$1,149.50');
+    }
+
+    public function test_week_schedule_grid_hides_revenue_from_users_without_business_analytics(): void
+    {
+        $officeManager = User::query()->where('email', CrmConstants::OFFICE_MANAGER_EMAIL)->firstOrFail();
+
+        $this->createScheduleJob(now(), 100, JobWorkflowStatus::PENDING);
+
+        $this->actingAs($officeManager)
+            ->get(route('dashboard.week-schedule-grid'))
+            ->assertOk()
+            ->assertSee('Jobs 1')
+            ->assertDontSee('Revenue $');
+    }
+
+    private function createScheduleJob(Carbon $scheduledDate, float $charges, JobWorkflowStatus $status): Job
+    {
+        return Job::query()->create([
+            'customer_name' => 'Revenue Schedule Client',
+            'phone' => '555-0006',
+            'client_address' => '11 Elm St',
+            'scheduled_date' => $scheduledDate->toDateString(),
+            'scheduled_time' => '09:00',
+            'estimated_duration_minutes' => 30,
+            'required_services' => [ServiceTypes::all()[0]],
+            'parking_status' => 'Easy',
+            'customer_type' => 'Easy',
+            'payment_mode' => 'Cash',
+            'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+            'charges' => $charges,
+            'status' => $status->value,
+            'created_by' => $this->admin->id,
+        ]);
     }
 }
