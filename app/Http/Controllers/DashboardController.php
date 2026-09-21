@@ -20,6 +20,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -34,9 +35,9 @@ class DashboardController extends Controller
     /**
      * Main dashboard page with metrics and timeline.
      */
-    public function index(): View|RedirectResponse
+    public function index(Request $request): View|RedirectResponse
     {
-        $user = request()->user();
+        $user = $request->user();
 
         // Mowers get their own field dashboard; never show them the admin/sales dashboard.
         if ($user->hasRole(CrmRoles::MOWER)) {
@@ -51,6 +52,7 @@ class DashboardController extends Controller
         $dashboardType = $analytics['type'] ?? 'admin';
         $isAdmin = $dashboardType === 'admin';
         $showSchedule = $isAdmin || $dashboardType === 'sales';
+        $weekScheduleState = $showSchedule ? $this->weekScheduleState($request) : ['filters' => [], 'day' => null];
 
         return view('dashboard.index', [
             'analytics' => $analytics,
@@ -58,7 +60,9 @@ class DashboardController extends Controller
             'leadsByStatus' => $this->dashboardService->leadsByStatus(),
             'activityLogs' => $this->dashboardService->recentActivity(),
             'preferences' => $this->dashboardService->preferencesFor($user),
-            'weekSchedule' => $showSchedule ? $this->dashboardService->weekScheduleSummary() : [],
+            'weekSchedule' => $showSchedule ? $this->dashboardService->weekScheduleSummary($weekScheduleState['filters']) : [],
+            'weekScheduleFilters' => $weekScheduleState['filters'],
+            'weekScheduleOpenDay' => $weekScheduleState['day'],
             'employees' => $isAdmin
                 ? User::query()->role(CrmRoles::MOWER)->where('is_active', true)->orderBy('name')->get(['id', 'name', 'efficiency'])
                 : collect(),
@@ -175,40 +179,9 @@ class DashboardController extends Controller
      */
     public function weekScheduleGrid(Request $request): Response
     {
-        $validated = $request->validate([
-            'worker_id' => 'nullable|integer|exists:users,id',
-            'search' => 'nullable|string|max:100',
-            'status' => 'nullable|string',
-            'recurrence_id' => 'nullable|integer|exists:recurrences,id',
-            'assignment' => 'nullable|in:assigned,unassigned',
-            'payment_mode' => 'nullable|string',
-            'payment_status' => 'nullable|string',
-            'equipment_type_id' => 'nullable|integer',
-            'job_level_id' => 'nullable|integer|exists:job_levels,id',
-            'customer_type' => 'nullable|string',
-            'service_type' => 'nullable|string',
-            'date_range' => 'nullable|array',
-            'date_range.start' => 'nullable|date',
-            'date_range.end' => 'nullable|date',
-            'week_offset' => 'nullable|integer|min:-52|max:52',
-        ]);
+        $validated = $request->validate($this->weekScheduleRules());
 
-        $weeks = $this->dashboardService->weekScheduleSummary([
-            'worker_id' => $request->integer('worker_id') ?: null,
-            'search' => $request->string('search')->toString() ?: null,
-            'status' => $validated['status'] ?? null,
-            'recurrence_id' => $request->integer('recurrence_id') ?: null,
-            'assignment' => $validated['assignment'] ?? null,
-            'payment_mode' => $validated['payment_mode'] ?? null,
-            'payment_status' => $validated['payment_status'] ?? null,
-            'equipment_type_id' => $request->integer('equipment_type_id') ?: null,
-            'job_level_id' => $request->integer('job_level_id') ?: null,
-            'customer_type' => $validated['customer_type'] ?? null,
-            'service_type' => $validated['service_type'] ?? null,
-            'date_range_start' => $validated['date_range']['start'] ?? null,
-            'date_range_end' => $validated['date_range']['end'] ?? null,
-            'week_offset' => $request->integer('week_offset'),
-        ]);
+        $weeks = $this->dashboardService->weekScheduleSummary($this->weekScheduleFilters($request, $validated));
 
         return response(view('dashboard.partials.week-schedule-grid', compact('weeks')));
     }
@@ -280,5 +253,81 @@ class DashboardController extends Controller
         return response()->json([
             'message' => 'Dashboard preferences saved.',
         ]);
+    }
+
+    /**
+     * Restore the week schedule (weeks shown, filters, open day panel) from the
+     * dashboard's query string, which the calendar keeps in sync as the user
+     * navigates. Invalid input falls back to the default view.
+     *
+     * @return array{filters: array<string, mixed>, day: string|null}
+     */
+    private function weekScheduleState(Request $request): array
+    {
+        $validator = Validator::make($request->query(), [
+            ...$this->weekScheduleRules(),
+            'day' => 'nullable|date_format:Y-m-d',
+        ]);
+
+        if ($validator->fails()) {
+            return ['filters' => [], 'day' => null];
+        }
+
+        $validated = $validator->validated();
+
+        return [
+            'filters' => $this->weekScheduleFilters($request, $validated),
+            'day' => $validated['day'] ?? null,
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function weekScheduleRules(): array
+    {
+        return [
+            'worker_id' => 'nullable|integer|exists:users,id',
+            'search' => 'nullable|string|max:100',
+            'status' => 'nullable|string',
+            'recurrence_id' => 'nullable|integer|exists:recurrences,id',
+            'assignment' => 'nullable|in:assigned,unassigned',
+            'payment_mode' => 'nullable|string',
+            'payment_status' => 'nullable|string',
+            'equipment_type_id' => 'nullable|integer',
+            'job_level_id' => 'nullable|integer|exists:job_levels,id',
+            'customer_type' => 'nullable|string',
+            'service_type' => 'nullable|string',
+            'date_range' => 'nullable|array',
+            'date_range.start' => 'nullable|date',
+            'date_range.end' => 'nullable|date',
+            'week_offset' => 'nullable|integer|min:-52|max:52',
+        ];
+    }
+
+    /**
+     * Map validated week-schedule input to DashboardService::weekScheduleSummary() filters.
+     *
+     * @param  array<string, mixed>  $validated
+     * @return array<string, mixed>
+     */
+    private function weekScheduleFilters(Request $request, array $validated): array
+    {
+        return [
+            'worker_id' => $request->integer('worker_id') ?: null,
+            'search' => $request->string('search')->toString() ?: null,
+            'status' => $validated['status'] ?? null,
+            'recurrence_id' => $request->integer('recurrence_id') ?: null,
+            'assignment' => $validated['assignment'] ?? null,
+            'payment_mode' => $validated['payment_mode'] ?? null,
+            'payment_status' => $validated['payment_status'] ?? null,
+            'equipment_type_id' => $request->integer('equipment_type_id') ?: null,
+            'job_level_id' => $request->integer('job_level_id') ?: null,
+            'customer_type' => $validated['customer_type'] ?? null,
+            'service_type' => $validated['service_type'] ?? null,
+            'date_range_start' => $validated['date_range']['start'] ?? null,
+            'date_range_end' => $validated['date_range']['end'] ?? null,
+            'week_offset' => $request->integer('week_offset'),
+        ];
     }
 }

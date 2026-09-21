@@ -166,13 +166,13 @@
             </td>
 
             {{-- Remarks --}}
-            <td class="w-36 max-w-0 px-4 py-4">
-                <button type="button" class="view-remarks-btn group/rem w-full overflow-hidden text-left"
+            <td class="min-w-[12rem] px-4 py-4">
+                <button type="button" class="view-remarks-btn group/rem w-full text-left"
                         data-id="{{ $job->id }}"
                         data-office-remarks="{{ $job->office_remarks ?? '' }}"
                         data-mower-remarks="{{ $job->mower_remarks ?? '' }}">
                     @if ($job->office_remarks)
-                        <p class="truncate text-sm text-slate-700 group-hover/rem:text-emerald-600">{{ $job->office_remarks }}</p>
+                        <p class="whitespace-pre-wrap break-words text-sm text-slate-700 group-hover/rem:text-emerald-600">{{ $job->office_remarks }}</p>
                     @else
                         <span class="text-sm text-slate-300 group-hover/rem:text-emerald-400">+ Add</span>
                     @endif
@@ -228,7 +228,7 @@
                             View in Map
                         </a>
                         @can('update', $job)
-                            <a href="{{ route('admin.jobs.edit', $job) }}" class="flex items-center gap-2.5 px-3.5 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                            <a href="{{ route('admin.jobs.edit', $job) }}" class="js-with-return-url flex items-center gap-2.5 px-3.5 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50">
                                 <svg class="h-3.5 w-3.5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125"/>
                                 </svg>

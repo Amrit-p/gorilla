@@ -67,7 +67,7 @@
             </a>
             @can('update', $job)
                 <a href="{{ route('admin.jobs.edit', $job) }}"
-                   class="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-slate-50 px-2 py-2 text-xs font-medium text-slate-700 active:bg-slate-100">
+                   class="js-with-return-url flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-slate-50 px-2 py-2 text-xs font-medium text-slate-700 active:bg-slate-100">
                     <svg class="h-3.5 w-3.5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125"/>
                     </svg>

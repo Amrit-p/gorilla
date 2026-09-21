@@ -228,5 +228,16 @@
         }).on('mouseleave', '.sidebar-flyout', function () {
             scheduleFlyoutHide();
         });
+
+        // ===== RETURN URL =====
+        // Links marked `.js-with-return-url` (e.g. "Edit job") carry the current
+        // page URL, filters included, as `return_url` so the target page can send
+        // the user back here. Added at click time because many of these links are
+        // rendered in AJAX partials that don't know the page's URL.
+        $(document).on('click auxclick contextmenu', 'a.js-with-return-url', function () {
+            var url = new URL(this.href, window.location.href);
+            url.searchParams.set('return_url', window.location.href);
+            this.href = url.toString();
+        });
     </script>
 </x-layouts.app>

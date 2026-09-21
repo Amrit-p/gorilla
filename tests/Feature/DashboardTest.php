@@ -249,6 +249,61 @@ class DashboardTest extends TestCase
             ->assertDontSee('Jobs 2');
     }
 
+    public function test_dashboard_restores_the_week_schedule_state_from_the_query_string(): void
+    {
+        $targetWeekStart = now()->startOfWeek(Carbon::MONDAY)->addWeeks(-6);
+        $targetDay = $targetWeekStart->copy()->addDays(2)->toDateString();
+        $targetWeekRange = $targetWeekStart->format('d M').' – '.$targetWeekStart->copy()->addDays(6)->format('d M');
+
+        foreach (['Cash', 'Online'] as $index => $paymentMode) {
+            Job::query()->create([
+                'customer_name' => "{$paymentMode} Past Client",
+                'phone' => '555-300'.$index,
+                'client_address' => "{$index} Past St",
+                'scheduled_date' => $targetDay,
+                'scheduled_time' => '09:00',
+                'estimated_duration_minutes' => 60,
+                'required_services' => [ServiceTypes::all()[0]],
+                'parking_status' => 'Easy',
+                'customer_type' => 'Easy',
+                'payment_mode' => $paymentMode,
+                'payment_status' => 'Received',
+                'status' => JobWorkflowStatus::PENDING->value,
+                'created_by' => $this->admin->id,
+            ]);
+        }
+
+        // The default view starts at the current week, so it doesn't reach the target week.
+        $this->actingAs($this->admin)
+            ->get(route('dashboard.index'))
+            ->assertOk()
+            ->assertDontSee($targetWeekRange);
+
+        $this->actingAs($this->admin)
+            ->get(route('dashboard.index', ['week_offset' => -6, 'payment_mode' => 'Cash', 'day' => $targetDay]))
+            ->assertOk()
+            ->assertSee($targetWeekRange)
+            ->assertSee('Jobs 1')
+            ->assertDontSee('Jobs 2')
+            // The calendar's filter bar is pre-populated from the query string.
+            ->assertSee('<option value="Cash" selected>', false)
+            // The calendar script resumes on the shifted week and reopens the day panel.
+            ->assertSee('var _weekOffset   = -6;', false)
+            ->assertSee('var _initialDay = "'.$targetDay.'";', false);
+    }
+
+    public function test_dashboard_ignores_an_invalid_week_schedule_query_string(): void
+    {
+        $currentWeekStart = now()->startOfWeek(Carbon::MONDAY);
+
+        $this->actingAs($this->admin)
+            ->get(route('dashboard.index', ['week_offset' => 999, 'day' => 'not-a-date']))
+            ->assertOk()
+            ->assertSee($currentWeekStart->format('d M').' – '.$currentWeekStart->copy()->addDays(6)->format('d M'))
+            ->assertSee('var _weekOffset   = 0;', false)
+            ->assertSee('var _initialDay = null;', false);
+    }
+
     public function test_daily_jobs_table_supports_the_day_panels_extra_filters(): void
     {
         $assignedJob = Job::query()->create([

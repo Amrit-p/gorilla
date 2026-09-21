@@ -156,6 +156,85 @@ class JobManagementTest extends TestCase
         $this->assertSame('Second installment due next week.', $job->payment_pending_reason);
     }
 
+    public function test_job_edit_form_carries_the_return_url_it_was_opened_with(): void
+    {
+        $job = $this->createJob();
+        $dashboardUrl = route('dashboard.index', ['week_offset' => -4, 'payment_mode' => 'Cash', 'day' => '2026-08-20']);
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.jobs.edit', [$job, 'return_url' => $dashboardUrl]))
+            ->assertOk()
+            ->assertSee('name="return_url" value="'.e($dashboardUrl).'"', false);
+    }
+
+    public function test_job_edit_form_ignores_a_missing_or_off_site_return_url(): void
+    {
+        $job = $this->createJob();
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.jobs.edit', $job))
+            ->assertOk()
+            ->assertDontSee('name="return_url"', false);
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.jobs.edit', [$job, 'return_url' => 'https://evil.example/phish']))
+            ->assertOk()
+            ->assertDontSee('name="return_url"', false);
+    }
+
+    public function test_job_edit_links_are_marked_to_carry_the_current_page_as_return_url(): void
+    {
+        $job = $this->createJob();
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.jobs.index'))
+            ->assertOk()
+            ->assertSee('href="'.route('admin.jobs.edit', $job).'" class="js-with-return-url', false);
+    }
+
+    public function test_job_update_redirects_back_to_the_page_it_was_opened_from(): void
+    {
+        $job = $this->createJob();
+        $dashboardUrl = route('dashboard.index', ['week_offset' => -4, 'payment_mode' => 'Cash', 'day' => '2026-08-20']);
+        $payload = array_merge($this->jobPayload(), [
+            'route_sequence' => 0,
+            'priority' => 'Medium',
+            'status' => JobWorkflowStatus::PENDING->value,
+            'return_url' => $dashboardUrl,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->patchJson(route('admin.jobs.update', $job), $payload)
+            ->assertOk()
+            ->assertJsonPath('redirect', $dashboardUrl);
+
+        $this->actingAs($this->admin)
+            ->patch(route('admin.jobs.update', $job), $payload)
+            ->assertRedirect($dashboardUrl);
+    }
+
+    public function test_job_update_falls_back_to_the_job_page_for_missing_or_off_site_return_urls(): void
+    {
+        $job = $this->createJob();
+        $payload = array_merge($this->jobPayload(), [
+            'route_sequence' => 0,
+            'priority' => 'Medium',
+            'status' => JobWorkflowStatus::PENDING->value,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->patchJson(route('admin.jobs.update', $job), $payload)
+            ->assertOk()
+            ->assertJsonPath('redirect', route('admin.jobs.show', $job));
+
+        foreach (['https://evil.example/phish', url('/').'.evil.example/phish', '//evil.example'] as $offSiteUrl) {
+            $this->actingAs($this->admin)
+                ->patchJson(route('admin.jobs.update', $job), array_merge($payload, ['return_url' => $offSiteUrl]))
+                ->assertOk()
+                ->assertJsonPath('redirect', route('admin.jobs.show', $job));
+        }
+    }
+
     public function test_mower_assignment_on_create(): void
     {
         $this->actingAs($this->admin)
@@ -287,6 +366,24 @@ class JobManagementTest extends TestCase
         $this->assertStringContainsString('Zoned Client', $html);
         $this->assertStringNotContainsString('>Zone</th>', $html);
         $this->assertStringNotContainsString('Hidden Zone Name', $html);
+    }
+
+    public function test_jobs_index_shows_full_office_remarks_without_truncation(): void
+    {
+        $remarks = 'Gate code 4321. Mow the back lawn first, then trim the hedges along the driveway and blow the paths clean.';
+
+        Job::query()->create(array_merge($this->jobPayload(), [
+            'customer_name' => 'Remarks Client',
+            'office_remarks' => $remarks,
+        ]));
+
+        $response = $this->actingAs($this->admin)
+            ->getJson(route('admin.jobs.index'))
+            ->assertOk();
+
+        $html = (string) $response->json('html');
+        $this->assertStringContainsString('>'.$remarks.'</p>', $html);
+        $this->assertStringNotContainsString('class="truncate text-sm text-slate-700 group-hover/rem', $html);
     }
 
     public function test_jobs_index_rows_expose_charges_for_the_bulk_toolbar_amount(): void

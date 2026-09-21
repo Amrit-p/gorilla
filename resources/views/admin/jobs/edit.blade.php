@@ -31,6 +31,9 @@
             <input type="hidden" name="recurrence_id" value="{{ $job->recurrence_id }}">
             <input type="hidden" name="route_sequence" value="{{ $job->route_sequence }}">
             <input type="hidden" name="priority" value="{{ $job->priority }}">
+            @if ($returnUrl)
+                <input type="hidden" name="return_url" value="{{ $returnUrl }}">
+            @endif
             @include('admin.jobs.partials.form-tabs', ['job' => $job, 'submitLabel' => 'Update Job'])
         </form>
 

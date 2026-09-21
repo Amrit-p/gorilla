@@ -155,14 +155,19 @@ class JobManagementController extends Controller
         return view('admin.jobs.partials.customer-details-modal-body', $details);
     }
 
-    public function edit(Job $job): View
+    public function edit(Request $request, Job $job): View
     {
         $this->authorize('update', $job);
 
         $job->load(['assignedEmployees:id,name,efficiency']);
 
         return view('admin.jobs.edit', array_merge(
-            ['job' => $job],
+            [
+                'job' => $job,
+                // The page the form was opened from (e.g. a filtered dashboard),
+                // so a successful update can return there.
+                'returnUrl' => $this->safeReturnUrl($request->query('return_url')),
+            ],
             $this->jobManagementService->formOptions()
         ));
     }
@@ -185,16 +190,19 @@ class JobManagementController extends Controller
         if ($job === null) {
             return response()->json(['message' => 'Failed to update job. Please try again.'], 500);
         }
+
+        $redirectUrl = $this->safeReturnUrl($request->input('return_url')) ?? route('admin.jobs.show', $job);
+
         if ($request->expectsJson()) {
             return response()->json([
                 'message' => 'Job updated successfully.',
                 'job' => $job,
-                'redirect' => route('admin.jobs.show', $job),
+                'redirect' => $redirectUrl,
             ]);
         }
 
         return redirect()
-            ->route('admin.jobs.show', $job)
+            ->to($redirectUrl)
             ->with('success', 'Job updated successfully.');
     }
 
@@ -645,6 +653,23 @@ class JobManagementController extends Controller
             'date_range_start' => $request->input('date_range.start', ''),
             'date_range_end' => $request->input('date_range.end', ''),
         ];
+    }
+
+    /**
+     * The given URL if it points back into this application, otherwise null,
+     * so user-supplied return URLs can't redirect off-site.
+     */
+    private function safeReturnUrl(mixed $url): ?string
+    {
+        if (! is_string($url) || $url === '') {
+            return null;
+        }
+
+        $root = rtrim(url('/'), '/');
+
+        return $url === $root || str_starts_with($url, $root.'/') || str_starts_with($url, $root.'?')
+            ? $url
+            : null;
     }
 
     /**

@@ -1,5 +1,8 @@
 @props([
     'weeks'               => [],
+    'calendarFilters'     => [],
+    'weekOffset'          => 0,
+    'openDay'             => null,
     'dailyJobsTableUrl'   => '',
     'dailyLeadsTableUrl'  => '',
     'zones'               => collect(),
@@ -20,10 +23,11 @@
      Reuses the shared jobs filter bar. It is given its own `formId` + JS hook
      names so it can coexist with the day panel's filter bar lower down this
      same page. `loadCalendarGrid` is overridden in the script block below to
-     reload the grid instead of a jobs table. ─── --}}
+     reload the grid instead of a jobs table. Initial values come from the
+     dashboard's query string (see `syncUrlState` below). ─── --}}
 <div class="mb-4">
     @include('admin.jobs.partials.filter-bar', [
-        'filters' => [
+        'filters' => array_merge([
             'search' => '',
             'list_scope' => '',
             'status' => '',
@@ -38,7 +42,7 @@
             'service_type' => '',
             'date_range_start' => '',
             'date_range_end' => '',
-        ],
+        ], array_filter($calendarFilters, fn ($value) => $value !== null)),
         'workers' => $workers,
         'workflowStatuses' => $workflowStatuses,
         'recurrences' => $recurrences,
@@ -56,7 +60,7 @@
         'reloadFn' => 'crmReloadCalendarGrid',
         'tableContainer' => 'week-schedule-grid',
         'filterUrl' => route('dashboard.week-schedule-grid'),
-        'resetUrl' => '#',
+        'resetUrl' => route('dashboard.index'),
     ])
 </div>
 
@@ -244,7 +248,7 @@
     var _gridUrl      = @json(route('dashboard.week-schedule-grid'));
     var _currentDate  = null;
     var _currentLeadDate = null;
-    var _weekOffset   = 0;
+    var _weekOffset   = @json((int) $weekOffset);
 
     /* ── filter state ────────────────────────────────────────────────
        Reads the shared jobs filter bar rendered above the grid (form id
@@ -263,6 +267,18 @@
 
     function buildTableUrl(base, filters) {
         return base + '?' + $.param(filters);
+    }
+
+    /* ── mirror the calendar's state (filters, week, open day) into the page
+       URL, so returning to it — e.g. after editing a job — lands on the same
+       view. The dashboard reads these params back on load. ─── */
+    function syncUrlState() {
+        var params = getCalFilters();
+        if (_weekOffset !== 0) { params.week_offset = _weekOffset; }
+        if (_currentDate) { params.day = _currentDate; }
+
+        var qs = $.param(params);
+        history.replaceState(history.state, '', window.location.pathname + (qs ? '?' + qs : '') + window.location.hash);
     }
 
     /* ── merges the calendar's filter bar with the day panel's own filter bar
@@ -432,6 +448,7 @@
     /* ── week navigation ─────────────────────────────── */
     window.crmShiftWeek = function (delta) {
         _weekOffset += delta;
+        syncUrlState();
 
         var prevBtn = document.getElementById('week-schedule-prev-btn');
         var nextBtn = document.getElementById('week-schedule-next-btn');
@@ -460,9 +477,9 @@
     };
 
     /* ── open ────────────────────────────────────────── */
-    window.crmOpenDayPanel = function (btn) {
-        _currentDate = btn.dataset.date;
-        var label    = btn.dataset.label;
+    function openDayPanel(date, label) {
+        _currentDate = date;
+        syncUrlState();
 
         document.getElementById('crm-day-panel-title').textContent   = label;
         document.getElementById('crm-day-panel-subtitle').textContent = 'Loading…';
@@ -484,14 +501,30 @@
         document.body.style.overflow = 'hidden';
 
         loadTable(buildTableUrl(_tableUrl, getDayPanelFilters()));
+    }
+
+    window.crmOpenDayPanel = function (btn) {
+        openDayPanel(btn.dataset.date, btn.dataset.label);
     };
+
+    /* ── reopen the day panel restored from the URL (`?day=YYYY-MM-DD`).
+       The label matches the grid buttons' "Monday, 05 Sep" format; the day may
+       no longer have a button if its jobs were moved elsewhere. ─── */
+    var _initialDay = @json($openDay);
+    if (_initialDay) {
+        $(function () {
+            openDayPanel(_initialDay, moment(_initialDay, 'YYYY-MM-DD').format('dddd, DD MMM'));
+        });
+    }
 
     /* ── close ───────────────────────────────────────── */
     window.crmCloseDayPanel = function () {
+        var wasOpen = _currentDate !== null;
         document.getElementById('crm-day-panel').style.right = '-100%';
         document.getElementById('crm-day-backdrop').classList.add('hidden');
         document.body.style.overflow = '';
         _currentDate = null;
+        if (wasOpen) { syncUrlState(); }
 
         if (typeof window.clearJobBulkSelection === 'function') {
             window.clearJobBulkSelection();
@@ -549,6 +582,7 @@
        change/submit. We override its default table-reload behaviour to instead
        refresh the calendar grid and any open slide-over panel. ─── */
     window.loadCalendarGrid = function () {
+        syncUrlState();
         reloadCalendarGrid();
         if (_currentDate) {
             loadTable(buildTableUrl(_tableUrl, getDayPanelFilters()));

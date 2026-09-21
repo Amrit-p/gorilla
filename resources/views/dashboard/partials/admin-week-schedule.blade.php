@@ -55,6 +55,9 @@
 
     <x-dashboard.week-schedule-calendar
         :weeks="$weekSchedule"
+        :calendar-filters="\Illuminate\Support\Arr::except($weekScheduleFilters ?? [], 'week_offset')"
+        :week-offset="$weekScheduleFilters['week_offset'] ?? 0"
+        :open-day="$weekScheduleOpenDay ?? null"
         :daily-jobs-table-url="route('dashboard.daily-jobs-table')"
         :daily-leads-table-url="route('dashboard.daily-leads-table')"
         :zones="\App\Models\Zone::orderBy('name')->get(['id','name'])"
