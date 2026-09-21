@@ -25,6 +25,24 @@
         return hasAny ? total : null;
     }
 
+    /** Sums the charges of selected rows on the page, in cents to avoid float drift. */
+    function getTotalAmount() {
+        var cents = 0;
+        var hasAny = false;
+        getIds().forEach(function (id) {
+            var row = document.querySelector('.job-row[data-job-id="' + id + '"]');
+            if (row && row.dataset.charges !== undefined) {
+                var val = parseFloat(row.dataset.charges);
+                if (!isNaN(val)) { cents += Math.round(val * 100); hasAny = true; }
+            }
+        });
+        return hasAny ? cents / 100 : null;
+    }
+
+    function formatAmount(amount) {
+        return '$' + amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
     function formatMinutes(mins) {
         var h = Math.floor(mins / 60);
         var m = mins % 60;
@@ -38,6 +56,7 @@
         var toolbar = document.getElementById('job-bulk-toolbar');
         var count   = document.getElementById('job-bulk-count');
         var totalEl = document.getElementById('job-bulk-total');
+        var amountEl = document.getElementById('job-bulk-amount');
 
         if (count)   { count.textContent = ids.length; }
         if (toolbar) { toolbar.classList.toggle('hidden', ids.length === 0); }
@@ -49,6 +68,16 @@
                 totalEl.classList.remove('hidden');
             } else {
                 totalEl.classList.add('hidden');
+            }
+        }
+
+        var totalAmount = getTotalAmount();
+        if (amountEl) {
+            if (totalAmount !== null && ids.length > 0) {
+                amountEl.textContent = formatAmount(totalAmount);
+                amountEl.classList.remove('hidden');
+            } else {
+                amountEl.classList.add('hidden');
             }
         }
 

@@ -269,6 +269,25 @@ class JobManagementTest extends TestCase
         $this->assertStringContainsString('id="jobs-revenue-total">150.00<', $html);
     }
 
+    public function test_jobs_index_rows_expose_charges_for_the_bulk_toolbar_amount(): void
+    {
+        $job = Job::query()->create(array_merge($this->jobPayload(), [
+            'customer_name' => 'Bulk Amount Client',
+            'charges' => 75.25,
+        ]));
+
+        $response = $this->actingAs($this->admin)
+            ->getJson(route('admin.jobs.index'))
+            ->assertOk();
+
+        $html = (string) $response->json('html');
+        $this->assertStringContainsString('data-job-id="'.$job->id.'"', $html);
+        $this->assertStringContainsString('data-charges="75.25"', $html);
+        $this->assertStringContainsString('id="job-bulk-amount"', $html);
+        // Consumed minutes stay payout-only.
+        $this->assertStringNotContainsString('data-consumed-minutes=', $html);
+    }
+
     public function test_mower_suggestions_endpoint_returns_recommendation(): void
     {
         $this->actingAs($this->admin)

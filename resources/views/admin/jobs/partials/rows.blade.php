@@ -13,7 +13,7 @@
 {{-- Job table body rows. Also rendered standalone, as one infinite-scroll chunk. --}}
     @forelse ($jobs as $job)
         @php $jobPayoutId = $job->mower_payout_id ?? null; $jobAlreadyPaid = $jobPayoutId !== null; @endphp
-        <tr class="job-row group divide-x divide-slate-100 transition-colors data-[selected=true]:bg-emerald-50/70 data-[selected=true]:shadow-[inset_3px_0_0_#10b981] data-[bulk-mode=true]:cursor-pointer {{ job_row_color_class($job) }}" data-job-id="{{ $job->id }}" data-est-minutes="{{ $job->estimated_duration_minutes ?? '' }}" data-selected="false" data-bulk-mode="false" data-mower-paid="{{ $jobAlreadyPaid ? 'true' : 'false' }}" @if ($payoutMode) data-charges="{{ $job->charges ?? 0 }}" data-consumed-minutes="{{ $job->consumed_time_minutes ?? 0 }}" @endif>
+        <tr class="job-row group divide-x divide-slate-100 transition-colors data-[selected=true]:bg-emerald-50/70 data-[selected=true]:shadow-[inset_3px_0_0_#10b981] data-[bulk-mode=true]:cursor-pointer {{ job_row_color_class($job) }}" data-job-id="{{ $job->id }}" data-est-minutes="{{ $job->estimated_duration_minutes ?? '' }}" data-selected="false" data-bulk-mode="false" data-mower-paid="{{ $jobAlreadyPaid ? 'true' : 'false' }}" data-charges="{{ $job->charges ?? 0 }}" @if ($payoutMode) data-consumed-minutes="{{ $job->consumed_time_minutes ?? 0 }}" @endif>
 
                 <td class="w-8 px-2 py-4">
                 <input type="checkbox" class="job-select-checkbox h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" data-job-id="{{ $job->id }}" aria-label="Select job" @if ($jobAlreadyPaid) title="Already paid out - select it to edit that payout" @endif>
