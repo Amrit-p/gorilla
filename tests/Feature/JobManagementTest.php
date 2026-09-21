@@ -13,6 +13,7 @@ use App\Models\Job;
 use App\Models\JobLevel;
 use App\Models\Recurrence;
 use App\Models\User;
+use App\Models\Zone;
 use App\Notifications\JobDeletedNotification;
 use App\Notifications\JobMowerAssignmentChangedNotification;
 use App\Support\CrmConstants;
@@ -267,6 +268,25 @@ class JobManagementTest extends TestCase
 
         $html = (string) $response->json('html');
         $this->assertStringContainsString('id="jobs-revenue-total">150.00<', $html);
+    }
+
+    public function test_jobs_index_table_has_no_zone_column(): void
+    {
+        $zone = Zone::query()->create(['name' => 'Hidden Zone Name', 'is_active' => true]);
+
+        Job::query()->create(array_merge($this->jobPayload(), [
+            'customer_name' => 'Zoned Client',
+            'zone_id' => $zone->id,
+        ]));
+
+        $response = $this->actingAs($this->admin)
+            ->getJson(route('admin.jobs.index'))
+            ->assertOk();
+
+        $html = (string) $response->json('html');
+        $this->assertStringContainsString('Zoned Client', $html);
+        $this->assertStringNotContainsString('>Zone</th>', $html);
+        $this->assertStringNotContainsString('Hidden Zone Name', $html);
     }
 
     public function test_jobs_index_rows_expose_charges_for_the_bulk_toolbar_amount(): void
