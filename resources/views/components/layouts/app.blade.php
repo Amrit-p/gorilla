@@ -159,7 +159,7 @@
             transition: max-height 0.25s ease, opacity 0.15s ease;
         }
         .sidebar-accordion.is-open .sidebar-accordion-panel {
-            max-height: 300px;
+            max-height: 40rem;
             opacity: 1;
         }
         .sidebar-accordion.is-open .sidebar-accordion-chevron {
