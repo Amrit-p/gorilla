@@ -61,8 +61,8 @@ class CustomerDetailsModalTest extends TestCase
             ->assertSee('Customer Details', false)
             ->assertSee('99 Popup Ave', false)
             ->assertSee('555-4444', false)
-            ->assertSee('Total revenue', false)
-            ->assertSee('Payment received', false)
+            ->assertDontSee('Total revenue', false)
+            ->assertSee('Total payment received', false)
             ->assertSee('Balance due', false)
             ->assertSee('Edit profile', false)
             ->getContent();
@@ -119,7 +119,8 @@ class CustomerDetailsModalTest extends TestCase
         $this->assertStringContainsString('Paid', $html);
 
         // Totals cover the whole address group, not just the clicked job.
-        $this->assertStringContainsString('$250.00', $html);
+        $this->assertStringNotContainsString('$250.00', $html);
+        $this->assertStringContainsString('$120.00', $html);
         $this->assertStringContainsString('$130.00', $html);
         $this->assertStringNotContainsString('$999.00', $html);
     }

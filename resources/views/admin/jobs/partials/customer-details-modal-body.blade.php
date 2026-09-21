@@ -245,12 +245,8 @@
             <p class="mb-4 text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Payment summary</p>
 
             <div class="space-y-3">
-                <div class="rounded-2xl bg-slate-800 px-5 py-4 text-white">
-                    <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-300">Total revenue</p>
-                    <p class="mt-1 text-3xl font-bold tracking-tight">${{ number_format($total_revenue, 2) }}</p>
-                </div>
                 <div class="rounded-2xl bg-emerald-600 px-5 py-4 text-white">
-                    <p class="text-[11px] font-semibold uppercase tracking-wide text-emerald-100">Payment received</p>
+                    <p class="text-[11px] font-semibold uppercase tracking-wide text-emerald-100">Total payment received</p>
                     <p class="mt-1 text-3xl font-bold tracking-tight">${{ number_format($payment_received, 2) }}</p>
                 </div>
                 <div class="rounded-2xl bg-rose-500 px-5 py-4 text-white">
