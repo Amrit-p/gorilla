@@ -254,7 +254,7 @@
         e.stopPropagation();
         const id = Number($(this).data('id'));
         if (!id) return;
-        if (!confirm('Remove verification from this job?')) return;
+        if (!confirm('Remove verification from this job? If the mower was paid out for it, it will also be removed from that payout.')) return;
         verifyJobs([id], 0, {
             onSuccess: reloadCustomerDetailsModal,
             onError: function (message) {
@@ -817,7 +817,7 @@
         const id       = Number($btn.data('id'));
         const verified = String($btn.data('verified')) === '1';
         if (verified) {
-            if (!confirm('Remove verification from this job?')) return;
+            if (!confirm('Remove verification from this job? If the mower was paid out for it, it will also be removed from that payout.')) return;
             verifyJobs([id], 0);
             return;
         }

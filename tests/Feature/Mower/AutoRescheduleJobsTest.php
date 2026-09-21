@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Mower;
 
+use App\Enums\JobOperationalPaymentStatus;
 use App\Enums\JobWorkflowStatus;
 use App\Models\Job;
 use App\Models\Recurrence;
@@ -54,6 +55,28 @@ class AutoRescheduleJobsTest extends TestCase
         $this->assertEquals('2026-06-17', $newJob->scheduled_date->toDateString());
         $this->assertEquals($recurrence->id, $newJob->recurrence_id);
         $this->assertSame(JobWorkflowStatus::PENDING->value, $newJob->status);
+    }
+
+    public function test_next_occurrence_starts_with_pending_payment_when_previous_job_was_paid(): void
+    {
+        Notification::fake();
+
+        $recurrence = Recurrence::query()->where('name', 'Weekly')->firstOrFail();
+
+        $job = Job::query()->create($this->jobPayload($recurrence->id, [
+            'scheduled_date' => '2026-06-10',
+            'payment_mode' => 'Cash',
+            'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+            'received_amount' => 80,
+        ]));
+
+        $job->update(['status' => JobWorkflowStatus::COMPLETED->value]);
+
+        $newJob = Job::query()->where('rescheduled_from_job_id', $job->id)->firstOrFail();
+
+        $this->assertSame(JobOperationalPaymentStatus::PENDING->value, $newJob->payment_status);
+        $this->assertNull($newJob->received_amount);
+        $this->assertSame(JobOperationalPaymentStatus::RECEIVED->value, $job->fresh()->payment_status);
     }
 
     public function test_one_time_recurrence_is_not_rescheduled(): void

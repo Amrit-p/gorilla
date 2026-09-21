@@ -133,6 +133,38 @@ class SalaryCalculatorServiceTest extends TestCase
         $this->assertTrue($first->fresh()->hasMowerPayout());
     }
 
+    public function test_create_payout_verifies_its_jobs_without_touching_payment_status(): void
+    {
+        $job = $this->createJob('2026-06-01', charges: 100, minutes: 60);
+
+        $this->service->createPayout($this->mower, [$job->id], 90.0, 0.0, null, $this->admin);
+
+        $job->refresh();
+        $this->assertTrue($job->isVerified());
+        $this->assertSame($this->admin->id, $job->verified_by);
+        $this->assertNull($job->verified_amount);
+        $this->assertSame('Received', $job->payment_status);
+    }
+
+    public function test_create_payout_keeps_the_details_of_an_already_verified_job(): void
+    {
+        $job = $this->createJob('2026-06-01', charges: 100, minutes: 60);
+        $job->forceFill([
+            'verified_at' => now(),
+            'verified_by' => $this->admin->id,
+            'verified_date' => '2026-06-02',
+            'verified_amount' => 100,
+            'verification_comment' => 'Cash counted.',
+        ])->save();
+
+        $this->service->createPayout($this->mower, [$job->id], 90.0, 0.0, null, $this->admin);
+
+        $job->refresh();
+        $this->assertSame('2026-06-02', $job->verified_date->toDateString());
+        $this->assertSame('100.00', $job->verified_amount);
+        $this->assertSame('Cash counted.', $job->verification_comment);
+    }
+
     public function test_create_payout_rejects_a_job_that_is_already_paid(): void
     {
         $job = $this->createJob('2026-06-01', charges: 100, minutes: 60);

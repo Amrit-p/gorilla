@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\JobOperationalPaymentStatus;
 use App\Enums\JobWorkflowStatus;
 use App\Models\Job;
 use Illuminate\Support\Facades\DB;
@@ -105,7 +106,7 @@ class JobReschedulingService
                 'office_remarks' => $source->office_remarks,
                 'internal_notes' => $source->internal_notes,
                 'payment_mode' => $source->payment_mode,
-                'payment_status' => $source->payment_status,
+                'payment_status' => JobOperationalPaymentStatus::PENDING->value,
                 'created_by' => $source->created_by,
                 'rescheduled_from_job_id' => $source->id,
             ]);

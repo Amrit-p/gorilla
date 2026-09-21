@@ -21,6 +21,8 @@ use Illuminate\Validation\ValidationException;
 
 class SalaryCalculatorService
 {
+    public function __construct(private readonly JobManagementService $jobManagementService) {}
+
     /** @return Collection<int, User> */
     public function mowers(): Collection
     {
@@ -367,7 +369,8 @@ class SalaryCalculatorService
     }
 
     /**
-     * Record one payout and attach the selected jobs to it.
+     * Record one payout, attach the selected jobs to it and verify them, which
+     * locks them so a paid-out job can't be walked back to Pending or moved.
      *
      * @param  array<int, int>  $jobIds
      */
@@ -394,8 +397,29 @@ class SalaryCalculatorService
 
             $payout->jobs()->attach($jobIds);
 
+            $this->verifyPaidJobs($actor, $jobIds);
+
             return $payout;
         });
+    }
+
+    /**
+     * Jobs that were already verified keep their existing details. No customer
+     * amount is recorded here, so each job's payment status is left as it is.
+     *
+     * @param  array<int, int>  $jobIds
+     */
+    private function verifyPaidJobs(User $actor, array $jobIds): void
+    {
+        $unverified = Job::query()
+            ->whereIn('id', $jobIds)
+            ->whereNull('verified_at')
+            ->get();
+
+        $this->jobManagementService->verifyJobs($actor, $unverified, true, [
+            'verified_date' => now()->toDateString(),
+            'comment' => 'Verified automatically when the mower was paid out.',
+        ]);
     }
 
     /**

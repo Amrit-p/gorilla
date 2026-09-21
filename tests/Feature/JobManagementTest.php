@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Models\Zone;
 use App\Notifications\JobDeletedNotification;
 use App\Notifications\JobMowerAssignmentChangedNotification;
+use App\Services\SalaryCalculatorService;
 use App\Support\CrmConstants;
 use App\Support\CrmRoles;
 use App\Support\ServiceTypes;
@@ -713,6 +714,49 @@ class JobManagementTest extends TestCase
         $this->assertNull($job->verification_comment);
     }
 
+    public function test_paid_out_job_cannot_be_walked_back_to_pending(): void
+    {
+        [$job] = $this->createPaidOutJobs(1);
+
+        $this->assertTrue($job->refresh()->isVerified());
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.jobs.bulk.status.update'), [
+                'job_ids' => [$job->id],
+                'status' => JobWorkflowStatus::PENDING->value,
+            ])
+            ->assertStatus(422);
+
+        $this->assertSame(JobWorkflowStatus::COMPLETED->value, $job->refresh()->status);
+    }
+
+    public function test_unverifying_a_paid_out_job_removes_it_from_the_payout(): void
+    {
+        [$released, $kept] = $this->createPaidOutJobs(2);
+        $payoutId = $kept->payouts()->value('mower_payouts.id');
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.jobs.bulk.verify'), ['job_ids' => [$released->id], 'verified' => 0])
+            ->assertOk();
+
+        $this->assertFalse($released->fresh()->hasMowerPayout());
+        $this->assertDatabaseHas('mower_payout_job', ['mower_payout_id' => $payoutId, 'job_id' => $kept->id]);
+        $this->assertDatabaseHas('mower_payouts', ['id' => $payoutId]);
+    }
+
+    public function test_unverifying_the_last_job_on_a_payout_deletes_the_payout(): void
+    {
+        [$job] = $this->createPaidOutJobs(1);
+        $payoutId = $job->payouts()->value('mower_payouts.id');
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.jobs.bulk.verify'), ['job_ids' => [$job->id], 'verified' => 0])
+            ->assertOk();
+
+        $this->assertFalse($job->fresh()->hasMowerPayout());
+        $this->assertDatabaseMissing('mower_payouts', ['id' => $payoutId]);
+    }
+
     public function test_bulk_verify_verifies_eligible_jobs_and_skips_others(): void
     {
         $eligible = $this->createVerifiableJob();
@@ -1102,6 +1146,28 @@ class JobManagementTest extends TestCase
         ]);
 
         return $job;
+    }
+
+    /** @return array<int, Job> */
+    private function createPaidOutJobs(int $count): array
+    {
+        $jobs = array_map(function (): Job {
+            $job = $this->createVerifiableJob();
+            $job->update(['done_by_user_id' => $this->mower->id]);
+
+            return $job;
+        }, range(1, $count));
+
+        app(SalaryCalculatorService::class)->createPayout(
+            $this->mower,
+            array_map(fn (Job $job): int => $job->id, $jobs),
+            100.0,
+            0.0,
+            null,
+            $this->admin
+        );
+
+        return $jobs;
     }
 
     /**

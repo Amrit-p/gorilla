@@ -15,6 +15,7 @@ use App\Models\ActivityLog;
 use App\Models\ClientRating;
 use App\Models\Job;
 use App\Models\JobLevel;
+use App\Models\MowerPayout;
 use App\Models\Recurrence;
 use App\Models\User;
 use App\Models\Zone;
@@ -257,6 +258,10 @@ class JobManagementService
     /**
      * Verify or unverify a collection of jobs.
      *
+     * The payment status is only recomputed when a verified amount is given, so
+     * verifying without one (as a mower payout does) leaves it untouched.
+     * Unverifying also takes the job back out of any mower payout covering it.
+     *
      * @param  Collection<int, Job>  $jobs
      * @param  array{verified_date?: string|null, verified_amount?: float|string|null, comment?: string|null}  $details
      */
@@ -274,9 +279,9 @@ class JobManagementService
                 $job->verified_amount = $verified ? ($details['verified_amount'] ?? null) : null;
                 $job->verification_comment = $verified ? ($details['comment'] ?? null) : null;
 
-                if ($verified) {
+                if ($verified && isset($details['verified_amount'])) {
                     $jobAmount = (float) ($job->charges ?? 0);
-                    $verifiedAmount = (float) ($details['verified_amount'] ?? 0);
+                    $verifiedAmount = (float) $details['verified_amount'];
                     $job->payment_status = $verifiedAmount < $jobAmount
                         ? JobOperationalPaymentStatus::PARTIAL->value
                         : JobOperationalPaymentStatus::RECEIVED->value;
@@ -284,11 +289,21 @@ class JobManagementService
 
                 $job->save();
 
+                $context = ['job_id' => $job->id];
+
+                if (! $verified) {
+                    $releasedPayoutIds = $this->releaseFromMowerPayouts($job);
+
+                    if ($releasedPayoutIds !== []) {
+                        $context['released_payout_ids'] = $releasedPayoutIds;
+                    }
+                }
+
                 $this->activityLogService->log(
                     $actor,
                     $verified ? 'job.verified' : 'job.verification_removed',
                     $verified ? 'Job verified.' : 'Job verification removed.',
-                    ['job_id' => $job->id],
+                    $context,
                 );
             });
         });
@@ -300,6 +315,33 @@ class JobManagementService
         $ordered = collect($ids)->map(fn (int $id) => $fresh->get($id));
 
         return $ordered;
+    }
+
+    /**
+     * Take a job back out of the payout covering it, so the mower can be paid
+     * for it again once it is re-completed. A payout left with no jobs is
+     * deleted, since neither the salary calculator nor the mower report would
+     * ever show it again.
+     *
+     * @return array<int, int> ids of the payouts the job was removed from
+     */
+    private function releaseFromMowerPayouts(Job $job): array
+    {
+        $payouts = $job->payouts()->get();
+
+        if ($payouts->isEmpty()) {
+            return [];
+        }
+
+        $job->payouts()->detach();
+
+        $payouts->each(function (MowerPayout $payout): void {
+            if (! $payout->jobs()->withTrashed()->exists()) {
+                $payout->delete();
+            }
+        });
+
+        return $payouts->pluck('id')->all();
     }
 
     /**
