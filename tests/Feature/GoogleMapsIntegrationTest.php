@@ -271,6 +271,46 @@ class GoogleMapsIntegrationTest extends TestCase
         $this->assertSame('Previous Mower', $mapped['last_job_mower']);
     }
 
+    public function test_map_jobs_date_range_matches_only_without_today_scope(): void
+    {
+        $lead = Lead::query()->create($this->validLeadPayload());
+        $lastMonth = now()->subMonthNoOverflow();
+
+        $job = Job::query()->create([
+            'lead_id' => $lead->id,
+            'customer_name' => 'Last Month Client',
+            'client_address' => $lead->address,
+            'latitude' => '43.6532',
+            'longitude' => '-79.3832',
+            'scheduled_date' => $lastMonth->toDateString(),
+            'scheduled_time' => '09:00',
+            'estimated_duration_minutes' => 60,
+            'required_services' => [ServiceTypes::all()[0]],
+            'parking_status' => JobParkingStatus::EASY->value,
+            'customer_type' => JobCustomerType::EASY->value,
+            'payment_mode' => JobOperationalPaymentMode::CASH->value,
+            'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+            'status' => JobWorkflowStatus::STARTED->value,
+        ]);
+
+        $dateRange = [
+            'start' => $lastMonth->copy()->startOfMonth()->toDateString(),
+            'end' => $lastMonth->copy()->endOfMonth()->toDateString(),
+        ];
+
+        // "Today" pins scheduled_date to today, so it can never overlap last month.
+        $this->actingAs($this->admin)
+            ->getJson(route('admin.maps.jobs', ['list_scope' => 'today', 'date_range' => $dateRange]))
+            ->assertOk()
+            ->assertJsonMissing(['id' => $job->id]);
+
+        // The map filter panel switches the scope to "All" once a range is picked.
+        $this->actingAs($this->admin)
+            ->getJson(route('admin.maps.jobs', ['list_scope' => '', 'date_range' => $dateRange]))
+            ->assertOk()
+            ->assertJsonFragment(['id' => $job->id]);
+    }
+
     public function test_map_page_renders_google_config_when_provider_is_google(): void
     {
         Setting::query()->updateOrCreate(['key' => 'map_provider'], ['value' => 'google']);
@@ -297,6 +337,24 @@ class GoogleMapsIntegrationTest extends TestCase
             ->assertOk()
             ->assertSee('leaflet', false)
             ->assertSee('OpenStreetMap fallback', false);
+    }
+
+    public function test_map_page_filters_match_jobs_filter_bar(): void
+    {
+        $this->actingAs($this->admin)
+            ->get(route('admin.maps.index'))
+            ->assertOk()
+            ->assertSee('name="search"', false)
+            ->assertSee('name="status"', false)
+            ->assertSee('name="recurrence_id"', false)
+            ->assertSee('name="assignment"', false)
+            ->assertSee('name="payment_mode"', false)
+            ->assertSee('name="payment_status"', false)
+            ->assertSee('Scheduled Date')
+            ->assertDontSee('name="zone_id"', false)
+            ->assertDontSee('name="equipment_type_id"', false)
+            ->assertDontSee('name="customer_type"', false)
+            ->assertDontSee('name="service_type"', false);
     }
 
     /**

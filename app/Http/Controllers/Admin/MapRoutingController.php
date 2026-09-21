@@ -32,16 +32,12 @@ class MapRoutingController extends Controller
             'search' => $request->input('search', ''),
             'list_scope' => $request->input('list_scope', 'today'),
             'status' => $request->input('status', ''),
-            'zone_id' => $request->input('zone_id', ''),
             'recurrence_id' => $request->input('recurrence_id', ''),
             'assignment' => $request->input('assignment', ''),
             'payment_mode' => $request->input('payment_mode', ''),
             'payment_status' => $request->input('payment_status', ''),
             'date_range_start' => $request->input('date_range.start', ''),
             'date_range_end' => $request->input('date_range.end', ''),
-            'equipment_type_id' => $request->input('equipment_type_id', ''),
-            'customer_type' => $request->input('customer_type', ''),
-            'service_type' => $request->input('service_type', ''),
         ];
 
         return view('admin.maps.index', [

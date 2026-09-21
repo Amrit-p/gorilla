@@ -1,17 +1,4 @@
 @php
-    $hasActiveFilters =
-        !empty($filters['search']) ||
-        !empty($filters['status']) ||
-        !empty($filters['zone_id']) ||
-        !empty($filters['recurrence_id']) ||
-        !empty($filters['assignment']) ||
-        !empty($filters['payment_mode']) ||
-        !empty($filters['payment_status']) ||
-        !empty($filters['equipment_type_id']) ||
-        !empty($filters['customer_type']) ||
-        !empty($filters['service_type']) ||
-        !empty($filters['date_range_start']) ||
-        !empty($filters['date_range_end']);
     $activeCount = collect($filters)->filter(fn($v) => $v !== '' && $v !== null)->count();
 @endphp
 
@@ -67,20 +54,9 @@
                     </svg>
                 </span>
                 <input type="text" name="search" value="{{ $filters['search'] ?? '' }}"
-                    placeholder="Customer, address, ID…"
+                    placeholder="Name, phone, email, address…"
                     class="filter w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-8 pr-3 text-xs text-slate-700 placeholder-slate-400 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
             </div>
-        </div>
-
-        <div class="flex flex-col gap-1">
-            <label class="text-[10px] font-medium uppercase tracking-wide text-slate-400">Zone</label>
-            <select name="zone_id"
-                class="filter cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
-                <option value="">All zones</option>
-                @foreach ($zones as $zone)
-                    <option value="{{ $zone->id }}" @selected(($filters['zone_id'] ?? '') == $zone->id)>{{ $zone->name }}</option>
-                @endforeach
-            </select>
         </div>
 
         <div class="flex flex-col gap-1">
@@ -138,39 +114,6 @@
         </div>
 
         <div class="flex flex-col gap-1">
-            <label class="text-[10px] font-medium uppercase tracking-wide text-slate-400">Equipment Type</label>
-            <select name="equipment_type_id"
-                class="filter cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
-                <option value="">Any equipment</option>
-                @foreach ($equipmentTypes as $equipmentType)
-                    <option value="{{ $equipmentType['id'] }}" @selected(($filters['equipment_type_id'] ?? '') == $equipmentType['id'])>{{ $equipmentType['name'] }}</option>
-                @endforeach
-            </select>
-        </div>
-
-        <div class="flex flex-col gap-1">
-            <label class="text-[10px] font-medium uppercase tracking-wide text-slate-400">Customer Type</label>
-            <select name="customer_type"
-                class="filter cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
-                <option value="">Any type</option>
-                @foreach ($customerTypes as $type)
-                    <option value="{{ $type }}" @selected(($filters['customer_type'] ?? '') === $type)>{{ $type }}</option>
-                @endforeach
-            </select>
-        </div>
-
-        <div class="flex flex-col gap-1">
-            <label class="text-[10px] font-medium uppercase tracking-wide text-slate-400">Service Type</label>
-            <select name="service_type"
-                class="filter cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100">
-                <option value="">Any service</option>
-                @foreach ($serviceTypes as $serviceType)
-                    <option value="{{ $serviceType }}" @selected(($filters['service_type'] ?? '') === $serviceType)>{{ $serviceType }}</option>
-                @endforeach
-            </select>
-        </div>
-
-        <div class="flex flex-col gap-1">
             <label class="text-[10px] font-medium uppercase tracking-wide text-slate-400">Scheduled Date</label>
             <x-ui.daterange-picker placeholder="Date range" name="date_range"
                 :startDate="$filters['date_range_start'] ?? null"
@@ -210,21 +153,30 @@
         $('#map-filter-toggle-label').text(hiding ? 'Show Filters' : 'Hide Filters');
     });
 
-    $('.job-list-scope').on('click', function () {
-        const scope = $(this).data('list-scope');
+    function setListScope(scope) {
         $('#job-list-scope').val(scope);
         $('.job-list-scope').removeClass(
             'border-emerald-600 bg-emerald-50 text-emerald-800 border-slate-800 bg-slate-800 text-white'
         );
-        $(this).addClass(
+        $('.job-list-scope[data-list-scope="' + scope + '"]').addClass(
             scope === '' ? 'border-slate-800 bg-slate-800 text-white' : 'border-emerald-600 bg-emerald-50 text-emerald-800'
         );
+    }
+
+    $('.job-list-scope').on('click', function () {
+        setListScope($(this).data('list-scope'));
         window.reloadMapFromFilter(getFilters());
     });
 
     var mapSearchTimer;
 
     $('#job-filter-form').on('change', 'select.filter, input[readonly].filter', function () {
+        // The "Today" scope pins scheduled_date to today, so it can never overlap
+        // a picked date range; fall back to "All" and let the range decide.
+        if ($(this).is('input[readonly]') && $('input[name="date_range[start]"]').val()
+            && $('#job-list-scope').val() === 'today') {
+            setListScope('');
+        }
         window.reloadMapFromFilter(getFilters());
     });
 
