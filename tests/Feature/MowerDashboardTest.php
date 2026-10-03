@@ -385,10 +385,9 @@ class MowerDashboardTest extends TestCase
         $job->refresh();
         $this->assertSame(JobOperationalPaymentStatus::RECEIVED->value, $job->payment_status);
         $this->assertSame('50.00', $job->received_amount);
-        $this->assertNull($job->first_payment);
     }
 
-    public function test_partial_payment_requires_first_and_second_payment(): void
+    public function test_partial_payment_requires_received_amount_and_second_payment(): void
     {
         $job = $this->createAssignedJob($this->mower, ['charges' => 80]);
 
@@ -397,13 +396,13 @@ class MowerDashboardTest extends TestCase
                 'payment_status' => JobOperationalPaymentStatus::PARTIAL->value,
             ])
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['first_payment', 'second_payment']);
+            ->assertJsonValidationErrors(['received_amount', 'second_payment']);
 
         $this->actingAs($this->mower)
             ->patchJson(route('mower.jobs.update', $job), [
                 'status' => JobWorkflowStatus::COMPLETED->value,
                 'payment_status' => JobOperationalPaymentStatus::PARTIAL->value,
-                'first_payment' => 50,
+                'received_amount' => 50,
             ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['second_payment']);
@@ -528,14 +527,14 @@ class MowerDashboardTest extends TestCase
             ->assertSee('window.mowerJobCharges = null;', false);
     }
 
-    public function test_partial_payment_saves_first_and_second_payment(): void
+    public function test_partial_payment_saves_received_amount_and_second_payment(): void
     {
         $job = $this->createAssignedJob($this->mower);
 
         $this->actingAs($this->mower)
             ->patchJson(route('mower.jobs.payment.update', $job), [
                 'payment_status' => JobOperationalPaymentStatus::PARTIAL->value,
-                'first_payment' => 50.00,
+                'received_amount' => 50.00,
                 'second_payment' => 'Remaining $30 on Friday',
             ])
             ->assertOk()
@@ -544,14 +543,14 @@ class MowerDashboardTest extends TestCase
         $job->refresh();
         $this->assertSame(JobOperationalPaymentStatus::PARTIAL->value, $job->payment_status);
         $this->assertNull($job->payment_pending_reason);
-        $this->assertSame('50.00', $job->first_payment);
+        $this->assertSame('50.00', $job->received_amount);
         $this->assertSame('Remaining $30 on Friday', $job->second_payment);
     }
 
     public function test_partial_payment_amounts_cleared_when_status_changes(): void
     {
         $job = $this->createAssignedJob($this->mower);
-        $job->update(['first_payment' => 50.00, 'second_payment' => 'Remaining $30 on Friday', 'payment_status' => JobOperationalPaymentStatus::PARTIAL->value]);
+        $job->update(['received_amount' => 50.00, 'second_payment' => 'Remaining $30 on Friday', 'payment_status' => JobOperationalPaymentStatus::PARTIAL->value]);
 
         $this->actingAs($this->mower)
             ->patchJson(route('mower.jobs.payment.update', $job), [
@@ -561,7 +560,7 @@ class MowerDashboardTest extends TestCase
             ->assertOk();
 
         $job->refresh();
-        $this->assertNull($job->first_payment);
+        $this->assertSame('80.00', $job->received_amount);
         $this->assertNull($job->second_payment);
     }
 

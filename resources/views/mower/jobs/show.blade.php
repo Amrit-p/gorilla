@@ -16,7 +16,9 @@
 
     $isOnlinePayment = $job->payment_mode === JobOperationalPaymentMode::ONLINE->value;
     $showPendingDetails = $job->payment_status === 'Pending' && ! $isOnlinePayment;
-    $showReceivedAmount = $job->payment_status === 'Received';
+    // One amount field covers both: the full charge when the payment is received,
+    // the part paid so far when it is partial.
+    $showReceivedAmount = in_array($job->payment_status, ['Received', 'Partial'], true);
 @endphp
 
 <x-layouts.mower
@@ -115,18 +117,6 @@
                     >
                 </div>
                 <div id="mower-paid-amount-wrap" class="{{ $job->payment_status === 'Partial' ? '' : 'hidden' }} space-y-3">
-                    <div>
-                        <label for="mower-first-payment" class="mb-1 block text-sm text-slate-600">First Payment</label>
-                        <input
-                            type="number"
-                            id="mower-first-payment"
-                            min="0"
-                            step="0.01"
-                            value="{{ $job->first_payment }}"
-                            class="mower-touch w-full rounded-xl border border-slate-300 px-3 py-3 text-base"
-                            placeholder="0.00"
-                        >
-                    </div>
                     <div>
                         <label for="mower-second-payment" class="mb-1 block text-sm text-slate-600">Second Payment</label>
                         <textarea

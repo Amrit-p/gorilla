@@ -193,7 +193,7 @@ class CrmBackupImportTest extends TestCase
         foreach ([$over, $under, $exact] as $job) {
             $this->assertSame(JobOperationalPaymentStatus::RECEIVED->value, $job->payment_status);
             $this->assertSame('75.00', $job->charges);
-            $this->assertNull($job->first_payment);
+            $this->assertNull($job->received_amount);
             $this->assertNull($job->second_payment);
         }
 

@@ -125,6 +125,28 @@ class CustomerDetailsModalTest extends TestCase
         $this->assertStringNotContainsString('$999.00', $html);
     }
 
+    public function test_each_job_row_shows_the_amount_the_mower_received(): void
+    {
+        $current = $this->makeJob([
+            'charges' => 90,
+            'received_amount' => 65.50,
+        ]);
+
+        // Nothing recorded yet on this one, so it carries no received line.
+        $this->makeJob([
+            'scheduled_date' => now()->subWeek()->toDateString(),
+            'charges' => 40,
+        ]);
+
+        $html = $this->actingAs($this->admin)
+            ->get(route('admin.jobs.customer-details', $current))
+            ->assertOk()
+            ->assertSee('Received $65.50', false)
+            ->getContent();
+
+        $this->assertSame(1, substr_count($html, 'Received $'));
+    }
+
     public function test_admin_gets_verify_and_delete_controls_for_each_job_in_the_group(): void
     {
         $current = $this->makeJob(['status' => JobWorkflowStatus::COMPLETED->value]);

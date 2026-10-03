@@ -208,6 +208,42 @@ class GoogleMapsIntegrationTest extends TestCase
         $this->assertSame(JobWorkflowStatus::STARTED->value, $mapped['status']);
     }
 
+    public function test_map_jobs_endpoint_excludes_jobs_without_coordinates_instead_of_plotting_them_at_zero(): void
+    {
+        $jobAttributes = [
+            'customer_name' => 'Map Client',
+            'client_address' => '11 Example Place Botany Downs Auckland',
+            'scheduled_date' => now()->toDateString(),
+            'scheduled_time' => '09:00',
+            'estimated_duration_minutes' => 60,
+            'required_services' => [ServiceTypes::all()[0]],
+            'parking_status' => JobParkingStatus::EASY->value,
+            'customer_type' => JobCustomerType::EASY->value,
+            'payment_mode' => JobOperationalPaymentMode::CASH->value,
+            'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+            'status' => JobWorkflowStatus::STARTED->value,
+        ];
+
+        $geocodedJob = Job::query()->create(array_merge($jobAttributes, [
+            'latitude' => '-36.9101361',
+            'longitude' => '174.8946215',
+        ]));
+        $jobWithoutCoordinates = Job::query()->create($jobAttributes);
+        $jobWithOnlyLatitude = Job::query()->create(array_merge($jobAttributes, [
+            'latitude' => '-36.9101361',
+        ]));
+
+        $jobs = collect($this->actingAs($this->admin)
+            ->getJson(route('admin.maps.jobs', ['scheduled_date' => now()->toDateString()]))
+            ->assertOk()
+            ->json('jobs'));
+
+        $this->assertNotNull($jobs->firstWhere('id', $geocodedJob->id));
+        $this->assertNull($jobs->firstWhere('id', $jobWithoutCoordinates->id));
+        $this->assertNull($jobs->firstWhere('id', $jobWithOnlyLatitude->id));
+        $this->assertFalse($jobs->contains(fn (array $job): bool => $job['lat'] === 0.0 && $job['lng'] === 0.0));
+    }
+
     public function test_map_jobs_endpoint_includes_client_last_job_and_mower(): void
     {
         $equipment = EquipmentType::query()->where('is_active', true)->firstOrFail();

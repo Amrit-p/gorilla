@@ -182,6 +182,11 @@
                                 <p class="text-lg font-bold {{ $row['is_paid'] ? 'text-emerald-700' : 'text-amber-800' }}">
                                     ${{ number_format($row['charges'], 2) }}
                                 </p>
+                                @if ($row['received_amount'] !== null)
+                                    <p class="mt-0.5 text-xs font-semibold text-emerald-700">
+                                        Received ${{ number_format($row['received_amount'], 2) }}
+                                    </p>
+                                @endif
                                 <p class="mt-0.5 text-xs text-slate-500">{{ $row['payment_mode'] ?: 'No pay mode' }}</p>
                             </div>
                         </div>

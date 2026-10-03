@@ -41,6 +41,7 @@ class JobRepository
                 'done_by_user_id',
                 'recurrence_id',
                 'charges',
+                'received_amount',
                 'incentive_percentage',
                 'equipment_type_id',
                 'job_level_id',

@@ -65,7 +65,7 @@ class ClientStatisticsService
      *     job: Job,
      *     next_date: string|null,
      *     group_address: string,
-     *     address_jobs: array<int, array{id: int, is_current: bool, date: string|null, time: string|null, status: string|null, services: string, charges: float, mower: string, payment_mode: string|null, payment_status: string|null, payment_pending_reason: string|null, is_paid: bool, is_verified: bool, verified_amount: float|null, verified_date: string|null, verification_comment: string|null, can_verify: bool}>,
+     *     address_jobs: array<int, array{id: int, is_current: bool, date: string|null, time: string|null, status: string|null, services: string, charges: float, received_amount: float|null, mower: string, payment_mode: string|null, payment_status: string|null, payment_pending_reason: string|null, is_paid: bool, is_verified: bool, verified_amount: float|null, verified_date: string|null, verification_comment: string|null, can_verify: bool}>,
      *     total_jobs: int,
      *     total_revenue: float,
      *     payment_received: float,
@@ -120,7 +120,7 @@ class ClientStatisticsService
     {
         return match ($job->payment_status) {
             JobOperationalPaymentStatus::RECEIVED->value => (float) ($job->charges ?? 0),
-            JobOperationalPaymentStatus::PARTIAL->value => (float) ($job->verified_amount ?? $job->first_payment ?? 0),
+            JobOperationalPaymentStatus::PARTIAL->value => (float) ($job->verified_amount ?? $job->received_amount ?? 0),
             default => 0.0,
         };
     }
@@ -128,7 +128,7 @@ class ClientStatisticsService
     /**
      * One row of the modal's job list, carrying that job's own payment detail.
      *
-     * @return array{id: int, is_current: bool, date: string|null, time: string|null, status: string|null, services: string, charges: float, mower: string, payment_mode: string|null, payment_status: string|null, payment_pending_reason: string|null, is_paid: bool, is_verified: bool, verified_amount: float|null, verified_date: string|null, verification_comment: string|null, can_verify: bool}
+     * @return array{id: int, is_current: bool, date: string|null, time: string|null, status: string|null, services: string, charges: float, received_amount: float|null, mower: string, payment_mode: string|null, payment_status: string|null, payment_pending_reason: string|null, is_paid: bool, is_verified: bool, verified_amount: float|null, verified_date: string|null, verification_comment: string|null, can_verify: bool}
      */
     private function presentAddressJob(Job $job, int $currentJobId): array
     {
@@ -142,6 +142,7 @@ class ClientStatisticsService
                 ? implode(', ', $job->required_services)
                 : '—',
             'charges' => (float) ($job->charges ?? 0),
+            'received_amount' => $job->received_amount !== null ? (float) $job->received_amount : null,
             'mower' => $job->doneByUser?->name
                 ?? $job->assignedEmployees->pluck('name')->filter()->first()
                 ?? '—',

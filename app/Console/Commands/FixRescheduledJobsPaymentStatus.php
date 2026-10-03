@@ -24,7 +24,6 @@ class FixRescheduledJobsPaymentStatus extends Command
             ->whereNull('verified_at')
             ->where('payment_status', '!=', JobOperationalPaymentStatus::PENDING->value)
             ->whereNull('received_amount')
-            ->whereNull('first_payment')
             ->whereNull('second_payment')
             ->get();
 

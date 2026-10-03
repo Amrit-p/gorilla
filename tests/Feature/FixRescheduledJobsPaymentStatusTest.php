@@ -70,7 +70,7 @@ class FixRescheduledJobsPaymentStatusTest extends TestCase
         ]);
         $withPartialPayment = $this->rescheduledJob([
             'payment_status' => JobOperationalPaymentStatus::PARTIAL->value,
-            'first_payment' => 40,
+            'received_amount' => 40,
         ]);
         $verified = $this->rescheduledJob([
             'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,

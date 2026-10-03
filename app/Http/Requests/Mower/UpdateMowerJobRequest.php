@@ -47,12 +47,6 @@ class UpdateMowerJobRequest extends FormRequest
                 'numeric',
                 'min:0',
             ],
-            'first_payment' => [
-                'nullable',
-                'required_if:payment_status,'.JobOperationalPaymentStatus::PARTIAL->value,
-                'numeric',
-                'min:0',
-            ],
             'second_payment' => [
                 'nullable',
                 'required_if:payment_status,'.JobOperationalPaymentStatus::PARTIAL->value,
@@ -78,12 +72,16 @@ class UpdateMowerJobRequest extends FormRequest
     }
 
     /**
-     * The amount received is recorded whenever the payment is marked received,
-     * whatever the payment mode.
+     * The amount received is recorded whenever money changed hands, whatever the
+     * payment mode: the full charge on a received payment, the part paid so far
+     * on a partial one.
      */
     private function receivedAmountRequired(): bool
     {
-        return $this->input('payment_status') === JobOperationalPaymentStatus::RECEIVED->value;
+        return in_array($this->input('payment_status'), [
+            JobOperationalPaymentStatus::RECEIVED->value,
+            JobOperationalPaymentStatus::PARTIAL->value,
+        ], true);
     }
 
     /**

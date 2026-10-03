@@ -77,9 +77,13 @@ class MapRoutingService
         $jobs = $query->get();
         $lastVisitByPhone = $this->previousVisitsByPhone($jobs);
 
-        return $jobs->map(function (Job $job) use ($lastVisitByPhone): array {
-            $lat = $job->latitude ?? $job->lead?->latitude;
-            $lng = $job->longitude ?? $job->lead?->longitude;
+        return $jobs->map(function (Job $job) use ($lastVisitByPhone): ?array {
+            $coordinates = $this->jobCoordinates($job);
+
+            if ($coordinates === null) {
+                return null;
+            }
+
             $phone = trim((string) $job->phone);
             $previous = $phone !== '' ? ($lastVisitByPhone[$phone] ?? null) : null;
 
@@ -96,8 +100,8 @@ class MapRoutingService
                 'status' => $job->status,
                 'priority' => $job->priority,
                 'route_sequence' => $job->route_sequence,
-                'lat' => (float) $lat,
-                'lng' => (float) $lng,
+                'lat' => $coordinates['lat'],
+                'lng' => $coordinates['lng'],
                 'equipment_name' => $job->equipmentType?->name
                     ?? $job->lead?->equipmentType?->name,
                 'equipment_color' => $job->equipmentType?->color_code
@@ -114,7 +118,7 @@ class MapRoutingService
                 'last_job_date' => $previous?->scheduled_date?->toDateString(),
                 'last_job_mower' => $previous?->doneByUser?->name,
             ];
-        })->filter(fn (array $item): bool => ! is_null($item['lat']) && ! is_null($item['lng']))->values();
+        })->filter()->values();
     }
 
     /**

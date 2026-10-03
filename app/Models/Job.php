@@ -66,7 +66,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'verified_date',
     'verified_amount',
     'verification_comment',
-    'first_payment',
     'second_payment',
     'rescheduled_from_job_id',
 ])]
@@ -96,7 +95,6 @@ class Job extends Model
             'verified_at' => 'datetime',
             'verified_date' => 'date:Y-m-d',
             'verified_amount' => 'decimal:2',
-            'first_payment' => 'decimal:2',
         ];
     }
 

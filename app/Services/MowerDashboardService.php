@@ -147,10 +147,9 @@ class MowerDashboardService
         $isPartial = $paymentStatus === JobOperationalPaymentStatus::PARTIAL->value;
         $isPending = $paymentStatus === JobOperationalPaymentStatus::PENDING->value;
         $isReceived = $paymentStatus === JobOperationalPaymentStatus::RECEIVED->value;
-        $job->received_amount = $isReceived ? ($data['received_amount'] ?? null) : null;
+        $job->received_amount = $isReceived || $isPartial ? ($data['received_amount'] ?? null) : null;
         $job->payment_pending_reason = $isPending ? ($data['payment_pending_reason'] ?? null) : null;
         $job->payment_pending_amount = $isPending ? ($data['payment_pending_amount'] ?? null) : null;
-        $job->first_payment = $isPartial ? ($data['first_payment'] ?? null) : null;
         $job->second_payment = $isPartial ? ($data['second_payment'] ?? null) : null;
         $job->save();
 

@@ -406,6 +406,30 @@ class JobManagementTest extends TestCase
         $this->assertStringNotContainsString('data-consumed-minutes=', $html);
     }
 
+    public function test_jobs_index_payment_column_shows_the_amount_the_mower_received(): void
+    {
+        Job::query()->create(array_merge($this->jobPayload(), [
+            'customer_name' => 'Received Amount Client',
+            'charges' => 90,
+            'received_amount' => 65.50,
+        ]));
+
+        $withoutReceipt = Job::query()->create(array_merge($this->jobPayload(), [
+            'customer_name' => 'No Receipt Client',
+            'charges' => 40,
+        ]));
+
+        $html = (string) $this->actingAs($this->admin)
+            ->getJson(route('admin.jobs.index'))
+            ->assertOk()
+            ->json('html');
+
+        $this->assertStringContainsString('Received $65.50', $html);
+        // A job with nothing recorded yet shows no received line at all.
+        $this->assertSame(1, substr_count($html, 'Received $'));
+        $this->assertStringContainsString('data-job-id="'.$withoutReceipt->id.'"', $html);
+    }
+
     public function test_mower_suggestions_endpoint_returns_recommendation(): void
     {
         $this->actingAs($this->admin)

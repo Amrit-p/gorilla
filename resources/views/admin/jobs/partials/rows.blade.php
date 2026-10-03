@@ -120,6 +120,9 @@
                 @if ($job->charges !== null)
                     <p class="text-xs font-medium text-emerald-600">${{ number_format($job->charges, 2) }}</p>
                 @endif
+                @if ($job->received_amount !== null)
+                    <p class="text-xs font-medium text-emerald-700">Received ${{ number_format($job->received_amount, 2) }}</p>
+                @endif
             </td>
 
             {{-- Mowers --}}
