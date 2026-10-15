@@ -69,6 +69,45 @@ class DashboardAnalyticsTest extends TestCase
             ->assertSee('Jobs tomorrow', false)
             ->assertDontSee('Completed jobs (MTD)', false)
             ->assertSee('Mower performance', false)
+            ->assertSee('Completed', false)
+            ->assertSee('Received', false)
+            ->assertSee('$150.00', false);
+    }
+
+    public function test_revenue_card_splits_completed_value_from_received_including_partials(): void
+    {
+        // Completed + fully received, no explicit received_amount → counts full charges.
+        Job::query()->create($this->jobPayload([
+            'status' => JobWorkflowStatus::COMPLETED->value,
+            'payment_status' => JobOperationalPaymentStatus::RECEIVED->value,
+            'charges' => 100.00,
+            'scheduled_date' => now()->toDateString(),
+        ]));
+
+        // Completed but only partially paid — $50 of $300 collected.
+        Job::query()->create($this->jobPayload([
+            'status' => JobWorkflowStatus::COMPLETED->value,
+            'payment_status' => JobOperationalPaymentStatus::PARTIAL->value,
+            'charges' => 300.00,
+            'received_amount' => 50.00,
+            'scheduled_date' => now()->toDateString(),
+        ]));
+
+        // Completed but unpaid — adds to completed value, contributes nothing received.
+        Job::query()->create($this->jobPayload([
+            'status' => JobWorkflowStatus::COMPLETED->value,
+            'payment_status' => JobOperationalPaymentStatus::PENDING->value,
+            'charges' => 70.00,
+            'scheduled_date' => now()->toDateString(),
+        ]));
+
+        $this->actingAs($this->admin)
+            ->get(route('dashboard.index'))
+            ->assertOk()
+            ->assertSee('Total revenue (MTD)', false)
+            // Completed value = 100 + 300 + 70 = 470 (all completed jobs' charges).
+            ->assertSee('$470.00', false)
+            // Received = 100 (full) + 50 (partial) + 0 (pending) = 150.
             ->assertSee('$150.00', false);
     }
 

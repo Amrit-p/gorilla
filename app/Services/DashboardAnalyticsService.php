@@ -123,12 +123,27 @@ class DashboardAnalyticsService
         $today = now()->toDateString();
         $monthStart = now()->startOfMonth()->toDateString();
 
-        $revenueMtd = (float) DB::table('service_jobs as sj')
+        // Billable value of completed work this month.
+        $completedAmountMtd = (float) DB::table('service_jobs as sj')
             ->whereNull('sj.deleted_at')
             ->where('sj.status', JobWorkflowStatus::COMPLETED->value)
-            ->where('sj.payment_status', JobOperationalPaymentStatus::RECEIVED->value)
             ->whereBetween('sj.scheduled_date', [$monthStart, $today])
             ->sum('sj.charges');
+
+        // Money actually collected this month, counting partial payments. Fully received
+        // jobs fall back to their charges when no explicit received_amount was recorded.
+        $receivedRow = DB::table('service_jobs as sj')
+            ->whereNull('sj.deleted_at')
+            ->whereBetween('sj.scheduled_date', [$monthStart, $today])
+            ->selectRaw(
+                'COALESCE(SUM(CASE '
+                .'WHEN sj.payment_status = ? THEN COALESCE(sj.received_amount, sj.charges) '
+                .'WHEN sj.payment_status = ? THEN COALESCE(sj.received_amount, 0) '
+                .'ELSE 0 END), 0) as received',
+                [JobOperationalPaymentStatus::RECEIVED->value, JobOperationalPaymentStatus::PARTIAL->value]
+            )
+            ->first();
+        $receivedAmountMtd = (float) ($receivedRow->received ?? 0);
 
         $pendingRow = DB::table('service_jobs as sj')
             ->whereNull('sj.deleted_at')
@@ -157,8 +172,8 @@ class DashboardAnalyticsService
         return [
             'total_revenue' => [
                 'label' => 'Total revenue (MTD)',
-                'value' => '$'.number_format($revenueMtd, 2),
-                'subtitle' => 'Completed & received payments',
+                'completed_amount' => '$'.number_format($completedAmountMtd, 2),
+                'received_amount' => '$'.number_format($receivedAmountMtd, 2),
                 'accent' => 'emerald',
             ],
             'pending_payments' => [

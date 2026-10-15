@@ -4,6 +4,12 @@
  * and dispatches the 'jobs:selection-changed' custom event.
  */
 (function () {
+    // This file may be loaded more than once on a page (e.g. a job table plus the
+    // global Hold Jobs panel). Keep the first registry so selection state survives.
+    if (window.crmJobSelection) {
+        return;
+    }
+
     var selectedIds = new Set();
 
     function getIds() {

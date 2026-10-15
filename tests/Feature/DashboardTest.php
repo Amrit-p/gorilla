@@ -44,9 +44,26 @@ class DashboardTest extends TestCase
         $this->actingAs($this->admin)
             ->get(route('dashboard.index'))
             ->assertOk()
-            ->assertSee('open-followup-modal')
-            ->assertSee('dashboard-followup-form')
+            ->assertSee('data-open-followup="global-followup-modal"', false)
+            ->assertSee('global-followup-modal-form')
             ->assertSee('New Follow-Up');
+    }
+
+    public function test_navbar_exposes_the_hold_jobs_panel_globally(): void
+    {
+        // The Hold Jobs trigger and slide-over panel now live in the shared navbar, so they
+        // render on every admin page — the dashboard and, e.g., the Create Job page.
+        $this->actingAs($this->admin)
+            ->get(route('dashboard.index'))
+            ->assertOk()
+            ->assertSee('id="open-hold-jobs-panel"', false)
+            ->assertSee('id="dashboard-hold-jobs-panel"', false);
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.jobs.create'))
+            ->assertOk()
+            ->assertSee('id="open-hold-jobs-panel"', false)
+            ->assertSee('data-open-followup="global-followup-modal"', false);
     }
 
     public function test_mower_visiting_dashboard_is_redirected_to_mower_dashboard(): void

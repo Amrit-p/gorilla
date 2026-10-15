@@ -1,6 +1,11 @@
 @props([
     'filterCallback' => 'loadJobs',
 ])
+{{-- This script defines global job-action handlers and may now be included from
+     both the host page and the global Hold Jobs panel. @once ensures the handlers
+     bind only once; whichever include renders first supplies $filterCallback (the
+     host page renders before the navbar partial, so its callback wins). --}}
+@once
 @can('manage-job-records')
     <style>
         .sortable-ghost {
@@ -1236,3 +1241,4 @@
         openModal('contractor-details-modal');
     });
 </script>
+@endonce

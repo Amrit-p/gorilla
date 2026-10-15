@@ -1,3 +1,7 @@
+{{-- These modals are singletons (fixed element IDs) and may now be included from
+     several places on one page — the host page and the global Hold Jobs panel.
+     @once keeps them rendered exactly once per request. --}}
+@once
 {{-- ── Assign Mowers ─────────────────────────────────────────────────────── --}}
 <x-ui.modal id="assign-job-modal" title="Assign Mowers" maxWidth="max-w-2xl">
 
@@ -370,3 +374,4 @@
         </div>
     </div>
 </div>
+@endonce

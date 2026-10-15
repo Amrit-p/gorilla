@@ -2,15 +2,18 @@
 
 namespace App\Providers;
 
+use App\Enums\JobWorkflowStatus;
 use App\Events\LeadConvertedToClient;
 use App\Helpers\OptimizationHelper;
 use App\Listeners\HandleLeadConvertedToClient;
 use App\Models\Job;
 use App\Models\Lead;
+use App\Models\User;
 use App\Services\FollowupService;
 use App\Services\MailSettingsRegistrar;
 use App\Services\TimezoneSettingsRegistrar;
 use App\Support\CrmPermissions;
+use App\Support\CrmRoles;
 use App\Support\WebsiteSettings;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
@@ -79,10 +82,42 @@ class AppServiceProvider extends ServiceProvider
                     ? app(FollowupService::class)->assignableUsers()
                     : collect()
             );
+
+            // The job modals are now rendered globally (the Hold Jobs panel lives in the
+            // navbar on every page), so supply the mower/workflow data they need whenever
+            // the host page's controller did not already provide it.
+            $data = $view->getData();
+
+            if (! array_key_exists('employees', $data)) {
+                $view->with('employees', User::query()
+                    ->role(CrmRoles::MOWER)
+                    ->where('is_active', true)
+                    ->orderBy('name')
+                    ->get(['id', 'name', 'efficiency']));
+            }
+
+            if (! array_key_exists('workflowStatuses', $data)) {
+                $view->with('workflowStatuses', JobWorkflowStatus::values());
+            }
         });
 
         View::composer(['components.layouts.*', 'components.auth.*', 'auth.*'], function ($view): void {
             $view->with('websiteBranding', WebsiteSettings::branding());
+        });
+
+        // The "New Follow-up" modal is triggered from the global navbar button, so expose
+        // its form options to the dashboard layout on every page (for permitted users).
+        View::composer('components.layouts.dashboard', function ($view): void {
+            if (array_key_exists('followupOptions', $view->getData())) {
+                return;
+            }
+
+            $view->with(
+                'followupOptions',
+                CrmPermissions::canManageFollowups(auth()->user())
+                    ? app(FollowupService::class)->formOptions()
+                    : null
+            );
         });
 
         View::composer(['components.layouts.dashboard', 'components.layouts.app', 'components.layouts.mower'], function ($view): void {
